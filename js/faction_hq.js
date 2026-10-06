@@ -12,6 +12,7 @@
   let _supportCustomExpanded = false;
   let _rosterExpanded = false;
   let _activeView = "hq";
+  let _lunarUnsubscribe = null;
   let _activeSheet = "";
   let _viewModel = null;
 
@@ -770,6 +771,83 @@ function _contribSummaryLegacy(c) {
         rect: { w: rect.width, h: rect.height, x: rect.x, y: rect.y }
       });
     }
+  }
+
+  function _hqLunarState() {
+    return window.LunarWorld?.getState?.() || null;
+  }
+
+  function _hqLunarReactionCopy(lunar) {
+    const phase = String(lunar?.phase || "dormant");
+    const focus = lunar?.primaryFocus;
+    const focusLabel = String(focus?.label || "the active front");
+    return ({
+      dormant: `Lunar pressure is low. Hold resources and watch ${focusLabel}.`,
+      rising: `Lunar pressure is building. Prepare for movement around ${focusLabel}.`,
+      convergence: `Convergence is tightening the world state. Keep ${focusLabel} under watch.`,
+      full_blood_moon: `Full Blood Moon is active. Expect the strongest pressure around ${focusLabel}.`,
+      fading: `The peak has passed, but residual pressure remains around ${focusLabel}.`,
+    })[phase] || `Lunar state synchronized with ${focusLabel}.`;
+  }
+
+  function _renderHQLunarSignal(lunar = _hqLunarState()) {
+    if (!lunar) return "";
+    const visuals = window.LunarWorld?.getVisuals?.(lunar);
+    const focus = lunar.primaryFocus;
+    const metric = window.LunarWorld?.focusMetricLabel?.(focus);
+    const focusState = [focus?.state, metric].filter(Boolean).join(" · ");
+    return `
+      <div class="hq-lunar-signal">
+        <img class="hq-lunar-moon" src="${esc(visuals?.moon || "")}" alt="" aria-hidden="true">
+        <div class="hq-lunar-copy">
+          <div class="hq-lunar-kicker">LUNAR STATE${lunar.visualOnly ? " · VISUAL ONLY" : ""}</div>
+          <div class="hq-lunar-phase">${esc(lunar.phaseLabel || lunar.phase || "")}</div>
+          <div class="hq-lunar-next">${esc(window.LunarWorld?.countdownLabel?.(lunar) || "")}</div>
+          <div class="hq-lunar-reaction">${esc(_hqLunarReactionCopy(lunar))}</div>
+          ${focus ? `<div class="hq-lunar-focus"><span>FOCUS</span><strong>${esc(focus.label)}</strong>${focusState ? `<em>${esc(focusState)}</em>` : ""}</div>` : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function _applyHQLunarPresentation(lunar = _hqLunarState()) {
+    if (!_back) return;
+    if (!lunar) {
+      _back.removeAttribute("data-lunar-phase");
+      _back.removeAttribute("data-lunar-preview");
+      return;
+    }
+    _back.setAttribute("data-lunar-phase", String(lunar.phase || "dormant"));
+    _back.setAttribute("data-lunar-preview", lunar.visualOnly ? "true" : "false");
+
+    const visuals = window.LunarWorld?.getVisuals?.(lunar);
+    const haze = _back.querySelector(".hq-lunar-haze");
+    const rim = _back.querySelector(".hq-lunar-rim");
+    if (haze && visuals?.haze) haze.src = visuals.haze;
+    if (rim && visuals?.rimGlow) rim.src = visuals.rimGlow;
+
+    const signal = _root?.querySelector?.(".hq-lunar-signal");
+    if (signal) {
+      const wrap = document.createElement("div");
+      wrap.innerHTML = _renderHQLunarSignal(lunar);
+      signal.replaceWith(wrap.firstElementChild);
+    }
+  }
+
+  function _startHQLunarUpdates() {
+    if (typeof _lunarUnsubscribe === "function") _lunarUnsubscribe();
+    _lunarUnsubscribe = null;
+    if (typeof window.LunarWorld?.subscribe === "function") {
+      _lunarUnsubscribe = window.LunarWorld.subscribe((lunar) => {
+        if (_back?.classList?.contains("is-open")) _applyHQLunarPresentation(lunar);
+      }, { emitCurrent: true });
+    }
+    void window.LunarWorld?.refresh?.({ force: false });
+  }
+
+  function _stopHQLunarUpdates() {
+    if (typeof _lunarUnsubscribe === "function") _lunarUnsubscribe();
+    _lunarUnsubscribe = null;
   }
 
   function applyHQTheme(faction) {
@@ -2662,6 +2740,15 @@ function _contribSummaryLegacy(c) {
       if (v) v.insertAdjacentElement("afterend", n);
       else bg.insertAdjacentElement("afterend", n);
     }
+
+    if (!_back.querySelector(".hq-lunar-ambient")) {
+      const ambient = document.createElement("div");
+      ambient.className = "hq-lunar-ambient";
+      ambient.innerHTML = '<img class="hq-lunar-haze" alt=""><img class="hq-lunar-rim" alt="">';
+      const noise = _back.querySelector(".hq-noise");
+      if (noise) noise.insertAdjacentElement("afterend", ambient);
+      else bg.insertAdjacentElement("afterend", ambient);
+    }
   }
 
   // ---------------------------
@@ -2753,12 +2840,14 @@ function _contribSummaryLegacy(c) {
     applyHqBg(cached);
     applyHQTheme(cached);
 
+    _startHQLunarUpdates();
     await _ensureApiPost();
     await render();
   }
 
   function closeView() {
     if (_back) _back.classList.remove("is-open");
+    _stopHQLunarUpdates();
     document.body.classList.remove("hq-open");
     try { globalThis.dispatchEvent?.(new CustomEvent("ah:faction-hq-closed")); } catch (_) {}
   }
@@ -3072,6 +3161,7 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
 
       <button class="hq-btn ghost hq-v3-legacy-close" onclick="FactionHQ.close()">Close</button>
     `;
+    _applyHQLunarPresentation();
     _syncCommandCenter();
   }
 
@@ -3221,6 +3311,8 @@ const visibleFeed = _feedExpanded ? feed : feed.slice(0, 3);
           <div class="hq-title">${esc(niceFactionName(fk))}</div>
           <div class="hq-motto">${esc(meta.motto)}</div>
         </div>
+
+        ${_renderHQLunarSignal()}
 
         <div class="hq-entry-v2-stage">
           ${_hqStageHTML(curLevel, fk)}
