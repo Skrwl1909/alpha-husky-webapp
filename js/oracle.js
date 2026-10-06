@@ -1350,7 +1350,8 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         top:50%;
         transform:translate(-50%, -48%);
         width:min(94vw, 760px);
-        max-height:min(88vh, 900px);
+        height:min(88dvh, 900px);
+        max-height:min(88dvh, 900px);
         border-radius:28px;
         overflow:hidden;
         display:flex;
@@ -1522,12 +1523,20 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
       }
 
       .oracle-tabs{
+        position:sticky;
+        top:0;
+        z-index:20;
         display:flex;
         gap:8px;
         padding:12px 18px 14px;
-        border-bottom:1px solid rgba(255,255,255,.06);
+        border-top:1px solid rgba(255,255,255,.035);
+        border-bottom:1px solid rgba(255,255,255,.08);
         overflow-x:auto;
         scrollbar-width:none;
+        background:linear-gradient(180deg,rgba(12,15,29,.97),rgba(10,12,23,.94));
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        box-shadow:0 10px 22px rgba(4,6,12,.16);
       }
       .oracle-tabs::-webkit-scrollbar{ display:none; }
 
@@ -1549,14 +1558,23 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         box-shadow:0 6px 18px rgba(88,63,210,.22);
       }
 
-      .oracle-body{
+      .oracle-scroll-shell{
         position:relative;
         flex:1 1 auto;
         min-height:0;
-        padding:16px 18px calc(18px + env(safe-area-inset-bottom));
-        overflow:auto;
+        overflow-y:auto;
+        overflow-x:hidden;
         overscroll-behavior:contain;
         -webkit-overflow-scrolling:touch;
+        touch-action:pan-y;
+        scrollbar-gutter:stable;
+      }
+
+      .oracle-body{
+        position:relative;
+        min-height:180px;
+        padding:16px 18px calc(28px + env(safe-area-inset-bottom));
+        overflow:visible;
       }
 
       .oracle-root{
@@ -2921,6 +2939,47 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         .oracle-rank-row{
           align-items:flex-start;
         }
+      }
+
+      /* === ORACLE MOBILE SCROLL RECOVERY / P0-C UX POLISH === */
+      @media (max-width:720px){
+        .oracle-modal{
+          height:100dvh;
+          max-height:100dvh;
+        }
+        .oracle-topbar{
+          flex:0 0 auto;
+          padding-top:max(14px, env(safe-area-inset-top));
+        }
+        .oracle-scroll-shell{
+          flex:1 1 auto;
+          min-height:0;
+          height:auto;
+          overflow-y:auto;
+          overflow-x:hidden;
+          touch-action:pan-y;
+        }
+        .oracle-body{
+          flex:none;
+          min-height:220px;
+          max-height:none !important;
+          overflow:visible !important;
+          padding:12px 14px calc(30px + env(safe-area-inset-bottom));
+        }
+        .oracle-tabs{
+          position:sticky;
+          top:0;
+          z-index:20;
+          padding:8px 14px 9px;
+        }
+        .oracle-tab{ min-height:40px; }
+      }
+
+      @media (max-height:700px) and (max-width:720px){
+        .oracle-hero{ padding-top:8px; }
+        .oracle-hero-card{ padding:10px; }
+        .oracle-lunar-card{ padding:9px 10px; }
+        .oracle-lunar-reason{ display:none; }
       }
     `;
     document.head.appendChild(s);
