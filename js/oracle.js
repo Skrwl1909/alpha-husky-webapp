@@ -83,6 +83,10 @@
     } catch (_) {}
     startAutoRefresh();
 
+    if (els.scroller) els.scroller.scrollTop = 0;
+
+
+
     if (!_state) {
       fetchState({ silent: false });
     } else {
@@ -135,6 +139,7 @@
     closeBtn: null,
     statusDot: null,
     lunar: null,
+    scroller: null,
   };
 
   function getApiPost() {
@@ -163,7 +168,7 @@
 
   function lockScroll(lock) {
     document.body.style.overflow = lock ? "hidden" : "";
-    document.body.style.touchAction = lock ? "none" : "";
+    document.body.style.overscrollBehavior = lock ? "none" : "";
   }
 
   function toast(msg) {
@@ -210,29 +215,32 @@
         </div>
       </div>
 
-      <div class="oracle-hero" id="oracleHero"></div>
-
-      <div class="oracle-lunar-slot" id="oracleLunarSlot" hidden></div>
-
-      <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
-
-      <div class="oracle-tabs" id="oracleTabs">
-        <button type="button" class="oracle-tab is-active" data-tab="echoes">
-          <span class="oracle-tab-ico">◉</span>
-          <span>Live Echoes</span>
-        </button>
-        <button type="button" class="oracle-tab" data-tab="pulse">
-          <span class="oracle-tab-ico">⌁</span>
-          <span>Faction Pulse</span>
-        </button>
-        <button type="button" class="oracle-tab" data-tab="hall">
-          <span class="oracle-tab-ico">✦</span>
-          <span>Hall of Fame</span>
-        </button>
-      </div>
-
-      <div class="oracle-body" id="oracleBody">
-        <div class="oracle-root" id="oracleRoot"></div>
+      <div class="oracle-scroll-shell" id="oracleScrollShell">
+        <div class="oracle-hero" id="oracleHero"></div>
+  
+        <div class="oracle-lunar-slot" id="oracleLunarSlot" hidden></div>
+  
+        <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
+  
+        <div class="oracle-tabs" id="oracleTabs">
+          <button type="button" class="oracle-tab is-active" data-tab="echoes">
+            <span class="oracle-tab-ico">◉</span>
+            <span>Live Echoes</span>
+          </button>
+          <button type="button" class="oracle-tab" data-tab="pulse">
+            <span class="oracle-tab-ico">⌁</span>
+            <span>Faction Pulse</span>
+          </button>
+          <button type="button" class="oracle-tab" data-tab="hall">
+            <span class="oracle-tab-ico">✦</span>
+            <span>Hall of Fame</span>
+          </button>
+        </div>
+  
+        <div class="oracle-body" id="oracleBody">
+          <div class="oracle-content-kicker" aria-hidden="true">SECTION FEED</div>
+          <div class="oracle-root" id="oracleRoot"></div>
+        </div>
       </div>
     </div>
   `;
@@ -250,6 +258,7 @@
   els.statusDot = back.querySelector("#oracleStatusDot");
   els.hero = back.querySelector("#oracleHero");
   els.lunar = back.querySelector("#oracleLunarSlot");
+  els.scroller = back.querySelector("#oracleScrollShell");
 
   _mounted = true;
   }
@@ -271,9 +280,28 @@
       if (!TAB_IDS.includes(tab)) return;
       _activeTab = tab;
       render();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollActiveContentIntoView({ smooth: true }));
+      });
     });
   }
 
+  function scrollActiveContentIntoView({ smooth = false } = {}) {
+    if (!els.scroller || !els.body || !els.tabs) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const behavior = smooth && !reduced ? "smooth" : "auto";
+    const scrollerRect = els.scroller.getBoundingClientRect();
+    const bodyRect = els.body.getBoundingClientRect();
+    const target = Math.max(
+      0,
+      els.scroller.scrollTop + (bodyRect.top - scrollerRect.top) - els.tabs.offsetHeight - 8
+    );
+    try {
+      els.scroller.scrollTo({ top: target, behavior });
+    } catch (_) {
+      els.scroller.scrollTop = target;
+    }
+  }
   async function fetchState({ silent = false } = {}) {
     if (_loading) return;
     const apiPost = getApiPost();
@@ -1328,7 +1356,8 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         top:50%;
         transform:translate(-50%, -48%);
         width:min(94vw, 760px);
-        max-height:min(88vh, 900px);
+        height:min(88dvh, 900px);
+        max-height:min(88dvh, 900px);
         border-radius:28px;
         overflow:hidden;
         display:flex;
@@ -1500,12 +1529,20 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
       }
 
       .oracle-tabs{
+        position:sticky;
+        top:0;
+        z-index:20;
         display:flex;
         gap:8px;
         padding:12px 18px 14px;
-        border-bottom:1px solid rgba(255,255,255,.06);
+        border-top:1px solid rgba(255,255,255,.035);
+        border-bottom:1px solid rgba(255,255,255,.08);
         overflow-x:auto;
         scrollbar-width:none;
+        background:linear-gradient(180deg,rgba(12,15,29,.97),rgba(10,12,23,.94));
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        box-shadow:0 10px 22px rgba(4,6,12,.16);
       }
       .oracle-tabs::-webkit-scrollbar{ display:none; }
 
@@ -1527,15 +1564,34 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         box-shadow:0 6px 18px rgba(88,63,210,.22);
       }
 
-      .oracle-body{
+      .oracle-scroll-shell{
         position:relative;
         flex:1 1 auto;
         min-height:0;
-        padding:16px 18px calc(18px + env(safe-area-inset-bottom));
-        overflow:auto;
+        overflow-y:auto;
+        overflow-x:hidden;
         overscroll-behavior:contain;
         -webkit-overflow-scrolling:touch;
+        touch-action:pan-y;
+        scrollbar-gutter:stable;
       }
+
+      .oracle-body{
+        position:relative;
+        min-height:180px;
+        padding:16px 18px calc(28px + env(safe-area-inset-bottom));
+        overflow:visible;
+      }
+      .oracle-content-kicker{
+        display:none;
+        margin:0 0 8px;
+        color:rgba(157,168,215,.48);
+        font-size:8px;
+        font-weight:900;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+      }
+
 
       .oracle-root{
         display:block;
@@ -2899,6 +2955,48 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         .oracle-rank-row{
           align-items:flex-start;
         }
+      }
+
+      /* === ORACLE MOBILE SCROLL RECOVERY / P0-C UX POLISH === */
+      @media (max-width:720px){
+        .oracle-modal{
+          height:100dvh;
+          max-height:100dvh;
+        }
+        .oracle-topbar{
+          flex:0 0 auto;
+          padding-top:max(14px, env(safe-area-inset-top));
+        }
+        .oracle-scroll-shell{
+          flex:1 1 auto;
+          min-height:0;
+          height:auto;
+          overflow-y:auto;
+          overflow-x:hidden;
+          touch-action:pan-y;
+        }
+        .oracle-body{
+          flex:none;
+          min-height:220px;
+          max-height:none !important;
+          overflow:visible !important;
+          padding:12px 14px calc(30px + env(safe-area-inset-bottom));
+        }
+        .oracle-content-kicker{ display:block; }
+        .oracle-tabs{
+          position:sticky;
+          top:0;
+          z-index:20;
+          padding:8px 14px 9px;
+        }
+        .oracle-tab{ min-height:40px; }
+      }
+
+      @media (max-height:700px) and (max-width:720px){
+        .oracle-hero{ padding-top:8px; }
+        .oracle-hero-card{ padding:10px; }
+        .oracle-lunar-card{ padding:9px 10px; }
+        .oracle-lunar-reason{ display:none; }
       }
     `;
     document.head.appendChild(s);
