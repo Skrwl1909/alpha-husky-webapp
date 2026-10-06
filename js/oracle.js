@@ -134,6 +134,7 @@
     refreshBtn: null,
     closeBtn: null,
     statusDot: null,
+    lunar: null,
   };
 
   function getApiPost() {
@@ -211,6 +212,8 @@
 
       <div class="oracle-hero" id="oracleHero"></div>
 
+      <div class="oracle-lunar-slot" id="oracleLunarSlot" hidden></div>
+
       <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
 
       <div class="oracle-tabs" id="oracleTabs">
@@ -246,6 +249,7 @@
   els.closeBtn = back.querySelector("#oracleCloseBtn");
   els.statusDot = back.querySelector("#oracleStatusDot");
   els.hero = back.querySelector("#oracleHero");
+  els.lunar = back.querySelector("#oracleLunarSlot");
 
   _mounted = true;
   }
@@ -286,6 +290,8 @@
     try {
       const raw = await apiPost("/webapp/oracle/state", {});
       dbg("oracle raw", raw);
+
+      window.LunarWorld?.ingest?.(raw);
 
       const payload = normalizeOraclePayload(raw);
       _state = payload;
@@ -329,6 +335,7 @@
       factionPulse,
       hallOfFame,
       meta,
+      lunar: window.LunarWorld?.normalize?.(data.worldLunarState) || null,
     };
   }
 
@@ -353,12 +360,13 @@
 
   if (!_state) {
     renderHero(null);
+    renderLunarForecast(window.LunarWorld?.getState?.() || null);
     els.root.innerHTML = renderSkeleton();
     renderMetaStrip(null);
     return;
   }
 
-  const { liveEchoes, factionPulse, hallOfFame, meta } = _state;
+  const { liveEchoes, factionPulse, hallOfFame, meta, lunar } = _state;
 
   renderHero({
     meta,
@@ -366,6 +374,8 @@
     echoes: liveEchoes,
     hall: hallOfFame,
   });
+
+  renderLunarForecast(window.LunarWorld?.getState?.() || lunar);
 
   renderMetaStrip({
     meta,
@@ -494,6 +504,46 @@
       </div>
     </div>
   `;
+  }
+
+  function renderLunarForecast(lunar) {
+    if (!els.lunar) return;
+    if (!lunar) {
+      els.lunar.innerHTML = "";
+      els.lunar.hidden = true;
+      els.back?.removeAttribute?.("data-lunar-phase");
+      return;
+    }
+
+    const visuals = window.LunarWorld?.getVisuals?.(lunar);
+    const focus = lunar.primaryFocus;
+    const metric = window.LunarWorld?.focusMetricLabel?.(focus);
+    const focusState = [focus?.state, metric].filter(Boolean).join(" · ");
+    const secondary = Array.isArray(lunar.secondarySignals) ? lunar.secondarySignals.slice(0, 2) : [];
+    const preview = lunar.visualOnly ? " · VISUAL ONLY" : "";
+
+    els.lunar.hidden = false;
+    els.back?.setAttribute?.("data-lunar-phase", lunar.phase || "dormant");
+    els.lunar.innerHTML = `
+      <section class="oracle-lunar-card" aria-label="Lunar forecast">
+        <div class="oracle-lunar-moon-wrap" aria-hidden="true">
+          <img class="oracle-lunar-moon" src="${escapeHtml(visuals?.moon || "")}" alt="" />
+        </div>
+        <div class="oracle-lunar-copy">
+          <div class="oracle-lunar-kicker">LUNAR FORECAST${escapeHtml(preview)}</div>
+          <div class="oracle-lunar-phase">${escapeHtml(lunar.phaseLabel || lunar.phase || "Lunar state")}</div>
+          <div class="oracle-lunar-next">${escapeHtml(window.LunarWorld?.countdownLabel?.(lunar) || "")}</div>
+          ${focus ? `<div class="oracle-lunar-focus"><span>PRIMARY</span><strong>${escapeHtml(focus.label)}</strong>${focusState ? `<em>${escapeHtml(focusState)}</em>` : ""}</div>` : ""}
+          ${focus?.reason ? `<div class="oracle-lunar-reason">${escapeHtml(focus.reason)}</div>` : ""}
+          ${secondary.length ? `<div class="oracle-lunar-secondary">${secondary.map((row) => `<span>${escapeHtml(row.label)}${row.state ? ` · ${escapeHtml(row.state)}` : ""}</span>`).join("")}</div>` : ""}
+        </div>
+        ${focus?.nodeId ? `<button class="oracle-lunar-cta" type="button" data-oracle-lunar-focus>${escapeHtml(focus?.cta?.label || "VIEW FOCUS")}</button>` : ""}
+      </section>
+    `;
+
+    els.lunar.querySelector?.("[data-oracle-lunar-focus]")?.addEventListener("click", () => {
+      window.LunarWorld?.openFocus?.(lunar);
+    });
   }
 
   function renderError(err) {
