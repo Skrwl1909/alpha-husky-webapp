@@ -134,6 +134,7 @@
     refreshBtn: null,
     closeBtn: null,
     statusDot: null,
+    lunar: null,
   };
 
   function getApiPost() {
@@ -211,6 +212,8 @@
 
       <div class="oracle-hero" id="oracleHero"></div>
 
+      <div class="oracle-lunar-slot" id="oracleLunarSlot" hidden></div>
+
       <div class="oracle-meta-strip" id="oracleMetaStrip"></div>
 
       <div class="oracle-tabs" id="oracleTabs">
@@ -246,6 +249,7 @@
   els.closeBtn = back.querySelector("#oracleCloseBtn");
   els.statusDot = back.querySelector("#oracleStatusDot");
   els.hero = back.querySelector("#oracleHero");
+  els.lunar = back.querySelector("#oracleLunarSlot");
 
   _mounted = true;
   }
@@ -286,6 +290,8 @@
     try {
       const raw = await apiPost("/webapp/oracle/state", {});
       dbg("oracle raw", raw);
+
+      window.LunarWorld?.ingest?.(raw);
 
       const payload = normalizeOraclePayload(raw);
       _state = payload;
@@ -329,6 +335,7 @@
       factionPulse,
       hallOfFame,
       meta,
+      lunar: window.LunarWorld?.normalize?.(data.worldLunarState) || null,
     };
   }
 
@@ -353,12 +360,13 @@
 
   if (!_state) {
     renderHero(null);
+    renderLunarForecast(window.LunarWorld?.getState?.() || null);
     els.root.innerHTML = renderSkeleton();
     renderMetaStrip(null);
     return;
   }
 
-  const { liveEchoes, factionPulse, hallOfFame, meta } = _state;
+  const { liveEchoes, factionPulse, hallOfFame, meta, lunar } = _state;
 
   renderHero({
     meta,
@@ -366,6 +374,8 @@
     echoes: liveEchoes,
     hall: hallOfFame,
   });
+
+  renderLunarForecast(window.LunarWorld?.getState?.() || lunar);
 
   renderMetaStrip({
     meta,
