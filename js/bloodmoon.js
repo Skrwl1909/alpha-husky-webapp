@@ -183,6 +183,14 @@
     return BLOODMOON_V2_ASSETS.moons[state] ? state : "dormant";
   }
 
+  function sharedLunarMoonAsset(towerState) {
+    return window.LunarWorld?.ASSETS?.[towerState] || BLOODMOON_V2_ASSETS.moons[towerState] || BLOODMOON_V2_ASSETS.moons.dormant;
+  }
+
+  function sharedLunarOverlayAsset(key) {
+    return window.LunarWorld?.ASSETS?.[key] || "";
+  }
+
   function lunarFoundation(raw) {
     const source = raw && typeof raw === "object" ? raw : {};
     const towerState = normalizeLunarState(source.towerState);
@@ -2919,13 +2927,17 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
       <div class="bm-v2-visual" aria-hidden="true">
         <img class="bm-v2-arena" src="${BLOODMOON_V2_ASSETS.arena}" alt="" fetchpriority="high" decoding="async" />
         <img class="bm-v2-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" loading="eager" decoding="async" />
+        ${sharedLunarOverlayAsset("haze") ? `<img class="bm-v2-world-haze" src="${sharedLunarOverlayAsset("haze")}" alt="" loading="eager" decoding="async" />` : ""}
+        ${sharedLunarOverlayAsset("rimGlow") ? `<img class="bm-v2-world-rim" src="${sharedLunarOverlayAsset("rimGlow")}" alt="" loading="eager" decoding="async" />` : ""}
+        ${sharedLunarOverlayAsset("interference") ? `<img class="bm-v2-world-interference" src="${sharedLunarOverlayAsset("interference")}" alt="" loading="eager" decoding="async" />` : ""}
+        ${sharedLunarOverlayAsset("aftermathDust") ? `<img class="bm-v2-world-dust" src="${sharedLunarOverlayAsset("aftermathDust")}" alt="" loading="eager" decoding="async" />` : ""}
       </div>
       <div class="bm-v2-moon-visual" aria-hidden="true">
-        <img class="bm-v2-moon" src="${BLOODMOON_V2_ASSETS.moons[lunar.towerState]}" alt="" fetchpriority="high" decoding="async" />
+        <img class="bm-v2-moon" src="${sharedLunarMoonAsset(lunar.towerState)}" alt="" fetchpriority="high" decoding="async" />
       </div>
       <div class="bm-v2-overlay">
         <div class="bm-v2-topline">
-          <div class="bm-v2-kicker">Weekly faction raid</div>
+          <div class="bm-v2-kicker">WORLD CLOCK · Weekly faction raid</div>
           <div class="bm-v2-state-chip">${esc(lunar.moonPhaseName)} · ${esc(lunar.eventWindowStatus)}</div>
         </div>
         <h2 class="bm-v2-title">Blood Moon Tower</h2>
@@ -3161,6 +3173,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   async function open() {
     ensureMounted();
     _lastClaimFeedback = null;
+    void window.LunarWorld?.refresh?.({ force: false });
     show();
 
     const navMeta = {
