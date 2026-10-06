@@ -827,10 +827,14 @@ function _contribSummaryLegacy(c) {
     if (rim && visuals?.rimGlow) rim.src = visuals.rimGlow;
 
     const signal = _root?.querySelector?.(".hq-lunar-signal");
+    const markup = _renderHQLunarSignal(lunar);
     if (signal) {
       const wrap = document.createElement("div");
-      wrap.innerHTML = _renderHQLunarSignal(lunar);
+      wrap.innerHTML = markup;
       signal.replaceWith(wrap.firstElementChild);
+    } else if (markup) {
+      const anchor = _root?.querySelector?.(".hq-entry-v2-copy");
+      if (anchor) anchor.insertAdjacentHTML("afterend", markup);
     }
   }
 
