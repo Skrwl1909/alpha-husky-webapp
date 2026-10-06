@@ -238,6 +238,7 @@
         </div>
   
         <div class="oracle-body" id="oracleBody">
+          <div class="oracle-content-kicker" aria-hidden="true">SECTION FEED</div>
           <div class="oracle-root" id="oracleRoot"></div>
         </div>
       </div>
@@ -279,19 +280,24 @@
       if (!TAB_IDS.includes(tab)) return;
       _activeTab = tab;
       render();
-      requestAnimationFrame(() => scrollActiveContentIntoView({ smooth: true }));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => scrollActiveContentIntoView({ smooth: true }));
+      });
     });
   }
 
   function scrollActiveContentIntoView({ smooth = false } = {}) {
     if (!els.scroller || !els.body || !els.tabs) return;
-    const target = Math.max(0, els.body.offsetTop - els.tabs.offsetHeight - 6);
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const behavior = smooth && !reduced ? "smooth" : "auto";
+    const scrollerRect = els.scroller.getBoundingClientRect();
+    const bodyRect = els.body.getBoundingClientRect();
+    const target = Math.max(
+      0,
+      els.scroller.scrollTop + (bodyRect.top - scrollerRect.top) - els.tabs.offsetHeight - 8
+    );
     try {
-      els.scroller.scrollTo({
-        top: target,
-        behavior: smooth && !reduced ? "smooth" : "auto",
-      });
+      els.scroller.scrollTo({ top: target, behavior });
     } catch (_) {
       els.scroller.scrollTop = target;
     }
@@ -1576,6 +1582,16 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
         padding:16px 18px calc(28px + env(safe-area-inset-bottom));
         overflow:visible;
       }
+      .oracle-content-kicker{
+        display:none;
+        margin:0 0 8px;
+        color:rgba(157,168,215,.48);
+        font-size:8px;
+        font-weight:900;
+        letter-spacing:.14em;
+        text-transform:uppercase;
+      }
+
 
       .oracle-root{
         display:block;
@@ -2966,6 +2982,7 @@ function renderFactionBadge(faction, { big = false, code = "" } = {}) {
           overflow:visible !important;
           padding:12px 14px calc(30px + env(safe-area-inset-bottom));
         }
+        .oracle-content-kicker{ display:block; }
         .oracle-tabs{
           position:sticky;
           top:0;
