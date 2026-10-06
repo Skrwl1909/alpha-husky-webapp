@@ -73,6 +73,53 @@
 }
 #factionHQLivingP0 .lhq-title{font-size:13px;font-weight:950;letter-spacing:.11em}.lhq-creed{margin-top:3px;font-size:9px;letter-spacing:.2em;color:rgba(var(--ew-gold),.78)}
 #factionHQLivingP0 .lhq-close{pointer-events:auto;width:38px;height:38px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.34);color:#fff;font-size:18px}
+
+#factionHQLivingP0 .lhq-lunar-host{
+  position:absolute;
+  left:14px;
+  right:14px;
+  top:calc(max(14px,env(safe-area-inset-top)) + 54px);
+  z-index:25;
+  display:flex;
+  justify-content:flex-start;
+  pointer-events:none;
+}
+#factionHQLivingP0 .lhq-lunar{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+  width:min(78vw,300px);
+  padding:7px 9px;
+  border:1px solid rgba(var(--ew-gold),.20);
+  border-radius:12px;
+  background:linear-gradient(180deg,rgba(4,6,10,.66),rgba(4,6,10,.82));
+  box-shadow:0 10px 24px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.035);
+  backdrop-filter:blur(8px);
+}
+#factionHQLivingP0 .lhq-lunar.is-loading{display:block;width:auto;padding:7px 10px}
+#factionHQLivingP0 .lhq-lunar-moon{
+  width:34px;height:34px;object-fit:contain;
+  filter:drop-shadow(0 0 10px rgba(var(--ew-gold),.22));
+}
+#factionHQLivingP0 .lhq-lunar-copy{min-width:0}
+#factionHQLivingP0 .lhq-lunar-kicker{
+  display:block;font-size:6px;font-weight:950;letter-spacing:.18em;color:rgba(var(--ew-gold),.78)
+}
+#factionHQLivingP0 .lhq-lunar-copy strong{
+  display:block;margin-top:1px;font-size:10px;line-height:1.05;letter-spacing:.07em;color:#f4f7fa
+}
+#factionHQLivingP0 .lhq-lunar-copy small{
+  display:block;margin-top:2px;font-size:7px;line-height:1.1;letter-spacing:.05em;color:rgba(255,255,255,.56)
+}
+#factionHQLivingP0 .lhq-lunar-copy em{
+  display:block;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-style:normal;font-size:6px;line-height:1.1;letter-spacing:.08em;color:rgba(var(--ew-gold),.74)
+}
+#factionHQLivingP0 .lhq-lunar[data-phase="full_blood_moon"]{
+  border-color:rgba(228,91,67,.34);
+  box-shadow:0 10px 24px rgba(0,0,0,.20),0 0 20px rgba(184,54,42,.10),inset 0 1px 0 rgba(255,255,255,.035);
+}
 #factionHQLivingP0 .lhq-recognition{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none;
  background:radial-gradient(circle at center,rgba(var(--ew-gold),.10),transparent 35%);animation:lhqRecognize 1.9s ease both}
 #factionHQLivingP0 .lhq-recognition strong{display:block;font-size:22px;letter-spacing:.11em;text-shadow:0 0 22px rgba(var(--ew-gold),.42)}
@@ -753,4 +800,16 @@
   justify-content:center;
   padding:10px 18px 10px 8px;
   margin:-10px 0 -10px -8px;
+}
+
+/* P0-C acceptance follow-up: FRONT/PACK use the persistent top-right X as BACK to HOME.
+   HOME keeps the same X as the true HQ exit. Lunar World state is surfaced directly
+   in the Living HQ layer because the legacy HOME card is intentionally hidden. */
+#factionHQBack[class*="hq-living-"] #factionHQLivingP0:has(+ #factionHQRoot[data-hq-view="front"]) .lhq-lunar-host,
+#factionHQBack[class*="hq-living-"] #factionHQLivingP0:has(+ #factionHQRoot[data-hq-view="pack"]) .lhq-lunar-host{
+  display:none;
+}
+@media(max-width:420px){
+  #factionHQLivingP0 .lhq-lunar-host{left:12px;right:56px}
+  #factionHQLivingP0 .lhq-lunar{width:min(76vw,280px)}
 }

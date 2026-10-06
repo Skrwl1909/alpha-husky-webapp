@@ -2,6 +2,7 @@
 (function(global){
   "use strict";
   const ROOT_ID="factionHQLivingP0";
+  let lunarUnsubscribe=null;
   const esc=(v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const canon=(v)=>String(v||"").toLowerCase().replace(/\s+/g,"_");
   const CFG={
@@ -34,10 +35,34 @@
     ["hq-living-echo","hq-living-inner","hq-living-rogue","hq-living-burners"].forEach(x=>back?.classList.remove(x));
   }
   function remove(){
+    if(typeof lunarUnsubscribe==="function"){ try{ lunarUnsubscribe(); }catch(_){} }
+    lunarUnsubscribe=null;
     document.getElementById(ROOT_ID)?.remove();
     const back=document.getElementById("factionHQBack");
     clearFactionClasses(back);
     if(back){ delete back.dataset.hqFaction; delete back.dataset.hqLevel; }
+  }
+  function lunarState(){ return global.LunarWorld?.getState?.()||null; }
+  function lunarMarkup(state=lunarState()){
+    if(!state)return '<div class="lhq-lunar is-loading"><span class="lhq-lunar-kicker">LUNAR STATE</span><strong>SYNCING</strong></div>';
+    const visuals=global.LunarWorld?.getVisuals?.(state)||{};
+    const phase=String(state.phaseLabel||state.phase||"").toUpperCase();
+    const countdown=String(global.LunarWorld?.countdownLabel?.(state)||"");
+    const focus=String(state.primaryFocus?.label||"WORLD STATE");
+    const moon=String(visuals.moon||"");
+    return '<div class="lhq-lunar" data-phase="'+esc(state.phase||"dormant")+'">'+
+      (moon?'<img class="lhq-lunar-moon" src="'+esc(moon)+'" alt="" aria-hidden="true">':'')+
+      '<div class="lhq-lunar-copy"><span class="lhq-lunar-kicker">LUNAR STATE</span><strong>'+esc(phase||"DORMANT")+'</strong><small>'+esc(countdown)+'</small><em>FOCUS · '+esc(focus)+'</em></div></div>';
+  }
+  function bindLunar(node){
+    const host=node?.querySelector?.("[data-lhq-lunar-host]");
+    if(!host)return;
+    const paint=(state)=>{ if(!host.isConnected)return; host.innerHTML=lunarMarkup(state); };
+    paint(lunarState());
+    if(typeof global.LunarWorld?.subscribe==="function"){
+      lunarUnsubscribe=global.LunarWorld.subscribe((state)=>paint(state),{emitCurrent:true});
+    }
+    try{ void global.LunarWorld?.refresh?.({force:false}); }catch(_){}
   }
   function recognitionSeen(key){try{return localStorage.getItem(key)==="1"}catch(_){return false}}
   function markRecognitionSeen(key){try{localStorage.setItem(key,"1")}catch(_){}}
@@ -156,8 +181,9 @@
       <div class="lhq-scan"></div>
       <div class="lhq-top">
         <div class="lhq-title-zone"><div class="lhq-title">${cfg.name} · HQ LV ${esc(level)}${forcedPreview?" · PREVIEW":""}</div><div class="lhq-creed">${cfg.creed}</div></div>
-        <button class="lhq-close" type="button" aria-label="Close HQ">×</button>
+        <button class="lhq-close" type="button" aria-label="Back or close HQ">×</button>
       </div>
+      <div class="lhq-lunar-host" data-lhq-lunar-host>${lunarMarkup()}</div>
       <div class="lhq-core"><img class="lhq-sigil" src="${cfg.icon}" alt="" aria-hidden="true"></div>
       <div class="lhq-conduit c1"></div><div class="lhq-conduit c2"></div><div class="lhq-conduit c3"></div>
       <button class="lhq-front" type="button" aria-label="Open Current Front">
@@ -196,7 +222,13 @@
       ${first?`<div class="lhq-recognition"><div><small>SIGNAL RECOGNIZED</small><strong>WELCOME HOME, ${esc(name)}</strong></div></div>`:""}
     `;
     modal.insertBefore(node,document.getElementById("factionHQRoot")||modal.firstChild);
-    node.querySelector(".lhq-close")?.addEventListener("click",()=>global.FactionHQ?.close?.());
+    node.querySelector(".lhq-close")?.addEventListener("click",()=>{
+      const root=document.getElementById("factionHQRoot");
+      const view=String(root?.dataset?.hqView||"hq");
+      if(view!=="hq") global.FactionHQ?._switchView?.("hq");
+      else global.FactionHQ?.close?.();
+    });
+    bindLunar(node);
 
     // Hidden real-device dev trigger: five quick taps in the enlarged HQ title zone
     // reveal/hide the existing visual-only LV1/LV3/LV4/LV6/LIVE selector.
