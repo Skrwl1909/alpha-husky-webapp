@@ -1776,10 +1776,47 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-command{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.bm-v3-command .bm-cta{grid-column:1/-1;padding:15px 16px;font-size:13px;border-radius:14px}.bm-v3-mini{padding:8px 9px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(5,5,8,.7);backdrop-filter:blur(8px);text-align:left}.bm-v3-mini span{display:block;font-size:7px;letter-spacing:.12em;color:rgba(255,255,255,.5);text-transform:uppercase}.bm-v3-mini strong{display:block;margin-top:2px;font-size:11px}
 .bm-v3-act{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 auto 7px;font-size:8px;font-weight:950;letter-spacing:.18em;color:rgba(255,255,255,.62);text-transform:uppercase}.bm-v3-act strong{color:#ff9baa}.bm-v3-act.is-final strong{color:#ffe0e5;text-shadow:0 0 16px rgba(255,50,80,.8)}
 .bm-v3-pack-echo{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;margin:8px auto 0;max-width:360px;padding:7px 9px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(3,3,6,.62);backdrop-filter:blur(8px);text-align:left}.bm-v3-pack-echo b{font-size:7px;letter-spacing:.14em;color:#ff9baa}.bm-v3-pack-echo span{font-size:9px;line-height:1.25;color:rgba(255,255,255,.72)}
-.bm-v3-result{margin:8px auto 0;max-width:380px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.09);background:rgba(5,4,7,.70);font-size:9px;color:rgba(255,255,255,.72)}.bm-v3-result strong{color:#fff}.bm-v3-result.is-clear{border-color:rgba(255,72,98,.32);box-shadow:0 0 20px rgba(189,28,52,.10)}
+.bm-v3-result{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px auto 0;max-width:380px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.09);background:rgba(5,4,7,.70);font-size:9px;color:rgba(255,255,255,.72)}.bm-v3-result strong{color:#fff}.bm-v3-result.is-clear{border-color:rgba(255,72,98,.32);box-shadow:0 0 20px rgba(189,28,52,.10)}.bm-v3-replay{border:1px solid rgba(255,255,255,.16);border-radius:8px;background:rgba(255,255,255,.07);color:#fff;padding:5px 8px;font:inherit;font-size:8px;font-weight:900;letter-spacing:.08em}
 .bm-v3-secondary{display:grid;gap:10px}.bm-v3-panel{display:none}.bm-v3-panel.is-active{display:grid;gap:10px}
 .bm-v3-dock{position:sticky;z-index:20;bottom:max(6px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:rgba(7,6,9,.92);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.45)}
 .bm-v3-tab{min-width:0;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);padding:9px 3px;font:inherit;font-size:8px;font-weight:900;letter-spacing:.08em}.bm-v3-tab.is-active{color:#fff;background:rgba(170,25,49,.22);box-shadow:inset 0 0 0 1px rgba(255,78,104,.28)}
+
+/* Blood Moon V3 final immersive correction */
+#bloodMoonModal{width:min(100%,880px);height:min(98vh,1040px);background:#080609;border-color:rgba(126,18,35,.72)}
+#bloodMoonHead{padding:10px 14px 8px;background:linear-gradient(180deg,rgba(50,7,14,.72),rgba(8,6,9,.30));border-bottom-color:rgba(255,255,255,.05)}
+#bloodMoonTitle{font-size:17px;letter-spacing:1.5px}
+#bloodMoonTitle::after{display:none}
+#bloodMoonSub{display:none}
+#bloodMoonBody{padding:8px;overflow-y:auto}
+.bm-v3-shell{gap:7px;padding-bottom:0}
+.bm-v3-arena{min-height:clamp(560px,79vh,780px);border-radius:18px;border-color:rgba(255,80,105,.14);box-shadow:0 28px 70px rgba(0,0,0,.60),0 0 80px rgba(124,8,28,.12)}
+.bm-v3-arena-bg{opacity:.86;filter:contrast(1.08) saturate(.92)}
+.bm-v3-atmosphere{opacity:.42}
+.bm-v3-moon{width:min(52vw,245px);right:-18px;top:8px;opacity:.88;filter:drop-shadow(0 0 52px rgba(255,45,76,.36))}
+.bm-v3-enemy{width:min(96%,560px);max-height:72%;bottom:82px;filter:drop-shadow(0 28px 38px rgba(0,0,0,.82))}
+.bm-v3-vignette{background:linear-gradient(180deg,rgba(0,0,0,.02) 18%,rgba(4,2,4,.10) 45%,rgba(5,2,4,.94) 100%),radial-gradient(circle at 50% 42%,transparent 34%,rgba(0,0,0,.44) 100%)}
+.bm-v3-hud{min-height:clamp(560px,79vh,780px);padding:12px 13px 13px}
+.bm-v3-kicker{font-size:8px;letter-spacing:.2em;color:rgba(255,186,198,.74)}
+.bm-v3-phase{font-size:8px;padding:5px 7px;border-color:rgba(255,255,255,.09);background:rgba(5,4,7,.38)}
+.bm-v3-encounter{padding-top:220px}
+.bm-v3-act{margin-bottom:4px;font-size:7px;opacity:.88}
+.bm-v3-enemy-name{font-size:clamp(30px,7vw,46px);letter-spacing:.055em;line-height:.95;text-shadow:0 5px 30px #000,0 0 30px rgba(139,18,39,.22)}
+.bm-v3-wave-label{font-size:8px;margin-top:6px;color:rgba(255,166,181,.86)}
+.bm-v3-hp{margin-top:8px;max-width:520px}
+.bm-v3-hp-line{font-size:8px;margin-bottom:4px}
+.bm-v3-hp-track{height:8px;background:rgba(255,255,255,.07)}
+.bm-v3-pack-echo{max-width:440px;margin-top:7px;padding:6px 8px;background:rgba(3,3,6,.45)}
+.bm-v3-result{max-width:440px;margin-top:6px;padding:6px 9px;background:rgba(5,4,7,.48)}
+.bm-v3-attempt-strip{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:end;margin:8px auto 0;max-width:520px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(4,3,6,.54);backdrop-filter:blur(8px);text-align:left}
+.bm-v3-attempt-strip span{display:block;font-size:7px;letter-spacing:.12em;color:rgba(255,255,255,.48)}
+.bm-v3-attempt-strip strong{display:block;margin-top:2px;font-size:10px;color:#fff}
+.bm-v3-attempt-cooldown{text-align:right}
+.bm-v3-attempt-reason{grid-column:1/-1;font-size:8px;color:rgba(255,214,220,.72)}
+.bm-v3-command{display:block;margin-top:7px}
+.bm-v3-command .bm-cta{padding:14px 16px;min-height:48px;border-radius:13px;font-size:12px;letter-spacing:.14em;box-shadow:0 0 24px rgba(255,45,61,.32),0 12px 28px rgba(92,7,21,.48)}
+.bm-v3-dock{position:sticky;bottom:max(4px,env(safe-area-inset-bottom));border-radius:13px;padding:4px;background:rgba(6,5,8,.94)}
+.bm-v3-tab{padding:10px 4px;font-size:8px;cursor:pointer}
+
 @media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:58%;bottom:92px}}
 @media (prefers-reduced-motion:reduce){.bm-v3-moon,.bm-v3-enemy{transition:none!important}.bm-v3-dock{backdrop-filter:none}}
 html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .bm-v3-pack-echo,body.ah-perf-lite .bm-v3-pack-echo{backdrop-filter:none}
@@ -2047,6 +2084,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
 
       if (runId !== _battlePixiRunId) return false;
       liveStage.classList.add("is-pixi-active");
+      try { liveStage.closest?.(".bm-v3-arena")?.classList?.add?.("is-cinematic-active"); } catch (_) {}
       return true;
     } catch (err) {
       dbg("battle pixi fallback", err);
@@ -2482,9 +2520,17 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       } catch (_) {}
     }
 
+    const playedWave = Math.max(1, Number(battle?.wave || battle?.enemy?.wave || 1));
+    const liveWave = Math.max(1, Number(_state?.myFactionRun?.currentWave || _state?.currentWave || 1));
+    const revealAdvancedWave = !!replay.waveCleared && liveWave !== playedWave;
+
     _battleReplayTimer = window.setTimeout(() => {
       stage.classList.remove("is-replaying");
       _battleReplayTimer = 0;
+      if (revealAdvancedWave && _state && rootEl()?.classList?.contains("show")) {
+        stopBattlePlayback(true, true);
+        render(_state);
+      }
     }, battleReplayDurationMs(battle));
 
     void playLastBattlePixi(battle, {
@@ -2829,7 +2875,12 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     document.querySelectorAll("[data-bm-replay]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (_busy) return;
-        playLastBattle({ haptic: true });
+        const battle = getLastBattle();
+        if (!battle) return;
+        render(_state, { preferredBattle: battle });
+        const kick = () => playLastBattle({ battle, haptic: true });
+        if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
+        else kick();
       });
     });
 
@@ -2894,7 +2945,30 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       btn.addEventListener("click", () => { try { window.openBadgeWallModal?.(); } catch (_) {} });
     });
 
+    document.querySelectorAll("[data-bm-v3-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (_busy) return;
+        const next = String(btn.getAttribute("data-bm-v3-tab") || "raid").trim().toLowerCase();
+        if (!["raid", "race", "rewards", "records"].includes(next) || next === _arenaView) return;
+        _arenaView = next;
+        render(_state);
+        try { bodyEl()?.scrollTo?.({ top: 0, behavior: "smooth" }); } catch (_) {}
+      });
+    });
+
     bindFeedToggle();
+  }
+
+  function renderArenaV3Attempt(prepared, cta, attemptsLeft, dailyCap, cooldownLeftSec) {
+    const source = prepared && typeof prepared === "object" ? prepared : {};
+    const committed = String(source.status || "").toUpperCase() === "COMMITTED";
+    const status = committed ? "LAST STRIKE RESOLVED" : (source.ready ? "READY TO STRIKE" : "TOWER LOCKED");
+    const reason = String(source.reason || cta?.reason || "").trim();
+    return `<div class="bm-v3-attempt-strip" data-reason-code="${esc(source.reasonCode || cta?.reasonCode || "READY")}">
+      <div class="bm-v3-attempt-state"><span>${esc(status)}</span><strong>${fmtNum(attemptsLeft)} / ${fmtNum(dailyCap)} attempts</strong></div>
+      <div class="bm-v3-attempt-cooldown"><span>COOLDOWN</span><strong>${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY"}</strong></div>
+      ${reason && !source.ready && !committed ? `<div class="bm-v3-attempt-reason">${esc(reason)}</div>` : ""}
+    </div>`;
   }
 
   function renderArenaV3Dock() {
@@ -2906,7 +2980,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     const { sortedFactions, dominancePct, my, myRewardPreview } = ctx;
     if (view === "race") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">FACTION PROGRESS · LIVE RACE</div>${renderRace(sortedFactions, dominancePct)}</div><div class="bm-card"><div class="bm-label">FACTION STANDINGS</div>${renderFactionStandings(_state.factionStandings)}</div></section>`;
     if (view === "rewards") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">BLOOD-MOON WAR REWARDS</div>${renderClaimFeedback(_lastClaimFeedback)}${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}</div>${renderShopCta(shopFoundation(_state.shop))}</section>`;
-    if (view === "records") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">MY RAID RECORD</div><div class="bm-mini-grid"><div class="bm-stat"><div class="bm-label">Total Damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div><div class="bm-stat"><div class="bm-label">Best Hit</div><div class="bm-value">${fmtNum(my.bestHit)}</div></div></div>${myRewardPreview}</div><div class="bm-card"><div class="bm-label">TOP SLAUGHTERERS</div>${renderTopPlayers(_state.topPlayers)}</div><div class="bm-card"><div class="bm-label">LIVE CARNAGE FEED</div><div id="${FEED_MOUNT_ID}">${renderFeed(_state.recentFeed)}</div></div></section>`;
+    if (view === "records") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">MY RAID RECORD</div><div class="bm-mini-grid"><div class="bm-stat"><div class="bm-label">Total Damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div><div class="bm-stat"><div class="bm-label">Best Hit</div><div class="bm-value">${fmtNum(my.bestHit)}</div></div></div>${myRewardPreview}</div><div class="bm-card"><div class="bm-label">TOP SLAUGHTERERS</div>${renderTopPlayers(_state.topPlayers)}</div><div class="bm-card"><div class="bm-label">RECENT PACK ACTIVITY</div><div id="${FEED_MOUNT_ID}">${renderFeed(_state.recentFeed)}</div></div></section>`;
     return "";
   }
 
@@ -2967,8 +3041,21 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     return;
   }
 
-  const v3Enemy = bloodMoonV3Enemy(currentWave);
-  const v3Act = bloodMoonV3Act(currentWave);
+  const preferredBattle = opts?.preferredBattle && typeof opts.preferredBattle === "object" ? opts.preferredBattle : null;
+  const preferredWave = Math.max(0, Number(preferredBattle?.wave || preferredBattle?.enemy?.wave || 0));
+  const resolvingPriorWave = !!(preferredBattle && preferredWave > 0 && preferredWave !== currentWave);
+  const displayWave = resolvingPriorWave ? preferredWave : currentWave;
+  const displayHp = resolvingPriorWave
+    ? Math.max(0, Number(preferredBattle?.enemy?.hpAfter ?? preferredBattle?.right?.hpEnd ?? 0))
+    : waveHp;
+  const displayHpMaxRaw = resolvingPriorWave
+    ? Number(preferredBattle?.enemy?.hpMax ?? preferredBattle?.right?.hpMax ?? waveHpMax)
+    : waveHpMax;
+  const displayHpMax = displayHpMaxRaw > 0 ? displayHpMaxRaw : 1;
+  const displayRemainingPct = pct((displayHp / displayHpMax) * 100);
+
+  const v3Enemy = bloodMoonV3Enemy(displayWave);
+  const v3Act = bloodMoonV3Act(displayWave);
   const packEcho = latestPackEcho(_state.recentFeed);
   const v3Replay = lastBattle ? battleReplayInfo(lastBattle) : null;
   const v3Damage = Math.max(0, Number(lastBattle?.attack?.damage || 0));
@@ -2992,16 +3079,14 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
             <div class="bm-v3-encounter">
               <div class="bm-v3-act ${esc(v3Act.className)}"><span>${esc(v3Act.label)}</span><strong>${esc(v3Act.title)}</strong></div>
               <div class="bm-v3-enemy-name">${esc(v3Enemy.name)}</div>
-              <div class="bm-v3-wave-label">Tower Wave ${fmtNum(currentWave)} / ${fmtNum(maxWave)}</div>
-              <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${waveRemainingPct}%"></div></div></div>
+              <div class="bm-v3-wave-label">Tower Wave ${fmtNum(displayWave)} / ${fmtNum(maxWave)}</div>
+              <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(displayHp)} / ${fmtNum(displayHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${displayRemainingPct}%"></div></div></div>
               ${packEcho ? `<div class="bm-v3-pack-echo"><b>RECENT PACK ECHO</b><span>${esc(packEcho.text)}</span></div>` : ""}
-              ${v3Replay ? `<div class="bm-v3-result ${v3Replay.waveCleared ? "is-clear" : ""}"><strong>${esc(v3Replay.outcomeLabel)}</strong> · ${fmtNum(v3Damage)} damage · ${fmtNum(v3Replay.enemy.hpEnd)} / ${fmtNum(v3Replay.enemy.hpMax)} HP remain</div>` : ""}
-              ${renderPreparedAttempt(preparedAttempt, cta)}
+              ${v3Replay ? `<div class="bm-v3-result ${v3Replay.waveCleared ? "is-clear" : ""}"><span><strong>${esc(v3Replay.outcomeLabel)}</strong> · ${fmtNum(v3Damage)} damage · ${fmtNum(v3Replay.enemy.hpEnd)} / ${fmtNum(v3Replay.enemy.hpMax)} HP remain</span><button class="bm-v3-replay" data-bm-replay type="button">REPLAY</button></div>` : ""}
               ${renderInlineFeedback()}
+              ${resolvingPriorWave ? "" : renderArenaV3Attempt(preparedAttempt, cta, attemptsLeft, my.dailyCap, cooldownLeftSec)}
               <div class="bm-v3-command">
-                <div class="bm-v3-mini"><span>Attempts</span><strong>${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</strong></div>
-                <div class="bm-v3-mini"><span>Cooldown</span><strong>${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY"}</strong></div>
-                <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled ? "" : "disabled"}>${esc(cta.label || "STRIKE THE TOWER")}</button>
+                <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled && !resolvingPriorWave ? "" : "disabled"}>${esc(resolvingPriorWave ? "RESOLVING WAVE" : (cta.label || "STRIKE THE TOWER"))}</button>
               </div>
             </div>
           </div>
@@ -3016,9 +3101,14 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
    startLunarCountdown(lunar);
    scheduleLunarTransitionRefresh(lunar);
   if (lastBattle) {
-    const kick = () => playLastBattlePixi(lastBattle, { animate: false });
-    if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
-    else void kick();
+    const replayInfo = battleReplayInfo(lastBattle);
+    const lastBattleWave = Math.max(1, Number(lastBattle?.wave || lastBattle?.enemy?.wave || 1));
+    const shouldPrimeArena = _arenaView === "raid" && !resolvingPriorWave && !replayInfo.waveCleared && lastBattleWave === currentWave;
+    if (shouldPrimeArena) {
+      const kick = () => playLastBattlePixi(lastBattle, { animate: false });
+      if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
+      else void kick();
+    }
   }
   }
 
@@ -3161,6 +3251,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
 
   async function open() {
     ensureMounted();
+    _arenaView = "raid";
     _lastClaimFeedback = null;
     void window.LunarWorld?.refresh?.({ force: false });
     show();

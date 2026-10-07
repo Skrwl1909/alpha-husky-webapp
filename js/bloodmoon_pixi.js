@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-cinematic-raid-2026-10-07";
+  const VER = "bloodmoon_pixi.js v3-final-audit-2026-10-07";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -361,23 +361,57 @@
 
   function normalizedBattleTurns(battle) {
     const raw = Array.isArray(battle?.turns) ? battle.turns : (Array.isArray(battle?.events) ? battle.events : []);
+    const leftHpStart = Math.max(0, num(battle?.left?.hpStart ?? battle?.player?.hpStart ?? battle?.player?.hpMax, 0));
+    const rightHpStart = Math.max(0, num(battle?.right?.hpStart ?? battle?.enemy?.hpBefore ?? battle?.enemy?.hpMax, 0));
+    let leftHp = leftHpStart;
+    let rightHp = rightHpStart;
+
     if (raw.length) {
       return raw.filter(Boolean).map((row, idx) => {
-        let kind = String(row?.kind || row?.type || "hit").toLowerCase();
+        let kind = String(row?.kind || row?.type || "hit").trim().toLowerCase();
         if (kind === "evade") kind = "miss";
         if (!["hit","crit","block","heal","miss","tick","finish"].includes(kind)) kind = "hit";
+
+        const actor = row?.actor === "right" ? "right" : "left";
+        const target = row?.target === "left" ? "left" : "right";
+        const value = Math.max(0, num(row?.value ?? row?.amount ?? row?.damage ?? 0, 0));
+
+        const leftRaw = row?.leftHpAfter ?? row?.left_hp_after;
+        const rightRaw = row?.rightHpAfter ?? row?.right_hp_after;
+        const targetRaw = row?.targetHpAfter ?? row?.target_hp_after;
+        const selfRaw = row?.selfHpAfter ?? row?.self_hp_after;
+
+        let nextLeft = Number.isFinite(Number(leftRaw)) ? Math.max(0, Number(leftRaw)) : null;
+        let nextRight = Number.isFinite(Number(rightRaw)) ? Math.max(0, Number(rightRaw)) : null;
+
+        if (Number.isFinite(Number(targetRaw))) {
+          if (target === "left" && nextLeft == null) nextLeft = Math.max(0, Number(targetRaw));
+          if (target === "right" && nextRight == null) nextRight = Math.max(0, Number(targetRaw));
+        }
+        if (Number.isFinite(Number(selfRaw))) {
+          if (actor === "left" && nextLeft == null) nextLeft = Math.max(0, Number(selfRaw));
+          if (actor === "right" && nextRight == null) nextRight = Math.max(0, Number(selfRaw));
+        }
+
+        if (nextLeft != null) leftHp = nextLeft;
+        if (nextRight != null) rightHp = nextRight;
+
+        const defeat = !!row?.defeat || (target === "right" && nextRight != null && nextRight <= 0) || (target === "left" && nextLeft != null && nextLeft <= 0);
         return {
-          turn: Math.max(1, num(row?.turn || row?.t, idx + 1)),
-          actor: row?.actor === "right" ? "right" : "left",
-          target: row?.target === "left" ? "left" : "right",
+          turn: Math.max(1, num(row?.turn ?? row?.t ?? (idx + 1), idx + 1)),
+          actor,
+          target,
           kind,
-          value: Math.max(0, num(row?.value || row?.amount || row?.damage, 0)),
-          defeat: !!row?.defeat,
-          leftHpAfter: Number.isFinite(Number(row?.leftHpAfter ?? row?.left_hp_after)) ? Math.max(0, Number(row?.leftHpAfter ?? row?.left_hp_after)) : null,
-          rightHpAfter: Number.isFinite(Number(row?.rightHpAfter ?? row?.right_hp_after)) ? Math.max(0, Number(row?.rightHpAfter ?? row?.right_hp_after)) : null,
+          value,
+          defeat,
+          leftHpAfter: nextLeft,
+          rightHpAfter: nextRight,
+          leftHpKnown: nextLeft != null,
+          rightHpKnown: nextRight != null,
         };
       });
     }
+
     return [{
       turn: 1,
       actor: "left",
@@ -387,6 +421,8 @@
       defeat: Math.max(0, num(battle?.enemy?.hpAfter, 1)) <= 0,
       leftHpAfter: null,
       rightHpAfter: Math.max(0, num(battle?.enemy?.hpAfter, 0)),
+      leftHpKnown: false,
+      rightHpKnown: Number.isFinite(Number(battle?.enemy?.hpAfter)),
     }];
   }
 
@@ -416,7 +452,7 @@
       !!global.document?.body?.classList?.contains("ah-perf-lite") ||
       !!global.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
     const baseTurn = perfLite ? 0.56 : 0.70;
-    const total = Math.min(perfLite ? 3.1 : 4.8, Math.max(2.35, 0.62 + turns.length * baseTurn + (hasCrit ? 0.18 : 0) + (waveBreak ? 0.45 : 0)));
+    const total = Math.min(perfLite ? 3.1 : 4.8, Math.max(perfLite ? 2.25 : 2.55, 0.62 + turns.length * baseTurn + (hasCrit ? 0.18 : 0) + (waveBreak ? 0.45 : 0)));
     return {
       battleId,
       seed,
@@ -498,6 +534,9 @@
     _scene.critText.alpha = 0;
     _scene.hapticImpactDone = false;
     _scene.hapticFinishDone = false;
+    _scene.plan = null;
+    _scene.enemyPose = "idle";
+    if (_scene.enemyTextures?.idle) _scene.enemySprite.texture = _scene.enemyTextures.idle;
     _scene.enemy.alpha = 1;
     _scene.enemy.rotation = 0;
     if (_app?.stage) { _app.stage.x = 0; _app.stage.y = 0; }
@@ -519,7 +558,7 @@
 
     const view = viewOf(_app);
     try { view?.remove?.(); } catch (_) {}
-    try { _app?.destroy?.(true, { children: true, texture: true, baseTexture: true }); } catch (_) {}
+    try { _app?.destroy?.(true, { children: true, texture: false, baseTexture: false }); } catch (_) {}
 
     _host = null;
     _app = null;
@@ -799,9 +838,18 @@
     _scene.waveBadge.x = _scene.layout.enemyX;
     _scene.waveBadge.y = Math.round(h * 0.17);
 
-    _scene.enemyLabel.text = String(_scene.battle?.enemy?.name || "Blood-Moon Wave");
+    _scene.enemyLabel.text = String(_scene.plan?.enemyDef?.displayName || _scene.battle?.enemy?.name || "Blood-Moon Wave");
     _scene.enemyLabel.x = _scene.layout.enemyX;
     _scene.enemyLabel.y = Math.round(h * 0.24);
+
+    // Arena V3 owns wave/name/HP presentation. Keep legacy Pixi HUD hidden
+    // so the cinematic layer does not duplicate the authoritative Arena HUD.
+    _scene.hpBack.alpha = 0;
+    _scene.hpGhost.alpha = 0;
+    _scene.hpFill.alpha = 0;
+    _scene.hpText.alpha = 0;
+    _scene.waveBadge.alpha = 0;
+    _scene.enemyLabel.alpha = 0;
   }
 
 
@@ -857,15 +905,26 @@
       if (family === "phantom_feint") {
         playerLunge = Math.sin(strike * Math.PI) * 62 * amp;
         playerLift = -Math.sin(strike * Math.PI) * 12;
+        playerTilt = -Math.sin(strike * Math.PI) * 0.05 * amp;
       } else if (family === "lunar_crash") {
         playerLunge = Math.sin(strike * Math.PI) * 44 * amp;
         playerLift = -Math.sin(strike * Math.PI) * 24;
+        playerTilt = -Math.sin(strike * Math.PI) * 0.03 * amp;
       } else if (family === "double_impact") {
         playerLunge = Math.sin(strike * Math.PI) * 52 * amp + (impact > 0.48 && impact < 0.82 ? 10 : 0);
+        playerTilt = -Math.sin(strike * Math.PI) * 0.08 * amp;
+      } else if (family === "crescent_rush") {
+        playerLunge = Math.sin(strike * Math.PI) * 58 * amp;
+        playerLift = -Math.sin(strike * Math.PI) * 7;
+        playerTilt = -Math.sin(strike * Math.PI) * 0.13 * amp;
+      } else if (family === "pursuit_cut") {
+        playerLunge = Math.sin(strike * Math.PI) * 48 * amp + (strike > 0.62 ? 16 * (1 - strike) : 0);
+        playerLift = -Math.sin(strike * Math.PI) * 4;
+        playerTilt = Math.sin(strike * Math.PI) * 0.07 * amp;
       } else {
-        playerLunge = Math.sin(strike * Math.PI) * 50 * amp;
+        playerLunge = Math.sin(strike * Math.PI) * 46 * amp;
+        playerTilt = -Math.sin(strike * Math.PI) * 0.035 * amp;
       }
-      playerTilt = -Math.sin(strike * Math.PI) * 0.08 * amp;
 
       const recoilWindow = Math.sin(clamp(impact, 0, 1) * Math.PI);
       const personalityMass = plan.personality === "heavy_brutal" ? 0.58 : plan.personality === "calm_precise" ? 0.42 : 1;
@@ -912,13 +971,23 @@
 
       hpTween = easeInOutQuad(clamp((t - impactAt) / Math.max(0.66, plan.total * 0.36), 0, 1));
       pose = enemyPoseForTime(plan, t);
-      if (currentTurn?.actor === "right" && currentTurn.kind !== "miss" && t < plan.settleAt) pose = "attack";
+      if (currentTurn?.actor === "right" && ["hit","crit","tick","finish"].includes(currentTurn.kind) && t < plan.settleAt) pose = "attack";
       if (currentTurn?.target === "right" && ["hit","crit","finish"].includes(currentTurn.kind) && t < plan.settleAt) pose = currentTurn.defeat ? "defeat" : "hit";
 
       if ([4,7,10].includes(plan.wave) && t < 0.42) {
         const intro = easeOutCubic(clamp(t / 0.42, 0, 1));
-        _scene.enemy.alpha = 0.18 + intro * 0.82;
-        _scene.enemy.scale?.set?.(0.94 + intro * 0.06);
+        if (plan.wave === 4) {
+          _scene.enemy.alpha = 0.10 + intro * 0.90;
+          enemyDrift += (1 - intro) * 12;
+        } else if (plan.wave === 7) {
+          _scene.enemy.alpha = 0.30 + intro * 0.70;
+          _scene.enemy.scale?.set?.(1.08 - intro * 0.08);
+          enemyShakeY += (1 - intro) * -10;
+        } else {
+          const phaseFlicker = plan.perfLite ? 1 : (0.72 + Math.sin(t * 48) * 0.18);
+          _scene.enemy.alpha = clamp((0.12 + intro * 0.88) * phaseFlicker, 0.08, 1);
+          _scene.enemy.scale?.set?.(0.96 + intro * 0.04);
+        }
       }
 
       if (plan.waveBreak && t > plan.settleAt) {        _scene.enemy.alpha = 1 - settle * 0.82;
@@ -948,7 +1017,19 @@
       }
     }
 
-    _scene.hpDisplay = _scene.animating ? lerp(_scene.beforeHp, _scene.afterHp, hpTween) : _scene.afterHp;
+    if (_scene.animating && currentTurn?.rightHpKnown && Number.isFinite(Number(currentTurn.rightHpAfter))) {
+      let priorRightHp = _scene.beforeHp;
+      for (let i = currentTurnIndex - 1; i >= 0; i--) {
+        const prior = plan?.turns?.[i];
+        if (prior?.rightHpKnown && Number.isFinite(Number(prior.rightHpAfter))) {
+          priorRightHp = Number(prior.rightHpAfter);
+          break;
+        }
+      }
+      _scene.hpDisplay = lerp(priorRightHp, Number(currentTurn.rightHpAfter), easeInOutQuad(currentTurnPhase));
+    } else {
+      _scene.hpDisplay = _scene.animating ? lerp(_scene.beforeHp, _scene.afterHp, hpTween) : _scene.afterHp;
+    }
 
     _scene.player.x = _scene.layout.playerX + playerLunge;
     _scene.player.y = _scene.layout.playerY + idleP + playerLift;
@@ -985,7 +1066,14 @@
       _scene.impactSlash.beginFill(_scene.crit ? 0xffd774 : 0xff9bad, slashAlpha);
       _scene.impactSlash.drawRoundedRect(-58, -8, 116, 16, 999);
       _scene.impactSlash.endFill();
-      _scene.impactSlash.rotation = _scene.plan?.family === "lunar_crash" ? -0.75 : -0.38;
+      const slashFamily = _scene.plan?.family;
+      _scene.impactSlash.rotation =
+        slashFamily === "lunar_crash" ? -0.75 :
+        slashFamily === "crescent_rush" ? -0.56 :
+        slashFamily === "pursuit_cut" ? 0.24 :
+        slashFamily === "breach_strike" ? -0.20 :
+        slashFamily === "double_impact" ? -0.42 :
+        -0.34;
     } catch (_) {}
     _scene.impactSlash.x = _scene.layout.impactX;
     _scene.impactSlash.y = _scene.layout.impactY;
