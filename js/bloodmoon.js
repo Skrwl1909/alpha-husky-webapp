@@ -1762,6 +1762,12 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-arena-bg{z-index:0;opacity:.72}.bm-v3-atmosphere{z-index:1;opacity:.28;mix-blend-mode:screen}
 .bm-v3-moon{z-index:2;right:-12px;top:18px;width:min(42vw,170px);filter:drop-shadow(0 0 30px rgba(255,54,82,.32))}
 .bm-v3-enemy{z-index:3;left:50%;bottom:88px;transform:translateX(-50%);width:min(84%,430px);max-height:64%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 18px 26px rgba(0,0,0,.72))}
+.bm-v3-pixi-slot{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.bm-v3-pixi-stage,.bm-v3-pixi-stage .bm-battle-pixi-host{position:absolute;inset:0;width:100%;height:100%}
+.bm-v3-pixi-stage:not(.is-pixi-active){opacity:0}
+.bm-v3-arena:has(.bm-v3-pixi-stage.is-pixi-active) .bm-v3-enemy{opacity:0}
+.bm-v3-arena:has(.bm-v3-pixi-stage.is-pixi-active) .bm-v3-moon{opacity:.42}
+
 .bm-v3-vignette{position:absolute;z-index:4;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.08) 25%,rgba(4,2,4,.18) 48%,rgba(5,2,4,.92) 100%),radial-gradient(circle at 50% 44%,transparent 28%,rgba(0,0,0,.48) 100%)}
 .bm-v3-hud{position:relative;z-index:5;min-height:clamp(430px,68vh,620px);display:flex;flex-direction:column;justify-content:space-between;padding:14px}
 .bm-v3-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.bm-v3-kicker{font-size:9px;font-weight:900;letter-spacing:.18em;color:#ff9aaa}.bm-v3-phase{font-size:9px;padding:6px 8px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,4,7,.62);backdrop-filter:blur(8px)}
@@ -1928,7 +1934,10 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
   }
 
   function battleLiteStageEl() {
-    return battleStageSlotEl()?.querySelector(".bm-battle-stage") || null;
+    const slot = battleStageSlotEl();
+    if (!slot) return null;
+    if (slot.classList?.contains("bm-battle-stage")) return slot;
+    return slot.querySelector(".bm-battle-stage") || null;
   }
 
   function pixiHostEl() {
@@ -1937,6 +1946,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
 
   function stopBattlePlayback(hard = false, preserveDom = false) {
     _battlePixiRunId += 1;
+    try { battleLiteStageEl()?.classList?.remove?.("is-pixi-active"); } catch (_) {}
 
     if (_battleReplayTimer) {
       clearTimeout(_battleReplayTimer);
@@ -2970,6 +2980,11 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
           <img class="bm-v3-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" decoding="async" />
           <img class="bm-v3-moon" src="${sharedLunarMoonAsset(lunar.towerState)}" alt="" decoding="async" />
           <img class="bm-v3-enemy" src="${v3Enemy.idle}" alt="${esc(v3Enemy.name)}" fetchpriority="high" decoding="async" />
+          <div id="${BATTLE_STAGE_ID}" class="bm-v3-pixi-slot" aria-hidden="true">
+            <div class="bm-battle-stage bm-v3-pixi-stage" data-bm-stage="cinematic" data-bm-battle-id="${esc(lastBattle?.battleId || "")}">
+              <div class="bm-battle-pixi-host" data-bm-pixi-host></div>
+            </div>
+          </div>
           <div class="bm-v3-vignette"></div>
           <div class="bm-v3-hud">
             <div class="bm-v3-top"><div><div class="bm-v3-kicker">BLOOD MOON · FACTION RAID</div></div><div class="bm-v3-phase">${esc(lunar.moonPhaseName)} · ${esc(lunarCountdownText(lunar))}</div></div>
@@ -2990,7 +3005,6 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
             </div>
           </div>
         </div>
-        ${renderBattlePanel(lastBattle)}
       </section>
       ${renderArenaV3Secondary(_arenaView, v3Ctx)}
       ${renderArenaV3Dock()}
