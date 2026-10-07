@@ -841,6 +841,15 @@
     _scene.enemyLabel.text = String(_scene.plan?.enemyDef?.displayName || _scene.battle?.enemy?.name || "Blood-Moon Wave");
     _scene.enemyLabel.x = _scene.layout.enemyX;
     _scene.enemyLabel.y = Math.round(h * 0.24);
+
+    // Arena V3 owns wave/name/HP presentation. Keep legacy Pixi HUD hidden
+    // so the cinematic layer does not duplicate the authoritative Arena HUD.
+    _scene.hpBack.alpha = 0;
+    _scene.hpGhost.alpha = 0;
+    _scene.hpFill.alpha = 0;
+    _scene.hpText.alpha = 0;
+    _scene.waveBadge.alpha = 0;
+    _scene.enemyLabel.alpha = 0;
   }
 
 
