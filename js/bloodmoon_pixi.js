@@ -496,6 +496,11 @@
     _scene.hpDisplay = _scene.afterHp;
     _scene.damageText.alpha = 0;
     _scene.critText.alpha = 0;
+    _scene.hapticImpactDone = false;
+    _scene.hapticFinishDone = false;
+    _scene.enemy.alpha = 1;
+    _scene.enemy.rotation = 0;
+    if (_app?.stage) { _app.stage.x = 0; _app.stage.y = 0; }
     _scene.impactSlash.alpha = 0;
     _scene.impactRing.alpha = 0;
     _scene.stageFlash.alpha = 0;
@@ -636,6 +641,8 @@
       enemyTextures: {},
       plan: null,
       enemyPose: "idle",
+      hapticImpactDone: false,
+      hapticFinishDone: false,
       beforeHp: 1,
       afterHp: 1,
       hpMax: 1,
@@ -814,6 +821,7 @@
     let enemyShakeX = 0, enemyShakeY = 0, enemySlam = 0, enemyDrift = 0;
     let slashAlpha = 0, slashScale = 0.3, ringAlpha = 0, ringScale = 0.2;
     let flashAlpha = 0, damageAlpha = 0, damageLift = 0, critAlpha = 0, critLift = 0, hpTween = 1;
+    let cameraX = 0, cameraY = 0;
     let pose = "idle";
 
     if (_scene.animating && plan) {
@@ -866,6 +874,21 @@
       }
 
       const pulse = Math.sin(impact * Math.PI);
+      if (!plan.perfLite) {
+        const cameraAmp = plan.damageTier === "heavy" ? 7 : plan.damageTier === "medium" ? 4.5 : 2.5;
+        cameraX = Math.sin(impact * 42) * (1 - impact) * cameraAmp;
+        cameraY = Math.cos(impact * 31) * (1 - impact) * cameraAmp * 0.42;
+      }
+      if (!_scene.hapticImpactDone && t >= impactAt) {
+        _scene.hapticImpactDone = true;
+        try {
+          _opts?.tg?.HapticFeedback?.impactOccurred?.(plan.hasCrit || plan.damageTier === "heavy" ? "heavy" : "medium");
+        } catch (_) {}
+      }
+      if (plan.waveBreak && !_scene.hapticFinishDone && t >= plan.settleAt) {
+        _scene.hapticFinishDone = true;
+        try { _opts?.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+      }
       slashAlpha = pulse * (plan.perfLite ? 0.72 : 0.98);
       slashScale = 0.32 + easeOutCubic(impact) * (plan.damageTier === "heavy" ? 1.55 : 1.18);
       ringAlpha = pulse * (plan.perfLite ? 0.22 : (plan.hasCrit ? 0.66 : 0.42));
@@ -886,8 +909,13 @@
       if (currentTurn?.actor === "right" && currentTurn.kind !== "miss" && t < plan.settleAt) pose = "attack";
       if (currentTurn?.target === "right" && ["hit","crit","finish"].includes(currentTurn.kind) && t < plan.settleAt) pose = currentTurn.defeat ? "defeat" : "hit";
 
-      if (plan.waveBreak && t > plan.settleAt) {
-        _scene.enemy.alpha = 1 - settle * 0.82;
+      if ([4,7,10].includes(plan.wave) && t < 0.42) {
+        const intro = easeOutCubic(clamp(t / 0.42, 0, 1));
+        _scene.enemy.alpha = 0.18 + intro * 0.82;
+        _scene.enemy.scale?.set?.(0.94 + intro * 0.06);
+      }
+
+      if (plan.waveBreak && t > plan.settleAt) {        _scene.enemy.alpha = 1 - settle * 0.82;
         _scene.enemy.rotation = settle * 0.08;
       } else {
         _scene.enemy.alpha = 1;
@@ -924,6 +952,10 @@
     _scene.enemy.y = _scene.layout.enemyY + idleE + enemyShakeY;
     _scene.enemy.scale?.set?.(1 + enemySlam);
     _scene.moon.y = idleMoon;
+    if (_app?.stage) {
+      _app.stage.x = cameraX;
+      _app.stage.y = cameraY;
+    }
 
     clearDraw(_scene.hpGhost);
     clearDraw(_scene.hpFill);
@@ -1019,6 +1051,8 @@
     _scene.hpDisplay = animate ? _scene.beforeHp : _scene.afterHp;
     _scene.playTime = 0;
     _scene.animating = !!animate;
+    _scene.hapticImpactDone = false;
+    _scene.hapticFinishDone = false;
 
     await hydrateAssets(battle);
     renderStatic();
