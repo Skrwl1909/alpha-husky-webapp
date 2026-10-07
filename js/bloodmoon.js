@@ -20,6 +20,7 @@
   let _lunarVisibilityListenerBound = false;
   let _shopOpen = false;
   let _shopPurchaseConfirm = null;
+  let _arenaView = "raid";
   const COMMAND_STORAGE_PREFIX = "alpha_husky.bloodmoon.command.v2";
   const COMMAND_EXPIRY_MS = 24 * 60 * 60 * 1000;
   const _pendingCommandMemory = new Map();
@@ -43,6 +44,21 @@
       fading: "/assets/bloodmoon/v2/moon_fading.webp"
     })
   });
+  const BLOODMOON_V3_ENEMIES = Object.freeze({
+    tower_husk: Object.freeze({ name: "Tower Husk", idle: "/assets/bloodmoon/v3/enemies/tower_husk/idle.webp" }),
+    echo_revenant: Object.freeze({ name: "Echo Revenant", idle: "/assets/bloodmoon/v3/enemies/echo_revenant/idle.webp" }),
+    lunar_myrmidon: Object.freeze({ name: "Lunar Myrmidon", idle: "/assets/bloodmoon/v3/enemies/lunar_myrmidon/idle.webp" }),
+    phase_knight: Object.freeze({ name: "The Phase Knight", idle: "/assets/bloodmoon/v3/enemies/phase_knight/idle.webp" }),
+  });
+
+  function bloodMoonV3Enemy(wave) {
+    const n = Math.max(1, Number(wave || 1));
+    if (n >= 10) return BLOODMOON_V3_ENEMIES.phase_knight;
+    if (n >= 7) return BLOODMOON_V3_ENEMIES.lunar_myrmidon;
+    if (n >= 4) return BLOODMOON_V3_ENEMIES.echo_revenant;
+    return BLOODMOON_V3_ENEMIES.tower_husk;
+  }
+
   const BLOODMOON_LUNAR_COPY = Object.freeze({
     dormant: "The Tower is quiet. Blood Moon rises on the next lunar boundary.",
     rising: "The Blood Moon is approaching. Keep your faction’s raid moving.",
@@ -1724,6 +1740,25 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   box-shadow:0 10px 24px rgba(0,0,0,.22);
 }
 
+
+.bm-v3-shell{display:grid;gap:10px;padding-bottom:78px}
+.bm-v3-arena{position:relative;min-height:clamp(430px,68vh,620px);overflow:hidden;border:1px solid rgba(255,80,105,.22);border-radius:22px;background:#080508;isolation:isolate;box-shadow:0 22px 54px rgba(0,0,0,.48)}
+.bm-v3-arena-bg,.bm-v3-atmosphere,.bm-v3-enemy,.bm-v3-moon{position:absolute;pointer-events:none}
+.bm-v3-arena-bg,.bm-v3-atmosphere{inset:0;width:100%;height:100%;object-fit:cover}
+.bm-v3-arena-bg{z-index:0;opacity:.72}.bm-v3-atmosphere{z-index:1;opacity:.28;mix-blend-mode:screen}
+.bm-v3-moon{z-index:2;right:-12px;top:18px;width:min(42vw,170px);filter:drop-shadow(0 0 30px rgba(255,54,82,.32))}
+.bm-v3-enemy{z-index:3;left:50%;bottom:88px;transform:translateX(-50%);width:min(84%,430px);max-height:64%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 18px 26px rgba(0,0,0,.72))}
+.bm-v3-vignette{position:absolute;z-index:4;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.08) 25%,rgba(4,2,4,.18) 48%,rgba(5,2,4,.92) 100%),radial-gradient(circle at 50% 44%,transparent 28%,rgba(0,0,0,.48) 100%)}
+.bm-v3-hud{position:relative;z-index:5;min-height:clamp(430px,68vh,620px);display:flex;flex-direction:column;justify-content:space-between;padding:14px}
+.bm-v3-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}.bm-v3-kicker{font-size:9px;font-weight:900;letter-spacing:.18em;color:#ff9aaa}.bm-v3-phase{font-size:9px;padding:6px 8px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(4,4,7,.62);backdrop-filter:blur(8px)}
+.bm-v3-encounter{margin-top:auto;padding-top:120px;text-align:center}.bm-v3-enemy-name{font-size:clamp(22px,7vw,34px);font-weight:950;letter-spacing:.04em;text-transform:uppercase;text-shadow:0 3px 18px #000}.bm-v3-wave-label{margin-top:3px;font-size:10px;letter-spacing:.16em;color:#ff9baa;text-transform:uppercase}
+.bm-v3-hp{margin:10px auto 0;max-width:430px}.bm-v3-hp-line{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:9px;color:rgba(255,255,255,.76)}.bm-v3-hp-track{height:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1)}.bm-v3-hp-fill{height:100%;background:linear-gradient(90deg,#811225,#db314c,#ff7487);box-shadow:0 0 18px rgba(255,50,82,.5)}
+.bm-v3-command{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.bm-v3-command .bm-cta{grid-column:1/-1;padding:15px 16px;font-size:13px;border-radius:14px}.bm-v3-mini{padding:8px 9px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(5,5,8,.7);backdrop-filter:blur(8px);text-align:left}.bm-v3-mini span{display:block;font-size:7px;letter-spacing:.12em;color:rgba(255,255,255,.5);text-transform:uppercase}.bm-v3-mini strong{display:block;margin-top:2px;font-size:11px}
+.bm-v3-secondary{display:grid;gap:10px}.bm-v3-panel{display:none}.bm-v3-panel.is-active{display:grid;gap:10px}
+.bm-v3-dock{position:sticky;z-index:20;bottom:max(6px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:rgba(7,6,9,.92);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.bm-v3-tab{min-width:0;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);padding:9px 3px;font:inherit;font-size:8px;font-weight:900;letter-spacing:.08em}.bm-v3-tab.is-active{color:#fff;background:rgba(170,25,49,.22);box-shadow:inset 0 0 0 1px rgba(255,78,104,.28)}
+@media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:58%;bottom:92px}}
+
 .bm-empty{
   padding:16px;
   text-align:center;
@@ -2828,6 +2863,19 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     bindFeedToggle();
   }
 
+  function renderArenaV3Dock() {
+    const tabs = [["raid","RAID"],["race","RACE"],["rewards","REWARDS"],["records","RECORDS"]];
+    return `<nav class="bm-v3-dock" aria-label="Blood Moon sections">${tabs.map(([key,label]) => `<button class="bm-v3-tab ${_arenaView === key ? "is-active" : ""}" data-bm-v3-tab="${key}" type="button" aria-pressed="${_arenaView === key ? "true" : "false"}">${label}</button>`).join("")}</nav>`;
+  }
+
+  function renderArenaV3Secondary(view, ctx) {
+    const { sortedFactions, dominancePct, my, myRewardPreview } = ctx;
+    if (view === "race") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">FACTION PROGRESS · LIVE RACE</div>${renderRace(sortedFactions, dominancePct)}</div><div class="bm-card"><div class="bm-label">FACTION STANDINGS</div>${renderFactionStandings(_state.factionStandings)}</div></section>`;
+    if (view === "rewards") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">BLOOD-MOON WAR REWARDS</div>${renderClaimFeedback(_lastClaimFeedback)}${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}</div>${renderShopCta(shopFoundation(_state.shop))}</section>`;
+    if (view === "records") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">MY RAID RECORD</div><div class="bm-mini-grid"><div class="bm-stat"><div class="bm-label">Total Damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div><div class="bm-stat"><div class="bm-label">Best Hit</div><div class="bm-value">${fmtNum(my.bestHit)}</div></div></div>${myRewardPreview}</div><div class="bm-card"><div class="bm-label">TOP SLAUGHTERERS</div>${renderTopPlayers(_state.topPlayers)}</div><div class="bm-card"><div class="bm-label">LIVE CARNAGE FEED</div><div id="${FEED_MOUNT_ID}">${renderFeed(_state.recentFeed)}</div></div></section>`;
+    return "";
+  }
+
   function render(data, opts = {}) {
    stopLunarTimers();
    _state = data || {};
@@ -2885,142 +2933,38 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
     return;
   }
 
+  const v3Enemy = bloodMoonV3Enemy(currentWave);
+  const v3Ctx = { sortedFactions, dominancePct, my, myRewardPreview };
   body.innerHTML = `
-    <div class="bm-card bm-card-hero bm-v2-legacy" style="z-index:2">
-      <div class="bm-hero-intensity">
-        BLOOD MOON INTENSITY • WAVE ${fmtNum(currentWave)} / ${fmtNum(maxWave)}
-      </div>
-
-      <div class="bm-label" style="margin-bottom:6px">THE BEAST • CURRENT WAVE</div>
-      <div class="bm-boss-bar">
-        <div class="bm-boss-fill" style="width:${waveRemainingPct}%"></div>
-      </div>
-      <div class="bm-wave-line">
-        <span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span>
-        <span style="color:#ff5e70">${waveClearedPct}% • TEAR IT APART</span>
-      </div>
-
-      <div style="margin-top:18px">
-        <button id="bloodMoonLegacyAttackBtn" class="bm-cta" type="button" hidden aria-hidden="true" tabindex="-1" title="Legacy control hidden; use the canonical CTA below." disabled>
-          ${esc(cta.label || "RIP THROUGH THE VEIL")}
-        </button>
-        <div class="bm-action-hint">Adds Blood-Moon Damage and event progress. Not War Contribution.</div>
-      </div>
-
-      <div class="bm-meta-row">
-        <div class="bm-meta-pill">
-          <div class="bm-label">Status</div>
-          <div class="bm-value">${esc(_state.status || "UNKNOWN")}</div>
+    <div class="bm-v3-shell" data-bm-v3-view="${esc(_arenaView)}">
+      <section class="bm-v3-panel ${_arenaView === "raid" ? "is-active" : ""}">
+        <div class="bm-v3-arena is-${esc(lunar.towerState)}">
+          <img class="bm-v3-arena-bg" src="${BLOODMOON_V2_ASSETS.arena}" alt="" fetchpriority="high" decoding="async" />
+          <img class="bm-v3-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" decoding="async" />
+          <img class="bm-v3-moon" src="${sharedLunarMoonAsset(lunar.towerState)}" alt="" decoding="async" />
+          <img class="bm-v3-enemy" src="${v3Enemy.idle}" alt="${esc(v3Enemy.name)}" fetchpriority="high" decoding="async" />
+          <div class="bm-v3-vignette"></div>
+          <div class="bm-v3-hud">
+            <div class="bm-v3-top"><div><div class="bm-v3-kicker">BLOOD MOON · FACTION RAID</div></div><div class="bm-v3-phase">${esc(lunar.moonPhaseName)} · ${esc(lunarCountdownText(lunar))}</div></div>
+            <div class="bm-v3-encounter">
+              <div class="bm-v3-enemy-name">${esc(v3Enemy.name)}</div>
+              <div class="bm-v3-wave-label">Tower Wave ${fmtNum(currentWave)} / ${fmtNum(maxWave)}</div>
+              <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${waveRemainingPct}%"></div></div></div>
+              ${renderPreparedAttempt(preparedAttempt, cta)}
+              ${renderInlineFeedback()}
+              <div class="bm-v3-command">
+                <div class="bm-v3-mini"><span>Attempts</span><strong>${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</strong></div>
+                <div class="bm-v3-mini"><span>Cooldown</span><strong>${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY"}</strong></div>
+                <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled ? "" : "disabled"}>${esc(cta.label || "STRIKE THE TOWER")}</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="bm-meta-pill">
-          <div class="bm-label">My Faction</div>
-          <div class="bm-value">${esc(factionLabel(_state.myFaction))}</div>
-        </div>
-        <div class="bm-meta-pill">
-          <div class="bm-label">Cooldown</div>
-          <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "Ready"}</div>
-        </div>
-      </div>
+        ${renderBattlePanel(lastBattle)}
+      </section>
+      ${renderArenaV3Secondary(_arenaView, v3Ctx)}
+      ${renderArenaV3Dock()}
     </div>
-
-    <div class="bm-card bm-v2-hero is-${esc(lunar.towerState)}" style="z-index:2">
-      <div class="bm-v2-visual" aria-hidden="true">
-        <img class="bm-v2-arena" src="${BLOODMOON_V2_ASSETS.arena}" alt="" fetchpriority="high" decoding="async" />
-        <img class="bm-v2-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" loading="eager" decoding="async" />
-        ${sharedLunarOverlayAsset("haze") ? `<img class="bm-v2-world-haze" src="${sharedLunarOverlayAsset("haze")}" alt="" loading="eager" decoding="async" />` : ""}
-        ${sharedLunarOverlayAsset("rimGlow") ? `<img class="bm-v2-world-rim" src="${sharedLunarOverlayAsset("rimGlow")}" alt="" loading="eager" decoding="async" />` : ""}
-        ${sharedLunarOverlayAsset("interference") ? `<img class="bm-v2-world-interference" src="${sharedLunarOverlayAsset("interference")}" alt="" loading="eager" decoding="async" />` : ""}
-        ${sharedLunarOverlayAsset("aftermathDust") ? `<img class="bm-v2-world-dust" src="${sharedLunarOverlayAsset("aftermathDust")}" alt="" loading="eager" decoding="async" />` : ""}
-      </div>
-      <div class="bm-v2-moon-visual" aria-hidden="true">
-        <img class="bm-v2-moon" src="${sharedLunarMoonAsset(lunar.towerState)}" alt="" fetchpriority="high" decoding="async" />
-      </div>
-      <div class="bm-v2-overlay">
-        <div class="bm-v2-topline">
-          <div class="bm-v2-kicker">WORLD CLOCK · Weekly faction raid</div>
-          <div class="bm-v2-state-chip">${esc(lunar.moonPhaseName)} · ${esc(lunar.eventWindowStatus)}</div>
-        </div>
-        <h2 class="bm-v2-title">Blood Moon Tower</h2>
-        <p class="bm-v2-copy">${esc(BLOODMOON_LUNAR_COPY[lunar.towerState])}</p>
-        <div class="bm-v2-countdown" data-bm-v2-countdown aria-live="polite">${esc(lunarCountdownText(lunar))}</div>
-        <div class="bm-v2-raid-grid">
-          <div class="bm-v2-stat"><div class="bm-label">My faction</div><div class="bm-value">${esc(factionLabel(_state.myFaction))}</div></div>
-          <div class="bm-v2-stat"><div class="bm-label">Faction wave</div><div class="bm-value">${fmtNum(currentWave)} / ${fmtNum(maxWave)}</div></div>
-          <div class="bm-v2-stat"><div class="bm-label">Attempts left</div><div class="bm-value">${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</div></div>
-          <div class="bm-v2-stat"><div class="bm-label">Cooldown</div><div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "Ready"}</div></div>
-          <div class="bm-v2-stat"><div class="bm-label">My weekly damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div>
-          <div class="bm-v2-stat"><div class="bm-label">Faction weekly damage</div><div class="bm-value">${fmtNum(factionWeeklyDamage)}</div></div>
-        </div>
-        <div class="bm-v2-wave">
-          <div class="bm-label">Current faction wave</div>
-          <div class="bm-boss-bar"><div class="bm-boss-fill" style="width:${waveRemainingPct}%"></div></div>
-          <div class="bm-wave-line"><span>HP ${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span><span style="color:#ff9baa">${waveClearedPct}% cleared</span></div>
-        </div>
-        ${renderPreparedAttempt(preparedAttempt, cta)}
-        ${renderInlineFeedback()}
-        <div>
-          <button id="bloodMoonAttackBtn" class="bm-cta" type="button" title="Adds Blood-Moon Damage and event progress. Not War Contribution." ${cta.enabled ? "" : "disabled"}>
-            ${esc(cta.label || "RIP THROUGH THE VEIL")}
-          </button>
-          <div class="bm-action-hint">${esc(cta.reason || "Adds Blood-Moon Damage and event progress. Not War Contribution.")}</div>
-        </div>
-        ${renderShopCta(shop)}
-      </div>
-    </div>
-
-    ${renderBattlePanel(lastBattle)}
-
-    <div class="bm-card">
-      <div class="bm-label">LIVE CARNAGE FEED</div>
-      <div id="${FEED_MOUNT_ID}">
-        ${renderFeed(_state.recentFeed)}
-      </div>
-    </div>
-
-    <div class="bm-card">
-      <div class="bm-label">FACTION PROGRESS - LIVE RACE</div>
-      ${renderRace(sortedFactions, dominancePct)}
-    </div>
-
-    <div class="bm-card">
-      <div class="bm-label">BLOOD-MOON DAMAGE</div>
-      <div class="bm-mini-grid">
-        <div class="bm-stat">
-          <div class="bm-label">Total Damage</div>
-          <div class="bm-value">${fmtNum(my.totalDamage)}</div>
-        </div>
-        <div class="bm-stat">
-          <div class="bm-label">Best Hit</div>
-          <div class="bm-value">${fmtNum(my.bestHit)}</div>
-        </div>
-        <div class="bm-stat">
-          <div class="bm-label">Attempts</div>
-          <div class="bm-value">${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</div>
-        </div>
-        <div class="bm-stat">
-          <div class="bm-label">Cooldown</div>
-          <div class="bm-value">${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY TO KILL"}</div>
-        </div>
-      </div>
-      ${myRewardPreview}
-    </div>
-
-    <div class="bm-card">
-      <div class="bm-label">Faction Standings</div>
-      ${renderFactionStandings(_state.factionStandings)}
-    </div>
-
-    <div class="bm-card">
-      <div class="bm-label">BLOOD-MOON WAR REWARDS</div>
-      ${renderClaimFeedback(_lastClaimFeedback)}
-      ${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}
-    </div>
-
-    <div class="bm-card">
-      <div class="bm-label">TOP SLAUGHTERERS</div>
-      ${renderTopPlayers(_state.topPlayers)}
-    </div>
-
   `;
 
    bindActions();
