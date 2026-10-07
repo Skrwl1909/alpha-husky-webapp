@@ -338,6 +338,108 @@
     ]);
   }
 
+  function hashString32(input) {
+    const text = String(input || "");
+    let h = 2166136261 >>> 0;
+    for (let i = 0; i < text.length; i++) {
+      h ^= text.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function rand() {
+      a |= 0;
+      a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function normalizedBattleTurns(battle) {
+    const raw = Array.isArray(battle?.turns) ? battle.turns : (Array.isArray(battle?.events) ? battle.events : []);
+    if (raw.length) {
+      return raw.filter(Boolean).map((row, idx) => ({
+        turn: Math.max(1, num(row?.turn || row?.t, idx + 1)),
+        actor: row?.actor === "right" ? "right" : "left",
+        target: row?.target === "left" ? "left" : "right",
+        kind: ["hit","crit","block","heal","miss","tick","finish"].includes(String(row?.kind || row?.type || "").toLowerCase())
+          ? String(row?.kind || row?.type).toLowerCase()
+          : "hit",
+        value: Math.max(0, num(row?.value || row?.amount || row?.damage, 0)),
+        defeat: !!row?.defeat,
+      }));
+    }
+    return [{
+      turn: 1,
+      actor: "left",
+      target: "right",
+      kind: battle?.attack?.crit ? "crit" : "hit",
+      value: Math.max(0, num(battle?.attack?.damage, 0)),
+      defeat: Math.max(0, num(battle?.enemy?.hpAfter, 1)) <= 0,
+    }];
+  }
+
+  const CHOREOGRAPHIES = Object.freeze([
+    "crescent_rush",
+    "breach_strike",
+    "double_impact",
+    "phantom_feint",
+    "lunar_crash",
+    "pursuit_cut",
+  ]);
+
+  function planBattlePresentation(battle) {
+    const battleId = String(battle?.battleId || battle?.id || battle?.commandId || [battle?.wave, battle?.ts, battle?.attack?.damage].join(":"));
+    const seed = hashString32(battleId);
+    const rand = mulberry32(seed);
+    const turns = normalizedBattleTurns(battle);
+    const wave = Math.max(1, num(battle?.wave || battle?.enemy?.wave, 1));
+    const enemyDef = resolveBloodMoonEnemyDefinition(battle);
+    const damage = Math.max(0, num(battle?.attack?.damage, turns.reduce((sum,row)=>sum + (row.actor === "left" ? row.value : 0), 0)));
+    const hpMax = Math.max(1, num(battle?.enemy?.hpMax, battle?.enemy?.hpBefore || 1));
+    const damageTier = damage / hpMax >= 0.24 ? "heavy" : damage / hpMax >= 0.10 ? "medium" : "light";
+    const hasCrit = !!battle?.attack?.crit || turns.some(row => row.kind === "crit");
+    const waveBreak = Math.max(0, num(battle?.enemy?.hpAfter, 1)) <= 0 || turns.some(row => row.defeat && row.target === "right");
+    const family = CHOREOGRAPHIES[Math.floor(rand() * CHOREOGRAPHIES.length)] || CHOREOGRAPHIES[0];
+    const perfLite = !!global.document?.documentElement?.classList?.contains("ah-perf-lite") ||
+      !!global.document?.body?.classList?.contains("ah-perf-lite") ||
+      !!global.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    const baseTurn = perfLite ? 0.56 : 0.70;
+    const total = Math.min(perfLite ? 3.1 : 4.8, Math.max(2.35, 0.62 + turns.length * baseTurn + (hasCrit ? 0.18 : 0) + (waveBreak ? 0.45 : 0)));
+    return {
+      battleId,
+      seed,
+      family,
+      turns,
+      wave,
+      enemyDef,
+      personality: enemyDef?.personality || "fast_unstable",
+      damage,
+      damageTier,
+      hasCrit,
+      waveBreak,
+      finalBoss: wave >= 10,
+      perfLite,
+      total,
+      impactAt: Math.min(total * 0.42, 1.45),
+      settleAt: total * 0.80,
+    };
+  }
+
+  function enemyPoseForTime(plan, t) {
+    if (!plan) return "idle";
+    if (plan.waveBreak && t >= plan.settleAt) return "defeat";
+    if (plan.finalBoss && plan.family === "phantom_feint" && t > plan.impactAt * 0.45 && t < plan.impactAt * 0.9) return "phase_shift";
+    if (t > plan.impactAt - 0.08 && t < plan.impactAt + 0.34) return "hit";
+    const counter = plan.turns.find(row => row.actor === "right" && row.kind !== "miss");
+    if (counter && t > plan.impactAt + 0.45 && t < plan.impactAt + 0.95) return "attack";
+    return "idle";
+  }
+
   async function loadTextureSafeMany(urls) {
     if (!hasPixi()) return null;
     const P = global.PIXI;
@@ -524,6 +626,9 @@
       battle: null,
       playerTexture: null,
       enemyTexture: null,
+      enemyTextures: {},
+      plan: null,
+      enemyPose: "idle",
       beforeHp: 1,
       afterHp: 1,
       hpMax: 1,
@@ -685,83 +790,121 @@
     _scene.enemyLabel.y = Math.round(h * 0.24);
   }
 
+
   function renderDynamic() {
     if (!_scene || !_app) return;
 
     const now = performance.now() * 0.001;
+    const plan = _scene.plan;
     const idleP = Math.sin(now * 1.8) * 4;
-    const idleE = Math.sin(now * 1.6 + 1.3) * 6;
+    const idleFactor = plan?.personality === "heavy_brutal" ? 2.2 : plan?.personality === "calm_precise" ? 1.8 : 4.2;
+    const idleE = Math.sin(now * (plan?.personality === "controlled_displaced" ? 2.3 : 1.45) + 1.3) * idleFactor;
     const idleMoon = Math.sin(now * 0.8) * 2;
 
-    let playerLunge = 0;
-    let playerTilt = 0;
-    let enemyShakeX = 0;
-    let enemyShakeY = 0;
-    let enemySlam = 0;
-    let slashAlpha = 0;
-    let slashScale = 0.3;
-    let ringAlpha = 0;
-    let ringScale = 0.2;
-    let flashAlpha = 0;
-    let damageAlpha = 0;
-    let damageLift = 0;
-    let critAlpha = 0;
-    let critLift = 0;
-    let hpTween = 1;
+    let playerLunge = 0, playerLift = 0, playerTilt = 0;
+    let enemyShakeX = 0, enemyShakeY = 0, enemySlam = 0, enemyDrift = 0;
+    let slashAlpha = 0, slashScale = 0.3, ringAlpha = 0, ringScale = 0.2;
+    let flashAlpha = 0, damageAlpha = 0, damageLift = 0, critAlpha = 0, critLift = 0, hpTween = 1;
+    let pose = "idle";
 
-    if (_scene.animating) {
+    if (_scene.animating && plan) {
       const dt = Math.min(0.05, _app.ticker.deltaMS / 1000);
       _scene.playTime += dt;
       const t = _scene.playTime;
+      const impactAt = plan.impactAt;
+      const family = plan.family;
 
-      if (t < 0.28) {
-        const s = Math.sin((t / 0.28) * Math.PI);
-        playerLunge = s * 30;
-        playerTilt = -s * 0.08;
+      const anticipation = clamp(t / Math.max(0.24, impactAt * 0.58), 0, 1);
+      const strike = clamp((t - impactAt * 0.56) / Math.max(0.22, impactAt * 0.44), 0, 1);
+      const impact = clamp((t - impactAt) / (plan.perfLite ? 0.30 : 0.44), 0, 1);
+      const settle = clamp((t - plan.settleAt) / Math.max(0.18, plan.total - plan.settleAt), 0, 1);
+
+      const familyMult = family === "lunar_crash" ? 1.16 : family === "breach_strike" ? 1.08 : family === "phantom_feint" ? 0.92 : 1;
+      const tierMult = plan.damageTier === "heavy" ? 1.28 : plan.damageTier === "medium" ? 1.08 : 0.92;
+      const critMult = plan.hasCrit ? 1.20 : 1;
+      const amp = familyMult * tierMult * critMult;
+
+      if (family === "phantom_feint") {
+        playerLunge = Math.sin(strike * Math.PI) * 62 * amp;
+        playerLift = -Math.sin(strike * Math.PI) * 12;
+      } else if (family === "lunar_crash") {
+        playerLunge = Math.sin(strike * Math.PI) * 44 * amp;
+        playerLift = -Math.sin(strike * Math.PI) * 24;
+      } else if (family === "double_impact") {
+        playerLunge = Math.sin(strike * Math.PI) * 52 * amp + (impact > 0.48 && impact < 0.82 ? 10 : 0);
+      } else {
+        playerLunge = Math.sin(strike * Math.PI) * 50 * amp;
+      }
+      playerTilt = -Math.sin(strike * Math.PI) * 0.08 * amp;
+
+      const recoilWindow = Math.sin(clamp(impact, 0, 1) * Math.PI);
+      const personalityMass = plan.personality === "heavy_brutal" ? 0.58 : plan.personality === "calm_precise" ? 0.42 : 1;
+      enemyShakeX = Math.sin(impact * (plan.personality === "heavy_brutal" ? 18 : 34)) * (1 - impact) * 16 * amp * personalityMass;
+      enemyShakeY = Math.cos(impact * 22) * (1 - impact) * 4 * amp * personalityMass;
+      enemySlam = recoilWindow * 0.055 * amp * personalityMass;
+
+      if (plan.personality === "controlled_displaced") {
+        enemyDrift = Math.sin(t * 17) * (impact < 0.05 ? 3 : 1);
+      } else if (plan.personality === "fast_unstable") {
+        enemyDrift = Math.sin(t * 10) * 2.5;
       }
 
-      if (t > 0.20 && t < 0.64) {
-        const s = clamp((t - 0.20) / 0.44, 0, 1);
-        const amp = (1 - s) * 14;
-        enemyShakeX = Math.sin(s * 32) * amp;
-        enemyShakeY = Math.cos(s * 20) * amp * 0.18;
-        enemySlam = Math.sin(s * Math.PI) * 0.06;
-      }
+      const pulse = Math.sin(impact * Math.PI);
+      slashAlpha = pulse * (plan.perfLite ? 0.72 : 0.98);
+      slashScale = 0.32 + easeOutCubic(impact) * (plan.damageTier === "heavy" ? 1.55 : 1.18);
+      ringAlpha = pulse * (plan.perfLite ? 0.22 : (plan.hasCrit ? 0.66 : 0.42));
+      ringScale = 0.2 + impact * (plan.hasCrit ? 2.2 : 1.7);
+      flashAlpha = pulse * (plan.perfLite ? 0.08 : (plan.hasCrit ? 0.34 : 0.19));
 
-      const impactIn = clamp((t - 0.18) / 0.16, 0, 1);
-      slashAlpha = Math.sin(impactIn * Math.PI) * 0.96;
-      slashScale = 0.36 + easeOutCubic(impactIn) * 1.08;
-      ringAlpha = Math.sin(clamp((t - 0.18) / 0.46, 0, 1) * Math.PI) * 0.44;
-      ringScale = 0.2 + clamp((t - 0.18) / 0.46, 0, 1) * 1.8;
-      flashAlpha = Math.sin(clamp((t - 0.16) / 0.26, 0, 1) * Math.PI) * 0.22;
-
-      const damageIn = clamp((t - 0.20) / 0.58, 0, 1);
+      const damageIn = clamp((t - impactAt + 0.03) / 0.78, 0, 1);
       damageAlpha = Math.sin(damageIn * Math.PI);
-      damageLift = easeOutCubic(damageIn) * 34;
-
-      if (_scene.crit) {
-        const critIn = clamp((t - 0.14) / 0.66, 0, 1);
-        critAlpha = Math.sin(critIn * Math.PI) * 1.0;
-        critLift = easeOutCubic(critIn) * 22;
+      damageLift = easeOutCubic(damageIn) * 40;
+      if (plan.hasCrit) {
+        const c = clamp((t - impactAt + 0.08) / 0.92, 0, 1);
+        critAlpha = Math.sin(c * Math.PI);
+        critLift = easeOutCubic(c) * 28;
       }
 
-      hpTween = easeInOutQuad(clamp((t - 0.24) / 0.74, 0, 1));
-      if (t >= 1.36) {
+      hpTween = easeInOutQuad(clamp((t - impactAt) / Math.max(0.66, plan.total * 0.36), 0, 1));
+      pose = enemyPoseForTime(plan, t);
+
+      if (plan.waveBreak && t > plan.settleAt) {
+        _scene.enemy.alpha = 1 - settle * 0.82;
+        _scene.enemy.rotation = settle * 0.08;
+      } else {
+        _scene.enemy.alpha = 1;
+      }
+
+      if (t >= plan.total) {
         _scene.animating = false;
         _scene.playTime = 0;
+        pose = plan.waveBreak ? "defeat" : "idle";
+      }
+    } else {
+      _scene.enemy.alpha = 1;
+      pose = plan?.waveBreak ? "defeat" : "idle";
+    }
+
+    if (_scene.enemyPose !== pose) {
+      _scene.enemyPose = pose;
+      const tex = _scene.enemyTextures?.[pose] || _scene.enemyTextures?.idle || _scene.enemyTexture;
+      if (tex) {
+        _scene.enemySprite.texture = tex;
+        _scene.enemySprite.visible = true;
+        const w = _scene.layout.width || 320, h = _scene.layout.height || 220;
+        fitSprite(_scene.enemySprite, Math.max(160, Math.round(w * 0.34)), Math.max(190, Math.round(h * 0.80)), "bottom");
       }
     }
 
     _scene.hpDisplay = _scene.animating ? lerp(_scene.beforeHp, _scene.afterHp, hpTween) : _scene.afterHp;
 
     _scene.player.x = _scene.layout.playerX + playerLunge;
-    _scene.player.y = _scene.layout.playerY + idleP;
+    _scene.player.y = _scene.layout.playerY + idleP + playerLift;
     _scene.player.rotation = playerTilt;
 
-    _scene.enemy.x = _scene.layout.enemyX + enemyShakeX;
+    _scene.enemy.x = _scene.layout.enemyX + enemyShakeX + enemyDrift;
     _scene.enemy.y = _scene.layout.enemyY + idleE + enemyShakeY;
     _scene.enemy.scale?.set?.(1 + enemySlam);
-
     _scene.moon.y = idleMoon;
 
     clearDraw(_scene.hpGhost);
@@ -786,7 +929,7 @@
       _scene.impactSlash.beginFill(_scene.crit ? 0xffd774 : 0xff9bad, slashAlpha);
       _scene.impactSlash.drawRoundedRect(-58, -8, 116, 16, 999);
       _scene.impactSlash.endFill();
-      _scene.impactSlash.rotation = -0.38;
+      _scene.impactSlash.rotation = _scene.plan?.family === "lunar_crash" ? -0.75 : -0.38;
     } catch (_) {}
     _scene.impactSlash.x = _scene.layout.impactX;
     _scene.impactSlash.y = _scene.layout.impactY;
@@ -794,7 +937,7 @@
 
     clearDraw(_scene.impactRing);
     try {
-      _scene.impactRing.lineStyle(4, _scene.crit ? 0xffd774 : 0xff8fa0, ringAlpha);
+      _scene.impactRing.lineStyle(_scene.plan?.hasCrit ? 5 : 4, _scene.crit ? 0xffd774 : 0xff8fa0, ringAlpha);
       _scene.impactRing.drawCircle(0, 0, 26 + 26 * ringScale);
     } catch (_) {}
     _scene.impactRing.x = _scene.layout.impactX;
@@ -806,7 +949,8 @@
     _scene.damageText.x = _scene.layout.impactX + 8;
     _scene.damageText.y = _scene.layout.impactY - 22 - damageLift;
 
-    _scene.critText.alpha = critAlpha;
+    _scene.critText.text = _scene.plan?.waveBreak ? "WAVE BROKEN" : (_scene.plan?.hasCrit ? "CRITICAL" : "");
+    _scene.critText.alpha = critAlpha || (_scene.plan?.waveBreak && _scene.animating && _scene.playTime > _scene.plan.settleAt ? 0.94 : 0);
     _scene.critText.x = _scene.layout.impactX;
     _scene.critText.y = _scene.layout.impactY - 68 - critLift;
   }
@@ -825,25 +969,33 @@
     renderDynamic();
   }
 
+
   async function hydrateAssets(battle) {
     if (!_scene) return;
-    const [playerTexture, enemyTexture] = await Promise.all([
+    const def = resolveBloodMoonEnemyDefinition(battle);
+    const states = Object.keys(def?.states || {});
+    const enemyLoads = await Promise.all(states.map(async (state) => {
+      const tex = await loadTextureSafeMany(resolveBloodMoonEnemyAsset(battle, state));
+      return [state, tex || null];
+    }));
+    const [playerTexture] = await Promise.all([
       loadTextureSafeMany(resolveBloodMoonPlayerAsset(battle)),
-      loadTextureSafeMany(resolveBloodMoonEnemyAsset(battle, "idle")),
     ]);
     _scene.playerTexture = playerTexture || null;
-    _scene.enemyTexture = enemyTexture || null;
+    _scene.enemyTextures = Object.fromEntries(enemyLoads);
+    _scene.enemyTexture = _scene.enemyTextures.idle || null;
+    _scene.enemyPose = "idle";
   }
 
   async function applyBattle(battle, animate) {
     if (!_scene) return;
-
     _scene.battle = battle || {};
+    _scene.plan = planBattlePresentation(battle || {});
     _scene.beforeHp = Math.max(0, num(battle?.enemy?.hpBefore, battle?.enemy?.hpMax || 0));
     _scene.afterHp = Math.max(0, num(battle?.enemy?.hpAfter, 0));
     _scene.hpMax = Math.max(1, num(battle?.enemy?.hpMax, _scene.beforeHp || 1));
-    _scene.damage = Math.max(0, num(battle?.attack?.damage, 0));
-    _scene.crit = !!battle?.attack?.crit;
+    _scene.damage = Math.max(0, num(battle?.attack?.damage, _scene.plan?.damage || 0));
+    _scene.crit = !!_scene.plan?.hasCrit;
     _scene.hpDisplay = animate ? _scene.beforeHp : _scene.afterHp;
     _scene.playTime = 0;
     _scene.animating = !!animate;
@@ -851,6 +1003,13 @@
     await hydrateAssets(battle);
     renderStatic();
     renderDynamic();
+
+    if (animate) {
+      try {
+        const kind = _scene.plan?.hasCrit || _scene.plan?.waveBreak ? "medium" : "light";
+        _opts?.tg?.HapticFeedback?.impactOccurred?.(kind);
+      } catch (_) {}
+    }
   }
 
   async function init(host, opts = {}) {
@@ -902,6 +1061,7 @@
   BloodMoonPixi.resolveBloodMoonEnemyDefinition = resolveBloodMoonEnemyDefinition;
   BloodMoonPixi.resolveBloodMoonEnemyStateAsset = resolveBloodMoonEnemyStateAsset;
   BloodMoonPixi.resolveBloodMoonEnemyAsset = resolveBloodMoonEnemyAsset;
+  BloodMoonPixi.planBattlePresentation = planBattlePresentation;
 
   global.BloodMoonPixi = BloodMoonPixi;
 })(window);
