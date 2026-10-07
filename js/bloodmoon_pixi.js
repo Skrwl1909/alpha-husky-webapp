@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-final-audit-2026-10-07";
+  const VER = "bloodmoon_pixi.js v3-p11-restage-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -724,11 +724,11 @@
       hpW,
       hpH,
       playerX: Math.round(w * 0.26),
-      playerY: Math.round(h * 0.90),
+      playerY: Math.round(h * 0.73),
       enemyX: Math.round(w * 0.77),
-      enemyY: Math.round(h * 0.88),
+      enemyY: Math.round(h * 0.71),
       impactX: Math.round(w * 0.54),
-      impactY: Math.round(h * 0.50),
+      impactY: Math.round(h * 0.43),
     };
 
     roundRect(_scene.bg, 0, 0, w, h, 24, 0x04070e, 0.26);
