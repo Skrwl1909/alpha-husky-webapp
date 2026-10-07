@@ -8,11 +8,55 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v2-2026-03-25";
+  const VER = "bloodmoon_pixi.js v3-p2-enemy-registry-2026-10-07";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
   const BOSS_CLOUD_BASE = `${CLOUD_BASE}/${CLOUD_TX_768}/v1771238762/bosses`;
+
+  const BLOODMOON_ENEMY_REGISTRY = Object.freeze({
+    tower_husk: Object.freeze({
+      id: "tower_husk", displayName: "Tower Husk", waveMin: 1, waveMax: 3, personality: "fast_unstable",
+      anchor: Object.freeze({ x: 0.5, y: 0.916667 }),
+      states: Object.freeze({
+        idle: "/assets/bloodmoon/v3/enemies/tower_husk/idle.webp",
+        attack: "/assets/bloodmoon/v3/enemies/tower_husk/attack.webp",
+        hit: "/assets/bloodmoon/v3/enemies/tower_husk/hit.webp",
+        defeat: "/assets/bloodmoon/v3/enemies/tower_husk/defeat.webp",
+      }),
+    }),
+    echo_revenant: Object.freeze({
+      id: "echo_revenant", displayName: "Echo Revenant", waveMin: 4, waveMax: 6, personality: "controlled_displaced",
+      anchor: Object.freeze({ x: 0.5, y: 0.916667 }),
+      states: Object.freeze({
+        idle: "/assets/bloodmoon/v3/enemies/echo_revenant/idle.webp",
+        attack: "/assets/bloodmoon/v3/enemies/echo_revenant/attack.webp",
+        hit: "/assets/bloodmoon/v3/enemies/echo_revenant/hit.webp",
+        defeat: "/assets/bloodmoon/v3/enemies/echo_revenant/defeat.webp",
+      }),
+    }),
+    lunar_myrmidon: Object.freeze({
+      id: "lunar_myrmidon", displayName: "Lunar Myrmidon", waveMin: 7, waveMax: 9, personality: "heavy_brutal",
+      anchor: Object.freeze({ x: 0.5, y: 0.916667 }),
+      states: Object.freeze({
+        idle: "/assets/bloodmoon/v3/enemies/lunar_myrmidon/idle.webp",
+        attack: "/assets/bloodmoon/v3/enemies/lunar_myrmidon/attack.webp",
+        hit: "/assets/bloodmoon/v3/enemies/lunar_myrmidon/hit.webp",
+        defeat: "/assets/bloodmoon/v3/enemies/lunar_myrmidon/defeat.webp",
+      }),
+    }),
+    phase_knight: Object.freeze({
+      id: "phase_knight", displayName: "The Phase Knight", waveMin: 10, waveMax: 10, personality: "calm_precise",
+      anchor: Object.freeze({ x: 0.5, y: 0.953 }),
+      states: Object.freeze({
+        idle: "/assets/bloodmoon/v3/enemies/phase_knight/idle.webp",
+        attack: "/assets/bloodmoon/v3/enemies/phase_knight/attack.webp",
+        hit: "/assets/bloodmoon/v3/enemies/phase_knight/hit.webp",
+        phase_shift: "/assets/bloodmoon/v3/enemies/phase_knight/phase_shift.webp",
+        defeat: "/assets/bloodmoon/v3/enemies/phase_knight/defeat.webp",
+      }),
+    }),
+  });
 
   try { global.__BLOODMOON_PIXI_VER__ = VER; } catch (_) {}
 
@@ -247,16 +291,30 @@
     return uniqueStrings([...avatarCandidates, ...direct]);
   }
 
+
   function resolveBloodMoonEnemyKey(battle) {
     const wave = Math.max(1, num(battle?.wave || battle?.enemy?.wave, 1));
     if (wave >= 10) return "phase_knight";
     if (wave >= 7) return "lunar_myrmidon";
     if (wave >= 4) return "echo_revenant";
-    return "shatter_hound";
+    return "tower_husk";
   }
 
-  function resolveBloodMoonEnemyAsset(battle) {
-    const direct = uniqueStrings([
+  function resolveBloodMoonEnemyDefinition(battle) {
+    const key = resolveBloodMoonEnemyKey(battle);
+    return BLOODMOON_ENEMY_REGISTRY[key] || BLOODMOON_ENEMY_REGISTRY.tower_husk;
+  }
+
+  function resolveBloodMoonEnemyStateAsset(battle, state = "idle") {
+    const def = resolveBloodMoonEnemyDefinition(battle);
+    const wanted = String(state || "idle").trim().toLowerCase();
+    return def?.states?.[wanted] || def?.states?.idle || "";
+  }
+
+  function resolveBloodMoonEnemyAsset(battle, state = "idle") {
+    const key = resolveBloodMoonEnemyKey(battle);
+    const dedicated = resolveBloodMoonEnemyStateAsset(battle, state);
+    const directFallbacks = uniqueStrings([
       battle?.enemy?.sprite,
       battle?.enemy?.assetUrl,
       battle?.enemy?.image,
@@ -268,14 +326,13 @@
       if (src.includes("res.cloudinary.com")) return cloudThumb(src, 768);
       return normalizeUrl(src);
     });
-
-    const key = resolveBloodMoonEnemyKey(battle);
     return uniqueStrings([
-      ...direct,
-      `${BOSS_CLOUD_BASE}/${key}.png`,
-      `${BOSS_CLOUD_BASE}/phase_knight.png`,
-      `${BOSS_CLOUD_BASE}/lunar_myrmidon.png`,
-      `${BOSS_CLOUD_BASE}/echo_revenant.png`,
+      dedicated,
+      ...directFallbacks,
+      BOSS_CLOUD_BASE + "/" + key + ".png",
+      BOSS_CLOUD_BASE + "/phase_knight.png",
+      BOSS_CLOUD_BASE + "/lunar_myrmidon.png",
+      BOSS_CLOUD_BASE + "/echo_revenant.png",
       "/assets/skins/raider_warlord.webp",
       "/assets/skins/lunarhowl_skin.webp",
     ]);
@@ -772,7 +829,7 @@
     if (!_scene) return;
     const [playerTexture, enemyTexture] = await Promise.all([
       loadTextureSafeMany(resolveBloodMoonPlayerAsset(battle)),
-      loadTextureSafeMany(resolveBloodMoonEnemyAsset(battle)),
+      loadTextureSafeMany(resolveBloodMoonEnemyAsset(battle, "idle")),
     ]);
     _scene.playerTexture = playerTexture || null;
     _scene.enemyTexture = enemyTexture || null;
@@ -840,6 +897,10 @@
   BloodMoonPixi.stop = stop;
   BloodMoonPixi.destroy = destroy;
   BloodMoonPixi.resolveBloodMoonPlayerAsset = resolveBloodMoonPlayerAsset;
+  BloodMoonPixi.ENEMY_REGISTRY = BLOODMOON_ENEMY_REGISTRY;
+  BloodMoonPixi.resolveBloodMoonEnemyKey = resolveBloodMoonEnemyKey;
+  BloodMoonPixi.resolveBloodMoonEnemyDefinition = resolveBloodMoonEnemyDefinition;
+  BloodMoonPixi.resolveBloodMoonEnemyStateAsset = resolveBloodMoonEnemyStateAsset;
   BloodMoonPixi.resolveBloodMoonEnemyAsset = resolveBloodMoonEnemyAsset;
 
   global.BloodMoonPixi = BloodMoonPixi;

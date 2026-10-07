@@ -1,0 +1,72 @@
+{
+  "pack": "blood_moon_enemy_registry_v3",
+  "version": 1,
+  "runtimeRoot": "/assets/bloodmoon/v3/enemies",
+  "ownership": "bloodmoon_only",
+  "fallbackPolicy": "dedicated_v3_first_then_backend_shared_fallbacks",
+  "waves": {
+    "10": "phase_knight",
+    "1-3": "tower_husk",
+    "4-6": "echo_revenant",
+    "7-9": "lunar_myrmidon"
+  },
+  "enemies": {
+    "tower_husk": {
+      "displayName": "Tower Husk",
+      "personality": "fast_unstable",
+      "anchor": [
+        0.5,
+        0.916667
+      ],
+      "states": [
+        "idle",
+        "attack",
+        "hit",
+        "defeat"
+      ]
+    },
+    "echo_revenant": {
+      "displayName": "Echo Revenant",
+      "personality": "controlled_displaced",
+      "anchor": [
+        0.5,
+        0.916667
+      ],
+      "states": [
+        "idle",
+        "attack",
+        "hit",
+        "defeat"
+      ]
+    },
+    "lunar_myrmidon": {
+      "displayName": "Lunar Myrmidon",
+      "personality": "heavy_brutal",
+      "anchor": [
+        0.5,
+        0.916667
+      ],
+      "states": [
+        "idle",
+        "attack",
+        "hit",
+        "defeat"
+      ]
+    },
+    "phase_knight": {
+      "displayName": "The Phase Knight",
+      "personality": "calm_precise",
+      "anchor": [
+        0.5,
+        0.953
+      ],
+      "states": [
+        "idle",
+        "attack",
+        "hit",
+        "phase_shift",
+        "defeat"
+      ]
+    }
+  }
+}
