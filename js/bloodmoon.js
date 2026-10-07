@@ -1765,8 +1765,8 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-pixi-slot{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden}
 .bm-v3-pixi-stage,.bm-v3-pixi-stage .bm-battle-pixi-host{position:absolute;inset:0;width:100%;height:100%}
 .bm-v3-pixi-stage:not(.is-pixi-active){opacity:0}
-.bm-v3-arena:has(.bm-v3-pixi-stage.is-pixi-active) .bm-v3-enemy{opacity:0}
-.bm-v3-arena:has(.bm-v3-pixi-stage.is-pixi-active) .bm-v3-moon{opacity:.42}
+.bm-v3-arena:has(.bm-v3-pixi-stage.is-pixi-active) .bm-v3-enemy,.bm-v3-arena.is-cinematic-active .bm-v3-enemy{opacity:0}
+.bm-v3-arena:has(.bm-v3-pixi-stage.is-pixi-active) .bm-v3-moon,.bm-v3-arena.is-cinematic-active .bm-v3-moon{opacity:.42}
 
 .bm-v3-vignette{position:absolute;z-index:4;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.08) 25%,rgba(4,2,4,.18) 48%,rgba(5,2,4,.92) 100%),radial-gradient(circle at 50% 44%,transparent 28%,rgba(0,0,0,.48) 100%)}
 .bm-v3-hud{position:relative;z-index:5;min-height:clamp(430px,68vh,620px);display:flex;flex-direction:column;justify-content:space-between;padding:14px}
@@ -1946,6 +1946,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
 
   function stopBattlePlayback(hard = false, preserveDom = false) {
     _battlePixiRunId += 1;
+    try { document.querySelector(".bm-v3-arena")?.classList?.remove?.("is-cinematic-active"); } catch (_) {}
     try { battleLiteStageEl()?.classList?.remove?.("is-pixi-active"); } catch (_) {}
 
     if (_battleReplayTimer) {
