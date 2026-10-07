@@ -1780,6 +1780,43 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-secondary{display:grid;gap:10px}.bm-v3-panel{display:none}.bm-v3-panel.is-active{display:grid;gap:10px}
 .bm-v3-dock{position:sticky;z-index:20;bottom:max(6px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:rgba(7,6,9,.92);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.45)}
 .bm-v3-tab{min-width:0;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);padding:9px 3px;font:inherit;font-size:8px;font-weight:900;letter-spacing:.08em}.bm-v3-tab.is-active{color:#fff;background:rgba(170,25,49,.22);box-shadow:inset 0 0 0 1px rgba(255,78,104,.28)}
+
+/* Blood Moon V3 final immersive correction */
+#bloodMoonModal{width:min(100%,880px);height:min(98vh,1040px);background:#080609;border-color:rgba(126,18,35,.72)}
+#bloodMoonHead{padding:10px 14px 8px;background:linear-gradient(180deg,rgba(50,7,14,.72),rgba(8,6,9,.30));border-bottom-color:rgba(255,255,255,.05)}
+#bloodMoonTitle{font-size:17px;letter-spacing:1.5px}
+#bloodMoonTitle::after{display:none}
+#bloodMoonSub{display:none}
+#bloodMoonBody{padding:8px;overflow-y:auto}
+.bm-v3-shell{gap:7px;padding-bottom:0}
+.bm-v3-arena{min-height:clamp(560px,79vh,780px);border-radius:18px;border-color:rgba(255,80,105,.14);box-shadow:0 28px 70px rgba(0,0,0,.60),0 0 80px rgba(124,8,28,.12)}
+.bm-v3-arena-bg{opacity:.86;filter:contrast(1.08) saturate(.92)}
+.bm-v3-atmosphere{opacity:.42}
+.bm-v3-moon{width:min(52vw,245px);right:-18px;top:8px;opacity:.88;filter:drop-shadow(0 0 52px rgba(255,45,76,.36))}
+.bm-v3-enemy{width:min(96%,560px);max-height:72%;bottom:82px;filter:drop-shadow(0 28px 38px rgba(0,0,0,.82))}
+.bm-v3-vignette{background:linear-gradient(180deg,rgba(0,0,0,.02) 18%,rgba(4,2,4,.10) 45%,rgba(5,2,4,.94) 100%),radial-gradient(circle at 50% 42%,transparent 34%,rgba(0,0,0,.44) 100%)}
+.bm-v3-hud{min-height:clamp(560px,79vh,780px);padding:12px 13px 13px}
+.bm-v3-kicker{font-size:8px;letter-spacing:.2em;color:rgba(255,186,198,.74)}
+.bm-v3-phase{font-size:8px;padding:5px 7px;border-color:rgba(255,255,255,.09);background:rgba(5,4,7,.38)}
+.bm-v3-encounter{padding-top:220px}
+.bm-v3-act{margin-bottom:4px;font-size:7px;opacity:.88}
+.bm-v3-enemy-name{font-size:clamp(30px,7vw,46px);letter-spacing:.055em;line-height:.95;text-shadow:0 5px 30px #000,0 0 30px rgba(139,18,39,.22)}
+.bm-v3-wave-label{font-size:8px;margin-top:6px;color:rgba(255,166,181,.86)}
+.bm-v3-hp{margin-top:8px;max-width:520px}
+.bm-v3-hp-line{font-size:8px;margin-bottom:4px}
+.bm-v3-hp-track{height:8px;background:rgba(255,255,255,.07)}
+.bm-v3-pack-echo{max-width:440px;margin-top:7px;padding:6px 8px;background:rgba(3,3,6,.45)}
+.bm-v3-result{max-width:440px;margin-top:6px;padding:6px 9px;background:rgba(5,4,7,.48)}
+.bm-v3-attempt-strip{display:grid;grid-template-columns:1fr auto;gap:6px 14px;align-items:end;margin:8px auto 0;max-width:520px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(4,3,6,.54);backdrop-filter:blur(8px);text-align:left}
+.bm-v3-attempt-strip span{display:block;font-size:7px;letter-spacing:.12em;color:rgba(255,255,255,.48)}
+.bm-v3-attempt-strip strong{display:block;margin-top:2px;font-size:10px;color:#fff}
+.bm-v3-attempt-cooldown{text-align:right}
+.bm-v3-attempt-reason{grid-column:1/-1;font-size:8px;color:rgba(255,214,220,.72)}
+.bm-v3-command{display:block;margin-top:7px}
+.bm-v3-command .bm-cta{padding:14px 16px;min-height:48px;border-radius:13px;font-size:12px;letter-spacing:.14em;box-shadow:0 0 24px rgba(255,45,61,.32),0 12px 28px rgba(92,7,21,.48)}
+.bm-v3-dock{position:sticky;bottom:max(4px,env(safe-area-inset-bottom));border-radius:13px;padding:4px;background:rgba(6,5,8,.94)}
+.bm-v3-tab{padding:10px 4px;font-size:8px;cursor:pointer}
+
 @media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:58%;bottom:92px}}
 @media (prefers-reduced-motion:reduce){.bm-v3-moon,.bm-v3-enemy{transition:none!important}.bm-v3-dock{backdrop-filter:none}}
 html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .bm-v3-pack-echo,body.ah-perf-lite .bm-v3-pack-echo{backdrop-filter:none}
@@ -2922,6 +2959,18 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     bindFeedToggle();
   }
 
+  function renderArenaV3Attempt(prepared, cta, attemptsLeft, dailyCap, cooldownLeftSec) {
+    const source = prepared && typeof prepared === "object" ? prepared : {};
+    const committed = String(source.status || "").toUpperCase() === "COMMITTED";
+    const status = committed ? "LAST STRIKE RESOLVED" : (source.ready ? "READY TO STRIKE" : "TOWER LOCKED");
+    const reason = String(source.reason || cta?.reason || "").trim();
+    return `<div class="bm-v3-attempt-strip" data-reason-code="${esc(source.reasonCode || cta?.reasonCode || "READY")}">
+      <div class="bm-v3-attempt-state"><span>${esc(status)}</span><strong>${fmtNum(attemptsLeft)} / ${fmtNum(dailyCap)} attempts</strong></div>
+      <div class="bm-v3-attempt-cooldown"><span>COOLDOWN</span><strong>${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY"}</strong></div>
+      ${reason && !source.ready && !committed ? `<div class="bm-v3-attempt-reason">${esc(reason)}</div>` : ""}
+    </div>`;
+  }
+
   function renderArenaV3Dock() {
     const tabs = [["raid","RAID"],["race","RACE"],["rewards","REWARDS"],["records","RECORDS"]];
     return `<nav class="bm-v3-dock" aria-label="Blood Moon sections">${tabs.map(([key,label]) => `<button class="bm-v3-tab ${_arenaView === key ? "is-active" : ""}" data-bm-v3-tab="${key}" type="button" aria-pressed="${_arenaView === key ? "true" : "false"}">${label}</button>`).join("")}</nav>`;
@@ -3034,11 +3083,9 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
               <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(displayHp)} / ${fmtNum(displayHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${displayRemainingPct}%"></div></div></div>
               ${packEcho ? `<div class="bm-v3-pack-echo"><b>RECENT PACK ECHO</b><span>${esc(packEcho.text)}</span></div>` : ""}
               ${v3Replay ? `<div class="bm-v3-result ${v3Replay.waveCleared ? "is-clear" : ""}"><span><strong>${esc(v3Replay.outcomeLabel)}</strong> · ${fmtNum(v3Damage)} damage · ${fmtNum(v3Replay.enemy.hpEnd)} / ${fmtNum(v3Replay.enemy.hpMax)} HP remain</span><button class="bm-v3-replay" data-bm-replay type="button">REPLAY</button></div>` : ""}
-              ${resolvingPriorWave ? "" : renderPreparedAttempt(preparedAttempt, cta)}
               ${renderInlineFeedback()}
+              ${resolvingPriorWave ? "" : renderArenaV3Attempt(preparedAttempt, cta, attemptsLeft, my.dailyCap, cooldownLeftSec)}
               <div class="bm-v3-command">
-                <div class="bm-v3-mini"><span>Attempts</span><strong>${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</strong></div>
-                <div class="bm-v3-mini"><span>Cooldown</span><strong>${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY"}</strong></div>
                 <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled && !resolvingPriorWave ? "" : "disabled"}>${esc(resolvingPriorWave ? "RESOLVING WAVE" : (cta.label || "STRIKE THE TOWER"))}</button>
               </div>
             </div>
