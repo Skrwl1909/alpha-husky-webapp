@@ -59,6 +59,20 @@
     return BLOODMOON_V3_ENEMIES.tower_husk;
   }
 
+  function bloodMoonV3Act(wave) {
+    const n = Math.max(1, Number(wave || 1));
+    if (n >= 10) return { label: "FINAL WAVE", title: "THE PHASE KNIGHT", className: "is-final" };
+    if (n >= 7) return { label: "ACT III", title: "THE BLOODLINE", className: "is-bloodline" };
+    if (n >= 4) return { label: "ACT II", title: "THE BREACH", className: "is-breach" };
+    return { label: "ACT I", title: "THE APPROACH", className: "is-approach" };
+  }
+
+  function latestPackEcho(rows) {
+    const list = normalizeFeedRows(rows);
+    return list.find((row) => /strike|critical|wave cleared/i.test(String(row.kind || ""))) || null;
+  }
+
+
   const BLOODMOON_LUNAR_COPY = Object.freeze({
     dormant: "The Tower is quiet. Blood Moon rises on the next lunar boundary.",
     rising: "The Blood Moon is approaching. Keep your faction’s raid moving.",
@@ -1754,10 +1768,15 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-encounter{margin-top:auto;padding-top:120px;text-align:center}.bm-v3-enemy-name{font-size:clamp(22px,7vw,34px);font-weight:950;letter-spacing:.04em;text-transform:uppercase;text-shadow:0 3px 18px #000}.bm-v3-wave-label{margin-top:3px;font-size:10px;letter-spacing:.16em;color:#ff9baa;text-transform:uppercase}
 .bm-v3-hp{margin:10px auto 0;max-width:430px}.bm-v3-hp-line{display:flex;justify-content:space-between;gap:8px;margin-bottom:5px;font-size:9px;color:rgba(255,255,255,.76)}.bm-v3-hp-track{height:9px;border-radius:999px;overflow:hidden;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.1)}.bm-v3-hp-fill{height:100%;background:linear-gradient(90deg,#811225,#db314c,#ff7487);box-shadow:0 0 18px rgba(255,50,82,.5)}
 .bm-v3-command{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.bm-v3-command .bm-cta{grid-column:1/-1;padding:15px 16px;font-size:13px;border-radius:14px}.bm-v3-mini{padding:8px 9px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(5,5,8,.7);backdrop-filter:blur(8px);text-align:left}.bm-v3-mini span{display:block;font-size:7px;letter-spacing:.12em;color:rgba(255,255,255,.5);text-transform:uppercase}.bm-v3-mini strong{display:block;margin-top:2px;font-size:11px}
+.bm-v3-act{display:flex;align-items:center;justify-content:center;gap:7px;margin:0 auto 7px;font-size:8px;font-weight:950;letter-spacing:.18em;color:rgba(255,255,255,.62);text-transform:uppercase}.bm-v3-act strong{color:#ff9baa}.bm-v3-act.is-final strong{color:#ffe0e5;text-shadow:0 0 16px rgba(255,50,80,.8)}
+.bm-v3-pack-echo{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:8px;margin:8px auto 0;max-width:360px;padding:7px 9px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(3,3,6,.62);backdrop-filter:blur(8px);text-align:left}.bm-v3-pack-echo b{font-size:7px;letter-spacing:.14em;color:#ff9baa}.bm-v3-pack-echo span{font-size:9px;line-height:1.25;color:rgba(255,255,255,.72)}
+.bm-v3-result{margin:8px auto 0;max-width:380px;padding:8px 10px;border-radius:11px;border:1px solid rgba(255,255,255,.09);background:rgba(5,4,7,.70);font-size:9px;color:rgba(255,255,255,.72)}.bm-v3-result strong{color:#fff}.bm-v3-result.is-clear{border-color:rgba(255,72,98,.32);box-shadow:0 0 20px rgba(189,28,52,.10)}
 .bm-v3-secondary{display:grid;gap:10px}.bm-v3-panel{display:none}.bm-v3-panel.is-active{display:grid;gap:10px}
 .bm-v3-dock{position:sticky;z-index:20;bottom:max(6px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:5px;border:1px solid rgba(255,255,255,.1);border-radius:15px;background:rgba(7,6,9,.92);backdrop-filter:blur(14px);box-shadow:0 12px 30px rgba(0,0,0,.45)}
 .bm-v3-tab{min-width:0;border:0;border-radius:10px;background:transparent;color:rgba(255,255,255,.5);padding:9px 3px;font:inherit;font-size:8px;font-weight:900;letter-spacing:.08em}.bm-v3-tab.is-active{color:#fff;background:rgba(170,25,49,.22);box-shadow:inset 0 0 0 1px rgba(255,78,104,.28)}
 @media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:58%;bottom:92px}}
+@media (prefers-reduced-motion:reduce){.bm-v3-moon,.bm-v3-enemy{transition:none!important}.bm-v3-dock{backdrop-filter:none}}
+html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .bm-v3-pack-echo,body.ah-perf-lite .bm-v3-pack-echo{backdrop-filter:none}
 
 .bm-empty{
   padding:16px;
@@ -2267,8 +2286,12 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   }
 
   function battleReplayDurationMs(battle) {
+    try {
+      const plan = window.BloodMoonPixi?.planBattlePresentation?.(battle);
+      if (plan?.total) return Math.max(1400, Math.round(Number(plan.total) * 1000 + 180));
+    } catch (_) {}
     const info = battleReplayInfo(battle);
-    return Math.max(1400, 340 + info.turns.length * 760);
+    return Math.max(2350, Math.min(5000, 620 + info.turns.length * 700));
   }
 
   function buildBattleLogRows(battle) {
@@ -2934,6 +2957,10 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
   }
 
   const v3Enemy = bloodMoonV3Enemy(currentWave);
+  const v3Act = bloodMoonV3Act(currentWave);
+  const packEcho = latestPackEcho(_state.recentFeed);
+  const v3Replay = lastBattle ? battleReplayInfo(lastBattle) : null;
+  const v3Damage = Math.max(0, Number(lastBattle?.attack?.damage || 0));
   const v3Ctx = { sortedFactions, dominancePct, my, myRewardPreview };
   body.innerHTML = `
     <div class="bm-v3-shell" data-bm-v3-view="${esc(_arenaView)}">
@@ -2947,9 +2974,12 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
           <div class="bm-v3-hud">
             <div class="bm-v3-top"><div><div class="bm-v3-kicker">BLOOD MOON · FACTION RAID</div></div><div class="bm-v3-phase">${esc(lunar.moonPhaseName)} · ${esc(lunarCountdownText(lunar))}</div></div>
             <div class="bm-v3-encounter">
+              <div class="bm-v3-act ${esc(v3Act.className)}"><span>${esc(v3Act.label)}</span><strong>${esc(v3Act.title)}</strong></div>
               <div class="bm-v3-enemy-name">${esc(v3Enemy.name)}</div>
               <div class="bm-v3-wave-label">Tower Wave ${fmtNum(currentWave)} / ${fmtNum(maxWave)}</div>
               <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${waveRemainingPct}%"></div></div></div>
+              ${packEcho ? `<div class="bm-v3-pack-echo"><b>RECENT PACK ECHO</b><span>${esc(packEcho.text)}</span></div>` : ""}
+              ${v3Replay ? `<div class="bm-v3-result ${v3Replay.waveCleared ? "is-clear" : ""}"><strong>${esc(v3Replay.outcomeLabel)}</strong> · ${fmtNum(v3Damage)} damage · ${fmtNum(v3Replay.enemy.hpEnd)} / ${fmtNum(v3Replay.enemy.hpMax)} HP remain</div>` : ""}
               ${renderPreparedAttempt(preparedAttempt, cta)}
               ${renderInlineFeedback()}
               <div class="bm-v3-command">
