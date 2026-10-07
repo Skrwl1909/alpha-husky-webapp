@@ -2047,6 +2047,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
 
       if (runId !== _battlePixiRunId) return false;
       liveStage.classList.add("is-pixi-active");
+      try { liveStage.closest?.(".bm-v3-arena")?.classList?.add?.("is-cinematic-active"); } catch (_) {}
       return true;
     } catch (err) {
       dbg("battle pixi fallback", err);
@@ -2482,9 +2483,17 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       } catch (_) {}
     }
 
+    const playedWave = Math.max(1, Number(battle?.wave || battle?.enemy?.wave || 1));
+    const liveWave = Math.max(1, Number(_state?.myFactionRun?.currentWave || _state?.currentWave || 1));
+    const revealAdvancedWave = !!replay.waveCleared && liveWave !== playedWave;
+
     _battleReplayTimer = window.setTimeout(() => {
       stage.classList.remove("is-replaying");
       _battleReplayTimer = 0;
+      if (revealAdvancedWave && _state && rootEl()?.classList?.contains("show")) {
+        stopBattlePlayback(true, true);
+        render(_state);
+      }
     }, battleReplayDurationMs(battle));
 
     void playLastBattlePixi(battle, {
@@ -2894,6 +2903,17 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       btn.addEventListener("click", () => { try { window.openBadgeWallModal?.(); } catch (_) {} });
     });
 
+    document.querySelectorAll("[data-bm-v3-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (_busy) return;
+        const next = String(btn.getAttribute("data-bm-v3-tab") || "raid").trim().toLowerCase();
+        if (!["raid", "race", "rewards", "records"].includes(next) || next === _arenaView) return;
+        _arenaView = next;
+        render(_state);
+        try { bodyEl()?.scrollTo?.({ top: 0, behavior: "smooth" }); } catch (_) {}
+      });
+    });
+
     bindFeedToggle();
   }
 
@@ -2906,7 +2926,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     const { sortedFactions, dominancePct, my, myRewardPreview } = ctx;
     if (view === "race") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">FACTION PROGRESS · LIVE RACE</div>${renderRace(sortedFactions, dominancePct)}</div><div class="bm-card"><div class="bm-label">FACTION STANDINGS</div>${renderFactionStandings(_state.factionStandings)}</div></section>`;
     if (view === "rewards") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">BLOOD-MOON WAR REWARDS</div>${renderClaimFeedback(_lastClaimFeedback)}${renderClaimables(my.claimableRewardDetails || my.claimableRewards)}</div>${renderShopCta(shopFoundation(_state.shop))}</section>`;
-    if (view === "records") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">MY RAID RECORD</div><div class="bm-mini-grid"><div class="bm-stat"><div class="bm-label">Total Damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div><div class="bm-stat"><div class="bm-label">Best Hit</div><div class="bm-value">${fmtNum(my.bestHit)}</div></div></div>${myRewardPreview}</div><div class="bm-card"><div class="bm-label">TOP SLAUGHTERERS</div>${renderTopPlayers(_state.topPlayers)}</div><div class="bm-card"><div class="bm-label">LIVE CARNAGE FEED</div><div id="${FEED_MOUNT_ID}">${renderFeed(_state.recentFeed)}</div></div></section>`;
+    if (view === "records") return `<section class="bm-v3-panel is-active"><div class="bm-card"><div class="bm-label">MY RAID RECORD</div><div class="bm-mini-grid"><div class="bm-stat"><div class="bm-label">Total Damage</div><div class="bm-value">${fmtNum(my.totalDamage)}</div></div><div class="bm-stat"><div class="bm-label">Best Hit</div><div class="bm-value">${fmtNum(my.bestHit)}</div></div></div>${myRewardPreview}</div><div class="bm-card"><div class="bm-label">TOP SLAUGHTERERS</div>${renderTopPlayers(_state.topPlayers)}</div><div class="bm-card"><div class="bm-label">RECENT PACK ACTIVITY</div><div id="${FEED_MOUNT_ID}">${renderFeed(_state.recentFeed)}</div></div></section>`;
     return "";
   }
 
@@ -2967,8 +2987,21 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     return;
   }
 
-  const v3Enemy = bloodMoonV3Enemy(currentWave);
-  const v3Act = bloodMoonV3Act(currentWave);
+  const preferredBattle = opts?.preferredBattle && typeof opts.preferredBattle === "object" ? opts.preferredBattle : null;
+  const preferredWave = Math.max(0, Number(preferredBattle?.wave || preferredBattle?.enemy?.wave || 0));
+  const resolvingPriorWave = !!(preferredBattle && preferredWave > 0 && preferredWave !== currentWave);
+  const displayWave = resolvingPriorWave ? preferredWave : currentWave;
+  const displayHp = resolvingPriorWave
+    ? Math.max(0, Number(preferredBattle?.enemy?.hpAfter ?? preferredBattle?.right?.hpEnd ?? 0))
+    : waveHp;
+  const displayHpMaxRaw = resolvingPriorWave
+    ? Number(preferredBattle?.enemy?.hpMax ?? preferredBattle?.right?.hpMax ?? waveHpMax)
+    : waveHpMax;
+  const displayHpMax = displayHpMaxRaw > 0 ? displayHpMaxRaw : 1;
+  const displayRemainingPct = pct((displayHp / displayHpMax) * 100);
+
+  const v3Enemy = bloodMoonV3Enemy(displayWave);
+  const v3Act = bloodMoonV3Act(displayWave);
   const packEcho = latestPackEcho(_state.recentFeed);
   const v3Replay = lastBattle ? battleReplayInfo(lastBattle) : null;
   const v3Damage = Math.max(0, Number(lastBattle?.attack?.damage || 0));
@@ -2992,16 +3025,16 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
             <div class="bm-v3-encounter">
               <div class="bm-v3-act ${esc(v3Act.className)}"><span>${esc(v3Act.label)}</span><strong>${esc(v3Act.title)}</strong></div>
               <div class="bm-v3-enemy-name">${esc(v3Enemy.name)}</div>
-              <div class="bm-v3-wave-label">Tower Wave ${fmtNum(currentWave)} / ${fmtNum(maxWave)}</div>
-              <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(waveHp)} / ${fmtNum(waveHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${waveRemainingPct}%"></div></div></div>
+              <div class="bm-v3-wave-label">Tower Wave ${fmtNum(displayWave)} / ${fmtNum(maxWave)}</div>
+              <div class="bm-v3-hp"><div class="bm-v3-hp-line"><span>ENEMY INTEGRITY</span><span>${fmtNum(displayHp)} / ${fmtNum(displayHpMax)}</span></div><div class="bm-v3-hp-track"><div class="bm-v3-hp-fill" style="width:${displayRemainingPct}%"></div></div></div>
               ${packEcho ? `<div class="bm-v3-pack-echo"><b>RECENT PACK ECHO</b><span>${esc(packEcho.text)}</span></div>` : ""}
               ${v3Replay ? `<div class="bm-v3-result ${v3Replay.waveCleared ? "is-clear" : ""}"><strong>${esc(v3Replay.outcomeLabel)}</strong> · ${fmtNum(v3Damage)} damage · ${fmtNum(v3Replay.enemy.hpEnd)} / ${fmtNum(v3Replay.enemy.hpMax)} HP remain</div>` : ""}
-              ${renderPreparedAttempt(preparedAttempt, cta)}
+              ${resolvingPriorWave ? "" : renderPreparedAttempt(preparedAttempt, cta)}
               ${renderInlineFeedback()}
               <div class="bm-v3-command">
                 <div class="bm-v3-mini"><span>Attempts</span><strong>${fmtNum(attemptsLeft)} / ${fmtNum(my.dailyCap)}</strong></div>
                 <div class="bm-v3-mini"><span>Cooldown</span><strong>${cooldownLeftSec > 0 ? esc(fmtSec(cooldownLeftSec)) : "READY"}</strong></div>
-                <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled ? "" : "disabled"}>${esc(cta.label || "STRIKE THE TOWER")}</button>
+                <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled && !resolvingPriorWave ? "" : "disabled"}>${esc(resolvingPriorWave ? "RESOLVING WAVE" : (cta.label || "STRIKE THE TOWER"))}</button>
               </div>
             </div>
           </div>
@@ -3016,9 +3049,14 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
    startLunarCountdown(lunar);
    scheduleLunarTransitionRefresh(lunar);
   if (lastBattle) {
-    const kick = () => playLastBattlePixi(lastBattle, { animate: false });
-    if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
-    else void kick();
+    const replayInfo = battleReplayInfo(lastBattle);
+    const lastBattleWave = Math.max(1, Number(lastBattle?.wave || lastBattle?.enemy?.wave || 1));
+    const shouldPrimeArena = !resolvingPriorWave && !replayInfo.waveCleared && lastBattleWave === currentWave;
+    if (shouldPrimeArena) {
+      const kick = () => playLastBattlePixi(lastBattle, { animate: false });
+      if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
+      else void kick();
+    }
   }
   }
 
@@ -3161,6 +3199,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
 
   async function open() {
     ensureMounted();
+    _arenaView = "raid";
     _lastClaimFeedback = null;
     void window.LunarWorld?.refresh?.({ force: false });
     show();
