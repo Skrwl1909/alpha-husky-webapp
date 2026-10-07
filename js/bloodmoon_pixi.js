@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p11-restage-2026-10-08";
+  const VER = "bloodmoon_pixi.js v3-p11-restage-skin-arena-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -244,32 +244,36 @@
   function resolveBloodMoonPlayerAsset(battle) {
     const p = profileSnapshot();
     const skinEl = global.document?.getElementById?.("player-skin");
-    const domHero =
-      skinEl?.currentSrc ||
-      skinEl?.src ||
-      global.document?.querySelector?.("#heroFrame img, #hero-frame img, img#hero-img, img#profile-avatar, #avatarMain img")?.src ||
-      "";
+    const activeSkinDom = String(skinEl?.currentSrc || skinEl?.src || "").trim();
 
-    const direct = uniqueStrings([
-      battle?.player?.sprite,
-      battle?.player?.assetUrl,
-      battle?.player?.image,
-      battle?.player?.img,
-      imageSourceValue(battle?.player?.skin),
-      battle?.player?.skinUrl,
-      typeof p?.skin === "string" ? p.skin : p?.skin?.img,
-      typeof p?.activeSkin === "string" ? p.activeSkin : p?.activeSkin?.img,
-      p?.heroImg,
-      p?.heroPng,
-      p?.character,
-      p?.characterPng,
-      domHero,
-    ]).map((x) => {
+    const normalizeCandidate = (x) => {
       const src = String(x || "").trim();
       if (!src) return "";
       if (src.includes("res.cloudinary.com")) return cloudThumb(src, 512);
       return normalizeUrl(src);
-    });
+    };
+
+    // Blood Moon is a combat scene: always prefer the actual equipped character
+    // skin. Profile/Telegram avatars are emergency-only fallbacks.
+    const skinCandidates = uniqueStrings([
+      activeSkinDom,
+      imageSourceValue(battle?.player?.skin),
+      battle?.player?.skinUrl,
+      typeof p?.skin === "string" ? p.skin : p?.skin?.img,
+      typeof p?.activeSkin === "string" ? p.activeSkin : p?.activeSkin?.img,
+    ]).map(normalizeCandidate);
+
+    const characterCandidates = uniqueStrings([
+      battle?.player?.sprite,
+      battle?.player?.assetUrl,
+      battle?.player?.image,
+      battle?.player?.img,
+      p?.heroImg,
+      p?.heroPng,
+      p?.character,
+      p?.characterPng,
+      "/images/Ah.png",
+    ]).map(normalizeCandidate);
 
     const avatarCandidates = uniqueStrings([
       imageSourceValue(battle?.player?.avatar),
@@ -288,9 +292,8 @@
     const tgPhoto = String(global.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url || "").trim();
     if (tgPhoto) avatarCandidates.push(tgPhoto);
 
-    return uniqueStrings([...avatarCandidates, ...direct]);
+    return uniqueStrings([...skinCandidates, ...characterCandidates, ...avatarCandidates]);
   }
-
 
   function resolveBloodMoonEnemyKey(battle) {
     const wave = Math.max(1, num(battle?.wave || battle?.enemy?.wave, 1));
@@ -731,44 +734,13 @@
       impactY: Math.round(h * 0.43),
     };
 
-    roundRect(_scene.bg, 0, 0, w, h, 24, 0x04070e, 0.26);
-
+    // Arena V3 DOM owns the environment. Pixi remains a transparent combat/VFX
+    // layer so replay never replaces the approved raid background.
+    clearDraw(_scene.bg);
     clearDraw(_scene.moon);
-    try {
-      _scene.moon.beginFill(0xff6678, 0.10);
-      _scene.moon.drawCircle(w * 0.74, h * 0.18, Math.min(w, h) * 0.18);
-      _scene.moon.endFill();
-      _scene.moon.beginFill(0xffd6de, 0.05);
-      _scene.moon.drawCircle(w * 0.74, h * 0.18, Math.min(w, h) * 0.11);
-      _scene.moon.endFill();
-    } catch (_) {}
-
     clearDraw(_scene.haze);
-    try {
-      _scene.haze.beginFill(0xa81a2f, 0.12);
-      _scene.haze.drawEllipse(w * 0.20, h * 0.76, w * 0.24, h * 0.18);
-      _scene.haze.endFill();
-      _scene.haze.beginFill(0xff5e70, 0.10);
-      _scene.haze.drawEllipse(w * 0.74, h * 0.54, w * 0.22, h * 0.22);
-      _scene.haze.endFill();
-    } catch (_) {}
-
     clearDraw(_scene.stars);
-    try {
-      const dots = [[0.14, 0.12], [0.22, 0.18], [0.40, 0.11], [0.58, 0.16], [0.86, 0.14], [0.76, 0.30]];
-      for (const dot of dots) {
-        _scene.stars.beginFill(0xffffff, 0.12);
-        _scene.stars.drawCircle(w * dot[0], h * dot[1], 1.4);
-        _scene.stars.endFill();
-      }
-    } catch (_) {}
-
     clearDraw(_scene.floor);
-    try {
-      _scene.floor.beginFill(0x0e121f, 0.48);
-      _scene.floor.drawEllipse(w * 0.54, h * 0.88, w * 0.46, h * 0.09);
-      _scene.floor.endFill();
-    } catch (_) {}
 
     roundRect(_scene.hpBack, _scene.layout.hpX, _scene.layout.hpY, hpW, hpH, 999, 0x0f1522, 0.78, 0xffffff, 0.08, 1);
     _scene.hpText.x = Math.round(w / 2);
