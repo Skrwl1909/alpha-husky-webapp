@@ -3056,7 +3056,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
   if (lastBattle) {
     const replayInfo = battleReplayInfo(lastBattle);
     const lastBattleWave = Math.max(1, Number(lastBattle?.wave || lastBattle?.enemy?.wave || 1));
-    const shouldPrimeArena = !resolvingPriorWave && !replayInfo.waveCleared && lastBattleWave === currentWave;
+    const shouldPrimeArena = _arenaView === "raid" && !resolvingPriorWave && !replayInfo.waveCleared && lastBattleWave === currentWave;
     if (shouldPrimeArena) {
       const kick = () => playLastBattlePixi(lastBattle, { animate: false });
       if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
