@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p2-enemy-registry-2026-10-07";
+  const VER = "bloodmoon_pixi.js v3-cinematic-raid-2026-10-07";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -362,16 +362,21 @@
   function normalizedBattleTurns(battle) {
     const raw = Array.isArray(battle?.turns) ? battle.turns : (Array.isArray(battle?.events) ? battle.events : []);
     if (raw.length) {
-      return raw.filter(Boolean).map((row, idx) => ({
-        turn: Math.max(1, num(row?.turn || row?.t, idx + 1)),
-        actor: row?.actor === "right" ? "right" : "left",
-        target: row?.target === "left" ? "left" : "right",
-        kind: ["hit","crit","block","heal","miss","tick","finish"].includes(String(row?.kind || row?.type || "").toLowerCase())
-          ? String(row?.kind || row?.type).toLowerCase()
-          : "hit",
-        value: Math.max(0, num(row?.value || row?.amount || row?.damage, 0)),
-        defeat: !!row?.defeat,
-      }));
+      return raw.filter(Boolean).map((row, idx) => {
+        let kind = String(row?.kind || row?.type || "hit").toLowerCase();
+        if (kind === "evade") kind = "miss";
+        if (!["hit","crit","block","heal","miss","tick","finish"].includes(kind)) kind = "hit";
+        return {
+          turn: Math.max(1, num(row?.turn || row?.t, idx + 1)),
+          actor: row?.actor === "right" ? "right" : "left",
+          target: row?.target === "left" ? "left" : "right",
+          kind,
+          value: Math.max(0, num(row?.value || row?.amount || row?.damage, 0)),
+          defeat: !!row?.defeat,
+          leftHpAfter: Number.isFinite(Number(row?.leftHpAfter ?? row?.left_hp_after)) ? Math.max(0, Number(row?.leftHpAfter ?? row?.left_hp_after)) : null,
+          rightHpAfter: Number.isFinite(Number(row?.rightHpAfter ?? row?.right_hp_after)) ? Math.max(0, Number(row?.rightHpAfter ?? row?.right_hp_after)) : null,
+        };
+      });
     }
     return [{
       turn: 1,
@@ -380,6 +385,8 @@
       kind: battle?.attack?.crit ? "crit" : "hit",
       value: Math.max(0, num(battle?.attack?.damage, 0)),
       defeat: Math.max(0, num(battle?.enemy?.hpAfter, 1)) <= 0,
+      leftHpAfter: null,
+      rightHpAfter: Math.max(0, num(battle?.enemy?.hpAfter, 0)),
     }];
   }
 
@@ -796,6 +803,8 @@
 
     const now = performance.now() * 0.001;
     const plan = _scene.plan;
+    let currentTurn = null;
+    let currentTurnIndex = -1;
     const idleP = Math.sin(now * 1.8) * 4;
     const idleFactor = plan?.personality === "heavy_brutal" ? 2.2 : plan?.personality === "calm_precise" ? 1.8 : 4.2;
     const idleE = Math.sin(now * (plan?.personality === "controlled_displaced" ? 2.3 : 1.45) + 1.3) * idleFactor;
@@ -811,6 +820,13 @@
       const dt = Math.min(0.05, _app.ticker.deltaMS / 1000);
       _scene.playTime += dt;
       const t = _scene.playTime;
+      const eventStart = Math.max(0.42, plan.impactAt * 0.72);
+      const eventEnd = Math.max(eventStart + 0.35, plan.settleAt);
+      if (plan.turns.length) {
+        const eventP = clamp((t - eventStart) / Math.max(0.01, eventEnd - eventStart), 0, 0.999999);
+        currentTurnIndex = Math.min(plan.turns.length - 1, Math.floor(eventP * plan.turns.length));
+        currentTurn = plan.turns[currentTurnIndex] || null;
+      }
       const impactAt = plan.impactAt;
       const family = plan.family;
 
@@ -867,6 +883,8 @@
 
       hpTween = easeInOutQuad(clamp((t - impactAt) / Math.max(0.66, plan.total * 0.36), 0, 1));
       pose = enemyPoseForTime(plan, t);
+      if (currentTurn?.actor === "right" && currentTurn.kind !== "miss" && t < plan.settleAt) pose = "attack";
+      if (currentTurn?.target === "right" && ["hit","crit","finish"].includes(currentTurn.kind) && t < plan.settleAt) pose = currentTurn.defeat ? "defeat" : "hit";
 
       if (plan.waveBreak && t > plan.settleAt) {
         _scene.enemy.alpha = 1 - settle * 0.82;
@@ -943,13 +961,15 @@
     _scene.impactRing.x = _scene.layout.impactX;
     _scene.impactRing.y = _scene.layout.impactY;
 
-    _scene.damageText.text = `-${Math.max(0, Math.round(_scene.damage))}`;
-    _scene.damageText.style.fill = _scene.crit ? 0xffe083 : 0xffffff;
+    const eventValue = currentTurn ? Math.max(0, Math.round(currentTurn.value || 0)) : Math.max(0, Math.round(_scene.damage));
+    const eventKind = currentTurn?.kind || (_scene.crit ? "crit" : "hit");
+    _scene.damageText.text = eventKind === "miss" ? "MISS" : eventKind === "block" ? "BLOCK" : eventKind === "heal" ? `+${eventValue}` : `-${eventValue}`;
+    _scene.damageText.style.fill = eventKind === "crit" ? 0xffe083 : eventKind === "heal" ? 0xa7ffd0 : 0xffffff;
     _scene.damageText.alpha = damageAlpha;
     _scene.damageText.x = _scene.layout.impactX + 8;
     _scene.damageText.y = _scene.layout.impactY - 22 - damageLift;
 
-    _scene.critText.text = _scene.plan?.waveBreak ? "WAVE BROKEN" : (_scene.plan?.hasCrit ? "CRITICAL" : "");
+    _scene.critText.text = _scene.plan?.waveBreak && _scene.playTime > _scene.plan.settleAt ? "WAVE BROKEN" : (currentTurn?.kind === "crit" ? "CRITICAL" : "");
     _scene.critText.alpha = critAlpha || (_scene.plan?.waveBreak && _scene.animating && _scene.playTime > _scene.plan.settleAt ? 0.94 : 0);
     _scene.critText.x = _scene.layout.impactX;
     _scene.critText.y = _scene.layout.impactY - 68 - critLift;
