@@ -272,7 +272,7 @@
       p?.heroPng,
       p?.character,
       p?.characterPng,
-      "/images/Ah.png",
+      "/assets/skins/lunarhowl_skin.webp",
     ]).map(normalizeCandidate);
 
     const avatarCandidates = uniqueStrings([
@@ -761,7 +761,7 @@
       _scene.playerAura.endFill();
     } catch (_) {}
 
-    roundRect(_scene.playerPlate, -64, -186, 128, 214, 24, 0x09121d, 0.22, 0xb8d8ff, 0.14, 1);
+    clearDraw(_scene.playerPlate); // no portrait/card plate behind combat skin
     roundRect(_scene.playerFallback, -42, -150, 84, 150, 20, 0x8a2032, 0.78, 0xffa2b3, 0.16, 2);
 
     clearDraw(_scene.enemyShadow);
