@@ -812,6 +812,7 @@
     const plan = _scene.plan;
     let currentTurn = null;
     let currentTurnIndex = -1;
+    let currentTurnPhase = 0;
     const idleP = Math.sin(now * 1.8) * 4;
     const idleFactor = plan?.personality === "heavy_brutal" ? 2.2 : plan?.personality === "calm_precise" ? 1.8 : 4.2;
     const idleE = Math.sin(now * (plan?.personality === "controlled_displaced" ? 2.3 : 1.45) + 1.3) * idleFactor;
@@ -832,7 +833,9 @@
       const eventEnd = Math.max(eventStart + 0.35, plan.settleAt);
       if (plan.turns.length) {
         const eventP = clamp((t - eventStart) / Math.max(0.01, eventEnd - eventStart), 0, 0.999999);
-        currentTurnIndex = Math.min(plan.turns.length - 1, Math.floor(eventP * plan.turns.length));
+        const scaled = eventP * plan.turns.length;
+        currentTurnIndex = Math.min(plan.turns.length - 1, Math.floor(scaled));
+        currentTurnPhase = scaled - Math.floor(scaled);
         currentTurn = plan.turns[currentTurnIndex] || null;
       }
       const impactAt = plan.impactAt;
@@ -840,7 +843,10 @@
 
       const anticipation = clamp(t / Math.max(0.24, impactAt * 0.58), 0, 1);
       const strike = clamp((t - impactAt * 0.56) / Math.max(0.22, impactAt * 0.44), 0, 1);
-      const impact = clamp((t - impactAt) / (plan.perfLite ? 0.30 : 0.44), 0, 1);
+      let impact = clamp((t - impactAt) / (plan.perfLite ? 0.30 : 0.44), 0, 1);
+      if (plan.turns.length > 1 && t >= eventStart && t <= eventEnd) {
+        impact = clamp(currentTurnPhase, 0, 1);
+      }
       const settle = clamp((t - plan.settleAt) / Math.max(0.18, plan.total - plan.settleAt), 0, 1);
 
       const familyMult = family === "lunar_crash" ? 1.16 : family === "breach_strike" ? 1.08 : family === "phantom_feint" ? 0.92 : 1;
