@@ -3,13 +3,14 @@
   const CARD_HEIGHT = 1500;
   const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
   const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
-  const SHARE_MOBILE_TIP = "If Save Image doesn't appear in your gallery, tap Share on Telegram, send it to Saved Messages, then save it from there.";
+  const SHARE_MOBILE_TIP = "If Save Image is unavailable in this client, use the full-size preview and long-press the image where supported.";
   const X_HELP_NOTE = `${SHARE_MOBILE_TIP} X may not auto-attach the image. Save it first, then attach it manually if needed.`;
   const X_MANUAL_ATTACH_NOTE = "X may not auto-attach the image. Save it first, then attach it manually if needed.";
   const X_NATIVE_SHARE_NOTE = "X may not auto-attach the image. Save it first, then attach it manually if needed.";
-  const SAVE_IMAGE_NOTE = `${SHARE_MOBILE_TIP} The browser may save the file outside your visible gallery.`;
+  const SAVE_IMAGE_NOTE = "Image download requested. Check Downloads; the app cannot confirm it reached your Gallery.";
   const PREVIEW_WAIT_MS = 3500;
   const NETWORK_TIMEOUT_MS = 45000;
+  const TELEGRAM_SHARE_TIMEOUT_MS = 90000;
   const FEATURED_BADGES_MAX = 3;
   const FEATURED_BADGES_TIMEOUT_MS = 12000;
   const HUB_FRAME = {
@@ -96,6 +97,17 @@
   function getInitData() {
     return getTg()?.initData || global.INIT_DATA || "";
   }
+
+  function telegramSupports(method) {
+    const tg = getTg();
+    if (!tg?.initData || typeof tg[method] !== "function") return false;
+    try {
+      if (typeof tg.isVersionAtLeast === "function") return !!tg.isVersionAtLeast("8.0");
+      const parts = String(tg.version || "").split(".").map(Number);
+      return parts.length >= 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && parts[0] >= 8;
+    } catch (_) { return false; }
+  }
+
 
   function getApiBase() {
     return String(global.API_BASE || "").trim();
@@ -1382,7 +1394,12 @@
     }
     if (code === "TELEGRAM_UPSTREAM_FAIL") return "Telegram is temporarily unavailable. Please try again shortly.";
     if (code === "NETWORK_TIMEOUT") return "The network is taking too long. Please try again.";
-    if (code === "TELEGRAM_SHARE_CANCELLED") return "";
+    if (code === "TELEGRAM_SHARE_CANCELLED" || code === "TELEGRAM_USER_DECLINED") return "";
+    if (code === "TELEGRAM_UNSUPPORTED") return "Telegram prepared-message sharing requires a supported Telegram 8.0+ client.";
+    if (code === "TELEGRAM_MESSAGE_EXPIRED") return "The prepared message expired. Reopen Share and retry.";
+    if (code === "TELEGRAM_MESSAGE_SEND_FAILED") return "Telegram could not send the image. Try again.";
+    if (code === "TELEGRAM_SHARE_TIMEOUT") return "Telegram did not respond. You can try sharing again.";
+    if (code === "TELEGRAM_SHARE_NOT_CONFIRMED") return "Sharing was not confirmed. Check your chat before retrying.";
     if (code === "PNG_EXPORT_FAILED") return "Image export failed. Please reopen share and try again.";
     return "Sharing failed. Please try again.";
   }
@@ -1484,7 +1501,7 @@
     setStatus("");
 
     const tgBtn = $("shareCardTelegramBtn");
-    const canNativeShare = !!(getTg()?.shareMessage);
+    const canNativeShare = telegramSupports("shareMessage");
     if (tgBtn) {
       tgBtn.dataset.unavailable = canNativeShare ? "0" : "1";
       tgBtn.disabled = !canNativeShare;
@@ -1521,10 +1538,7 @@
 
   async function shareOnTelegram() {
     const tg = getTg();
-    if (!tg?.shareMessage) {
-      toast("Telegram native prepared-message sharing is not available in this client.");
-      return;
-    }
+    if (!telegramSupports("shareMessage")) throw new Error("TELEGRAM_UNSUPPORTED");
 
     const caption = buildCaption(STATE.presentation || buildSharePresentation(STATE.variant));
     const upload = await ensureUpload();
@@ -1547,26 +1561,78 @@
     log("telegram:prepare:done", { preparedMessageId: data.prepared_message_id });
 
     await new Promise((resolve, reject) => {
+      let settled = false, grace = null;
+      const onSuccess = () => finish();
+      const onFailure = (payload) => finish(new Error("TELEGRAM_" + String(payload?.error || "UNKNOWN_ERROR").toUpperCase()));
+      const cleanup = () => {
+        clearTimeout(timer);
+        clearTimeout(grace);
+        try { tg.offEvent?.("shareMessageSent", onSuccess); } catch (_) {}
+        try { tg.offEvent?.("shareMessageFailed", onFailure); } catch (_) {}
+      };
+      const finish = (error) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        if (error) reject(error); else resolve(true);
+      };
+      const timer = setTimeout(() => finish(new Error("TELEGRAM_SHARE_TIMEOUT")), TELEGRAM_SHARE_TIMEOUT_MS);
       try {
+        tg.onEvent?.("shareMessageSent", onSuccess);
+        tg.onEvent?.("shareMessageFailed", onFailure);
         tg.shareMessage(data.prepared_message_id, (sent) => {
-          if (sent === false) return reject(new Error("TELEGRAM_SHARE_CANCELLED"));
-          resolve(true);
+          if (sent === true) return finish();
+          if (sent === false) {
+            // A failure event may contain the actual reason after the callback.
+            grace = setTimeout(() => finish(new Error("TELEGRAM_SHARE_NOT_CONFIRMED")), 700);
+          }
         });
-      } catch (err) {
-        reject(err);
-      }
+      } catch (e) { finish(e); }
     });
+  }
+
+  function hideManualSharePreview() {
+    $("shareCardManualPreviewP0")?.remove();
+  }
+
+  function showManualSharePreview() {
+    if (!STATE.pngObjectUrl) throw new Error("PNG_EXPORT_FAILED");
+    const wrap = $("shareCardCanvasWrap");
+    if (!wrap) throw new Error("PREVIEW_UNAVAILABLE");
+    hideManualSharePreview();
+    const host = document.createElement("div");
+    host.id = "shareCardManualPreviewP0";
+    host.style.cssText = "position:relative;z-index:30;padding:12px;margin-top:12px;border:1px solid #437488;border-radius:12px;background:#071321;text-align:center";
+    const note = document.createElement("p");
+    note.textContent = "Full-size PNG. Long-press to save where supported, or open the app in a desktop browser.";
+    note.style.cssText = "font:12px/1.5 system-ui,sans-serif;color:#c3e4ef;margin:0 0 10px";
+    const img = document.createElement("img");
+    img.src = STATE.pngObjectUrl;
+    img.alt = "Alpha Husky share card for manual saving";
+    img.style.cssText = "display:block;width:100%;max-width:440px;height:auto;margin:auto;user-select:auto;-webkit-user-select:auto;-webkit-touch-callout:default";
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "ah-action";
+    close.textContent = "Close preview";
+    close.style.marginTop = "10px";
+    close.addEventListener("click", hideManualSharePreview);
+    host.append(note, img, close);
+    wrap.appendChild(host);
   }
 
   async function saveImage() {
     if (!STATE.pngBlob) await ensureRendered();
+    if (getTg()?.initData) {
+      showManualSharePreview();
+      return "Full-size preview opened. No file save has been confirmed.";
+    }
     const a = document.createElement("a");
     a.href = STATE.pngObjectUrl;
     a.download = `alpha-husky-${STATE.variant}.png`;
     a.rel = "noopener";
     document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    try { a.click(); } finally { a.remove(); }
+    return SAVE_IMAGE_NOTE;
   }
 
   async function shareOnX() {
@@ -1599,6 +1665,7 @@
     const modal = $("shareBack");
     if (!modal) return;
     stopPreviewFx();
+    hideManualSharePreview();
     modal.style.display = "none";
     delete modal.dataset.open;
     document.body.classList.remove("ah-sheet-open");
@@ -1617,6 +1684,7 @@
       return STATE.openPromise;
     }
     STATE.variant = nextVariant;
+    hideManualSharePreview();
     stopPreviewFx();
     modal.style.display = "flex";
     modal.dataset.open = "1";
@@ -1661,9 +1729,9 @@
       if (STATE.busy) return;
       setBusy(true);
       try {
-        await saveImage();
-        setStatus(SAVE_IMAGE_NOTE);
-        toast(SAVE_IMAGE_NOTE, "Save Image");
+        const feedback = await saveImage();
+        setStatus(feedback);
+        toast(feedback, "Save Image");
       } catch (err) {
         console.error("[ShareCard] save failed", err);
         toast(describeShareError(err, "save"));
