@@ -2528,8 +2528,8 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     _battleReplayTimer = window.setTimeout(() => {
       stage.classList.remove("is-replaying");
       _battleReplayTimer = 0;
-      if (revealAdvancedWave && _state && rootEl()?.classList?.contains("show")) {
-        stopBattlePlayback(true, true);
+      stopBattlePlayback(true, true);
+      if (_state && rootEl()?.classList?.contains("show")) {
         render(_state);
       }
     }, battleReplayDurationMs(battle));
@@ -3102,16 +3102,6 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
    bindActions();
    startLunarCountdown(lunar);
    scheduleLunarTransitionRefresh(lunar);
-  if (lastBattle) {
-    const replayInfo = battleReplayInfo(lastBattle);
-    const lastBattleWave = Math.max(1, Number(lastBattle?.wave || lastBattle?.enemy?.wave || 1));
-    const shouldPrimeArena = _arenaView === "raid" && !resolvingPriorWave && !replayInfo.waveCleared && lastBattleWave === currentWave;
-    if (shouldPrimeArena) {
-      const kick = () => playLastBattlePixi(lastBattle, { animate: false });
-      if (window.requestAnimationFrame) window.requestAnimationFrame(kick);
-      else void kick();
-    }
-  }
   }
 
   async function loadState() {
