@@ -14,6 +14,13 @@
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
   const BOSS_CLOUD_BASE = `${CLOUD_BASE}/${CLOUD_TX_768}/v1771238762/bosses`;
 
+  const BLOODMOON_PREMIUM_VFX_ASSETS = Object.freeze({
+    impactSlash: "/assets/bloodmoon/v3/vfx/bloodmoon_impact_slash.webp",
+    impactBurst: "/assets/bloodmoon/v3/vfx/bloodmoon_impact_burst.webp",
+    critBurst: "/assets/bloodmoon/v3/vfx/bloodmoon_crit_burst.webp",
+    wavebreakShockwave: "/assets/bloodmoon/v3/vfx/bloodmoon_wavebreak_shockwave.webp",
+  });
+
   const BLOODMOON_ENEMY_REGISTRY = Object.freeze({
     tower_husk: Object.freeze({
       id: "tower_husk", displayName: "Tower Husk", waveMin: 1, waveMax: 3, personality: "fast_unstable",
@@ -1059,9 +1066,11 @@
 
       if (!_scene.hapticImpactDone && t >= impactAt) {
         _scene.hapticImpactDone = true;
-        try {
-          _opts?.tg?.HapticFeedback?.impactOccurred?.(intensity.crit || plan.damageTier === "heavy" || intensity.finisher ? "heavy" : "medium");
-        } catch (_) {}
+        if (!["miss","heal"].includes(String(primaryTurn?.kind || ""))) {
+          try {
+            _opts?.tg?.HapticFeedback?.impactOccurred?.(intensity.crit || plan.damageTier === "heavy" || intensity.finisher ? "heavy" : "medium");
+          } catch (_) {}
+        }
       }
 
       const damageStart = impactAt + 0.04;
@@ -1102,7 +1111,9 @@
         const compactImpactP = clamp((currentTurnPhase - 0.42) / 0.34, 0, 1);
         const compactPulse = Math.sin(compactImpactP * Math.PI);
         const actorRight = currentTurn.actor === "right";
-        const compactDamage = !["miss","heal"].includes(String(currentTurn.kind || ""));
+        const compactKind = String(currentTurn.kind || "");
+        const compactDamage = !["miss","heal"].includes(compactKind);
+        const compactBlock = compactKind === "block";
 
         if (actorRight) {
           enemyDrift -= compactCommit * 24;
@@ -1117,13 +1128,23 @@
         }
 
         if (compactDamage) {
-          slashAlpha = Math.max(slashAlpha, compactPulse * (plan.perfLite ? 0.45 : 0.72));
-          slashScale = Math.max(slashScale, 0.56 + compactImpactP * 0.70);
-          ringAlpha = Math.max(ringAlpha, compactPulse * (plan.perfLite ? 0.16 : 0.30));
-          ringScale = Math.max(ringScale, 0.38 + compactImpactP * 1.05);
+          const compactVfx = compactBlock ? 0.55 : 1;
+          slashAlpha = Math.max(slashAlpha, compactPulse * (plan.perfLite ? 0.45 : 0.72) * compactVfx);
+          slashScale = Math.max(slashScale, 0.56 + compactImpactP * 0.70 * compactVfx);
+          ringAlpha = Math.max(ringAlpha, compactPulse * (plan.perfLite ? 0.16 : 0.30) * compactVfx);
+          ringScale = Math.max(ringScale, 0.38 + compactImpactP * 1.05 * compactVfx);
           if (!plan.perfLite) {
-            cameraX += (actorRight ? -1 : 1) * compactPulse * 2.5;
+            cameraX += (actorRight ? -1 : 1) * compactPulse * (compactBlock ? 1.4 : 2.5);
           }
+        }
+
+        const compactRead = clamp((currentTurnPhase - 0.46) / 0.48, 0, 1);
+        if (compactRead > 0 && compactRead < 1) {
+          damageAlpha = Math.max(damageAlpha, Math.sin(compactRead * Math.PI));
+          damageLift = Math.max(damageLift, easeOutCubic(compactRead) * 34);
+          damageScale = compactKind === "crit"
+            ? lerp(0.86, 1.14, Math.sin(compactRead * Math.PI))
+            : lerp(0.92, 1.04, Math.sin(compactRead * Math.PI));
         }
       }
 
@@ -1404,6 +1425,7 @@
   BloodMoonPixi.destroy = destroy;
   BloodMoonPixi.resolveBloodMoonPlayerAsset = resolveBloodMoonPlayerAsset;
   BloodMoonPixi.ENEMY_REGISTRY = BLOODMOON_ENEMY_REGISTRY;
+  BloodMoonPixi.PREMIUM_VFX_ASSETS = BLOODMOON_PREMIUM_VFX_ASSETS;
   BloodMoonPixi.resolveBloodMoonEnemyKey = resolveBloodMoonEnemyKey;
   BloodMoonPixi.resolveBloodMoonEnemyDefinition = resolveBloodMoonEnemyDefinition;
   BloodMoonPixi.resolveBloodMoonEnemyStateAsset = resolveBloodMoonEnemyStateAsset;
