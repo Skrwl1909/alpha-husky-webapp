@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p11b-environment-2026-10-08";
+  const VER = "bloodmoon_pixi.js v3-p11-hard-restage-environment-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -727,11 +727,11 @@
       hpW,
       hpH,
       playerX: Math.round(w * 0.26),
-      playerY: Math.round(h * 0.63),
+      playerY: Math.round(h * 0.57),
       enemyX: Math.round(w * 0.77),
-      enemyY: Math.round(h * 0.61),
+      enemyY: Math.round(h * 0.55),
       impactX: Math.round(w * 0.54),
-      impactY: Math.round(h * 0.39),
+      impactY: Math.round(h * 0.35),
     };
 
     // Arena V3 DOM owns the environment. Pixi remains a transparent combat/VFX
@@ -770,10 +770,10 @@
     clearDraw(_scene.enemyPlate);
     roundRect(_scene.enemyFallback, -58, -174, 116, 174, 24, 0x4a1018, 0.88, 0xff98a7, 0.18, 2);
 
-    const playerMaxW = Math.max(120, Math.round(w * 0.28));
-    const playerMaxH = Math.max(170, Math.round(h * 0.72));
-    const enemyMaxW = Math.max(160, Math.round(w * 0.34));
-    const enemyMaxH = Math.max(190, Math.round(h * 0.80));
+    const playerMaxW = Math.max(132, Math.round(w * 0.32));
+    const playerMaxH = Math.max(188, Math.round(h * 0.78));
+    const enemyMaxW = Math.max(176, Math.round(w * 0.38));
+    const enemyMaxH = Math.max(205, Math.round(h * 0.84));
 
     if (_scene.playerTexture) {
       _scene.playerSprite.texture = _scene.playerTexture;
