@@ -1792,8 +1792,13 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-arena{min-height:clamp(560px,79vh,780px);border-radius:18px;border-color:rgba(255,80,105,.14);box-shadow:0 28px 70px rgba(0,0,0,.60),0 0 80px rgba(124,8,28,.12)}
 .bm-v3-arena-bg{opacity:.86;filter:contrast(1.08) saturate(.92)}
 .bm-v3-atmosphere{opacity:.42}
+.bm-v3-arena-bg{object-position:center 34%;opacity:.96;filter:contrast(1.14) saturate(.98) brightness(.86)}
+.bm-v3-atmosphere{object-fit:contain;object-position:center 43%;opacity:.22;mix-blend-mode:screen;filter:blur(.2px)}
+.bm-v3-tower{position:absolute;z-index:2;right:-2%;top:9%;width:min(39vw,230px);max-height:52%;object-fit:contain;object-position:center top;opacity:.34;pointer-events:none;filter:drop-shadow(0 18px 28px rgba(0,0,0,.62)) saturate(.85)}
+.bm-v3-moon{z-index:2}
+
 .bm-v3-moon{width:min(52vw,245px);right:-18px;top:8px;opacity:.88;filter:drop-shadow(0 0 52px rgba(255,45,76,.36))}
-.bm-v3-enemy{width:min(94%,540px);max-height:68%;bottom:170px;filter:drop-shadow(0 28px 38px rgba(0,0,0,.82))}
+.bm-v3-enemy{width:min(90%,520px);max-height:64%;bottom:235px;filter:drop-shadow(0 28px 38px rgba(0,0,0,.82))}
 .bm-v3-vignette{background:linear-gradient(180deg,rgba(0,0,0,.02) 18%,rgba(4,2,4,.10) 45%,rgba(5,2,4,.94) 100%),radial-gradient(circle at 50% 42%,transparent 34%,rgba(0,0,0,.44) 100%)}
 .bm-v3-hud{min-height:clamp(560px,79vh,780px);padding:12px 13px 13px}
 .bm-v3-kicker{font-size:8px;letter-spacing:.2em;color:rgba(255,186,198,.74)}
@@ -1817,7 +1822,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-dock{position:sticky;bottom:max(4px,env(safe-area-inset-bottom));border-radius:13px;padding:4px;background:rgba(6,5,8,.94)}
 .bm-v3-tab{padding:10px 4px;font-size:8px;cursor:pointer}
 
-@media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:56%;bottom:128px}}
+@media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:54%;bottom:160px}}
 @media (prefers-reduced-motion:reduce){.bm-v3-moon,.bm-v3-enemy{transition:none!important}.bm-v3-dock{backdrop-filter:none}}
 html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .bm-v3-pack-echo,body.ah-perf-lite .bm-v3-pack-echo{backdrop-filter:none}
 
@@ -3066,6 +3071,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
         <div class="bm-v3-arena is-${esc(lunar.towerState)}">
           <img class="bm-v3-arena-bg" src="${BLOODMOON_V2_ASSETS.arena}" alt="" fetchpriority="high" decoding="async" />
           <img class="bm-v3-atmosphere" src="${BLOODMOON_V2_ASSETS.atmosphere}" alt="" decoding="async" />
+          <img class="bm-v3-tower" src="/images/map/building/blood_moon_tower.png" alt="" decoding="async" />
           <img class="bm-v3-moon" src="${sharedLunarMoonAsset(lunar.towerState)}" alt="" decoding="async" />
           <img class="bm-v3-enemy" src="${v3Enemy.idle}" alt="${esc(v3Enemy.name)}" fetchpriority="high" decoding="async" />
           <div id="${BATTLE_STAGE_ID}" class="bm-v3-pixi-slot" aria-hidden="true">

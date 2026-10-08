@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p11-restage-skin-arena-2026-10-08";
+  const VER = "bloodmoon_pixi.js v3-p11b-environment-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -727,11 +727,11 @@
       hpW,
       hpH,
       playerX: Math.round(w * 0.26),
-      playerY: Math.round(h * 0.73),
+      playerY: Math.round(h * 0.63),
       enemyX: Math.round(w * 0.77),
-      enemyY: Math.round(h * 0.71),
+      enemyY: Math.round(h * 0.61),
       impactX: Math.round(w * 0.54),
-      impactY: Math.round(h * 0.43),
+      impactY: Math.round(h * 0.39),
     };
 
     // Arena V3 DOM owns the environment. Pixi remains a transparent combat/VFX
@@ -755,11 +755,6 @@
     _scene.playerShadow.y = 0;
 
     clearDraw(_scene.playerAura);
-    try {
-      _scene.playerAura.beginFill(0x8ac6ff, 0.10);
-      _scene.playerAura.drawEllipse(0, -150, 86, 128);
-      _scene.playerAura.endFill();
-    } catch (_) {}
 
     clearDraw(_scene.playerPlate); // no portrait/card plate behind combat skin
     roundRect(_scene.playerFallback, -42, -150, 84, 150, 20, 0x8a2032, 0.78, 0xffa2b3, 0.16, 2);
@@ -772,13 +767,7 @@
     } catch (_) {}
 
     clearDraw(_scene.enemyAura);
-    try {
-      _scene.enemyAura.beginFill(0xff5e70, 0.12);
-      _scene.enemyAura.drawEllipse(0, -174, 108, 158);
-      _scene.enemyAura.endFill();
-    } catch (_) {}
-
-    roundRect(_scene.enemyPlate, -86, -218, 172, 248, 28, 0x12070d, 0.28, 0xff91a1, 0.14, 1);
+    clearDraw(_scene.enemyPlate);
     roundRect(_scene.enemyFallback, -58, -174, 116, 174, 24, 0x4a1018, 0.88, 0xff98a7, 0.18, 2);
 
     const playerMaxW = Math.max(120, Math.round(w * 0.28));
