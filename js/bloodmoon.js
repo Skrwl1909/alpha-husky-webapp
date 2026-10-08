@@ -2514,13 +2514,6 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
     stage.classList.remove("is-replaying");
     void stage.offsetWidth;
     stage.classList.add("is-replaying");
-
-    if (opts?.haptic !== false) {
-      try {
-        _tg?.HapticFeedback?.impactOccurred?.(replay.hasCrit ? "medium" : "light");
-      } catch (_) {}
-    }
-
     const playedWave = Math.max(1, Number(battle?.wave || battle?.enemy?.wave || 1));
     const liveWave = Math.max(1, Number(_state?.myFactionRun?.currentWave || _state?.currentWave || 1));
     const revealAdvancedWave = !!replay.waveCleared && liveWave !== playedWave;
