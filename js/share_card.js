@@ -1,1719 +1,867 @@
+// Alpha Husky — Share Studio V1
+// Identity Card + Recorded Moment. Presentation/export only; canonical player truth stays server-side.
 (function (global) {
-  const CARD_WIDTH = 1200;
-  const CARD_HEIGHT = 1500;
-  const DEFAULT_SHARE_LINK = "https://app.alphahusky.win/";
-  const TELEGRAM_PACK_LINK = "https://t.me/The_Alpha_husky";
-  const SHARE_MOBILE_TIP = "If Save Image doesn't appear in your gallery, tap Share on Telegram, send it to Saved Messages, then save it from there.";
-  const X_HELP_NOTE = `${SHARE_MOBILE_TIP} X may not auto-attach the image. Save it first, then attach it manually if needed.`;
-  const X_MANUAL_ATTACH_NOTE = "X may not auto-attach the image. Save it first, then attach it manually if needed.";
-  const X_NATIVE_SHARE_NOTE = "X may not auto-attach the image. Save it first, then attach it manually if needed.";
-  const SAVE_IMAGE_NOTE = `${SHARE_MOBILE_TIP} The browser may save the file outside your visible gallery.`;
-  const PREVIEW_WAIT_MS = 3500;
+  "use strict";
+
+  const CARD_W = 1080;
+  const CARD_H = 1350;
+  const DEFAULT_LINK = "https://alphahusky.win/";
   const NETWORK_TIMEOUT_MS = 45000;
-  const FEATURED_BADGES_MAX = 3;
-  const FEATURED_BADGES_TIMEOUT_MS = 12000;
-  const HUB_FRAME = {
-    viewportTop: 0.08,
-    viewportSide: 0.14,
-    viewportBottom: 0.13,
-    skinScale: 1.14,
-    skinFocusY: 0.17,
-    frameScale: 1.30,
-    frameBleed: 0.04,
-    frameOffsetY: 0.008,
+  const ASSET_TIMEOUT_MS = 12000;
+  const MAX_BADGES = 3;
+  const TELEGRAM_SHARE_TIMEOUT_MS = 90000;
+  const DOWNLOAD_RESPONSE_TIMEOUT_MS = 30000;
+
+  const FACTIONS = {
+    rogue_byte: { label: "ROGUE BYTE", rgb: [0, 215, 255], secondary: [183, 38, 70], motif: "BREACH NETWORK" },
+    echo_wardens: { label: "ECHO WARDENS", rgb: [238, 181, 86], secondary: [104, 177, 224], motif: "RESONANCE SIGNAL" },
+    inner_howl: { label: "INNER HOWL", rgb: [104, 222, 244], secondary: [150, 191, 224], motif: "SILENT RESONANCE" },
+    pack_burners: { label: "PACK BURNERS", rgb: [255, 123, 78], secondary: [244, 192, 89], motif: "PRESSURE FORGE" },
+    pack: { label: "PACK", rgb: [116, 207, 242], secondary: [210, 225, 238], motif: "ALPHA NETWORK" },
   };
-  const EQUIPPED_ART = {
-    focusX: 0.5,
-    focusY: 0.33,
-    scale: 1.16,
+
+  const MOMENT_STYLE = {
+    first_signal: { kicker: "FIRST SIGNAL", headline: "SIGNAL RECORDED", accent: [95, 211, 255], sub: "THE TRAIL BEGINS" },
+    tactical_training: { kicker: "TACTICAL TRAINING", headline: "TRAINING VERIFIED", accent: [96, 218, 190], sub: "COMBAT RECORD CONFIRMED" },
+    broken_signal: { kicker: "BROKEN SIGNAL", headline: "OPERATION CLEARED", accent: [244, 65, 105], sub: "OPERATION 01 COMPLETE" },
+    blood_moon: { kicker: "BLOOD MOON", headline: "MOON RECORD", accent: [236, 51, 79], sub: "LUNAR RECORD VERIFIED" },
+    moon_lab: { kicker: "MOON LAB", headline: "SECTOR CLEARED", accent: [89, 202, 238], sub: "LADDER RECORD VERIFIED" },
+    siege: { kicker: "SIEGE", headline: "FORTRESS RECORD", accent: [239, 157, 77], sub: "SIEGE RESULT VERIFIED" },
   };
-  const DEFAULT_CAPTION_VARIANT_INDEX = 0;
-  const CAPTION_VARIANTS = [
-    function premiumFounderCaption(presentation, modeLabel) {
-      return `${presentation.playerName} - ${presentation.identityLine || `Founder LV ${presentation.level}`}\nOfficial ${modeLabel} collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
-    },
-    function statusFounderCaption(presentation, modeLabel) {
-      return `Founder ${presentation.playerName} - ${presentation.identityLine || `LV ${presentation.level}`}\n${modeLabel} // Alpha Husky collectible.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
-    },
-    function packCollectibleCaption(presentation, modeLabel) {
-      return `${presentation.playerName} // ${presentation.identityLine || `LV ${presentation.level}`}\nPack-certified ${modeLabel} card.\n@The_Alpha_Husky #AlphaHusky\n${TELEGRAM_PACK_LINK}`;
-    },
-  ];
-  const ORIGIN_META = {
-    stray: {
-      key: "stray",
-      label: "Stray",
-      desc: "A survivor found in the chain noise.",
-      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464117/awakening/origins/awakening_origin_stray.webp",
-    },
-    broken: {
-      key: "broken",
-      label: "Broken",
-      desc: "Something damaged, but not defeated.",
-      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464116/awakening/origins/awakening_origin_broken.webp",
-    },
-    forgotten: {
-      key: "forgotten",
-      label: "Forgotten",
-      desc: "A name the old world tried to erase.",
-      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464116/awakening/origins/awakening_origin_forgotten.webp",
-    },
-    unchained: {
-      key: "unchained",
-      label: "Unchained",
-      desc: "A signal that refused to stay buried.",
-      iconUrl: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777464121/awakening/origins/awakening_origin_unchained.webp",
-    },
-  };
-  const STATE = {
-    variant: "hub",
-    presentation: null,
-    pngBlob: null,
-    pngObjectUrl: "",
+
+  const S = {
+    mode: "identity",
+    requestedMomentKey: "",
+    state: null,
+    player: null,
+    moment: null,
+    blob: null,
+    objectUrl: "",
     upload: null,
     busy: false,
     openPromise: null,
-    previewFxAnimations: [],
-    featuredBadges: [],
+    bound: false,
+    skinReady: false,
   };
-  const DEBUG = !!global.DBG;
 
-  function $(id) {
-    return document.getElementById(id);
+  const $ = (id) => document.getElementById(id);
+  const txt = (v) => String(v == null ? "" : v).trim();
+  const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+  const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
+
+  function normalizeMode(v) {
+    const x = txt(v).toLowerCase();
+    return x === "moment" ? "moment" : "identity"; // old hub/equipped routes intentionally converge on identity
   }
 
-  function log(event, extra) {
-    if (!DEBUG) return;
-    try {
-      console.info("[ShareCard]", event, extra || "");
-    } catch (_) {}
+  function normalizeFaction(v) {
+    const k = txt(v).toLowerCase().replace(/[\s-]+/g, "_");
+    if (k === "rb" || k.includes("rogue")) return "rogue_byte";
+    if (k === "ew" || k.includes("echo") || k.includes("warden")) return "echo_wardens";
+    if (k === "ih" || k.includes("inner")) return "inner_howl";
+    if (k === "pb" || k.includes("burner")) return "pack_burners";
+    return "pack";
   }
 
-  function getTg() {
-    return global.Telegram?.WebApp || global.tg || null;
+  function factionMeta(player) {
+    return FACTIONS[normalizeFaction(player?.faction)] || FACTIONS.pack;
   }
 
-  function getInitData() {
-    return getTg()?.initData || global.INIT_DATA || "";
-  }
+  function getApiBase() { return txt(global.API_BASE || ""); }
+  function getShareLink() { return txt(global.WEBAPP_BASE || DEFAULT_LINK).replace(/\/+$/, "") + "/"; }
+  function getTelegram() { return global.Telegram?.WebApp || global.tg || null; }
 
-  function getApiBase() {
-    return String(global.API_BASE || "").trim();
+  function telegramVersionAtLeast(minimum) {
+    const tg = getTelegram();
+    if (!tg) return false;
+    try { if (typeof tg.isVersionAtLeast === "function") return !!tg.isVersionAtLeast(minimum); } catch (_) {}
+    const parse = (v) => String(v || "").split(".").slice(0, 3).map((n) => /^\d+$/.test(n) ? Number(n) : NaN);
+    const current = parse(tg.version), target = parse(minimum);
+    if (!current.length || current.some(Number.isNaN)) return false;
+    for (let i = 0; i < 3; i++) {
+      const a = current[i] || 0, b = target[i] || 0;
+      if (a !== b) return a > b;
+    }
+    return true;
   }
-
-  function getShareLink() {
-    return String(global.WEBAPP_BASE || global.location?.origin || DEFAULT_SHARE_LINK).replace(/\/+$/, "") + "/";
+  function inTelegram() { return !!txt(getTelegram()?.initData); }
+  function telegramShareSupported() {
+    return inTelegram() && telegramVersionAtLeast("8.0") && typeof getTelegram()?.shareMessage === "function";
+  }
+  function telegramDownloadSupported() {
+    return inTelegram() && telegramVersionAtLeast("8.0") && typeof getTelegram()?.downloadFile === "function";
+  }
+  function withDeadline(operation, timeoutMs, label = "NETWORK_TIMEOUT") {
+    let timer;
+    return Promise.race([
+      Promise.resolve().then(operation),
+      new Promise((_, reject) => { timer = setTimeout(() => reject(new Error(label)), timeoutMs); })
+    ]).finally(() => clearTimeout(timer));
   }
 
   function toast(message, title) {
-    const tg = getTg();
-    const t = String(title || "Share");
-    const m = String(message || "");
-    try {
-      if (tg?.showPopup) {
-        tg.showPopup({ title: t, message: m, buttons: [{ type: "close" }] });
-        return;
-      }
-    } catch (_) {}
-    try {
-      if (tg?.showAlert) {
-        tg.showAlert(m || t);
-        return;
-      }
-    } catch (_) {}
-    alert((t ? t + "\n\n" : "") + m);
-  }
-
-  function normalizeDisplayTitle(value) {
-    const text = String(value || "").trim();
-    const upper = text.toUpperCase();
-    if (!text || upper === "NO TITLE" || upper === "NO ACTIVE TITLE") return "";
-    return text;
-  }
-
-  function normalizeFactionKey(raw) {
-    const value = String(raw || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-    if (!value) return "";
-    if (value === "rb" || value === "rogue_byte" || value === "rogue_bytes" || value === "roguebyte" || value === "rogue byte") return "rb";
-    if (value === "ew" || value === "echo_wardens" || value === "echowardens" || value === "echo wardens") return "ew";
-    if (value === "ih" || value === "inner_howl" || value === "inner_howlers" || value === "innerhowlers" || value === "inner howlers") return "ih";
-    if (value === "pb" || value === "pack_burners" || value === "packburners" || value === "pack burners") return "pb";
-    return "";
-  }
-
-  function factionLabelFromKey(key) {
-    const norm = normalizeFactionKey(key);
-    if (norm === "rb") return "Rogue Byte";
-    if (norm === "ew") return "Echo Wardens";
-    if (norm === "ih") return "Inner Howlers";
-    if (norm === "pb") return "Pack Burners";
-    return "";
-  }
-
-  function resolveProfileFactionLabel(profile) {
-    const onboarding = profile?.onboarding_v1 || profile?.onboardingV1 || {};
-    const oath = onboarding?.oath || profile?.oath || {};
-    const raw = (
-      profile?.faction ||
-      profile?.faction_id ||
-      profile?.factionId ||
-      profile?.factionKey ||
-      profile?.faction_key ||
-      profile?.profile?.faction ||
-      profile?.profile?.faction_id ||
-      profile?.profile?.factionId ||
-      profile?.profile?.factionKey ||
-      profile?.profile?.faction_key ||
-      oath?.faction ||
-      oath?.faction_id ||
-      oath?.factionId ||
-      oath?.factionKey ||
-      oath?.faction_key ||
-      ""
-    );
-    return factionLabelFromKey(raw);
-  }
-
-  function openLink(url) {
-    const href = String(url || "").trim();
-    if (!href) return;
-    try {
-      if (getTg()?.openLink) {
-        getTg().openLink(href);
-        return;
-      }
-    } catch (_) {}
-    global.open(href, "_blank", "noopener");
+    const tg = getTelegram();
+    const msg = txt(message);
+    try { if (tg?.showPopup) return tg.showPopup({ title: txt(title) || "Share Studio", message: msg, buttons: [{ type: "close" }] }); } catch (_) {}
+    try { if (tg?.showAlert) return tg.showAlert(msg); } catch (_) {}
+    try { global.alert((title ? title + "\n\n" : "") + msg); } catch (_) {}
   }
 
   function setStatus(message) {
     const el = $("shareCardStatus");
     if (!el) return;
-    const value = String(message || "").trim();
-    el.textContent = value;
-    if (value) {
-      el.dataset.show = "1";
-    } else {
-      delete el.dataset.show;
-    }
+    el.textContent = txt(message);
+    if (el.textContent) el.dataset.show = "1"; else delete el.dataset.show;
   }
 
-  async function fetchJsonWithTimeout(url, options, timeoutMs) {
+  function apiPost(path, payload) {
+    const fn = global.apiPost || global.S?.apiPost || global.AH?.apiPost;
+    if (typeof fn !== "function") throw new Error("API_NOT_READY");
+    return fn(path, payload || {});
+  }
+
+  function multipartAuthHeaders() {
+    const headers = {};
+    const session = txt(global.__ahAlphaAccountSession?.sessionToken || global.__ahAlphaAccountSession?.session_token);
+    const initData = txt(getTelegram()?.initData || global.__INIT_DATA__ || global.__INIT_DATA || "");
+    if (session) headers.Authorization = `Bearer ${session}`;
+    else if (initData) headers.Authorization = `Bearer ${initData}`;
+    return headers;
+  }
+
+  async function fetchWithTimeout(url, opts, timeoutMs) {
     const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(() => ctrl.abort(), Math.max(1000, Number(timeoutMs || 0) || NETWORK_TIMEOUT_MS)) : null;
-    try {
-      const res = await fetch(url, ctrl ? Object.assign({}, options || {}, { signal: ctrl.signal }) : (options || {}));
-      const data = await res.json().catch(() => ({}));
-      return { res, data };
-    } catch (err) {
-      if (err?.name === "AbortError") {
-        throw new Error("NETWORK_TIMEOUT");
-      }
-      throw err;
-    } finally {
-      if (timer) clearTimeout(timer);
-    }
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || NETWORK_TIMEOUT_MS) : null;
+    try { return await fetch(url, ctrl ? { ...(opts || {}), signal: ctrl.signal } : (opts || {})); }
+    catch (e) { if (e?.name === "AbortError") throw new Error("NETWORK_TIMEOUT"); throw e; }
+    finally { if (timer) clearTimeout(timer); }
   }
 
-  async function copyText(text) {
-    const value = String(text ?? "");
-    try {
-      await navigator.clipboard.writeText(value);
-      return true;
-    } catch (_) {}
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = value;
-      ta.setAttribute("readonly", "");
-      ta.style.position = "fixed";
-      ta.style.top = "-9999px";
-      document.body.appendChild(ta);
-      ta.select();
-      const ok = document.execCommand("copy");
-      document.body.removeChild(ta);
-      return !!ok;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function sanitizeVariant(value) {
-    return value === "equipped" ? "equipped" : "hub";
-  }
-
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
-
-  function textOf(id, fallback) {
-    const value = ($(id)?.textContent || "").replace(/\s+/g, " ").trim();
-    return value || String(fallback || "").trim();
-  }
-
-  function getLevelNumber(raw, fallback) {
-    const source = String(raw || "").trim();
-    const match = source.match(/(\d+)/);
-    const picked = match ? Number(match[1]) : Number(fallback || 0);
-    return Number.isFinite(picked) && picked > 0 ? picked : 1;
-  }
-
-  function pickFrameUrl(profile) {
-    return (
-      profile?.frameUrl ||
-      profile?.frame_url ||
-      profile?.cosmetics?.frameUrl ||
-      profile?.cosmetics?.frame_url ||
-      profile?.cosmetics?.frame ||
-      ""
-    );
-  }
-
-  function normalizeOriginKey(raw) {
-    const key = String(raw || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
-    if (!key) return "";
-    if (key === "stray" || key.includes("stray")) return "stray";
-    if (key === "broken" || key.includes("broken")) return "broken";
-    if (key === "forgotten" || key.includes("forgotten")) return "forgotten";
-    if (key === "unchained" || key.includes("unchained")) return "unchained";
-    return "";
-  }
-
-  function readStoredOrigin() {
-    try {
-      return global.AH_ORIGIN_MARK || localStorage.getItem("ah_origin_mark") || "";
-    } catch (_) {
-      return global.AH_ORIGIN_MARK || "";
-    }
-  }
-
-  function pickOriginMeta(profile) {
-    const onboarding = profile?.onboarding_v1 || profile?.onboardingV1 || {};
-    const awakening = onboarding?.awakening || profile?.awakening || {};
-    const raw =
-      profile?.origin_mark ||
-      profile?.originMark ||
-      profile?.origin ||
-      profile?.profile?.origin_mark ||
-      profile?.profile?.originMark ||
-      profile?.profile?.origin ||
-      awakening?.origin_mark ||
-      awakening?.originMark ||
-      awakening?.origin ||
-      readStoredOrigin();
-    const key = normalizeOriginKey(raw);
-    return key ? ORIGIN_META[key] : null;
-  }
-
-  function proxifyAssetUrl(rawUrl) {
-    const input = String(rawUrl || "").trim();
+  function proxify(raw) {
+    const input = txt(raw);
     if (!input) return "";
-    if (/^blob:/i.test(input) || /^data:/i.test(input)) return input;
+    if (/^(blob:|data:)/i.test(input)) return input;
     try {
-      const url = new URL(input, global.location?.origin || DEFAULT_SHARE_LINK);
-      if (url.hostname === "res.cloudinary.com" && url.pathname.startsWith("/dnjwvxinh/image/upload/")) {
-        const proxied = new URL((getApiBase() || "") + "/webapp/img", global.location?.origin || DEFAULT_SHARE_LINK);
-        proxied.searchParams.set("u", url.toString());
-        return proxied.toString();
+      const u = new URL(input, global.location?.origin || DEFAULT_LINK);
+      if (u.hostname === "res.cloudinary.com" && u.pathname.startsWith("/dnjwvxinh/image/upload/")) {
+        const proxy = new URL((getApiBase() || global.location?.origin || "") + "/webapp/img", global.location?.origin || DEFAULT_LINK);
+        proxy.searchParams.set("u", u.toString());
+        return proxy.toString();
       }
-      return url.toString();
-    } catch (_) {
-      return input;
-    }
+      return u.toString();
+    } catch (_) { return input; }
   }
 
-  function normalizeBadgeKey(rawKey) {
-    return String(rawKey || "").trim().toUpperCase();
-  }
-
-  function badgeIconUrlFromPayload(rawBadge) {
-    return proxifyAssetUrl(
-      rawBadge?.iconUrl ||
-      rawBadge?.icon_url ||
-      rawBadge?.emblemUrl ||
-      rawBadge?.emblem_url ||
-      ""
-    );
-  }
-
-  function extractFeaturedBadgesFromPayload(payload) {
-    const list = Array.isArray(payload?.badges) ? payload.badges : [];
-    const featuredKeys = Array.isArray(payload?.featured_badges) ? payload.featured_badges : [];
-    const byKey = new Map();
-    for (const rawBadge of list) {
-      const norm = normalizeBadgeKey(rawBadge?.key);
-      if (!norm || byKey.has(norm)) continue;
-      byKey.set(norm, {
-        key: String(rawBadge?.key || norm).trim(),
-        name: String(rawBadge?.name || rawBadge?.label || rawBadge?.key || norm).trim(),
-        iconUrl: badgeIconUrlFromPayload(rawBadge),
-        owned: rawBadge?.owned !== false,
-        displayable: rawBadge?.displayable !== false && rawBadge?.canDisplay !== false,
-      });
-    }
-
-    const out = [];
-    const seen = new Set();
-    for (const rawKey of featuredKeys) {
-      const norm = normalizeBadgeKey(rawKey);
-      if (!norm || seen.has(norm)) continue;
-      const badge = byKey.get(norm);
-      if (!badge || !badge.owned || !badge.displayable) continue;
-      seen.add(norm);
-      out.push(badge);
-      if (out.length >= FEATURED_BADGES_MAX) break;
-    }
-    return out;
-  }
-
-  async function loadFeaturedBadges(forceReload) {
-    if (!forceReload && Array.isArray(STATE.featuredBadges)) {
-      return STATE.featuredBadges;
-    }
-
-    const initData = getInitData();
-    const apiBase = getApiBase();
-    if (!initData || !apiBase) {
-      STATE.featuredBadges = [];
-      return STATE.featuredBadges;
-    }
-
-    try {
-      const { res, data } = await fetchJsonWithTimeout(apiBase + "/webapp/badges/state", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + initData,
-        },
-        body: JSON.stringify({}),
-      }, FEATURED_BADGES_TIMEOUT_MS);
-      if (!res.ok || data?.ok === false) {
-        throw new Error(data?.reason || "BADGES_STATE_FAILED");
-      }
-      STATE.featuredBadges = extractFeaturedBadgesFromPayload(data);
-    } catch (err) {
-      log("featured:load_failed", { reason: String(err?.message || err || "") });
-      if (!Array.isArray(STATE.featuredBadges)) STATE.featuredBadges = [];
-    }
-
-    return STATE.featuredBadges;
-  }
-
-  function buildSharePresentation(variant) {
-    const mode = sanitizeVariant(variant);
-    const profile = global.__PROFILE__ || global.PROFILE || global.profileState || {};
-    const equippedState = global.Equipped?.state || {};
-    const heroLevelText = textOf("heroLevel", profile?.level ? `Lv.${profile.level}` : "Lv.1");
-    const equippedPreview = $("equipped-character-img")?.currentSrc || $("equipped-character-img")?.src || global.__EquippedCharImgUrl || equippedState?.characterUrl || "";
-    const stats = equippedState?.stats || {};
-    const origin = pickOriginMeta(profile);
-    const originLabel = origin?.label || "";
-    const factionLabel = resolveProfileFactionLabel(profile);
-    const visualTag = textOf("factionTag", profile?.displayTag || profile?.activeTag || profile?.tag || profile?.cosmetics?.tag || "");
-    const displayTitle = normalizeDisplayTitle(
-      profile?.displayTitle || profile?.title || profile?.active_title || profile?.activeTitle || ""
-    );
-
-    return {
-      variant: mode,
-      playerName: textOf("heroName", profile?.name || profile?.nickname || "Howler"),
-      level: getLevelNumber(heroLevelText, profile?.level || stats?.level || 1),
-      heroLevelText,
-      tag: visualTag,
-      title: displayTitle || "",
-      factionLabel,
-      factionMeta: factionLabel ? `FACTION: ${factionLabel}` : textOf("factionMeta", ""),
-      factionId: String(profile?.faction || "").trim(),
-      factionBadgeUrl: proxifyAssetUrl($("factionBadgeImg")?.currentSrc || $("factionBadgeImg")?.src || ""),
-      origin,
-      originKey: origin?.key || "",
-      originLabel,
-      originText: originLabel ? `ORIGIN: ${originLabel.toUpperCase()}` : "",
-      originIconUrl: proxifyAssetUrl(origin?.iconUrl || ""),
-      identityLine: [
-        displayTitle || "",
-        originLabel ? `Origin: ${originLabel}` : "",
-        factionLabel ? `Faction: ${factionLabel}` : "",
-        `LV ${getLevelNumber(heroLevelText, profile?.level || stats?.level || 1)}`,
-      ].filter(Boolean).join(" - "),
-      skinUrl: proxifyAssetUrl($("player-skin")?.currentSrc || $("player-skin")?.src || profile?.heroImg || profile?.skin?.img || profile?.skin || ""),
-      frameUrl: proxifyAssetUrl($("player-frame")?.currentSrc || $("player-frame")?.src || pickFrameUrl(profile)),
-      auraText: textOf("heroAuraBadge", ""),
-      howlSignal: profile?.howlSignal || profile?.signal || profile?.cosmetics?.signal || null,
-      equippedPreviewUrl: proxifyAssetUrl(equippedPreview),
-      equippedStats: stats,
-      equippedSlots: Array.isArray(equippedState?.slots) ? equippedState.slots : [],
-      featuredBadges: Array.isArray(STATE.featuredBadges) ? STATE.featuredBadges.slice(0, FEATURED_BADGES_MAX) : [],
-      shareLink: getShareLink(),
-    };
-  }
-
-  async function waitForImageElement(imgEl, timeoutMs) {
-    if (!imgEl) return false;
-    if (imgEl.complete && imgEl.naturalWidth > 0) return true;
-    const deadline = Date.now() + Math.max(250, Number(timeoutMs || 0) || PREVIEW_WAIT_MS);
-    while (Date.now() < deadline) {
-      if (imgEl.complete && imgEl.naturalWidth > 0) return true;
-      await sleep(60);
-    }
-    return !!(imgEl.complete && imgEl.naturalWidth > 0);
-  }
-
-  async function waitForEquippedPreviewFreshness() {
-    if (sanitizeVariant(STATE.variant) !== "equipped") return true;
-    const imgEl = $("equipped-character-img");
-    if (!imgEl) return true;
-    const deadline = Date.now() + PREVIEW_WAIT_MS;
-    while (Date.now() < deadline) {
-      const ready = global.__EquippedPreviewReady !== false;
-      if (ready && imgEl.complete && imgEl.naturalWidth > 0) return true;
-      await sleep(70);
-    }
-    const ready = await waitForImageElement(imgEl, 120);
-    log("preview:wait_timeout", { ready, src: imgEl.currentSrc || imgEl.src || "" });
-    return ready;
-  }
-
-  async function waitForFonts() {
-    try {
-      if (document.fonts?.ready) {
-        await document.fonts.ready;
-      }
-    } catch (_) {}
-  }
-
-  function loadImage(src) {
-    return new Promise((resolve, reject) => {
-      const url = String(src || "").trim();
-      if (!url) return resolve(null);
+  async function loadImage(raw) {
+    const src = proxify(raw);
+    if (!src) return null;
+    return await new Promise((resolve) => {
       const img = new Image();
-      if (!/^blob:/i.test(url) && !/^data:/i.test(url)) {
-        img.crossOrigin = "anonymous";
-      }
-      img.onload = async () => {
-        try {
-          if (typeof img.decode === "function") {
-            await img.decode().catch(() => {});
-          }
-        } catch (_) {}
-        resolve(img);
-      };
-      img.onerror = () => reject(new Error("IMAGE_LOAD_FAILED"));
-      img.src = url;
+      let done = false;
+      const finish = (value) => { if (done) return; done = true; clearTimeout(timer); resolve(value); };
+      const timer = setTimeout(() => finish(null), ASSET_TIMEOUT_MS);
+      if (!/^(data:|blob:)/i.test(src)) img.crossOrigin = "anonymous";
+      img.onload = async () => { try { await img.decode?.(); } catch (_) {} finish(img); };
+      img.onerror = () => finish(null);
+      img.src = src;
     });
   }
 
-  function roundRect(ctx, x, y, w, h, r) {
-    const radius = Math.max(0, Math.min(r || 0, Math.min(w, h) / 2));
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.arcTo(x + w, y, x + w, y + h, radius);
-    ctx.arcTo(x + w, y + h, x, y + h, radius);
-    ctx.arcTo(x, y + h, x, y, radius);
-    ctx.arcTo(x, y, x + w, y, radius);
-    ctx.closePath();
-  }
-
-  function drawCover(ctx, img, x, y, w, h) {
-    if (!img) return;
-    const scale = Math.max(w / img.width, h / img.height);
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = x + (w - dw) / 2;
-    const dy = y + (h - dh) / 2;
-    ctx.drawImage(img, dx, dy, dw, dh);
-  }
-
-  function drawContain(ctx, img, x, y, w, h) {
-    if (!img) return;
-    const scale = Math.min(w / img.width, h / img.height);
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = x + (w - dw) / 2;
-    const dy = y + (h - dh) / 2;
-    ctx.drawImage(img, dx, dy, dw, dh);
-  }
-
-  function drawCoverFocus(ctx, img, x, y, w, h, focusX, focusY, extraScale) {
-    if (!img) return;
-    const fx = Math.max(0, Math.min(1, Number(focusX ?? 0.5)));
-    const fy = Math.max(0, Math.min(1, Number(focusY ?? 0.5)));
-    const scale = Math.max(w / img.width, h / img.height) * Math.max(0.01, Number(extraScale || 1));
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = x - Math.max(0, dw - w) * fx;
-    const dy = y - Math.max(0, dh - h) * fy;
-    ctx.drawImage(img, dx, dy, dw, dh);
-  }
-
-  function drawContainScaled(ctx, img, x, y, w, h, scaleFactor, offsetX, offsetY) {
-    if (!img) return;
-    const scale = Math.min(w / img.width, h / img.height) * Math.max(0.01, Number(scaleFactor || 1));
-    const dw = img.width * scale;
-    const dh = img.height * scale;
-    const dx = x + (w - dw) / 2 + Number(offsetX || 0);
-    const dy = y + (h - dh) / 2 + Number(offsetY || 0);
-    ctx.drawImage(img, dx, dy, dw, dh);
-  }
-
-  function drawChip(ctx, text, x, y, align) {
-    const value = String(text || "").trim();
-    if (!value) return y;
-    ctx.font = "700 21px system-ui, sans-serif";
-    const padX = 16;
-    const width = Math.ceil(ctx.measureText(value).width) + padX * 2;
-    const height = 42;
-    const left = align === "right" ? x - width : x;
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.20)";
-    ctx.shadowBlur = 12;
-    ctx.shadowOffsetY = 6;
-    ctx.fillStyle = "rgba(8,13,21,0.72)";
-    ctx.strokeStyle = "rgba(255,224,170,0.12)";
-    roundRect(ctx, left, y, width, height, 999);
-    ctx.fill();
-    ctx.stroke();
-    ctx.fillStyle = "rgba(243,247,253,0.94)";
-    ctx.textBaseline = "middle";
-    ctx.fillText(value, left + padX, y + height / 2);
-    ctx.restore();
-    return y + height + 10;
-  }
-
-  function isHowlSignalActive(signal) {
-    return !!(signal && typeof signal === "object" && signal.active);
-  }
-
-  function drawHowlSignalStrip(ctx, signal, x, y, w) {
-    if (!isHowlSignalActive(signal)) return 0;
-    const text = String(signal.stripText || "SIGNAL VERIFIED - HOWL").trim();
-    const h = 44;
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.34)";
-    ctx.shadowBlur = 22;
-    ctx.shadowOffsetY = 10;
-    roundRect(ctx, x, y, w, h, 999);
-    const bg = ctx.createLinearGradient(x, y, x + w, y + h);
-    bg.addColorStop(0, "rgba(75,18,22,0.82)");
-    bg.addColorStop(0.52, "rgba(13,17,25,0.88)");
-    bg.addColorStop(1, "rgba(143,103,45,0.78)");
-    ctx.fillStyle = bg;
-    ctx.fill();
-    const rim = ctx.createLinearGradient(x, y, x + w, y);
-    rim.addColorStop(0, "rgba(245,210,146,0.24)");
-    rim.addColorStop(0.5, "rgba(255,235,194,0.48)");
-    rim.addColorStop(1, "rgba(190,45,45,0.22)");
-    ctx.strokeStyle = rim;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(x + 30, y + h / 2, 7, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(245,210,146,0.95)";
-    ctx.fill();
-    ctx.shadowColor = "rgba(245,210,146,0.30)";
-    ctx.shadowBlur = 18;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = "rgba(255,238,204,0.94)";
-    ctx.font = "800 18px system-ui, sans-serif";
-    ctx.textBaseline = "middle";
-    ctx.fillText(text, x + 50, y + h / 2 + 1);
-    ctx.restore();
-    return h;
-  }
-
-  function drawWrappedText(ctx, text, x, y, maxWidth, lineHeight, maxLines) {
-    const normalized = String(text || "")
-      .replace(/(?:\u00e2\u20ac\u00a2|\u2022)/g, "|")
-      .replace(/\s*\|\s*/g, " | ")
-      .trim();
-    const words = normalized.split(/\s+/).filter(Boolean);
-    const lines = [];
-    let current = "";
-    for (const word of words) {
-      const next = current ? current + " " + word : word;
-      if (ctx.measureText(next).width <= maxWidth || !current) {
-        current = next;
-      } else {
-        lines.push(current);
-        current = word;
-      }
-      if (lines.length >= maxLines) break;
-    }
-    if (current && lines.length < maxLines) lines.push(current);
-    lines.forEach((line, idx) => ctx.fillText(line, x, y + idx * lineHeight));
-  }
-
-  function drawAmbientBackground(ctx) {
-    const bg = ctx.createLinearGradient(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    bg.addColorStop(0, "#03060d");
-    bg.addColorStop(0.56, "#0a1221");
-    bg.addColorStop(1, "#090c13");
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-    ctx.save();
-    const topGlow = ctx.createRadialGradient(CARD_WIDTH * 0.50, 128, 32, CARD_WIDTH * 0.50, 128, 600);
-    topGlow.addColorStop(0, "rgba(228,198,146,0.22)");
-    topGlow.addColorStop(1, "rgba(225,194,142,0)");
-    ctx.fillStyle = topGlow;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-    const sideGlow = ctx.createRadialGradient(190, 1010, 30, 190, 1010, 470);
-    sideGlow.addColorStop(0, "rgba(90,148,240,0.14)");
-    sideGlow.addColorStop(1, "rgba(91,160,255,0)");
-    ctx.fillStyle = sideGlow;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-    const stageFalloff = ctx.createLinearGradient(0, 138, 0, CARD_HEIGHT);
-    stageFalloff.addColorStop(0, "rgba(0,0,0,0)");
-    stageFalloff.addColorStop(0.62, "rgba(0,0,0,0.12)");
-    stageFalloff.addColorStop(1, "rgba(0,0,0,0.24)");
-    ctx.fillStyle = stageFalloff;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-
-    const vignette = ctx.createRadialGradient(
-      CARD_WIDTH * 0.5,
-      CARD_HEIGHT * 0.45,
-      CARD_WIDTH * 0.12,
-      CARD_WIDTH * 0.5,
-      CARD_HEIGHT * 0.45,
-      CARD_WIDTH * 0.84
-    );
-    vignette.addColorStop(0, "rgba(0,0,0,0)");
-    vignette.addColorStop(1, "rgba(0,0,0,0.48)");
-    ctx.fillStyle = vignette;
-    ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    ctx.restore();
-  }
-
-  function drawCollectibleStage(ctx, x, y, w, h, radius) {
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.50)";
-    ctx.shadowBlur = 52;
-    ctx.shadowOffsetY = 24;
-    roundRect(ctx, x, y, w, h, radius);
-    ctx.fillStyle = "rgba(4,8,15,0.62)";
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    const panel = ctx.createLinearGradient(x, y, x, y + h);
-    panel.addColorStop(0, "rgba(15,23,38,0.72)");
-    panel.addColorStop(0.44, "rgba(8,14,24,0.70)");
-    panel.addColorStop(1, "rgba(6,9,17,0.78)");
-    roundRect(ctx, x, y, w, h, radius);
-    ctx.fillStyle = panel;
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    const border = ctx.createLinearGradient(x, y, x + w, y + h);
-    border.addColorStop(0, "rgba(255,239,210,0.22)");
-    border.addColorStop(1, "rgba(156,182,228,0.10)");
-    ctx.strokeStyle = border;
-    ctx.lineWidth = 2;
-    roundRect(ctx, x, y, w, h, radius);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,0.06)";
-    ctx.lineWidth = 1;
-    roundRect(ctx, x + 3, y + 3, w - 6, h - 6, Math.max(0, radius - 3));
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    const sheen = ctx.createLinearGradient(x, y, x, y + h * 0.34);
-    sheen.addColorStop(0, "rgba(255,255,255,0.14)");
-    sheen.addColorStop(1, "rgba(255,255,255,0)");
-    roundRect(ctx, x + 1, y + 1, w - 2, Math.max(12, h * 0.34), Math.max(0, radius - 1));
-    ctx.clip();
-    ctx.fillStyle = sheen;
-    ctx.fillRect(x, y, w, h * 0.34);
-    ctx.restore();
-  }
-
-  function drawOriginMoodLayer(ctx, origin, originImg, x, y, w, h) {
-    if (!origin) return;
-    ctx.save();
-
-    if (originImg) {
-      ctx.globalAlpha = 0.13;
-      ctx.filter = "blur(18px) saturate(1.12)";
-      drawCover(ctx, originImg, x - w * 0.04, y - h * 0.04, w * 1.08, h * 1.08);
-      ctx.filter = "none";
-
-      ctx.globalAlpha = 0.16;
-      ctx.filter = "blur(18px) saturate(1.22)";
-      drawContainScaled(ctx, originImg, x - w * 0.20, y + h * 0.03, w * 1.40, h * 0.78, 1.12, 0, 0);
-      ctx.filter = "none";
-
-      ctx.globalAlpha = 0.30;
-      ctx.shadowColor = "rgba(230,238,250,0.28)";
-      ctx.shadowBlur = 34;
-      drawContainScaled(ctx, originImg, x - w * 0.18, y + h * 0.04, w * 1.36, h * 0.76, 1.06, 0, 0);
-      ctx.shadowBlur = 0;
-
-      ctx.globalAlpha = 0.08;
-      ctx.filter = "blur(3px)";
-      drawContainScaled(ctx, originImg, x - w * 0.10, y + h * 0.07, w * 1.20, h * 0.68, 1.02, 0, 0);
-      ctx.filter = "none";
-    }
-
-    const glow = ctx.createRadialGradient(x + w * 0.50, y + h * 0.38, 24, x + w * 0.50, y + h * 0.38, w * 0.74);
-    glow.addColorStop(0, "rgba(230,238,250,0.22)");
-    glow.addColorStop(0.46, "rgba(130,168,220,0.10)");
-    glow.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.globalAlpha = 1;
-    ctx.fillStyle = glow;
-    ctx.fillRect(x, y, w, h);
-
-    ctx.globalAlpha = 0.12;
-    ctx.strokeStyle = "rgba(230,238,250,0.28)";
-    ctx.lineWidth = 1.25;
-    for (let i = 0; i < 5; i += 1) {
-      const yy = y + h * (0.18 + i * 0.13);
-      ctx.beginPath();
-      ctx.moveTo(x + w * 0.12, yy);
-      ctx.bezierCurveTo(x + w * 0.34, yy - 18, x + w * 0.62, yy + 26, x + w * 0.88, yy - 8);
-      ctx.stroke();
-    }
-
-    ctx.globalAlpha = 1;
-    ctx.restore();
-  }
-
-  function drawFramePortrait(ctx, artImg, frameImg, x, y, w, h, origin, originImg) {
-    const bleed = Math.round(w * HUB_FRAME.frameBleed);
-    const viewportX = x + Math.round(w * HUB_FRAME.viewportSide);
-    const viewportY = y + Math.round(h * HUB_FRAME.viewportTop);
-    const viewportW = w - Math.round(w * HUB_FRAME.viewportSide * 2);
-    const viewportH = h - Math.round(h * (HUB_FRAME.viewportTop + HUB_FRAME.viewportBottom));
-    const radius = Math.round(Math.min(w, h) * 0.08);
-
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.46)";
-    ctx.shadowBlur = 30;
-    ctx.shadowOffsetY = 16;
-    roundRect(ctx, x, y, w, h, radius + 10);
-    ctx.fillStyle = "rgba(2,6,12,0.50)";
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    roundRect(ctx, viewportX, viewportY, viewportW, viewportH, radius);
-    ctx.clip();
-    const inner = ctx.createLinearGradient(viewportX, viewportY, viewportX, viewportY + viewportH);
-    inner.addColorStop(0, "rgba(22,31,49,0.92)");
-    inner.addColorStop(1, "rgba(5,9,18,0.98)");
-    ctx.fillStyle = inner;
-    ctx.fillRect(viewportX, viewportY, viewportW, viewportH);
-    drawOriginMoodLayer(ctx, origin, originImg, viewportX, viewportY, viewportW, viewportH);
-    drawCoverFocus(ctx, artImg, viewportX, viewportY, viewportW, viewportH, 0.5, HUB_FRAME.skinFocusY, HUB_FRAME.skinScale);
-
-    const vignette = ctx.createLinearGradient(viewportX, viewportY, viewportX, viewportY + viewportH);
-    vignette.addColorStop(0, "rgba(255,255,255,0)");
-    vignette.addColorStop(0.58, "rgba(0,0,0,0)");
-    vignette.addColorStop(1, "rgba(0,0,0,0.36)");
-    ctx.fillStyle = vignette;
-    ctx.fillRect(viewportX, viewportY, viewportW, viewportH);
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, viewportX + 1, viewportY + 1, viewportW - 2, viewportH - 2, radius - 2);
-    ctx.stroke();
-    ctx.restore();
-
-    if (frameImg) {
-      ctx.save();
-      drawContainScaled(
-        ctx,
-        frameImg,
-        x - bleed,
-        y - bleed,
-        w + bleed * 2,
-        h + bleed * 2,
-        HUB_FRAME.frameScale,
-        0,
-        Math.round(h * HUB_FRAME.frameOffsetY)
-      );
-      ctx.restore();
-    } else {
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255,0.18)";
-      ctx.lineWidth = 2;
-      roundRect(ctx, x, y, w, h, radius + 10);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    return { viewportX, viewportY, viewportW, viewportH, radius };
-  }
-
-  function drawFactionSeal(ctx, badgeImg, x, y, size) {
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.32)";
-    ctx.shadowBlur = 24;
-    ctx.shadowOffsetY = 10;
-    ctx.beginPath();
-    ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(12,18,30,0.95)";
-    ctx.fill();
-    ctx.restore();
-
-    if (badgeImg) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(x + size / 2, y + size / 2, size / 2 - 6, 0, Math.PI * 2);
-      ctx.clip();
-      drawCover(ctx, badgeImg, x + 6, y + 6, size - 12, size - 12);
-      ctx.restore();
-    }
-
-    const ring = ctx.createLinearGradient(x, y, x + size, y + size);
-    ring.addColorStop(0, "rgba(255,220,170,0.95)");
-    ring.addColorStop(1, "rgba(255,255,255,0.60)");
-    ctx.strokeStyle = ring;
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(x + size / 2, y + size / 2, size / 2 - 3, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  function drawFeaturedBadgeRow(ctx, badges, badgeImages, x, y) {
-    const list = Array.isArray(badges) ? badges.slice(0, FEATURED_BADGES_MAX) : [];
-    if (!list.length) return;
-
-    const count = list.length;
-    const tileSize = 50;
-    const gap = 8;
-    const padX = 14;
-    const panelH = 76;
-    const panelW = padX * 2 + count * tileSize + (count - 1) * gap;
-
-    ctx.save();
-    roundRect(ctx, x, y, panelW, panelH, 16);
-    ctx.fillStyle = "rgba(8,14,24,0.78)";
-    ctx.strokeStyle = "rgba(152,196,236,0.20)";
-    ctx.lineWidth = 1.5;
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = "rgba(221,232,246,0.80)";
-    ctx.font = "700 12px system-ui, sans-serif";
-    ctx.fillText("FEATURED", x + padX, y + 15);
-
-    for (let i = 0; i < count; i += 1) {
-      const badge = list[i] || {};
-      const img = Array.isArray(badgeImages) ? badgeImages[i] : null;
-      const tileX = x + padX + i * (tileSize + gap);
-      const tileY = y + 20;
-
-      roundRect(ctx, tileX, tileY, tileSize, tileSize, 12);
-      ctx.fillStyle = "rgba(4,10,18,0.92)";
-      ctx.strokeStyle = "rgba(158,200,238,0.28)";
-      ctx.lineWidth = 1.25;
-      ctx.fill();
-      ctx.stroke();
-
-      if (img) {
-        drawContain(ctx, img, tileX + 3, tileY + 3, tileSize - 6, tileSize - 6);
-      } else {
-        const fallback = String(badge?.name || badge?.key || "?").trim().slice(0, 1).toUpperCase() || "?";
-        ctx.fillStyle = "rgba(226,236,248,0.72)";
-        ctx.font = "800 21px system-ui, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(fallback, tileX + tileSize / 2, tileY + tileSize / 2 + 1);
-        ctx.textAlign = "left";
-        ctx.textBaseline = "alphabetic";
-      }
-    }
-
-    ctx.restore();
-  }
-
-  function drawFooterNameplate(ctx, presentation, x, y, w, options) {
-    const opts = options || {};
-    const subtitle = String(opts.subtitle || "ALPHA HUSKY COLLECTIBLE").trim();
-    const metaLeft = String(opts.metaLeft || "").trim();
-    const metaRight = String(opts.metaRight || "").trim();
-    const h = Number(opts.height || 178);
-    const displayTitle = normalizeDisplayTitle(presentation?.title || "");
-
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.36)";
-    ctx.shadowBlur = 26;
-    ctx.shadowOffsetY = 12;
-    roundRect(ctx, x, y, w, h, 30);
-    ctx.fillStyle = "rgba(5,10,18,0.86)";
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    const panel = ctx.createLinearGradient(x, y, x, y + h);
-    panel.addColorStop(0, "rgba(18,27,42,0.84)");
-    panel.addColorStop(0.46, "rgba(8,14,26,0.84)");
-    panel.addColorStop(1, "rgba(6,10,18,0.92)");
-    roundRect(ctx, x, y, w, h, 30);
-    ctx.fillStyle = panel;
-    ctx.fill();
-    const rim = ctx.createLinearGradient(x, y, x + w, y + h);
-    rim.addColorStop(0, "rgba(255,230,186,0.24)");
-    rim.addColorStop(1, "rgba(255,255,255,0.10)");
-    ctx.strokeStyle = rim;
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(232,239,249,0.74)";
-    ctx.font = "700 15px system-ui, sans-serif";
-    ctx.fillText(subtitle, x + 34, y + 38);
-
-    const levelW = 196;
-    const levelH = 94;
-    const levelX = x + w - levelW - 26;
-    const levelY = y + 22;
-    ctx.save();
-    const levelBg = ctx.createLinearGradient(levelX, levelY, levelX, levelY + levelH);
-    levelBg.addColorStop(0, "rgba(40,54,78,0.86)");
-    levelBg.addColorStop(1, "rgba(19,29,46,0.92)");
-    roundRect(ctx, levelX, levelY, levelW, levelH, 22);
-    ctx.fillStyle = levelBg;
-    ctx.fill();
-    ctx.strokeStyle = "rgba(245,210,146,0.34)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(245,218,165,0.88)";
-    ctx.font = "700 14px system-ui, sans-serif";
-    ctx.fillText("LEVEL", levelX + 22, levelY + 28);
-    ctx.fillStyle = "#f7d9a2";
-    ctx.font = "800 48px system-ui, sans-serif";
-    ctx.fillText(`LV ${presentation.level}`, levelX + 20, levelY + 76);
-
-    ctx.fillStyle = "#f8fbff";
-    let nameSize = 68;
-    const nameMaxW = w - levelW - 110;
-    do {
-      ctx.font = `800 ${nameSize}px system-ui, sans-serif`;
-      if (ctx.measureText(presentation.playerName).width <= nameMaxW || nameSize <= 42) break;
-      nameSize -= 2;
-    } while (nameSize > 42);
-    ctx.fillText(presentation.playerName, x + 34, y + 112);
-
-    if (displayTitle) {
-      ctx.fillStyle = "rgba(245,218,165,0.92)";
-      ctx.font = "700 30px system-ui, sans-serif";
-      ctx.fillText(displayTitle, x + 34, y + 146);
-    }
-
-    ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.10)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(x + 34, y + h - 42);
-    ctx.lineTo(x + w - 34, y + h - 42);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.fillStyle = "rgba(222,232,246,0.68)";
-    ctx.font = "600 20px system-ui, sans-serif";
-    ctx.fillText(metaLeft || "Official collectible render", x + 34, y + h - 14);
-    if (presentation.originLabel) {
-      ctx.textAlign = "right";
-      ctx.fillStyle = "rgba(245,218,165,0.72)";
-      ctx.font = "800 12px system-ui, sans-serif";
-      ctx.fillText("SIGNAL ORIGIN", x + w - 34, y + h - 27);
-      ctx.fillStyle = "#f6ead5";
-      ctx.font = "900 25px system-ui, sans-serif";
-      ctx.fillText(String(presentation.originLabel || "").toUpperCase(), x + w - 34, y + h - 7);
-      ctx.textAlign = "left";
-    } else if (metaRight) {
-      ctx.textAlign = "right";
-      ctx.fillText(metaRight, x + w - 34, y + h - 14);
-      ctx.textAlign = "left";
-    }
-    return h;
-  }
-
-  async function renderPresentationToCanvas(canvas, presentation) {
-    if (!canvas || !presentation) throw new Error("MISSING_RENDER_TARGET");
-    await waitForFonts();
-    const featuredBadges = Array.isArray(presentation.featuredBadges) ? presentation.featuredBadges.slice(0, FEATURED_BADGES_MAX) : [];
-
-    const [skinImg, frameImg, badgeImg, equippedImg, originImg] = await Promise.all([
-      loadImage(presentation.skinUrl).catch(() => null),
-      loadImage(presentation.frameUrl).catch(() => null),
-      loadImage(presentation.factionBadgeUrl).catch(() => null),
-      loadImage(presentation.equippedPreviewUrl).catch(() => null),
-      loadImage(presentation.originIconUrl).catch(() => null),
-    ]);
-    const featuredBadgeImgs = await Promise.all(
-      featuredBadges.map((badge) => loadImage(badge?.iconUrl).catch(() => null))
-    );
-
-    canvas.width = CARD_WIDTH;
-    canvas.height = CARD_HEIGHT;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
-
-    const artImg = presentation.variant === "equipped" ? (equippedImg || skinImg) : skinImg;
-    ctx.clearRect(0, 0, CARD_WIDTH, CARD_HEIGHT);
-    drawAmbientBackground(ctx);
-
-    const stageX = 66;
-    const stageY = 62;
-    const stageW = CARD_WIDTH - 132;
-    const stageH = CARD_HEIGHT - 174;
-    drawCollectibleStage(ctx, stageX, stageY, stageW, stageH, 52);
-
-    if (presentation.variant === "hub") {
-      const portraitW = 792;
-      const portraitH = Math.round(portraitW * 4 / 3);
-      const portraitX = Math.round((CARD_WIDTH - portraitW) / 2);
-      const portraitY = 166;
-
-      ctx.fillStyle = "rgba(231,238,249,0.86)";
-      ctx.font = "700 18px system-ui, sans-serif";
-      ctx.fillText("OFFICIAL ALPHA HUSKY COLLECTIBLE", 104, 104);
-
-      let chipY = 92;
-      chipY = drawChip(ctx, presentation.tag, CARD_WIDTH - 104, chipY, "right");
-      const auraText = String(presentation.auraText || "").trim();
-      if (auraText && auraText.toLowerCase() !== String(presentation.tag || "").trim().toLowerCase()) {
-        chipY = drawChip(ctx, auraText, CARD_WIDTH - 104, chipY, "right");
-      }
-
-      drawFramePortrait(ctx, artImg, frameImg, portraitX, portraitY, portraitW, portraitH, presentation.origin, originImg);
-
-      if (!artImg) {
-        ctx.fillStyle = "rgba(226,232,240,0.84)";
-        ctx.textAlign = "center";
-        ctx.font = "600 38px system-ui, sans-serif";
-        ctx.fillText("Preview is still loading", CARD_WIDTH / 2, portraitY + portraitH / 2 - 12);
-        ctx.font = "500 24px system-ui, sans-serif";
-        ctx.fillText("Identity details are still safe to share.", CARD_WIDTH / 2, portraitY + portraitH / 2 + 34);
-        ctx.textAlign = "left";
-      }
-
-      drawFooterNameplate(ctx, presentation, 128, 1022, CARD_WIDTH - 256, {
-        subtitle: "ALPHA HUSKY IDENTITY CARD",
-        metaLeft: presentation.factionMeta || (presentation.factionLabel ? `FACTION: ${presentation.factionLabel}` : "OATH-BOUND"),
-        metaRight: presentation.originText || "OATH-BOUND",
-      });
-      drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 254, 934);
-      drawHowlSignalStrip(ctx, presentation.howlSignal, 332, 872, CARD_WIDTH - 664);
-
-      if (badgeImg) {
-        drawFactionSeal(ctx, badgeImg, 106, 966, 124);
-      }
-
-      ctx.fillStyle = "rgba(219,229,243,0.48)";
-      ctx.font = "600 17px system-ui, sans-serif";
-      ctx.fillText("Live hub snapshot", 102, CARD_HEIGHT - 124);
-      ctx.textAlign = "right";
-      ctx.fillText("#AlphaHusky", CARD_WIDTH - 102, CARD_HEIGHT - 124);
-      ctx.textAlign = "left";
-      return;
-    }
-
-    ctx.fillStyle = "rgba(231,238,249,0.86)";
-    ctx.font = "700 18px system-ui, sans-serif";
-    ctx.fillText("ALPHA HUSKY LOADOUT COLLECTIBLE", 104, 104);
-
-    let chipY = 92;
-    chipY = drawChip(ctx, presentation.tag, CARD_WIDTH - 104, chipY, "right");
-    const auraTextEq = String(presentation.auraText || "").trim();
-    if (auraTextEq && auraTextEq.toLowerCase() !== String(presentation.tag || "").trim().toLowerCase()) {
-      chipY = drawChip(ctx, auraTextEq, CARD_WIDTH - 104, chipY, "right");
-    }
-
-    const artX = 138;
-    const artY = 174;
-    const artW = CARD_WIDTH - 276;
-    const artH = 796;
-
-    ctx.save();
-    ctx.shadowColor = "rgba(0,0,0,0.44)";
-    ctx.shadowBlur = 38;
-    ctx.shadowOffsetY = 20;
-    roundRect(ctx, artX, artY, artW, artH, 42);
-    ctx.fillStyle = "rgba(4,8,16,0.66)";
-    ctx.fill();
-    ctx.restore();
-
-    ctx.save();
-    roundRect(ctx, artX, artY, artW, artH, 42);
-    ctx.clip();
-    const artBg = ctx.createLinearGradient(artX, artY, artX, artY + artH);
-    artBg.addColorStop(0, "rgba(18,29,46,0.98)");
-    artBg.addColorStop(1, "rgba(8,12,22,0.98)");
-    ctx.fillStyle = artBg;
-    ctx.fillRect(artX, artY, artW, artH);
-    drawOriginMoodLayer(ctx, presentation.origin, originImg, artX, artY, artW, artH);
-    drawCoverFocus(
-      ctx,
-      artImg,
-      artX + 26,
-      artY + 22,
-      artW - 52,
-      artH - 52,
-      EQUIPPED_ART.focusX,
-      EQUIPPED_ART.focusY,
-      EQUIPPED_ART.scale
-    );
-    const artVignette = ctx.createLinearGradient(artX, artY, artX, artY + artH);
-    artVignette.addColorStop(0, "rgba(255,255,255,0.02)");
-    artVignette.addColorStop(0.58, "rgba(0,0,0,0)");
-    artVignette.addColorStop(1, "rgba(0,0,0,0.44)");
-    ctx.fillStyle = artVignette;
-    ctx.fillRect(artX, artY, artW, artH);
-    ctx.restore();
-
-    ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
-    ctx.lineWidth = 2;
-    roundRect(ctx, artX, artY, artW, artH, 42);
-    ctx.stroke();
-    ctx.restore();
-
-    if (!artImg) {
-      ctx.fillStyle = "rgba(226,232,240,0.84)";
-      ctx.textAlign = "center";
-      ctx.font = "600 36px system-ui, sans-serif";
-      ctx.fillText("Preview is still loading", CARD_WIDTH / 2, artY + artH / 2 - 10);
-      ctx.font = "500 22px system-ui, sans-serif";
-      ctx.fillText("Loadout details are still safe to share.", CARD_WIDTH / 2, artY + artH / 2 + 28);
-      ctx.textAlign = "left";
-    }
-
-    const stats = presentation.equippedStats || {};
-    const slotLines = presentation.equippedSlots
-      .filter((slot) => slot && !slot.empty)
-      .slice(0, 2)
-      .map((slot) => {
-        const label = String(slot.label || slot.slot || "Slot");
-        const name = String(slot.name || slot.item_key || "Equipped");
-        return `${label}: ${name}`;
-      });
-
-    drawFooterNameplate(ctx, presentation, 122, 990, CARD_WIDTH - 244, {
-      subtitle: "EQUIPPED LOADOUT",
-      metaLeft: presentation.factionMeta || (presentation.factionLabel ? `FACTION: ${presentation.factionLabel}` : "LIVE EQUIPPED STATE"),
-      metaRight: presentation.originText || (slotLines.length ? `${slotLines.length} slot${slotLines.length > 1 ? "s" : ""}` : ""),
-    });
-    drawFeaturedBadgeRow(ctx, featuredBadges, featuredBadgeImgs, 236, 906);
-    drawHowlSignalStrip(ctx, presentation.howlSignal, 318, 850, CARD_WIDTH - 636);
-
-    ctx.fillStyle = "rgba(223,232,244,0.74)";
-    ctx.font = "600 20px system-ui, sans-serif";
-    drawWrappedText(ctx, slotLines.join("  •  "), 126, 1158, CARD_WIDTH - 252, 32, 2);
-
-    const statChips = [
-      stats.hp != null ? `HP ${stats.hp}` : "",
-      stats.attack != null ? `ATK ${stats.attack}` : "",
-      stats.defense != null ? `DEF ${stats.defense}` : "",
-      stats.agility != null ? `AGI ${stats.agility}` : "",
-      stats.luck != null ? `LUCK ${stats.luck}` : "",
-    ].filter(Boolean);
-    let statX = 126;
-    let statY = slotLines.length ? 1260 : 1222;
-    statChips.forEach((chip) => {
-      ctx.font = "700 20px system-ui, sans-serif";
-      const width = Math.ceil(ctx.measureText(chip).width) + 32;
-      if (statX + width > CARD_WIDTH - 126) {
-        statX = 126;
-        statY += 50;
-      }
-      ctx.save();
-      roundRect(ctx, statX, statY, width, 38, 999);
-      ctx.fillStyle = "rgba(8,14,24,0.74)";
-      ctx.strokeStyle = "rgba(245,210,146,0.16)";
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#f2f6fd";
-      ctx.fillText(chip, statX + 16, statY + 26);
-      ctx.restore();
-      statX += width + 12;
-    });
-
-    if (badgeImg) {
-      drawFactionSeal(ctx, badgeImg, 104, 928, 118);
-    }
-
-    ctx.fillStyle = "rgba(226,232,240,0.48)";
-    ctx.font = "600 17px system-ui, sans-serif";
-    ctx.fillText("Build snapshot", 102, CARD_HEIGHT - 124);
-    ctx.textAlign = "right";
-    ctx.fillText("#AlphaHusky", CARD_WIDTH - 102, CARD_HEIGHT - 124);
-    ctx.textAlign = "left";
-  }
-
-  function captionModeLabel(variant) {
-    return variant === "equipped" ? "live loadout" : "live identity";
-  }
-
-  function getCaptionVariants(presentation) {
-    const source = presentation || {};
-    const normalized = {
-      playerName: String(source.playerName || "Howler").trim() || "Howler",
-      level: Number(source.level) > 0 ? Number(source.level) : 1,
-      variant: sanitizeVariant(source.variant),
-      identityLine: String(source.identityLine || "").trim(),
-    };
-    const modeLabel = captionModeLabel(normalized.variant);
-    return CAPTION_VARIANTS.map((builder) => builder(normalized, modeLabel));
-  }
-
-  function buildCaption(presentation) {
-    const variants = getCaptionVariants(presentation);
-    return variants[DEFAULT_CAPTION_VARIANT_INDEX] || variants[0] || "@The_Alpha_Husky #AlphaHusky";
-  }
-
-  function stopPreviewFx() {
-    if (Array.isArray(STATE.previewFxAnimations)) {
-      STATE.previewFxAnimations.forEach((anim) => {
-        try { anim?.cancel?.(); } catch (_) {}
-      });
-    }
-    STATE.previewFxAnimations = [];
-    const fxRoot = $("shareCardPreviewFx");
-    if (fxRoot) fxRoot.style.opacity = "0";
-  }
-
-  function positionPreviewFx(variant) {
-    const fxRoot = $("shareCardPreviewFx");
-    if (!fxRoot) return null;
-    const eyes = fxRoot.querySelector('[data-fx="eyes"]');
-    const core = fxRoot.querySelector('[data-fx="core"]');
-    const sheen = fxRoot.querySelector('[data-fx="sheen"]');
-    if (!eyes || !core || !sheen) return null;
-
-    const mode = sanitizeVariant(variant);
-    fxRoot.dataset.variant = mode;
-    if (mode === "equipped") {
-      eyes.style.top = "27%";
-      eyes.style.width = "19%";
-      core.style.top = "50.5%";
-      core.style.width = "14%";
-      sheen.style.top = "72.5%";
-      sheen.style.left = "56%";
-      sheen.style.width = "34%";
-      sheen.style.height = "10%";
-    } else {
-      eyes.style.top = "28.5%";
-      eyes.style.width = "16%";
-      core.style.top = "47%";
-      core.style.width = "12%";
-      sheen.style.top = "74%";
-      sheen.style.left = "57%";
-      sheen.style.width = "30%";
-      sheen.style.height = "10%";
-    }
-    return { eyes, core, sheen, fxRoot };
-  }
-
-  function startPreviewFx(variant) {
-    stopPreviewFx();
-    const nodes = positionPreviewFx(variant);
-    if (!nodes) return;
-    const { eyes, core, sheen, fxRoot } = nodes;
-
-    const modal = $("shareBack");
-    if (!modal || modal.style.display === "none" || modal.dataset.open !== "1") return;
-    if (document.hidden) return;
-
-    const reduceMotion = !!(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
-    const supportsAnimate = typeof eyes.animate === "function" && typeof core.animate === "function" && typeof sheen.animate === "function";
-    if (reduceMotion || !supportsAnimate) {
-      fxRoot.style.opacity = "0.26";
-      return;
-    }
-
-    fxRoot.style.opacity = "1";
-    const baseEye = "translate(-50%, -50%)";
-    const baseCore = "translate(-50%, -50%)";
-    const baseSheen = "translate(-16%, 0)";
-
-    STATE.previewFxAnimations = [
-      eyes.animate(
-        [
-          { opacity: 0.08, transform: `${baseEye} scale(0.94)` },
-          { opacity: 0.34, transform: `${baseEye} scale(1.04)` },
-          { opacity: 0.10, transform: `${baseEye} scale(0.96)` },
-        ],
-        { duration: 2400, iterations: Infinity, easing: "ease-in-out" }
-      ),
-      core.animate(
-        [
-          { opacity: 0.07, transform: `${baseCore} scale(0.92)` },
-          { opacity: 0.28, transform: `${baseCore} scale(1.05)` },
-          { opacity: 0.09, transform: `${baseCore} scale(0.96)` },
-        ],
-        { duration: 3050, iterations: Infinity, easing: "ease-in-out", delay: 240 }
-      ),
-      sheen.animate(
-        [
-          { opacity: 0, transform: `${baseSheen} skewX(-16deg)` },
-          { opacity: 0.16, transform: "translate(16%, 0) skewX(-16deg)" },
-          { opacity: 0, transform: "translate(42%, 0) skewX(-16deg)" },
-        ],
-        { duration: 5400, iterations: Infinity, easing: "ease-in-out", delay: 520 }
-      ),
-    ];
-  }
-
-  function buildXIntent(caption, link) {
-    const params = new URLSearchParams();
-    params.set("text", String(caption || "").trim());
-    if (link) params.set("url", String(link).trim());
-    return "https://x.com/intent/tweet?" + params.toString();
-  }
-
-  function describeShareError(err, scope) {
-    const code = String(err?.message || err || "").trim().toUpperCase();
-    if (scope === "render") return "We couldn't build the share card yet. Give the preview a moment and try again.";
-    if (code === "NO_INIT_DATA") return "Open the Mini App inside Telegram before sharing.";
-    if (code === "UPLOAD_FAILED" || code === "BAD_MULTIPART" || code === "BAD_IMAGE" || code === "SAVE_FAILED") {
-      return "Image upload failed. Please try Save Image first, then retry Telegram share.";
-    }
-    if (code === "BAD_PHOTO_URL") return "The shared image was stored, but Telegram couldn't read it yet. Please try again.";
-    if (code === "TELEGRAM_PREPARE_FAILED" || code === "NO_PREPARED_MESSAGE_ID") {
-      return "Telegram couldn't prepare the message. Please try again in a moment.";
-    }
-    if (code === "TELEGRAM_UPSTREAM_FAIL") return "Telegram is temporarily unavailable. Please try again shortly.";
-    if (code === "NETWORK_TIMEOUT") return "The network is taking too long. Please try again.";
-    if (code === "TELEGRAM_SHARE_CANCELLED") return "";
-    if (code === "PNG_EXPORT_FAILED") return "Image export failed. Please reopen share and try again.";
-    return "Sharing failed. Please try again.";
-  }
-
-  function revokeObjectUrl() {
-    if (STATE.pngObjectUrl) {
-      URL.revokeObjectURL(STATE.pngObjectUrl);
-      STATE.pngObjectUrl = "";
-    }
-  }
-
-  async function canvasToBlob(canvas) {
-    return await new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => {
-        if (blob) return resolve(blob);
-        reject(new Error("PNG_EXPORT_FAILED"));
-      }, "image/png");
-    });
-  }
-
-  function buildShareFile(blob) {
-    if (!blob || typeof File === "undefined") return null;
-    try {
-      return new File([blob], `alpha-husky-${STATE.variant}.png`, { type: blob.type || "image/png" });
-    } catch (_) {
-      return null;
-    }
-  }
-
-  async function tryNativeFileShare(caption) {
-    if (!STATE.pngBlob) await ensureRendered();
-    if (typeof navigator === "undefined" || typeof navigator.share !== "function" || typeof navigator.canShare !== "function") {
-      return false;
-    }
-    const file = buildShareFile(STATE.pngBlob);
-    if (!file) return false;
-    try {
-      if (!navigator.canShare({ files: [file] })) return false;
-    } catch (_) {
-      return false;
-    }
-    try {
-      await navigator.share({
-        files: [file],
-        title: "Alpha Husky share card",
-        text: String(caption || "").trim(),
-      });
-      return true;
-    } catch (err) {
-      if (err?.name !== "AbortError") {
-        log("x:native-share-failed", { message: String(err?.message || err || "") });
-      }
-      return false;
-    }
-  }
-
-  function setBusy(isBusy) {
-    STATE.busy = !!isBusy;
-    ["shareCardTelegramBtn", "shareCardXBtn", "shareCardSaveBtn", "shareCardCopyBtn"].forEach((id) => {
-      const el = $(id);
-      if (!el) return;
-      el.disabled = !!isBusy || el.dataset.unavailable === "1";
-    });
-  }
-
-  async function ensureRendered() {
-    const canvas = $("shareCardCanvas");
-    const helpEl = $("shareCardHelp");
-    if (sanitizeVariant(STATE.variant) === "equipped") {
-      await waitForEquippedPreviewFreshness();
-    }
-    await loadFeaturedBadges(true);
-    STATE.presentation = buildSharePresentation(STATE.variant);
-    log("render:start", { variant: STATE.variant, hasSkin: !!STATE.presentation.skinUrl, hasPreview: !!STATE.presentation.equippedPreviewUrl });
-    await renderPresentationToCanvas(canvas, STATE.presentation);
-    STATE.pngBlob = await canvasToBlob(canvas);
-    revokeObjectUrl();
-    STATE.pngObjectUrl = URL.createObjectURL(STATE.pngBlob);
-    STATE.upload = null;
-
-    const caption = buildCaption(STATE.presentation);
-    const titleEl = $("shareCardTitle");
-    const contextEl = $("shareCardContext");
-    const captionEl = $("shareCardCaptionPreview");
-    const noteEl = $("shareCardMeta");
-    const canvasWrap = $("shareCardCanvasWrap");
-    if (titleEl) titleEl.textContent = STATE.presentation.variant === "equipped" ? "Share Equipped Build" : "Share Hub Identity";
-    if (contextEl) contextEl.textContent = STATE.presentation.variant === "equipped" ? "Equipped preview" : "Main Hub preview";
-    if (captionEl) captionEl.textContent = caption;
-    if (canvasWrap) canvasWrap.dataset.variant = sanitizeVariant(STATE.presentation.variant);
-    if (noteEl) {
-      noteEl.textContent = STATE.presentation.variant === "equipped"
-        ? "Rendered from live profile + current equipped preview."
-        : "Rendered from the same live profile state shown in Hub.";
-    }
-    if (helpEl) {
-      helpEl.textContent = X_HELP_NOTE;
-    }
-    setStatus("");
-
-    const tgBtn = $("shareCardTelegramBtn");
-    const canNativeShare = !!(getTg()?.shareMessage);
-    if (tgBtn) {
-      tgBtn.dataset.unavailable = canNativeShare ? "0" : "1";
-      tgBtn.disabled = !canNativeShare;
-      tgBtn.title = canNativeShare ? "" : "Telegram native share is unavailable in this client.";
-    }
-    startPreviewFx(STATE.presentation.variant);
-    log("render:done", { variant: STATE.variant, size: STATE.pngBlob?.size || 0 });
-    return STATE.pngBlob;
-  }
-
-  async function ensureUpload() {
-    if (STATE.upload) return STATE.upload;
-    const initData = getInitData();
-    if (!initData) throw new Error("NO_INIT_DATA");
-    if (!STATE.pngBlob) await ensureRendered();
-    log("telegram:upload:start", { variant: STATE.variant, pngBytes: STATE.pngBlob?.size || 0 });
-
-    const form = new FormData();
-    form.append("file", STATE.pngBlob, `alpha-husky-${STATE.variant}.png`);
-    form.append("variant", STATE.variant);
-
-    const { res, data } = await fetchJsonWithTimeout((getApiBase() || "") + "/webapp/share/card/upload", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + initData },
-      body: form,
-    }, NETWORK_TIMEOUT_MS);
-    if (!res.ok || data?.ok === false) {
-      throw new Error(data?.reason || "UPLOAD_FAILED");
-    }
-    STATE.upload = data;
-    log("telegram:upload:done", { variant: STATE.variant, jpgUrl: data?.jpg_url || "", jpgBytes: data?.jpg_bytes || 0 });
+  async function loadState() {
+    const data = await withDeadline(() => apiPost("/webapp/share/card/state", {}), NETWORK_TIMEOUT_MS);
+    if (!data || data.ok === false || !data.player) throw new Error(data?.reason || "SHARE_STATE_FAILED");
+    S.state = data;
+    S.player = data.player;
+    selectMoment(S.requestedMomentKey);
     return data;
   }
 
-  async function shareOnTelegram() {
-    const tg = getTg();
-    if (!tg?.shareMessage) {
-      toast("Telegram native prepared-message sharing is not available in this client.");
-      return;
-    }
+  function moments() {
+    const list = S.state?.share?.moments;
+    // Fail closed: only explicitly server-verified marks are shareable.
+    return Array.isArray(list) ? list.filter((m) => m && m.verified === true && txt(m.key)) : [];
+  }
 
-    const caption = buildCaption(STATE.presentation || buildSharePresentation(STATE.variant));
-    const upload = await ensureUpload();
-    const initData = getInitData();
-    const { res, data } = await fetchJsonWithTimeout((getApiBase() || "") + "/webapp/share/card/telegram/prepare", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + initData,
-      },
-      body: JSON.stringify({
-        variant: STATE.variant,
-        caption,
-        photo_url: upload?.jpg_abs || upload?.jpg_url || upload?.abs || upload?.url,
-      }),
-    }, NETWORK_TIMEOUT_MS);
-    if (!res.ok || data?.ok === false || !data?.prepared_message_id) {
-      throw new Error(data?.reason || "TELEGRAM_PREPARE_FAILED");
-    }
-    log("telegram:prepare:done", { preparedMessageId: data.prepared_message_id });
+  function selectMoment(key) {
+    const list = moments();
+    const wanted = txt(key).toLowerCase();
+    S.moment = wanted ? (list.find((m) => txt(m.key).toLowerCase() === wanted) || null) : (list[list.length - 1] || null);
+    syncMomentSelector();
+    return S.moment;
+  }
 
-    await new Promise((resolve, reject) => {
-      try {
-        tg.shareMessage(data.prepared_message_id, (sent) => {
-          if (sent === false) return reject(new Error("TELEGRAM_SHARE_CANCELLED"));
-          resolve(true);
-        });
-      } catch (err) {
-        reject(err);
+  function activeSkinUrl(player) {
+    const skin = player?.skin || {};
+    return txt(skin.url || skin.img || skin.preview_url || skin.previewUrl || player?.heroImg || "");
+  }
+  function avatarUrl(player) { return txt(player?.avatar_url || player?.avatarUrl || player?.avatar?.img || player?.avatar?.url || ""); }
+  function frameUrl(player) { const f = player?.frame || {}; return txt(f.url || f.img || f.preview_url || f.previewUrl || ""); }
+
+  function publicBadges(player) {
+    const arr = Array.isArray(player?.badges) ? player.badges : [];
+    return arr.slice(0, MAX_BADGES).map((b) => ({ key: txt(b.key), name: txt(b.name || b.key), icon: txt(b.icon || b.iconUrl || b.icon_url) }));
+  }
+
+  function publicHistory(player) {
+    return Array.isArray(player?.fieldRecord?.marks) ? player.fieldRecord.marks.filter((m) => m?.verified === true && txt(m?.key)) : [];
+  }
+
+  function isoDate(ts) {
+    if (!ts) return "";
+    let d;
+    if (typeof ts === "number") d = new Date(ts < 1e12 ? ts * 1000 : ts);
+    else d = new Date(ts);
+    if (!Number.isFinite(d.getTime())) return "";
+    return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric" }).format(d).toUpperCase();
+  }
+
+  function rounded(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath(); ctx.moveTo(x + rr, y); ctx.arcTo(x + w, y, x + w, y + h, rr); ctx.arcTo(x + w, y + h, x, y + h, rr); ctx.arcTo(x, y + h, x, y, rr); ctx.arcTo(x, y, x + w, y, rr); ctx.closePath();
+  }
+
+  function fitContain(img, box, scale = 1) {
+    if (!img) return null;
+    const s = Math.min(box.w / img.width, box.h / img.height) * scale;
+    const w = img.width * s, h = img.height * s;
+    return { x: box.x + (box.w - w) / 2, y: box.y + (box.h - h) / 2, w, h };
+  }
+
+  const transparentCropCache = new WeakMap();
+  function artworkSourceRect(img) {
+    if (!img) return null;
+    if (transparentCropCache.has(img)) return transparentCropCache.get(img);
+    const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+    let result = { x: 0, y: 0, w, h };
+    if (w < 1 || h < 1) return result;
+    try {
+      // Inspect a tiny copy only; don't read full-resolution images on a mobile client.
+      const thumb = document.createElement("canvas");
+      const scale = Math.min(1, 192 / Math.max(w, h));
+      thumb.width = Math.max(1, Math.round(w * scale));
+      thumb.height = Math.max(1, Math.round(h * scale));
+      const c = thumb.getContext("2d", { willReadFrequently: true });
+      c.drawImage(img, 0, 0, thumb.width, thumb.height);
+      const pixels = c.getImageData(0, 0, thumb.width, thumb.height).data;
+      let minX = thumb.width, minY = thumb.height, maxX = -1, maxY = -1;
+      for (let y = 0; y < thumb.height; y++) for (let x = 0; x < thumb.width; x++) {
+        if (pixels[(y * thumb.width + x) * 4 + 3] > 18) {
+          minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+          minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+        }
       }
+      // Never crop opaque backgrounds or insignificant edge padding.
+      if (maxX >= minX && maxY >= minY) {
+        const px = Math.max(2, Math.round((maxX - minX + 1) * .045));
+        const py = Math.max(2, Math.round((maxY - minY + 1) * .045));
+        const lx = Math.max(0, minX - px), ly = Math.max(0, minY - py);
+        const rx = Math.min(thumb.width, maxX + px + 1), ry = Math.min(thumb.height, maxY + py + 1);
+        if (rx - lx < thumb.width * .93 || ry - ly < thumb.height * .93) {
+          result = { x: lx / thumb.width * w, y: ly / thumb.height * h, w: (rx - lx) / thumb.width * w, h: (ry - ly) / thumb.height * h };
+        }
+      }
+    } catch (_) { /* CORS or asset type: keep unmodified source as a safe fallback. */ }
+    transparentCropCache.set(img, result);
+    return result;
+  }
+
+  function fitCover(img, box, focusX = .5, focusY = .36, scale = 1) {
+    if (!img) return null;
+    const s = Math.max(box.w / img.width, box.h / img.height) * scale;
+    const w = img.width * s, h = img.height * s;
+    return { x: box.x - Math.max(0, w - box.w) * clamp(focusX, 0, 1), y: box.y - Math.max(0, h - box.h) * clamp(focusY, 0, 1), w, h };
+  }
+
+  function drawTracked(ctx, text, x, y, font, color, spacing = 4, align = "left") {
+    const value = txt(text).toUpperCase();
+    ctx.save(); ctx.font = font; ctx.fillStyle = color; ctx.textBaseline = "alphabetic";
+    const widths = [...value].map((c) => ctx.measureText(c).width);
+    const total = widths.reduce((a, b) => a + b, 0) + Math.max(0, value.length - 1) * spacing;
+    let dx = align === "center" ? x - total / 2 : align === "right" ? x - total : x;
+    for (let i = 0; i < value.length; i++) { ctx.fillText(value[i], dx, y); dx += widths[i] + spacing; }
+    ctx.restore();
+  }
+
+  function drawFitted(ctx, text, x, y, options = {}) {
+    const raw = txt(text), maxWidth = Number(options.maxWidth || 800);
+    const weight = Number(options.weight || 800), largest = Number(options.size || 40);
+    const smallest = Number(options.minSize || 18), color = options.color || "#fff";
+    let size = largest, label = raw;
+    ctx.save(); ctx.fillStyle = color; ctx.textAlign = options.align || "left";
+    do {
+      ctx.font = `${weight} ${size}px system-ui`;
+      if (ctx.measureText(label).width <= maxWidth) break;
+      size -= 2;
+    } while (size >= smallest);
+    size = Math.max(smallest, size);
+    ctx.font = `${weight} ${size}px system-ui`;
+    if (ctx.measureText(label).width > maxWidth) {
+      const ellipsis = "…";
+      while (label.length && ctx.measureText(label + ellipsis).width > maxWidth) label = label.slice(0, -1);
+      label += ellipsis;
+    }
+    ctx.fillText(label, x, y); ctx.restore();
+  }
+
+  function wrap(ctx, text, x, y, width, lineHeight, maxLines) {
+    const words = txt(text).split(/\s+/).filter(Boolean);
+    const lines = []; let current = "";
+    for (const word of words) {
+      const test = current ? current + " " + word : word;
+      if (ctx.measureText(test).width > width && current) {
+        lines.push(current); current = word;
+      } else current = test;
+    }
+    if (current) lines.push(current);
+    const display = lines.slice(0, maxLines);
+    for (let i = 0; i < display.length; i++) {
+      let label = display[i];
+      const overflows = i === display.length - 1 && lines.length > maxLines;
+      if (overflows) label += "…";
+      while (label.length > 1 && ctx.measureText(label).width > width) {
+        label = label.endsWith("…") ? label.slice(0, -2) + "…" : label.slice(0, -1) + "…";
+      }
+      ctx.fillText(label, x, y + i * lineHeight);
+    }
+    return display.length;
+  }
+
+  function drawBackground(ctx, primary, secondary, momentMode) {
+    const bg = ctx.createLinearGradient(0, 0, CARD_W, CARD_H);
+    bg.addColorStop(0, "#03070d"); bg.addColorStop(.55, "#07101a"); bg.addColorStop(1, "#02050a");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+    const glow = ctx.createRadialGradient(CARD_W * .53, CARD_H * .34, 0, CARD_W * .53, CARD_H * .34, 620);
+    glow.addColorStop(0, rgba(primary, momentMode ? .22 : .16)); glow.addColorStop(.48, rgba(secondary, .08)); glow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = glow; ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+    // Cinematic faction environment. Vector-only and deterministic so exported PNG
+    // always matches the preview, including slower Telegram WebViews.
+    ctx.save();
+    const horizon = momentMode ? 845 : 862;
+    const shafts = ctx.createLinearGradient(0, 160, 0, horizon + 310);
+    shafts.addColorStop(0, rgba(primary, .00));
+    shafts.addColorStop(.48, rgba(primary, .11));
+    shafts.addColorStop(1, rgba(secondary, .00));
+    ctx.fillStyle = shafts;
+    for (const [cx, dw, tilt] of [[230,280,-110],[525,350,35],[815,280,120]]) {
+      ctx.beginPath(); ctx.moveTo(cx - 12, 40); ctx.lineTo(cx + 12, 40);
+      ctx.lineTo(cx + dw / 2 + tilt, horizon); ctx.lineTo(cx - dw / 2 + tilt, horizon);
+      ctx.closePath(); ctx.fill();
+    }
+    // Broken vault/relay infrastructure. These remain behind the player art.
+    ctx.strokeStyle = rgba(primary, .16); ctx.lineWidth = 4;
+    for (let i = 0; i < 3; i++) {
+      const inset = 120 + i * 86;
+      ctx.beginPath(); ctx.moveTo(inset, horizon); ctx.lineTo(inset + 32, 320 + i * 64);
+      ctx.lineTo(CARD_W - inset - 32, 320 + i * 64);
+      ctx.lineTo(CARD_W - inset, horizon); ctx.stroke();
+    }
+    const core = ctx.createRadialGradient(540, 575, 80, 540, 575, 390);
+    core.addColorStop(0, rgba(primary, .10)); core.addColorStop(.55, rgba(primary, .035)); core.addColorStop(1, rgba(primary, 0));
+    ctx.fillStyle = core; ctx.fillRect(110, 180, 860, 790);
+    // Orbital calibration elements: contrast without competing with the skin.
+    ctx.setLineDash([4,18]); ctx.strokeStyle = rgba(primary, .30); ctx.lineWidth = 1.3;
+    for (const r of [292, 342]) {
+      ctx.beginPath(); ctx.ellipse(540, 565, r, r * 1.06, -.08, .17, Math.PI * 1.82); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    // Industrial floor and atmospheric perspective.
+    const floor = ctx.createLinearGradient(0, horizon - 125, 0, horizon + 230);
+    floor.addColorStop(0, 'rgba(1,5,9,0)'); floor.addColorStop(.5, 'rgba(4,12,20,.57)');
+    floor.addColorStop(1, 'rgba(1,4,8,.95)');
+    ctx.fillStyle = floor; ctx.fillRect(0, horizon - 125, CARD_W, 355);
+    ctx.strokeStyle = rgba(primary,.16); ctx.lineWidth=1;
+    for (let x = -480; x <= 1580; x += 115) {
+      ctx.beginPath();ctx.moveTo(540, horizon);ctx.lineTo(x, horizon + 230);ctx.stroke();
+    }
+    for (const y of [horizon + 27, horizon + 72, horizon + 143]) {
+      ctx.beginPath(); ctx.moveTo(70,y); ctx.lineTo(1010,y);ctx.stroke();
+    }
+    // Deterministic motes rather than animated GPU-heavy particles.
+    for (let i=0; i<105; i++) {
+      const x=(i*337 + (i*i*17)%97)%CARD_W;
+      const y=115 + ((i*271 + (i*i*13)%199) % 880);
+      const a=.13+(i%7)*.032;
+      ctx.fillStyle=rgba(i%4===0?secondary:primary,a);
+      ctx.fillRect(x,y,i%11===0?2.2:1.1,i%11===0?2.2:1.1);
+    }
+    ctx.restore();
+
+    ctx.save(); ctx.globalAlpha = .14; ctx.strokeStyle = rgba(primary, .55); ctx.lineWidth = 1;
+    for (let x = -CARD_H; x < CARD_W + CARD_H; x += 78) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + CARD_H, CARD_H); ctx.stroke(); }
+    ctx.globalAlpha = .12; for (let y = 78; y < CARD_H; y += 78) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CARD_W, y); ctx.stroke(); }
+    ctx.restore();
+
+    const vig = ctx.createRadialGradient(CARD_W / 2, CARD_H / 2, 420, CARD_W / 2, CARD_H / 2, 900);
+    vig.addColorStop(0, "rgba(0,0,0,0)"); vig.addColorStop(1, "rgba(0,0,0,.82)"); ctx.fillStyle = vig; ctx.fillRect(0, 0, CARD_W, CARD_H);
+  }
+
+  function drawFrame(ctx, primary) {
+    ctx.save(); rounded(ctx, 34, 34, CARD_W - 68, CARD_H - 68, 36); ctx.strokeStyle = rgba(primary, .36); ctx.lineWidth = 2; ctx.stroke();
+    rounded(ctx, 49, 49, CARD_W - 98, CARD_H - 98, 29); ctx.strokeStyle = "rgba(255,255,255,.07)"; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
+  }
+
+  function drawCharacter(ctx, img, frameImg, primary, mode) {
+    const box = mode === "moment" ? { x: 110, y: 260, w: 860, h: 760 } : { x: 90, y: 205, w: 900, h: 790 };
+    ctx.save(); rounded(ctx, box.x, box.y, box.w, box.h, 34); ctx.clip();
+    const haze = ctx.createRadialGradient(CARD_W / 2, box.y + box.h * .48, 30, CARD_W / 2, box.y + box.h * .48, 470);
+    haze.addColorStop(0, rgba(primary, .16)); haze.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = haze; ctx.fillRect(box.x, box.y, box.w, box.h);
+    if (img) {
+      const crop = artworkSourceRect(img);
+      const sourceSize = { width: crop.w, height: crop.h };
+      const fit = fitContain(sourceSize, { x: box.x + 34, y: box.y + 8, w: box.w - 68, h: box.h + 18 }, mode === "moment" ? 1.15 : 1.19);
+      // Soft coloured rim light traces the true equipped-skin silhouette.
+      ctx.save(); ctx.globalAlpha = .19; ctx.filter = 'blur(22px)';
+      ctx.drawImage(img, crop.x, crop.y, crop.w, crop.h, fit.x - 7, fit.y - 5, fit.w + 14, fit.h + 10);
+      ctx.restore();
+      ctx.shadowColor = rgba(primary, .30); ctx.shadowBlur = 16;
+      ctx.drawImage(img, crop.x, crop.y, crop.w, crop.h, fit.x, fit.y, fit.w, fit.h);
+      ctx.shadowBlur = 0;
+    } else {
+      drawTracked(ctx, "IDENTITY VISUAL UNAVAILABLE", CARD_W / 2, box.y + box.h / 2, "700 22px system-ui", "rgba(225,235,245,.46)", 3, "center");
+    }
+    const shade = ctx.createLinearGradient(0, box.y, 0, box.y + box.h);
+    shade.addColorStop(0, "rgba(0,0,0,.12)"); shade.addColorStop(.63, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,.82)"); ctx.fillStyle = shade; ctx.fillRect(box.x, box.y, box.w, box.h);
+    ctx.restore();
+
+    if (frameImg && mode === "identity") {
+      const fit = fitContain(frameImg, { x: box.x - 30, y: box.y - 30, w: box.w + 60, h: box.h + 60 }, 1.04);
+      ctx.save(); ctx.globalAlpha = .72; ctx.drawImage(frameImg, fit.x, fit.y, fit.w, fit.h); ctx.restore();
+    }
+  }
+
+  function drawBadgeStrip(ctx, badges, imgs, primary, y) {
+    const usable = badges.slice(0, MAX_BADGES); if (!usable.length) return;
+    const width = 254, gap = 14, total = usable.length * width + Math.max(0, usable.length - 1) * gap;
+    let x = (CARD_W - total) / 2;
+    usable.forEach((b, i) => {
+      rounded(ctx, x, y, width, 84, 17); ctx.fillStyle = "rgba(5,12,20,.82)"; ctx.strokeStyle = rgba(primary, .22); ctx.lineWidth = 1.2; ctx.fill(); ctx.stroke();
+      const im = imgs[i]; if (im) { const f = fitContain(im, { x: x + 14, y: y + 12, w: 58, h: 58 }, 1); ctx.drawImage(im, f.x, f.y, f.w, f.h); }
+      ctx.fillStyle = "rgba(239,246,252,.92)"; ctx.font = "800 19px system-ui"; ctx.textAlign = "left"; wrap(ctx, b.name, x + 82, y + 33, width - 94, 23, 2);
+      x += width + gap;
     });
+  }
+
+  function drawIdentity(ctx, player, assets) {
+    const faction = factionMeta(player), primary = faction.rgb, secondary = faction.secondary;
+    drawBackground(ctx, primary, secondary, false); drawFrame(ctx, primary);
+    drawTracked(ctx, "ALPHA HUSKY", 78, 98, "900 24px system-ui", "rgba(242,248,255,.92)", 7);
+    drawTracked(ctx, "FIELD IDENTITY", 78, 137, "750 13px system-ui", rgba(primary, .9), 4);
+    drawTracked(ctx, faction.label, CARD_W - 76, 111, "850 14px system-ui", rgba(primary, .9), 3, "right");
+    ctx.fillStyle = "rgba(235,242,250,.42)"; ctx.font = "650 12px system-ui"; ctx.textAlign = "right"; ctx.fillText(faction.motif, CARD_W - 76, 139); ctx.textAlign = "left";
+
+    drawCharacter(ctx, assets.skin, assets.frame, primary, "identity");
+
+    const highlights = publicHistory(player).slice(-2);
+    highlights.forEach((mark, i) => {
+      const x = 112 + i * 428, y = 906;
+      rounded(ctx, x, y, 409, 49, 12);
+      ctx.fillStyle = "rgba(3,10,18,.80)"; ctx.strokeStyle = rgba(primary, .33);
+      ctx.lineWidth = 1; ctx.fill(); ctx.stroke();
+      drawFitted(ctx, `RECORDED // ${txt(mark.label || mark.key).toUpperCase()}`, x + 16, y + 31,
+        { weight: 750, size: 17, minSize: 11, maxWidth: 379, color: "rgba(236,244,251,.82)" });
+    });
+
+    const name = txt(player?.name) || "HOWLER";
+    const title = txt(player?.displayTitle || player?.activeTitle || player?.title);
+    const origin = txt(player?.origin_label || player?.originLabel);
+    drawFitted(ctx, name, 92, 1027, { weight: 950, size: 50, minSize: 25, maxWidth: 872, color: "#f6f8fb" });
+    if (title) drawFitted(ctx, title, 93, 1064, { weight: 750, size: 27, minSize: 17, maxWidth: 865, color: "rgba(234,241,249,.76)" });
+    const meta = [faction.label, `LV ${Number(player?.level || 1)}`].filter(Boolean).join("  ·  ");
+    drawFitted(ctx, meta, 94, 1106, { weight: 850, size: 16, minSize: 12, maxWidth: 872, color: rgba(primary, .92) });
+    if (origin) drawFitted(ctx, `ORIGIN // ${origin.toUpperCase()}`, 94, 1137, { weight: 700, size: 15, minSize: 12, maxWidth: 870, color: "rgba(227,235,244,.46)" });
+
+    drawBadgeStrip(ctx, publicBadges(player), assets.badges, primary, 1168);
+
+    ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.beginPath(); ctx.moveTo(78, 1282); ctx.lineTo(CARD_W - 78, 1282); ctx.stroke();
+    drawTracked(ctx, "THE RECORD REMEMBERS", 80, 1314, "800 13px system-ui", "rgba(235,242,250,.58)", 3.6);
+    ctx.fillStyle = "rgba(235,242,250,.52)"; ctx.font = "650 14px system-ui"; ctx.textAlign = "right"; ctx.fillText("alphahusky.win", CARD_W - 80, 1314); ctx.textAlign = "left";
+  }
+
+  function momentTheme(moment, faction) {
+    const key = txt(moment?.key).toLowerCase();
+    const direct = MOMENT_STYLE[key];
+    if (direct) return direct;
+    if (key.includes("blood") || key.includes("moon")) return MOMENT_STYLE.blood_moon;
+    if (key.includes("siege")) return MOMENT_STYLE.siege;
+    return { kicker: txt(moment?.label || "RECORDED MOMENT").toUpperCase(), headline: "RECORD VERIFIED", accent: faction.rgb, sub: "FIELD RECORD CONFIRMED" };
+  }
+
+  function drawMoment(ctx, player, moment, assets) {
+    const faction = factionMeta(player), theme = momentTheme(moment, faction), primary = theme.accent, secondary = faction.rgb;
+    drawBackground(ctx, primary, secondary, true); drawFrame(ctx, primary);
+    drawTracked(ctx, "ALPHA HUSKY", 78, 96, "900 23px system-ui", "rgba(244,248,252,.92)", 7);
+    drawTracked(ctx, "RECORDED MOMENT", 78, 134, "780 13px system-ui", rgba(primary, .95), 4);
+    drawTracked(ctx, "VERIFIED RECORD", CARD_W - 76, 104, "850 13px system-ui", "rgba(243,247,251,.58)", 3, "right");
+
+    drawTracked(ctx, theme.kicker, CARD_W / 2, 194, "900 16px system-ui", rgba(primary, .95), 4.2, "center");
+    drawFitted(ctx, theme.headline, CARD_W / 2, 245, { weight: 950, size: 51, minSize: 25, maxWidth: 890, align: "center", color: "#f7f8fb" });
+
+    drawCharacter(ctx, assets.skin, null, primary, "moment");
+
+    drawFitted(ctx, txt(player?.name) || "HOWLER", 92, 1048, { weight: 920, size: 34, minSize: 20, maxWidth: 850, color: "rgba(247,249,252,.96)" });
+    drawFitted(ctx, `${faction.label} · LV ${Number(player?.level || 1)}`, 94, 1083, { weight: 830, size: 14, minSize: 11, maxWidth: 850, color: rgba(faction.rgb,.92) });
+
+    ctx.fillStyle = "rgba(234,241,248,.72)"; ctx.font = "650 20px system-ui"; wrap(ctx, txt(moment?.copy || theme.sub), 94, 1127, CARD_W - 188, 29, 2);
+    const date = moment?.dateKnown === true ? isoDate(moment?.occurredAt) : "RECORDED IN FIELD HISTORY";
+    drawTracked(ctx, date || "RECORDED IN FIELD HISTORY", 94, 1206, "800 13px system-ui", "rgba(235,242,250,.48)", 2.4);
+
+    rounded(ctx, 750, 1170, 238, 50, 25); ctx.fillStyle = rgba(primary, .10); ctx.strokeStyle = rgba(primary, .42); ctx.fill(); ctx.stroke();
+    drawTracked(ctx, "VERIFIED", 869, 1202, "900 13px system-ui", rgba(primary, .95), 3.2, "center");
+
+    ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.beginPath(); ctx.moveTo(78, 1282); ctx.lineTo(CARD_W - 78, 1282); ctx.stroke();
+    drawTracked(ctx, "THE RECORD REMEMBERS", 80, 1314, "800 13px system-ui", "rgba(235,242,250,.58)", 3.6);
+    ctx.fillStyle = "rgba(235,242,250,.52)"; ctx.font = "650 14px system-ui"; ctx.textAlign = "right"; ctx.fillText("alphahusky.win", CARD_W - 80, 1314); ctx.textAlign = "left";
+  }
+
+  async function render() {
+    if (!S.player) await loadState();
+    try { await document.fonts?.ready; } catch (_) {}
+    const player = S.player || {};
+    const badges = publicBadges(player);
+    const [skin, avatar, frame, ...badgeImgs] = await Promise.all([
+      loadImage(activeSkinUrl(player)), loadImage(avatarUrl(player)), loadImage(frameUrl(player)), ...badges.map((b) => loadImage(b.icon))
+    ]);
+    S.skinReady = !!(activeSkinUrl(player) && skin);
+    if (S.mode === "moment" && !S.moment) {
+      S.blob = null; S.upload = null;
+      if (S.objectUrl) URL.revokeObjectURL(S.objectUrl); S.objectUrl = "";
+      const blockedCanvas = $("shareCardCanvas");
+      if (blockedCanvas) {
+        const blockedCtx = blockedCanvas.getContext("2d");
+        if (blockedCtx) { blockedCtx.clearRect(0, 0, blockedCanvas.width, blockedCanvas.height); drawBackground(blockedCtx, FACTIONS.pack.rgb, FACTIONS.pack.secondary, true); drawFitted(blockedCtx, "NO VERIFIED MOMENT", CARD_W / 2, CARD_H / 2, { size: 38, maxWidth: 900, align: "center" }); }
+      }
+      syncUiAfterRender();
+      setStatus(S.requestedMomentKey ? "This exact Field Record entry is not verified or no longer available." : "No verified moments available yet.");
+      return null;
+    }
+    const canvas = $("shareCardCanvas"); if (!canvas) throw new Error("MISSING_CANVAS");
+    canvas.width = CARD_W; canvas.height = CARD_H;
+    const ctx = canvas.getContext("2d", { alpha: false }); if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, avatar, frame, badges: badgeImgs });
+    else drawIdentity(ctx, player, { skin, avatar, frame, badges: badgeImgs });
+
+    S.blob = await new Promise((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error("PNG_EXPORT_FAILED")), "image/png"));
+    if (!S.blob || S.blob.size < 5000) throw new Error("PNG_EXPORT_FAILED");
+    if (S.objectUrl) URL.revokeObjectURL(S.objectUrl);
+    S.objectUrl = URL.createObjectURL(S.blob); S.upload = null;
+    syncUiAfterRender();
+    if (!S.skinReady) setStatus("Equipped skin could not be verified or loaded. Preview only — sharing disabled.");
+    return S.blob;
+  }
+
+  function identityCaption() {
+    const p = S.player || {}; const f = factionMeta(p);
+    const title = txt(p.displayTitle || p.activeTitle || p.title);
+    return [`My Alpha.`, [title, f.label, `Lv ${Number(p.level || 1)}`].filter(Boolean).join(" · "), `The record remembers.`, `#AlphaHusky`].filter(Boolean).join("\n");
+  }
+  function momentCaption() {
+    const m = S.moment || {}; return [`${txt(m.label || "Record")} — recorded.`, txt(m.copy || "Another record added."), `#AlphaHusky`].filter(Boolean).join("\n");
+  }
+  function caption() { return S.mode === "moment" && S.moment ? momentCaption() : identityCaption(); }
+
+  function filename() {
+    const name = (txt(S.player?.name) || "howler").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 32) || "howler";
+    if (S.mode === "moment" && S.moment) {
+      const event = txt(S.moment.key || "record").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+      return `alpha-husky-record-${event}-${name}.png`;
+    }
+    return `alpha-husky-identity-${name}.png`;
+  }
+
+  function ensureExportable() {
+    if (S.mode === "moment" && !S.moment) throw new Error("MOMENT_NOT_VERIFIED");
+    if (!S.skinReady) throw new Error("ACTIVE_SKIN_UNAVAILABLE");
+    if (!S.blob || !S.objectUrl) throw new Error("EXPORT_NOT_READY");
+  }
+
+  function buildFile() {
+    if (!S.blob || typeof File === "undefined") return null;
+    try { return new File([S.blob], filename(), { type: "image/png" }); } catch (_) { return null; }
+  }
+
+  async function copyCaption() {
+    const value = caption();
+    try { await navigator.clipboard.writeText(value); return true; } catch (_) {}
+    const ta = document.createElement("textarea"); ta.value = value; ta.style.position = "fixed"; ta.style.left = "-9999px"; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (_) {} ta.remove(); return !!ok;
+  }
+
+  async function nativeShare() {
+    if (!S.blob) await render();
+    ensureExportable();
+    const file = buildFile();
+    if (!file || typeof navigator.share !== "function") return false;
+    try { if (navigator.canShare && !navigator.canShare({ files: [file] })) return false; } catch (_) { return false; }
+    try { await navigator.share({ files: [file], title: S.mode === "moment" ? "Alpha Husky Recorded Moment" : "Alpha Husky Identity", text: caption() }); return true; }
+    catch (e) { if (e?.name === "AbortError") throw e; return false; }
+  }
+
+  function hideManualPreview() {
+    const wrap = $("shareCardManualPreview"), img = $("shareCardManualImage");
+    if (wrap) wrap.hidden = true;
+    if (img) img.removeAttribute("src");
+  }
+
+  function showManualPreview(reason) {
+    ensureExportable();
+    const wrap = $("shareCardManualPreview"), img = $("shareCardManualImage");
+    if (!wrap || !img) return false;
+    img.src = S.objectUrl;
+    wrap.hidden = false;
+    setStatus(reason || "Open the image below; long-press it and choose Save Image if your client supports it.");
+    return true;
+  }
+
+  async function requestTelegramDownload(url) {
+    const tg = getTelegram();
+    if (!telegramDownloadSupported() || !/^https:\/\//i.test(txt(url))) return false;
+    // Callback means permission was accepted, NOT that the file reached Gallery/Files.
+    return await withDeadline(() => new Promise((resolve, reject) => {
+      try { tg.downloadFile({ url, file_name: filename() }, (accepted) => resolve(accepted === true)); }
+      catch (error) { reject(error); }
+    }), DOWNLOAD_RESPONSE_TIMEOUT_MS, "DOWNLOAD_RESPONSE_TIMEOUT");
   }
 
   async function saveImage() {
-    if (!STATE.pngBlob) await ensureRendered();
+    if (!S.blob) await render();
+    ensureExportable();
+    if (inTelegram()) {
+      if (telegramDownloadSupported()) {
+        try {
+          const upload = await ensureUpload();
+          const url = txt(upload?.download_abs || upload?.abs);
+          if (await requestTelegramDownload(url)) {
+            setStatus("Download accepted by Telegram. Check device Downloads/Files; completion cannot be verified here.");
+            return "telegram-download-accepted";
+          }
+        } catch (error) {
+          console.warn("[ShareStudio] Telegram download could not start", txt(error?.message));
+        }
+      }
+      showManualPreview("Telegram download unavailable or declined. Long-press the full-size image below and use Save Image if your device supports it.");
+      return "manual-preview";
+    }
+    // Browser download is a best-effort request; JS has no reliable completion signal.
     const a = document.createElement("a");
-    a.href = STATE.pngObjectUrl;
-    a.download = `alpha-husky-${STATE.variant}.png`;
-    a.rel = "noopener";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    a.href = S.objectUrl; a.download = filename(); a.rel = "noopener";
+    document.body.appendChild(a); a.click(); a.remove();
+    setStatus("Download requested. Check browser Downloads; this app cannot verify that it completed.");
+    return "browser-download-requested";
   }
 
-  async function shareOnX() {
-    const presentation = STATE.presentation || buildSharePresentation(STATE.variant);
-    const caption = buildCaption(presentation);
-    if (!STATE.pngBlob) await ensureRendered();
-
-    let usedNativeFileShare = false;
-    try {
-      usedNativeFileShare = await tryNativeFileShare(caption);
-    } catch (_) {
-      usedNativeFileShare = false;
-    }
-
-    if (!usedNativeFileShare) {
-      await saveImage();
-    }
-
-    const copied = await copyText(caption);
-    openLink(buildXIntent(caption, presentation.shareLink));
-    const feedback = usedNativeFileShare ? X_NATIVE_SHARE_NOTE : X_MANUAL_ATTACH_NOTE;
-    setStatus(feedback);
-    toast(
-      copied ? feedback : `${feedback} If needed, use Copy Caption below.`,
-      "Share to X"
-    );
+  async function ensureUpload() {
+    if (S.upload) return S.upload;
+    if (!S.blob) await render();
+    ensureExportable();
+    const form = new FormData(); form.append("file", S.blob, filename()); form.append("variant", S.mode);
+    const res = await fetchWithTimeout((getApiBase() || "") + "/webapp/share/card/upload", { method: "POST", headers: multipartAuthHeaders(), body: form }, NETWORK_TIMEOUT_MS);
+    const data = await res.json().catch(() => ({})); if (!res.ok || data?.ok === false) throw new Error(data?.reason || "UPLOAD_FAILED");
+    S.upload = data; return data;
   }
 
-  function hideModal() {
-    const modal = $("shareBack");
-    if (!modal) return;
-    stopPreviewFx();
-    modal.style.display = "none";
-    delete modal.dataset.open;
+  async function waitForTelegramShare(tg, preparedId) {
+    return await new Promise((resolve, reject) => {
+      let settled = false, callbackFailTimer = null;
+      const settle = (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout); clearTimeout(callbackFailTimer);
+        try { tg.offEvent?.("shareMessageSent", onSent); } catch (_) {}
+        try { tg.offEvent?.("shareMessageFailed", onFailed); } catch (_) {}
+        if (error) reject(error); else resolve(true);
+      };
+      const onSent = () => settle();
+      const onFailed = (event) => {
+        const error = txt(event?.error || "UNKNOWN_ERROR").toUpperCase();
+        settle(new Error(error === "USER_DECLINED" ? "TELEGRAM_SHARE_CANCELLED" : `TELEGRAM_${error}`));
+      };
+      const timeout = setTimeout(() => settle(new Error("TELEGRAM_SHARE_TIMEOUT")), TELEGRAM_SHARE_TIMEOUT_MS);
+      try {
+        tg.onEvent?.("shareMessageSent", onSent);
+        tg.onEvent?.("shareMessageFailed", onFailed);
+        tg.shareMessage(preparedId, (sent) => {
+          if (sent === true) return settle();
+          if (sent === false && !settled) {
+            // Failure event can follow the false callback; allow it to explain the cause.
+            callbackFailTimer = setTimeout(() => settle(new Error("TELEGRAM_SHARE_NOT_SENT")), 500);
+          }
+        });
+      } catch (error) { settle(error); }
+    });
+  }
+
+  async function shareTelegram() {
+    if (!telegramShareSupported()) throw new Error("TELEGRAM_UNSUPPORTED");
+    const up = await ensureUpload();
+    const data = await withDeadline(() => apiPost("/webapp/share/card/telegram/prepare", {
+      variant: S.mode, caption: caption(), photo_url: up.jpg_abs || up.jpg_url || up.abs || up.url
+    }), NETWORK_TIMEOUT_MS);
+    if (data?.ok === false || !data?.prepared_message_id) throw new Error(data?.reason || "TELEGRAM_PREPARE_FAILED");
+    return await waitForTelegramShare(getTelegram(), data.prepared_message_id);
+  }
+
+  function telegramShareErrorMessage(error) {
+    const reason = txt(error?.message).toUpperCase();
+    if (reason === "TELEGRAM_SHARE_CANCELLED") return "";
+    if (reason === "TELEGRAM_UNSUPPORTED") return "Telegram 8.0+ is required for direct sharing. Use Share or Save Image instead.";
+    if (reason === "TELEGRAM_MESSAGE_EXPIRED") return "The Telegram sharing link expired. Please retry.";
+    if (reason === "TELEGRAM_MESSAGE_SEND_FAILED") return "Telegram could not send the image. Please retry.";
+    if (reason === "TELEGRAM_SHARE_TIMEOUT") return "Telegram did not respond. Try again or Save Image.";
+    if (reason === "TELEGRAM_UNSUPPORTED" || reason === "TELEGRAM_UNKNOWN_ERROR") return "Telegram sharing is unavailable on this client.";
+    if (reason === "NETWORK_TIMEOUT") return "Telegram preparation timed out. Please retry.";
+    return "Telegram could not share this image. Please retry or use Save Image.";
+  }
+
+  function openExternal(url) {
+    try { if (getTelegram()?.openLink) return getTelegram().openLink(url); } catch (_) {}
+    global.open(url, "_blank", "noopener");
+  }
+
+  async function shareX() {
+    if (!S.blob) await render();
+    ensureExportable();
+    const copied = await copyCaption();
+    const params = new URLSearchParams();
+    params.set("text", caption()); params.set("url", getShareLink());
+    openExternal("https://x.com/intent/tweet?" + params.toString());
+    setStatus(`X opened with text only, without the PNG attachment. Save Image and attach it manually.${copied ? " Caption also copied." : ""}`);
+    return true;
+  }
+
+  function syncModeTabs() {
+    const hasMoments = moments().length > 0;
+    // Never silently replace a requested Moment with a different card.
+    document.querySelectorAll("[data-share-mode]").forEach((btn) => {
+      const isMoment = btn.dataset.shareMode === "moment";
+      const active = btn.dataset.shareMode === S.mode;
+      btn.classList.toggle("is-active", active); btn.setAttribute("aria-selected", active ? "true" : "false");
+      if (isMoment) { btn.disabled = !hasMoments; btn.title = hasMoments ? "" : "No verified moments yet"; }
+    });
+    const picker = $("shareMomentPicker"); if (picker) picker.hidden = S.mode !== "moment";
+  }
+
+  function syncMomentSelector() {
+    const sel = $("shareMomentSelect"); if (!sel) return;
+    const list = moments();
+    sel.innerHTML = "";
+    if (!list.length) { const o = document.createElement("option"); o.value = ""; o.textContent = "No verified moments yet"; sel.appendChild(o); sel.disabled = true; return; }
+    sel.disabled = false;
+    list.slice().reverse().forEach((m) => { const o = document.createElement("option"); o.value = txt(m.key); o.textContent = txt(m.label || m.key); sel.appendChild(o); });
+    if (S.moment) sel.value = txt(S.moment.key);
+  }
+
+  function syncUiAfterRender() {
+    syncModeTabs(); syncMomentSelector();
+    const title = $("shareCardTitle"); if (title) title.textContent = "Share Studio";
+    const context = $("shareCardContext"); if (context) context.textContent = S.mode === "moment" ? "RECORDED MOMENT // VERIFIED HISTORY" : "IDENTITY // THIS IS MY ALPHA";
+    const cap = $("shareCardCaptionPreview"); if (cap) cap.textContent = caption();
+    const meta = $("shareCardMeta"); if (meta) meta.textContent = S.mode === "moment" ? "Built from verified Field Record data. The achievement cannot be edited here." : "Built from your live player identity, active skin and displayed badges.";
+    const empty = $("shareMomentEmpty"); if (empty) empty.hidden = !(S.mode === "moment" && !S.moment);
+    hideManualPreview();
+    setStatus("");
+  }
+
+  function setBusy(v) {
+    S.busy = !!v;
+    const allowed = !S.busy && S.skinReady && !!S.blob && (S.mode !== "moment" || !!S.moment);
+    ["shareCardPrimaryBtn", "shareCardXBtn", "shareCardSaveBtn", "shareCardCopyBtn"].forEach((id) => {
+      const el = $(id); if (el) el.disabled = !allowed;
+    });
+    const tg = $("shareCardTelegramBtn");
+    if (tg) {
+      tg.disabled = !allowed || !telegramShareSupported();
+      tg.title = telegramShareSupported() ? "" : "Direct share requires Telegram Mini App 8.0+. Use Share or Save Image instead.";
+    }
+    const picker = $("shareMomentSelect"); if (picker) picker.disabled = S.busy || !moments().length;
+  }
+
+  async function rerender() {
+    setBusy(true); setStatus("Preparing record…");
+    try { await render(); }
+    catch (e) { console.error("[ShareStudio] render failed", e); setStatus("COULDN'T PREPARE THIS RECORD. TRY AGAIN."); throw e; }
+    finally { setBusy(false); }
+  }
+
+  async function setMode(mode, momentKey) {
+    S.mode = normalizeMode(mode);
+    S.requestedMomentKey = momentKey != null ? txt(momentKey) : "";
+    if (!S.state) await loadState(); else selectMoment(S.requestedMomentKey);
+    syncModeTabs(); await rerender();
+  }
+
+  async function open(mode, options) {
+    const modal = $("shareBack"); if (!modal) return false;
+    const opts = options && typeof options === "object" ? options : {};
+    S.mode = normalizeMode(mode); S.requestedMomentKey = txt(opts.momentKey || (typeof options === "string" ? options : ""));
+    modal.style.display = "flex"; modal.dataset.open = "1"; document.body.classList.add("ah-sheet-open");
+    try { global.navOpen?.(modal); } catch (_) {}
+    if (S.openPromise) return S.openPromise;
+    S.openPromise = (async () => {
+      setBusy(true); setStatus("Loading live record…");
+      try { await loadState(); syncModeTabs(); await render(); return true; }
+      catch (e) { console.error("[ShareStudio] open failed", e); setStatus("COULDN'T PREPARE THIS RECORD. TRY AGAIN."); toast("Couldn't prepare this record. Try again.", "Share Studio"); return false; }
+      finally { setBusy(false); S.openPromise = null; }
+    })();
+    return S.openPromise;
+  }
+
+  function close() {
+    const modal = $("shareBack"); if (modal) { modal.style.display = "none"; delete modal.dataset.open; }
     document.body.classList.remove("ah-sheet-open");
-    STATE.presentation = null;
-    STATE.pngBlob = null;
-    STATE.upload = null;
-    revokeObjectUrl();
+    hideManualPreview();
+    if (S.objectUrl) URL.revokeObjectURL(S.objectUrl); S.objectUrl = ""; S.blob = null; S.upload = null; S.skinReady = false;
     try { global.navClose?.(modal); } catch (_) {}
   }
 
-  async function open(variant) {
-    const nextVariant = sanitizeVariant(variant);
-    const modal = $("shareBack");
-    if (!modal) return;
-    if (STATE.busy && STATE.openPromise && modal.style.display !== "none" && STATE.variant === nextVariant) {
-      return STATE.openPromise;
-    }
-    STATE.variant = nextVariant;
-    stopPreviewFx();
-    modal.style.display = "flex";
-    modal.dataset.open = "1";
-    document.body.classList.add("ah-sheet-open");
-    try { global.navOpen?.(modal); } catch (_) {}
-    STATE.openPromise = (async () => {
-      setBusy(true);
+  function bind() {
+    if (S.bound) return; S.bound = true;
+    document.querySelectorAll("[data-share-mode]").forEach((btn) => btn.addEventListener("click", () => {
+      if (!S.busy) void setMode(btn.dataset.shareMode).catch((e) => setStatus(txt(e?.message) || "Unable to render card."));
+    }));
+    $("shareMomentSelect")?.addEventListener("change", (e) => {
+      if (!S.busy) { S.requestedMomentKey = txt(e.target.value); selectMoment(S.requestedMomentKey); void rerender().catch(() => {}); }
+    });
+    $("shareCardManualClose")?.addEventListener("click", hideManualPreview);
+    $("shareCardPrimaryBtn")?.addEventListener("click", async () => {
+      if (S.busy) return; setBusy(true);
       try {
-        await ensureRendered();
-      } catch (err) {
-        console.error("[ShareCard] render failed", err);
-        toast(describeShareError(err, "render"));
-      } finally {
-        setBusy(false);
-        STATE.openPromise = null;
-      }
-    })();
-    return STATE.openPromise;
-  }
-
-  function bindUi() {
-    if (global.__shareCardBound) return;
-    global.__shareCardBound = true;
-
+        const ok = await nativeShare();
+        if (!ok) { showManualPreview("Native image sharing is unavailable. Long-press the image below to save it, or use Save Image."); }
+      } catch (e) { if (e?.name !== "AbortError") toast("Sharing failed. Try Save Image."); }
+      finally { setBusy(false); }
+    });
     $("shareCardTelegramBtn")?.addEventListener("click", async () => {
-      if (STATE.busy) return;
-      setBusy(true);
-      try {
-        await shareOnTelegram();
-      } catch (err) {
-        const msg = describeShareError(err, "telegram");
-        if (msg) {
-          console.error("[ShareCard] telegram failed", err);
-          toast(msg);
-        }
-      } finally {
-        setBusy(false);
-      }
+      if (S.busy) return; setBusy(true);
+      try { await shareTelegram(); setStatus("Telegram confirmed the image was shared."); }
+      catch (e) { const message = telegramShareErrorMessage(e); if (message) { setStatus(message); toast(message); } }
+      finally { setBusy(false); }
     });
-
-    $("shareCardSaveBtn")?.addEventListener("click", async () => {
-      if (STATE.busy) return;
-      setBusy(true);
-      try {
-        await saveImage();
-        setStatus(SAVE_IMAGE_NOTE);
-        toast(SAVE_IMAGE_NOTE, "Save Image");
-      } catch (err) {
-        console.error("[ShareCard] save failed", err);
-        toast(describeShareError(err, "save"));
-      } finally {
-        setBusy(false);
-      }
-    });
-
-    $("shareCardCopyBtn")?.addEventListener("click", async () => {
-      const ok = await copyText(buildCaption(STATE.presentation || buildSharePresentation(STATE.variant)));
-      if (ok) {
-        setStatus("Caption copied. X will open with the same text when you use Share to X.");
-      } else {
-        toast("Caption copy failed. Please try again.");
-      }
-    });
-
     $("shareCardXBtn")?.addEventListener("click", async () => {
-      if (STATE.busy) return;
-      setBusy(true);
-      try {
-        await shareOnX();
-      } catch (err) {
-        console.error("[ShareCard] x share failed", err);
-        toast("X share link failed to open.");
-      } finally {
-        setBusy(false);
-      }
+      if (S.busy) return; setBusy(true);
+      try { await shareX(); } catch (_) { toast("X intent could not open. Try Save Image."); }
+      finally { setBusy(false); }
     });
-
-    document.addEventListener("visibilitychange", () => {
-      const modal = $("shareBack");
-      if (!modal || modal.style.display === "none" || modal.dataset.open !== "1") {
-        stopPreviewFx();
-        return;
-      }
-      if (document.hidden) {
-        stopPreviewFx();
-      } else {
-        startPreviewFx(STATE.variant);
-      }
+    $("shareCardSaveBtn")?.addEventListener("click", async () => {
+      if (S.busy) return; setBusy(true);
+      try { await saveImage(); }
+      catch (e) { console.warn("[ShareStudio] save unavailable", txt(e?.message)); toast("Image download could not start. Try Share."); }
+      finally { setBusy(false); }
     });
+    $("shareCardCopyBtn")?.addEventListener("click", async () => setStatus(await copyCaption() ? "Caption copied." : "Caption copy failed."));
   }
 
-  global.ShareCard = global.ShareCard || {};
-  global.ShareCard.buildSharePresentation = buildSharePresentation;
-  global.ShareCard.getCaptionVariants = getCaptionVariants;
-  global.ShareCard.open = open;
-  global.ShareCard.openHub = function openHub() { return open("hub"); };
-  global.ShareCard.openEquipped = function openEquipped() { return open("equipped"); };
-  global.ShareCard.hide = hideModal;
-  bindUi();
+  global.ShareCard = {
+    open,
+    openHub: () => open("identity"),
+    openEquipped: () => open("identity"),
+    openIdentity: () => open("identity"),
+    openMoment: (momentKey) => open("moment", { momentKey }),
+    hide: close,
+    getState: () => ({ mode: S.mode, player: S.player, moment: S.moment }),
+  };
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind, { once: true }); else bind();
 })(window);

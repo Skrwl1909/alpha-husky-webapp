@@ -5793,183 +5793,47 @@ body.missions-open{
   }
 
   #shareBack{
-    align-items: center;
+    align-items:center;
     background:
-      radial-gradient(circle at 50% 0%, rgba(118,162,214,.14), transparent 36%),
-      radial-gradient(circle at 50% 100%, rgba(255,196,120,.10), transparent 38%),
-      rgba(0,0,0,.64);
+      radial-gradient(circle at 50% 0%, rgba(72,187,255,.13), transparent 34%),
+      rgba(0,0,0,.72);
   }
   #shareBack .ah-panel{
-    width: min(560px, 100%);
-    max-height: calc(100vh - max(12px, var(--ah-safe-top)) - max(12px, var(--ah-safe-bottom)));
-    max-height: calc(100dvh - max(12px, var(--ah-safe-top)) - max(12px, var(--ah-safe-bottom)));
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    border-color: rgba(197,216,239,.18);
+    width:min(590px,100%);
+    max-height:calc(100dvh - max(10px,var(--ah-safe-top)) - max(10px,var(--ah-safe-bottom)));
+    display:flex;flex-direction:column;overflow:hidden;
+    border:1px solid rgba(125,211,252,.18);
     background:
-      radial-gradient(circle at 50% -18%, rgba(108,148,194,.14), transparent 46%),
-      linear-gradient(180deg, rgba(15,20,30,.96), rgba(8,11,18,.98));
-    box-shadow:
-      0 24px 60px rgba(0,0,0,.58),
-      inset 0 1px 0 rgba(255,255,255,.06);
+      radial-gradient(circle at 82% -8%,rgba(125,211,252,.09),transparent 30%),
+      linear-gradient(180deg,rgba(7,14,22,.985),rgba(3,7,12,.995));
+    box-shadow:0 28px 90px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,255,255,.05);
   }
-  #shareBack .ah-panel-hd{
-    flex: 0 0 auto;
-    padding: 15px 16px 11px;
-    border-bottom: 1px solid rgba(255,255,255,.06);
-    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
-  }
-  #shareBack .ah-panel-scroll{
-    min-height: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    padding: 0 14px calc(18px + var(--ah-safe-bottom));
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  #shareBack .share-card-context{
-    padding-top: 2px;
-    font-size: 11px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: rgba(228,237,248,.62);
-  }
-  #shareBack .share-card-preview-shell{
-    position: relative;
-    border-radius: 24px;
-    padding: 14px;
-    background:
-      linear-gradient(180deg, rgba(24,33,49,.92), rgba(8,12,20,.96));
-    border: 1px solid rgba(245,210,146,.16);
-    box-shadow:
-      0 20px 44px rgba(0,0,0,.34),
-      0 0 26px rgba(113,149,196,.12),
-      inset 0 1px 0 rgba(255,255,255,.05);
-    overflow: hidden;
-  }
-  #shareBack #shareCardCanvasWrap{
-    position: relative;
-    display: grid;
-    place-items: center;
-    border-radius: 18px;
-    padding: 0;
-    overflow: hidden;
-    background:
-      radial-gradient(circle at 50% 16%, rgba(148,190,255,.08), transparent 34%),
-      rgba(3,7,14,.94);
-    border: 1px solid rgba(255,255,255,.05);
-  }
-  #shareBack #shareCardCanvas{
-    position: relative;
-    z-index: 1;
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    height: auto;
-    max-height: min(58dvh, 680px);
-    object-fit: contain;
-    margin: 0 auto;
-    border-radius: 18px;
-    background: rgba(3,7,14,.92);
-  }
-  #shareBack #shareCardPreviewFx{
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    border-radius: 18px;
-  }
-  #shareBack #shareCardMeta{
-    font-size: 12px;
-    line-height: 1.5;
-    color: rgba(236,243,255,.70);
-  }
-  #shareBack .share-card-actions{
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 10px;
-    padding: 0;
-  }
-  #shareBack .share-card-actions .ah-action{
-    height: 40px;
-    min-width: 0;
-    border-radius: 15px;
-    font-size: 13px;
-    font-weight: 800;
-  }
-  #shareBack #shareCardXBtn{
-    grid-column: 1 / -1;
-    height: 44px;
-    border-color: rgba(245,210,146,.24);
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02)),
-      linear-gradient(180deg, rgba(54,68,88,.96), rgba(16,20,30,.98));
-    box-shadow:
-      0 12px 28px rgba(0,0,0,.26),
-      inset 0 1px 0 rgba(255,255,255,.08);
-  }
-  #shareBack .share-card-action-secondary{
-    background:
-      linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01)),
-      rgba(8,12,20,.72);
-  }
-  #shareBack .share-card-help,
-  #shareBack .share-card-status{
-    font-size: 12px;
-    line-height: 1.45;
-    color: rgba(231,239,248,.72);
-  }
-  #shareBack .share-card-status{
-    display: none;
-    padding: 10px 12px;
-    border-radius: 14px;
-    border: 1px solid rgba(245,210,146,.14);
-    background: rgba(245,210,146,.06);
-  }
-  #shareBack .share-card-status[data-show="1"]{
-    display: block;
-  }
-  #shareBack .share-card-caption{
-    border-radius: 18px;
-    padding: 12px;
-    background: rgba(8,12,20,.62);
-    border: 1px solid rgba(255,255,255,.08);
-  }
-  #shareBack .share-card-caption-label{
-    font-size: 11px;
-    letter-spacing: .11em;
-    text-transform: uppercase;
-    opacity: .52;
-    margin-bottom: 8px;
-  }
-  #shareBack #shareCardCaptionPreview{
-    font-size: 13px;
-    line-height: 1.5;
-    white-space: pre-wrap;
-    opacity: .90;
-  }
-  @media (max-width: 420px){
-    #shareBack .ah-panel-scroll{
-      padding-left: 12px;
-      padding-right: 12px;
-      gap: 11px;
-    }
-    #shareBack .share-card-preview-shell{
-      padding: 12px;
-      border-radius: 20px;
-    }
-    #shareBack .share-card-actions .ah-action{
-      height: 39px;
-      font-size: 12.5px;
-    }
-    #shareBack #shareCardXBtn{
-      height: 42px;
-    }
-  }
+  #shareBack .ah-panel-hd{flex:0 0 auto;padding:14px 16px 10px;border-bottom:1px solid rgba(255,255,255,.055)}
+  #shareBack .ah-panel-scroll{min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:12px 14px calc(18px + var(--ah-safe-bottom));display:flex;flex-direction:column;gap:11px}
+  #shareBack .share-card-kicker{font:850 10px/1.15 ui-sans-serif,system-ui,sans-serif;letter-spacing:.2em;color:rgba(125,211,252,.68);text-transform:uppercase}
+  #shareBack .share-card-context{font:760 11px/1.3 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(228,237,248,.58)}
+  #shareBack .share-studio-modes{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px;border:1px solid rgba(255,255,255,.07);border-radius:14px;background:rgba(0,0,0,.22)}
+  #shareBack .share-mode{height:38px;border:0;border-radius:10px;background:transparent;color:rgba(230,238,248,.54);font:850 11px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.1em;cursor:pointer}
+  #shareBack .share-mode.is-active{color:#f6f9fc;background:linear-gradient(180deg,rgba(71,166,219,.24),rgba(23,64,92,.28));box-shadow:inset 0 0 0 1px rgba(125,211,252,.23),0 8px 18px rgba(0,0,0,.2)}
+  #shareBack .share-moment-picker{display:flex;align-items:center;gap:9px}
+  #shareBack .share-moment-picker label{flex:0 0 auto;font:800 10px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;color:rgba(225,235,246,.48)}
+  #shareBack #shareMomentSelect{min-width:0;flex:1;height:38px;border-radius:11px;border:1px solid rgba(125,211,252,.14);background:#07111b;color:#edf5fb;padding:0 34px 0 11px;font:750 12px/1 ui-sans-serif,system-ui,sans-serif}
+  #shareBack .share-card-preview-shell{position:relative;border-radius:20px;padding:9px;background:linear-gradient(180deg,rgba(18,28,40,.94),rgba(5,9,15,.98));border:1px solid rgba(125,211,252,.12);box-shadow:0 20px 48px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden}
+  #shareBack #shareCardCanvasWrap{position:relative;display:grid;place-items:center;border-radius:14px;overflow:hidden;background:#02060b;border:1px solid rgba(255,255,255,.045)}
+  #shareBack #shareCardCanvas{display:block;width:100%;height:auto;max-height:min(58dvh,700px);object-fit:contain;margin:0 auto;border-radius:14px;background:#03070d}
+  #shareBack #shareCardMeta{font:500 11.5px/1.48 ui-sans-serif,system-ui,sans-serif;color:rgba(229,238,248,.62);padding:0 2px}
+  #shareBack .share-moment-empty{padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);color:rgba(231,239,248,.55);font:600 11px/1.45 ui-sans-serif,system-ui,sans-serif}
+  #shareBack .share-card-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  #shareBack .share-card-actions .ah-action{height:40px;min-width:0;border-radius:13px;font-size:12.5px;font-weight:850}
+  #shareBack #shareCardPrimaryBtn{grid-column:1/-1;height:46px;border-color:rgba(125,211,252,.32);background:linear-gradient(180deg,rgba(67,157,209,.36),rgba(18,54,78,.72));box-shadow:0 10px 26px rgba(0,0,0,.3),inset 0 1px rgba(255,255,255,.08)}
+  #shareBack #shareCardXBtn,#shareBack #shareCardTelegramBtn{background:linear-gradient(180deg,rgba(255,255,255,.065),rgba(255,255,255,.015)),rgba(8,13,21,.78)}
+  #shareBack .share-card-help,#shareBack .share-card-status{font:500 11px/1.48 ui-sans-serif,system-ui,sans-serif;color:rgba(231,239,248,.65)}
+  #shareBack .share-card-status{display:none;padding:9px 11px;border-radius:12px;border:1px solid rgba(125,211,252,.13);background:rgba(125,211,252,.045)}
+  #shareBack .share-card-status[data-show="1"]{display:block}
+  #shareBack .share-card-caption{border-radius:14px;padding:10px 11px;background:rgba(5,10,17,.66);border:1px solid rgba(255,255,255,.06)}
+  #shareBack .share-card-caption-label{font:800 9px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(230,239,249,.38);margin-bottom:7px}
+  #shareBack #shareCardCaptionPreview{font:550 11.5px/1.45 ui-sans-serif,system-ui,sans-serif;white-space:pre-wrap;color:rgba(237,243,250,.84)}
+  @media(max-width:420px){#shareBack .ah-panel-scroll{padding-left:11px;padding-right:11px;gap:9px}#shareBack .share-card-preview-shell{padding:7px;border-radius:17px}#shareBack .share-card-actions .ah-action{height:38px;font-size:12px}#shareBack #shareCardPrimaryBtn{height:43px}}
 
   #supportBack .ah-panel{
     border-color: rgba(255,196,95,.18);
@@ -7034,41 +6898,53 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   </div>
 </div>
 
-<!-- ✅ Share Sheet -->
+<style>
+/* Share Studio P0 fixes: hidden state + manual image-save preview only. */
+#shareBack .share-moment-picker[hidden], #shareBack .share-manual-preview[hidden], #shareBack .share-moment-empty[hidden] { display:none !important; }
+#shareBack .share-manual-preview { margin:12px auto; padding:12px; border:1px solid rgba(126,204,237,.28); border-radius:15px; background:rgba(4,12,23,.93); text-align:center; }
+#shareBack .share-manual-preview p { font:500 12px/1.5 system-ui,sans-serif; color:#b8d6e7; margin:3px 0 12px; }
+#shareBack .share-manual-preview img { display:block; width:100%; max-width:490px; height:auto; margin:0 auto 12px; user-select:auto; -webkit-user-select:auto; -webkit-touch-callout:default; }
+</style>
+<!-- ✅ Share Studio — Identity + Recorded Moment -->
 <div id="shareBack" class="ah-back" style="display:none">
-  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Share">
+  <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Alpha Husky Share Studio">
     <div class="ah-panel-hd">
-      <div class="ah-title" id="shareCardTitle">Share</div>
+      <div>
+        <div class="share-card-kicker">Alpha Husky</div>
+        <div class="ah-title" id="shareCardTitle">Share Studio</div>
+      </div>
       <button class="ah-x" data-close="shareBack" aria-label="Close" type="button">✕</button>
     </div>
     <div class="ah-panel-scroll">
-      <div id="shareCardContext" class="share-card-context">Main Hub preview</div>
+      <div class="share-studio-modes" role="tablist" aria-label="Share card type">
+        <button type="button" class="share-mode is-active" data-share-mode="identity" role="tab" aria-selected="true">IDENTITY</button>
+        <button type="button" class="share-mode" data-share-mode="moment" role="tab" aria-selected="false">MOMENT</button>
+      </div>
+      <div id="shareMomentPicker" class="share-moment-picker" hidden>
+        <label for="shareMomentSelect">RECORD</label>
+        <select id="shareMomentSelect" aria-label="Choose verified recorded moment"></select>
+      </div>
+      <div id="shareCardContext" class="share-card-context">IDENTITY // THIS IS MY ALPHA</div>
       <div class="share-card-preview-shell">
         <div id="shareCardCanvasWrap">
-          <canvas id="shareCardCanvas" width="1200" height="1500"></canvas>
-          <div id="shareCardPreviewFx" aria-hidden="true" style="position:absolute;z-index:2;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .24s ease;">
-          <span data-fx="eyes" style="position:absolute;left:50%;top:28.5%;width:16%;height:4.8%;transform:translate(-50%,-50%);opacity:.10;background:
-            radial-gradient(40% 68% at 34% 50%, rgba(136,198,255,.44), rgba(136,198,255,0) 76%),
-            radial-gradient(40% 68% at 66% 50%, rgba(136,198,255,.44), rgba(136,198,255,0) 76%);"></span>
-          <span data-fx="core" style="position:absolute;left:50%;top:47%;width:12%;aspect-ratio:1/1;transform:translate(-50%,-50%);opacity:.10;background:
-            radial-gradient(circle, rgba(255,214,146,.34) 0%, rgba(255,214,146,.18) 45%, rgba(255,214,146,0) 72%);"></span>
-          <span data-fx="sheen" style="position:absolute;left:57%;top:74%;width:30%;height:10%;transform:translate(-16%,0) skewX(-16deg);opacity:0;background:
-            linear-gradient(105deg, rgba(255,220,160,0) 14%, rgba(255,220,160,.34) 48%, rgba(255,220,160,0) 86%);"></span>
-          </div>
+          <canvas id="shareCardCanvas" width="1080" height="1350"></canvas>
+        </div>
+        <div id="shareCardManualPreview" class="share-manual-preview" hidden>
+          <p>Full-size image · long-press to save where supported. If that is blocked by your client, use a desktop browser.</p>
+          <img id="shareCardManualImage" alt="Full-size Alpha Husky Share Card for manual saving">
+          <button type="button" class="ah-action" id="shareCardManualClose">Close preview</button>
         </div>
       </div>
-      <div id="shareCardMeta">
-        Rendered from the same live player presentation state visible in the app.
-      </div>
+      <div id="shareMomentEmpty" class="share-moment-empty" hidden>No verified moment is available yet. Identity sharing is still available.</div>
+      <div id="shareCardMeta">Built from your live player identity, active skin and displayed badges.</div>
       <div class="ah-actions share-card-actions">
+        <button class="ah-action" id="shareCardPrimaryBtn" type="button">Share</button>
         <button class="ah-action" id="shareCardXBtn" type="button">Share to X</button>
-        <button class="ah-action share-card-action-secondary" id="shareCardTelegramBtn" type="button">Share on Telegram</button>
-        <button class="ah-action share-card-action-secondary" id="shareCardSaveBtn" type="button">Save Image</button>
-        <button class="ah-action share-card-action-secondary" id="shareCardCopyBtn" type="button">Copy Caption</button>
+        <button class="ah-action" id="shareCardTelegramBtn" type="button">Share on Telegram</button>
+        <button class="ah-action" id="shareCardSaveBtn" type="button">Save Image</button>
+        <button class="ah-action" id="shareCardCopyBtn" type="button">Copy Caption</button>
       </div>
-      <div id="shareCardHelp" class="share-card-help">
-        If Save Image doesn't appear in your gallery, tap Share on Telegram, send it to Saved Messages, then save it from there. X may not auto-attach the image. Save it first, then attach it manually if needed.
-      </div>
+      <div class="share-card-help">Sharing to X opens a text post; attach your PNG manually. Save Image requests a download, and Telegram may offer a native file download on supported clients. Neither action can guarantee a file reached your Gallery.</div>
       <div id="shareCardStatus" class="share-card-status" role="status" aria-live="polite"></div>
       <div class="share-card-caption">
         <div class="share-card-caption-label">Caption</div>
@@ -8102,7 +7978,7 @@ body.bc-open #ahCommunityBtn{
   <!-- 2) Globalny endpoint API i wersja -->
   <script>
     window.API_BASE = "https://api.alphahusky.win";
-    window.WEBAPP_VER = "tops-2.7.46-bloodmoon-p11-4-premium-vfx-assets-20261008";
+    window.WEBAPP_VER = "tops-2.7.49-share-studio-aaa-review-20261008";
     window.__PET_CLOUD_VER__ = "v1767699377";
   </script>
   <script>
@@ -13134,7 +13010,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="js/ftue_continuity.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <script src="/js/pack_comms.js?v=pack-comms-lite-v1"></script>
   <script src="/js/community_btn.js?v=pack-comms-lite-v1"></script>
-<script src="js/share_card.js?v=WEBAPP_VER"></script>
+<script>document.write('<script src="js/share_card.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>
 (function initAwakening(){
   function boot(apiPost){
