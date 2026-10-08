@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p11-3-1-combat-scale-environment-2026-10-08";
+  const VER = "bloodmoon_pixi.js v3-p11-4-combat-impact-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -90,6 +90,56 @@
   function easeInOutQuad(t) {
     const x = clamp(t, 0, 1);
     return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+  }
+
+  function easeInCubic(t) {
+    const x = clamp(t, 0, 1);
+    return x * x * x;
+  }
+
+  function easeOutBack(t, overshoot = 1.15) {
+    const x = clamp(t, 0, 1);
+    const c1 = overshoot;
+    const c3 = c1 + 1;
+    return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+  }
+
+  function resolveHitStopSec(plan, turn = null) {
+    const kind = String(turn?.kind || "").toLowerCase();
+    let sec =
+      plan?.waveBreak || turn?.defeat ? 0.112 :
+      plan?.hasCrit || kind === "crit" ? 0.096 :
+      plan?.damageTier === "heavy" ? 0.082 :
+      plan?.damageTier === "medium" ? 0.074 :
+      0.060;
+    if (plan?.perfLite) sec *= 0.68;
+    return sec;
+  }
+
+  function resolveContactPoint(layout) {
+    const width = Math.max(320, num(layout?.width, 320));
+    const height = Math.max(220, num(layout?.height, 220));
+    const playerX = num(layout?.playerX, width * 0.26);
+    const enemyX = num(layout?.enemyX, width * 0.77);
+    const playerY = num(layout?.playerY, height * 0.54);
+    const enemyY = num(layout?.enemyY, height * 0.52);
+    return {
+      x: Math.round(clamp(lerp(playerX, enemyX, 0.64), width * 0.38, width * 0.72)),
+      y: Math.round(clamp(lerp(playerY, enemyY, 0.55) - height * 0.18, height * 0.27, height * 0.44)),
+    };
+  }
+
+  function resolveImpactIntensity(plan, turn = null) {
+    const kind = String(turn?.kind || "").toLowerCase();
+    const crit = plan?.hasCrit || kind === "crit";
+    const finisher = plan?.waveBreak || !!turn?.defeat;
+    const tier =
+      finisher ? 1.32 :
+      crit ? 1.22 :
+      plan?.damageTier === "heavy" ? 1.13 :
+      plan?.damageTier === "medium" ? 1.02 :
+      0.90;
+    return { crit, finisher, tier };
   }
 
   function uniqueStrings(rows) {
@@ -454,8 +504,18 @@
     const perfLite = !!global.document?.documentElement?.classList?.contains("ah-perf-lite") ||
       !!global.document?.body?.classList?.contains("ah-perf-lite") ||
       !!global.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-    const baseTurn = perfLite ? 0.56 : 0.70;
-    const total = Math.min(perfLite ? 3.1 : 4.8, Math.max(perfLite ? 2.25 : 2.55, 0.62 + turns.length * baseTurn + (hasCrit ? 0.18 : 0) + (waveBreak ? 0.45 : 0)));
+    const compactTurns = Math.max(0, turns.length - 1);
+    const baseTotal = Math.min(
+      perfLite ? 3.0 : 4.4,
+      Math.max(
+        perfLite ? 1.95 : 2.15,
+        1.92 + compactTurns * (perfLite ? 0.38 : 0.46) + (hasCrit ? 0.12 : 0) + (waveBreak ? 0.30 : 0)
+      )
+    );
+    const primaryHitStop = resolveHitStopSec({ perfLite, hasCrit, waveBreak, damageTier });
+    const total = baseTotal + primaryHitStop;
+    const impactAt = Math.max(0.82, Math.min(baseTotal * 0.40, 1.10));
+    const settleAt = Math.max(impactAt + primaryHitStop + 0.62, baseTotal * 0.80 + primaryHitStop);
     return {
       battleId,
       seed,
@@ -471,8 +531,9 @@
       finalBoss: wave >= 10,
       perfLite,
       total,
-      impactAt: Math.min(total * 0.42, 1.45),
-      settleAt: total * 0.80,
+      impactAt,
+      settleAt,
+      primaryHitStop,
     };
   }
 
@@ -544,7 +605,9 @@
     _scene.enemy.rotation = 0;
     if (_app?.stage) { _app.stage.x = 0; _app.stage.y = 0; }
     _scene.impactSlash.alpha = 0;
+    _scene.impactBurst.alpha = 0;
     _scene.impactRing.alpha = 0;
+    _scene.secondaryRing.alpha = 0;
     _scene.stageFlash.alpha = 0;
   }
 
@@ -619,7 +682,9 @@
     setAnchor(enemyLabel, 0.5, 0.5);
 
     const impactSlash = new P.Graphics();
+    const impactBurst = new P.Graphics();
     const impactRing = new P.Graphics();
+    const secondaryRing = new P.Graphics();
     const damageText = makeText("-0", { fontFamily: "system-ui", fontSize: 30, fill: 0xffffff, fontWeight: "950" });
     const critText = makeText("CRIT", { fontFamily: "system-ui", fontSize: 15, fill: 0xffe38d, fontWeight: "900" });
     setAnchor(damageText, 0.5, 0.5);
@@ -643,7 +708,9 @@
       enemyLabel,
       stageFlash,
       impactSlash,
+      impactBurst,
       impactRing,
+      secondaryRing,
       damageText,
       critText,
     );
@@ -674,7 +741,9 @@
       waveBadge,
       enemyLabel,
       impactSlash,
+      impactBurst,
       impactRing,
+      secondaryRing,
       damageText,
       critText,
       battle: null,
@@ -822,149 +891,286 @@
     let currentTurn = null;
     let currentTurnIndex = -1;
     let currentTurnPhase = 0;
-    const idleP = Math.sin(now * 1.8) * 4;
-    const idleFactor = plan?.personality === "heavy_brutal" ? 2.2 : plan?.personality === "calm_precise" ? 1.8 : 4.2;
-    const idleE = Math.sin(now * (plan?.personality === "controlled_displaced" ? 2.3 : 1.45) + 1.3) * idleFactor;
-    const idleMoon = Math.sin(now * 0.8) * 2;
 
-    let playerLunge = 0, playerLift = 0, playerTilt = 0;
+    const idleP = Math.sin(now * 1.8) * 3;
+    const idleFactor = plan?.personality === "heavy_brutal" ? 1.8 : plan?.personality === "calm_precise" ? 1.5 : 3.0;
+    const idleE = Math.sin(now * (plan?.personality === "controlled_displaced" ? 2.0 : 1.35) + 1.3) * idleFactor;
+
+    let playerLunge = 0, playerLift = 0, playerTilt = 0, playerHitKick = 0;
     let enemyShakeX = 0, enemyShakeY = 0, enemySlam = 0, enemyDrift = 0;
-    let slashAlpha = 0, slashScale = 0.3, ringAlpha = 0, ringScale = 0.2;
-    let flashAlpha = 0, damageAlpha = 0, damageLift = 0, critAlpha = 0, critLift = 0, hpTween = 1;
+    let slashAlpha = 0, slashScale = 0.3, burstAlpha = 0, burstScale = 0.5;
+    let ringAlpha = 0, ringScale = 0.2, secondaryAlpha = 0, secondaryScale = 0.3;
+    let flashAlpha = 0, damageAlpha = 0, damageLift = 0, damageScale = 1;
+    let critAlpha = 0, critLift = 0, hpTween = 1;
     let cameraX = 0, cameraY = 0;
     let pose = "idle";
+
+    const contact = resolveContactPoint(_scene.layout);
+    _scene.layout.impactX = contact.x;
+    _scene.layout.impactY = contact.y;
 
     if (_scene.animating && plan) {
       const dt = Math.min(0.05, _app.ticker.deltaMS / 1000);
       _scene.playTime += dt;
       const t = _scene.playTime;
-      const eventStart = Math.max(0.42, plan.impactAt * 0.72);
-      const eventEnd = Math.max(eventStart + 0.35, plan.settleAt);
-      if (plan.turns.length) {
-        const eventP = clamp((t - eventStart) / Math.max(0.01, eventEnd - eventStart), 0, 0.999999);
-        const scaled = eventP * plan.turns.length;
-        currentTurnIndex = Math.min(plan.turns.length - 1, Math.floor(scaled));
-        currentTurnPhase = scaled - Math.floor(scaled);
-        currentTurn = plan.turns[currentTurnIndex] || null;
-      }
+      const primaryTurn = plan.turns[0] || null;
+      const primaryHitStop = num(plan.primaryHitStop, resolveHitStopSec(plan, primaryTurn));
       const impactAt = plan.impactAt;
-      const family = plan.family;
+      const holdEnd = impactAt + primaryHitStop;
+      const primaryResolveEnd = holdEnd + 0.60;
+      const compactStart = Math.max(primaryResolveEnd + 0.08, 1.38);
+      const compactEnd = Math.max(compactStart + 0.35, plan.settleAt - 0.06);
 
-      const anticipation = clamp(t / Math.max(0.24, impactAt * 0.58), 0, 1);
-      const strike = clamp((t - impactAt * 0.56) / Math.max(0.22, impactAt * 0.44), 0, 1);
-      let impact = clamp((t - impactAt) / (plan.perfLite ? 0.30 : 0.44), 0, 1);
-      if (plan.turns.length > 1 && t >= eventStart && t <= eventEnd) {
-        impact = clamp(currentTurnPhase, 0, 1);
-      }
-      const settle = clamp((t - plan.settleAt) / Math.max(0.18, plan.total - plan.settleAt), 0, 1);
-
-      const familyMult = family === "lunar_crash" ? 1.16 : family === "breach_strike" ? 1.08 : family === "phantom_feint" ? 0.92 : 1;
-      const tierMult = plan.damageTier === "heavy" ? 1.28 : plan.damageTier === "medium" ? 1.08 : 0.92;
-      const critMult = plan.hasCrit ? 1.20 : 1;
-      const amp = familyMult * tierMult * critMult;
-
-      if (family === "phantom_feint") {
-        playerLunge = Math.sin(strike * Math.PI) * 62 * amp;
-        playerLift = -Math.sin(strike * Math.PI) * 12;
-        playerTilt = -Math.sin(strike * Math.PI) * 0.05 * amp;
-      } else if (family === "lunar_crash") {
-        playerLunge = Math.sin(strike * Math.PI) * 44 * amp;
-        playerLift = -Math.sin(strike * Math.PI) * 24;
-        playerTilt = -Math.sin(strike * Math.PI) * 0.03 * amp;
-      } else if (family === "double_impact") {
-        playerLunge = Math.sin(strike * Math.PI) * 52 * amp + (impact > 0.48 && impact < 0.82 ? 10 : 0);
-        playerTilt = -Math.sin(strike * Math.PI) * 0.08 * amp;
-      } else if (family === "crescent_rush") {
-        playerLunge = Math.sin(strike * Math.PI) * 58 * amp;
-        playerLift = -Math.sin(strike * Math.PI) * 7;
-        playerTilt = -Math.sin(strike * Math.PI) * 0.13 * amp;
-      } else if (family === "pursuit_cut") {
-        playerLunge = Math.sin(strike * Math.PI) * 48 * amp + (strike > 0.62 ? 16 * (1 - strike) : 0);
-        playerLift = -Math.sin(strike * Math.PI) * 4;
-        playerTilt = Math.sin(strike * Math.PI) * 0.07 * amp;
+      if (t < compactStart || plan.turns.length <= 1) {
+        currentTurnIndex = plan.turns.length ? 0 : -1;
+        currentTurn = primaryTurn;
+        currentTurnPhase = clamp((t - Math.max(0, impactAt - 0.10)) / Math.max(0.01, primaryResolveEnd - impactAt + 0.10), 0, 1);
       } else {
-        playerLunge = Math.sin(strike * Math.PI) * 46 * amp;
-        playerTilt = -Math.sin(strike * Math.PI) * 0.035 * amp;
+        const remaining = Math.max(1, plan.turns.length - 1);
+        const p = clamp((t - compactStart) / Math.max(0.01, compactEnd - compactStart), 0, 0.999999);
+        const scaled = p * remaining;
+        currentTurnIndex = Math.min(plan.turns.length - 1, 1 + Math.floor(scaled));
+        currentTurnPhase = scaled - Math.floor(scaled);
+        currentTurn = plan.turns[currentTurnIndex] || primaryTurn;
       }
 
-      const recoilWindow = Math.sin(clamp(impact, 0, 1) * Math.PI);
-      const personalityMass = plan.personality === "heavy_brutal" ? 0.58 : plan.personality === "calm_precise" ? 0.42 : 1;
-      enemyShakeX = Math.sin(impact * (plan.personality === "heavy_brutal" ? 18 : 34)) * (1 - impact) * 16 * amp * personalityMass;
-      enemyShakeY = Math.cos(impact * 22) * (1 - impact) * 4 * amp * personalityMass;
-      enemySlam = recoilWindow * 0.055 * amp * personalityMass;
+      const family = plan.family;
+      const intensity = resolveImpactIntensity(plan, currentTurn);
+      const primaryIsEnemy = primaryTurn?.actor === "right";
+      const isDamaging = !["miss","heal"].includes(String(currentTurn?.kind || ""));
+      const gap = Math.max(90, _scene.layout.enemyX - _scene.layout.playerX);
+      const familyTravel =
+        family === "crescent_rush" ? 1.05 :
+        family === "phantom_feint" ? 1.00 :
+        family === "lunar_crash" ? 0.88 :
+        family === "breach_strike" ? 0.92 :
+        family === "pursuit_cut" ? 0.98 :
+        family === "double_impact" ? 0.96 :
+        0.92;
+      const maxTravel = clamp(gap * 0.48 * familyTravel, 58, 108);
 
-      if (plan.personality === "controlled_displaced") {
-        enemyDrift = Math.sin(t * 17) * (impact < 0.05 ? 3 : 1);
-      } else if (plan.personality === "fast_unstable") {
-        enemyDrift = Math.sin(t * 10) * 2.5;
+      const anticipationStart = 0.12;
+      const commitStart = Math.max(0.34, impactAt - 0.48);
+      const anticipationP = clamp((t - anticipationStart) / Math.max(0.01, commitStart - anticipationStart), 0, 1);
+      const commitP = clamp((t - commitStart) / Math.max(0.01, impactAt - commitStart), 0, 1);
+      const recoveryP = clamp((t - holdEnd) / 0.56, 0, 1);
+
+      let primaryTravel = 0;
+      if (t < commitStart) {
+        primaryTravel = -6 * easeInOutQuad(anticipationP);
+        playerLift = 3 * easeInOutQuad(anticipationP);
+      } else if (t <= impactAt) {
+        primaryTravel = lerp(-6, maxTravel, easeInCubic(commitP));
+      } else if (t <= holdEnd) {
+        primaryTravel = maxTravel;
+      } else {
+        primaryTravel = maxTravel * (1 - easeOutCubic(recoveryP));
       }
 
-      const pulse = Math.sin(impact * Math.PI);
-      if (!plan.perfLite) {
-        const cameraAmp = plan.damageTier === "heavy" ? 7 : plan.damageTier === "medium" ? 4.5 : 2.5;
-        cameraX = Math.sin(impact * 42) * (1 - impact) * cameraAmp;
-        cameraY = Math.cos(impact * 31) * (1 - impact) * cameraAmp * 0.42;
+      if (family === "phantom_feint" && t < commitStart) {
+        primaryTravel += Math.sin(anticipationP * Math.PI) * -10;
       }
-      if (!_scene.hapticImpactDone && t >= impactAt) {
-        _scene.hapticImpactDone = true;
-        try {
-          _opts?.tg?.HapticFeedback?.impactOccurred?.(plan.hasCrit || plan.damageTier === "heavy" ? "heavy" : "medium");
-        } catch (_) {}
-      }
-      if (plan.waveBreak && !_scene.hapticFinishDone && t >= plan.settleAt) {
-        _scene.hapticFinishDone = true;
-        try { _opts?.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
-      }
-      slashAlpha = pulse * (plan.perfLite ? 0.72 : 0.98);
-      slashScale = 0.32 + easeOutCubic(impact) * (plan.damageTier === "heavy" ? 1.55 : 1.18);
-      ringAlpha = pulse * (plan.perfLite ? 0.22 : (plan.hasCrit ? 0.66 : 0.42));
-      ringScale = 0.2 + impact * (plan.hasCrit ? 2.2 : 1.7);
-      flashAlpha = pulse * (plan.perfLite ? 0.08 : (plan.hasCrit ? 0.34 : 0.19));
-
-      const damageIn = clamp((t - impactAt + 0.03) / 0.78, 0, 1);
-      damageAlpha = Math.sin(damageIn * Math.PI);
-      damageLift = easeOutCubic(damageIn) * 40;
-      if (plan.hasCrit) {
-        const c = clamp((t - impactAt + 0.08) / 0.92, 0, 1);
-        critAlpha = Math.sin(c * Math.PI);
-        critLift = easeOutCubic(c) * 28;
+      if (family === "lunar_crash") {
+        const liftP = t <= impactAt ? commitP : (1 - recoveryP);
+        playerLift += -Math.sin(clamp(liftP, 0, 1) * Math.PI) * 22;
+      } else if (family === "crescent_rush") {
+        playerLift += -Math.sin(commitP * Math.PI) * 6;
+      } else if (family === "pursuit_cut") {
+        playerLift += -Math.sin(commitP * Math.PI) * 4;
       }
 
-      hpTween = easeInOutQuad(clamp((t - impactAt) / Math.max(0.66, plan.total * 0.36), 0, 1));
-      pose = enemyPoseForTime(plan, t);
-      if (currentTurn?.actor === "right" && ["hit","crit","tick","finish"].includes(currentTurn.kind) && t < plan.settleAt) pose = "attack";
-      if (currentTurn?.target === "right" && ["hit","crit","finish"].includes(currentTurn.kind) && t < plan.settleAt) pose = currentTurn.defeat ? "defeat" : "hit";
+      const tiltBase =
+        family === "crescent_rush" ? -0.11 :
+        family === "double_impact" ? -0.07 :
+        family === "pursuit_cut" ? 0.055 :
+        family === "phantom_feint" ? -0.045 :
+        family === "lunar_crash" ? -0.03 :
+        -0.035;
+      const contactWeight = t <= impactAt ? easeInCubic(commitP) : Math.max(0, 1 - recoveryP);
+      playerTilt = tiltBase * contactWeight * intensity.tier;
 
-      if ([4,7,10].includes(plan.wave) && t < 0.42) {
-        const intro = easeOutCubic(clamp(t / 0.42, 0, 1));
-        if (plan.wave === 4) {
-          _scene.enemy.alpha = 0.10 + intro * 0.90;
-          enemyDrift += (1 - intro) * 12;
-        } else if (plan.wave === 7) {
-          _scene.enemy.alpha = 0.30 + intro * 0.70;
-          _scene.enemy.scale?.set?.(1.08 - intro * 0.08);
-          enemyShakeY += (1 - intro) * -10;
+      if (!primaryIsEnemy) {
+        playerLunge = primaryTravel;
+      } else {
+        enemyDrift -= primaryTravel * 0.78;
+        playerHitKick = t >= impactAt && t <= holdEnd + 0.24 ? -8 * Math.sin(clamp((t - impactAt) / (primaryHitStop + 0.24), 0, 1) * Math.PI) : 0;
+        pose = t >= commitStart && t <= holdEnd + 0.18 ? "attack" : "idle";
+      }
+
+      const impactElapsed = t - impactAt;
+      const primaryDamaging = !["miss","heal"].includes(String(primaryTurn?.kind || ""));
+      const inHold = t >= impactAt && t <= holdEnd;
+      const recoilP = clamp((t - holdEnd) / 0.30, 0, 1);
+      const recoilPulse = Math.sin(recoilP * Math.PI);
+
+      if (!primaryIsEnemy && primaryDamaging && t >= impactAt) {
+        const personalityMass =
+          plan.personality === "heavy_brutal" ? 0.62 :
+          plan.personality === "calm_precise" ? 0.78 :
+          1;
+        const baseRecoil =
+          intensity.finisher ? 24 :
+          intensity.crit ? 21 :
+          plan.damageTier === "heavy" ? 19 :
+          plan.damageTier === "medium" ? 16 :
+          13;
+        enemyShakeX += recoilPulse * baseRecoil * personalityMass;
+        enemyShakeY += -recoilPulse * (intensity.finisher ? 5 : intensity.crit ? 4 : 2.5) * personalityMass;
+        const squash = inHold ? 0.035 * intensity.tier : recoilPulse * 0.025 * intensity.tier;
+        enemySlam = -squash;
+      }
+
+      if (plan.personality === "controlled_displaced" && t < commitStart) {
+        enemyDrift += Math.sin(t * 9) * 1.8;
+      } else if (plan.personality === "fast_unstable" && t < commitStart) {
+        enemyDrift += Math.sin(t * 8) * 1.4;
+      }
+
+      if (primaryDamaging && impactElapsed >= 0) {
+        const slashP = clamp(impactElapsed / (plan.perfLite ? 0.18 : 0.24), 0, 1);
+        slashAlpha = (1 - easeOutCubic(slashP)) * (plan.perfLite ? 0.78 : 1);
+        slashScale = 0.72 + easeOutCubic(slashP) * (0.95 * intensity.tier);
+
+        const burstP = clamp(impactElapsed / (plan.perfLite ? 0.16 : 0.22), 0, 1);
+        burstAlpha = (1 - easeOutCubic(burstP)) * (plan.perfLite ? 0.56 : 0.94);
+        burstScale = 0.58 + easeOutCubic(burstP) * (0.72 * intensity.tier);
+
+        const ringP = clamp(impactElapsed / (intensity.crit ? 0.40 : 0.32), 0, 1);
+        ringAlpha = (1 - ringP) * (plan.perfLite ? 0.24 : intensity.crit ? 0.68 : plan.damageTier === "heavy" ? 0.52 : 0.38);
+        ringScale = 0.32 + easeOutCubic(ringP) * (intensity.crit ? 2.05 : plan.damageTier === "heavy" ? 1.72 : 1.48);
+
+        const flashP = clamp(impactElapsed / (intensity.crit ? 0.105 : 0.075), 0, 1);
+        flashAlpha = (1 - flashP) * (plan.perfLite ? 0.05 : intensity.crit ? 0.26 : plan.damageTier === "heavy" ? 0.17 : 0.11);
+      }
+
+      if (!plan.perfLite && primaryDamaging && t >= impactAt) {
+        const cameraAmp = intensity.finisher ? 10 : intensity.crit ? 9 : plan.damageTier === "heavy" ? 7 : plan.damageTier === "medium" ? 5 : 3.5;
+        if (inHold) {
+          cameraX = primaryIsEnemy ? -cameraAmp : cameraAmp;
+          cameraY = -cameraAmp * 0.18;
         } else {
-          const phaseFlicker = plan.perfLite ? 1 : (0.72 + Math.sin(t * 48) * 0.18);
-          _scene.enemy.alpha = clamp((0.12 + intro * 0.88) * phaseFlicker, 0.08, 1);
-          _scene.enemy.scale?.set?.(0.96 + intro * 0.04);
+          const camP = clamp((t - holdEnd) / 0.22, 0, 1);
+          const settle = 1 - easeOutCubic(camP);
+          const micro = Math.sin(camP * Math.PI * 5) * settle * cameraAmp * 0.22;
+          cameraX = (primaryIsEnemy ? -1 : 1) * (cameraAmp * settle + micro);
+          cameraY = Math.cos(camP * Math.PI * 4) * settle * cameraAmp * 0.14;
         }
       }
 
-      if (plan.waveBreak && t > plan.settleAt) {        _scene.enemy.alpha = 1 - settle * 0.82;
-        _scene.enemy.rotation = settle * 0.08;
+      if (!_scene.hapticImpactDone && t >= impactAt) {
+        _scene.hapticImpactDone = true;
+        try {
+          _opts?.tg?.HapticFeedback?.impactOccurred?.(intensity.crit || plan.damageTier === "heavy" || intensity.finisher ? "heavy" : "medium");
+        } catch (_) {}
+      }
+
+      const damageStart = impactAt + 0.04;
+      const damageP = clamp((t - damageStart) / (intensity.crit ? 0.78 : 0.68), 0, 1);
+      if (t >= damageStart && damageP < 1) {
+        damageAlpha = Math.sin(damageP * Math.PI);
+        damageLift = easeOutCubic(damageP) * 42;
+        const pop = damageP < 0.28
+          ? lerp(intensity.crit ? 0.80 : 0.85, intensity.crit ? 1.23 : 1.06, easeOutBack(damageP / 0.28, 1.05))
+          : lerp(intensity.crit ? 1.23 : 1.06, 1.0, easeOutCubic((damageP - 0.28) / 0.72));
+        damageScale = pop;
+      }
+
+      if (intensity.crit && t >= impactAt + 0.02) {
+        const critP = clamp((t - impactAt - 0.02) / 0.78, 0, 1);
+        critAlpha = Math.sin(critP * Math.PI);
+        critLift = easeOutCubic(critP) * 26;
+        const secondaryP = clamp((t - impactAt - 0.12) / 0.24, 0, 1);
+        if (secondaryP > 0 && secondaryP < 1) {
+          secondaryAlpha = (1 - secondaryP) * (plan.perfLite ? 0.18 : 0.58);
+          secondaryScale = 0.45 + easeOutCubic(secondaryP) * 1.25;
+        }
+      }
+
+      const finisherAt = holdEnd + 0.20;
+      if (plan.waveBreak && t >= finisherAt) {
+        const finisherP = clamp((t - finisherAt) / 0.46, 0, 1);
+        secondaryAlpha = Math.max(secondaryAlpha, (1 - finisherP) * (plan.perfLite ? 0.24 : 0.72));
+        secondaryScale = Math.max(secondaryScale, 0.55 + easeOutCubic(finisherP) * 2.15);
+        if (!_scene.hapticFinishDone) {
+          _scene.hapticFinishDone = true;
+          try { _opts?.tg?.HapticFeedback?.notificationOccurred?.("success"); } catch (_) {}
+        }
+      }
+
+      if (currentTurnIndex > 0 && currentTurn) {
+        const compactCommit = Math.sin(clamp(currentTurnPhase, 0, 1) * Math.PI);
+        const compactImpactP = clamp((currentTurnPhase - 0.42) / 0.34, 0, 1);
+        const compactPulse = Math.sin(compactImpactP * Math.PI);
+        const actorRight = currentTurn.actor === "right";
+        const compactDamage = !["miss","heal"].includes(String(currentTurn.kind || ""));
+
+        if (actorRight) {
+          enemyDrift -= compactCommit * 24;
+          if (compactDamage) playerHitKick -= compactPulse * 7;
+          pose = currentTurnPhase > 0.18 && currentTurnPhase < 0.72 ? "attack" : pose;
+        } else {
+          playerLunge += compactCommit * 24;
+          if (compactDamage) {
+            enemyShakeX += compactPulse * 8;
+            if (currentTurnPhase > 0.40 && currentTurnPhase < 0.78) pose = currentTurn.defeat ? "defeat" : "hit";
+          }
+        }
+
+        if (compactDamage) {
+          slashAlpha = Math.max(slashAlpha, compactPulse * (plan.perfLite ? 0.45 : 0.72));
+          slashScale = Math.max(slashScale, 0.56 + compactImpactP * 0.70);
+          ringAlpha = Math.max(ringAlpha, compactPulse * (plan.perfLite ? 0.16 : 0.30));
+          ringScale = Math.max(ringScale, 0.38 + compactImpactP * 1.05);
+          if (!plan.perfLite) {
+            cameraX += (actorRight ? -1 : 1) * compactPulse * 2.5;
+          }
+        }
+      }
+
+      hpTween = easeInOutQuad(clamp((t - impactAt) / Math.max(0.62, plan.total * 0.34), 0, 1));
+
+      if (!primaryIsEnemy) {
+        if (t >= impactAt - 0.03 && t <= holdEnd + 0.24 && primaryDamaging) pose = primaryTurn?.defeat ? "defeat" : "hit";
+      }
+
+      if ([4,7,10].includes(plan.wave) && t < 0.36) {
+        const intro = easeOutCubic(clamp(t / 0.36, 0, 1));
+        if (plan.wave === 4) {
+          _scene.enemy.alpha = 0.18 + intro * 0.82;
+          enemyDrift += (1 - intro) * 8;
+        } else if (plan.wave === 7) {
+          _scene.enemy.alpha = 0.36 + intro * 0.64;
+          enemyShakeY += (1 - intro) * -8;
+        } else {
+          const phaseFlicker = plan.perfLite ? 1 : (0.80 + Math.sin(t * 42) * 0.12);
+          _scene.enemy.alpha = clamp((0.22 + intro * 0.78) * phaseFlicker, 0.12, 1);
+        }
       } else {
         _scene.enemy.alpha = 1;
+      }
+
+      const settle = clamp((t - plan.settleAt) / Math.max(0.18, plan.total - plan.settleAt), 0, 1);
+      if (plan.waveBreak && t >= finisherAt) {
+        pose = "defeat";
+        if (t > plan.settleAt) {
+          _scene.enemy.alpha = 1 - settle * 0.78;
+          _scene.enemy.rotation = settle * 0.065;
+        }
+      } else {
+        _scene.enemy.rotation = 0;
       }
 
       if (t >= plan.total) {
         _scene.animating = false;
         _scene.playTime = 0;
         pose = plan.waveBreak ? "defeat" : "idle";
+        if (_app?.stage) { _app.stage.x = 0; _app.stage.y = 0; }
       }
     } else {
       _scene.enemy.alpha = 1;
+      _scene.enemy.rotation = 0;
       pose = plan?.waveBreak ? "defeat" : "idle";
+      if (_app?.stage) { _app.stage.x = 0; _app.stage.y = 0; }
     }
 
     if (_scene.enemyPose !== pose) {
@@ -974,7 +1180,7 @@
         _scene.enemySprite.texture = tex;
         _scene.enemySprite.visible = true;
         const w = _scene.layout.width || 320, h = _scene.layout.height || 220;
-        fitSprite(_scene.enemySprite, Math.max(160, Math.round(w * 0.34)), Math.max(190, Math.round(h * 0.80)), "bottom");
+        fitSprite(_scene.enemySprite, Math.max(215, Math.round(w * 0.48)), Math.max(238, Math.round(h * 0.90)), "bottom");
       }
     }
 
@@ -992,14 +1198,14 @@
       _scene.hpDisplay = _scene.animating ? lerp(_scene.beforeHp, _scene.afterHp, hpTween) : _scene.afterHp;
     }
 
-    _scene.player.x = _scene.layout.playerX + playerLunge;
+    _scene.player.x = _scene.layout.playerX + playerLunge + playerHitKick;
     _scene.player.y = _scene.layout.playerY + idleP + playerLift;
     _scene.player.rotation = playerTilt;
 
     _scene.enemy.x = _scene.layout.enemyX + enemyShakeX + enemyDrift;
     _scene.enemy.y = _scene.layout.enemyY + idleE + enemyShakeY;
-    _scene.enemy.scale?.set?.(1 + enemySlam);
-    _scene.moon.y = idleMoon;
+    _scene.enemy.scale?.set?.(Math.max(0.92, 1 + enemySlam));
+
     if (_app?.stage) {
       _app.stage.x = cameraX;
       _app.stage.y = cameraY;
@@ -1017,49 +1223,87 @@
 
     clearDraw(_scene.stageFlash);
     try {
-      _scene.stageFlash.beginFill(_scene.crit ? 0xffdf84 : 0xff8ea1, flashAlpha);
+      _scene.stageFlash.beginFill(_scene.crit ? 0xfff0c2 : 0xffd7dd, flashAlpha);
       _scene.stageFlash.drawRoundedRect(0, 0, _scene.layout.width, _scene.layout.height, 24);
       _scene.stageFlash.endFill();
     } catch (_) {}
 
     clearDraw(_scene.impactSlash);
     try {
-      _scene.impactSlash.beginFill(_scene.crit ? 0xffd774 : 0xff9bad, slashAlpha);
-      _scene.impactSlash.drawRoundedRect(-58, -8, 116, 16, 999);
-      _scene.impactSlash.endFill();
+      const coreColor = _scene.crit ? 0xfff1bc : 0xfff3f5;
+      const edgeColor = _scene.crit ? 0xffc35d : 0xff6f86;
+      _scene.impactSlash.lineStyle(10, edgeColor, slashAlpha * 0.42);
+      _scene.impactSlash.moveTo(-62, 0);
+      _scene.impactSlash.lineTo(62, 0);
+      _scene.impactSlash.lineStyle(4, coreColor, slashAlpha);
+      _scene.impactSlash.moveTo(-58, 0);
+      _scene.impactSlash.lineTo(58, 0);
       const slashFamily = _scene.plan?.family;
       _scene.impactSlash.rotation =
-        slashFamily === "lunar_crash" ? -0.75 :
-        slashFamily === "crescent_rush" ? -0.56 :
+        slashFamily === "lunar_crash" ? -0.78 :
+        slashFamily === "crescent_rush" ? -0.58 :
         slashFamily === "pursuit_cut" ? 0.24 :
-        slashFamily === "breach_strike" ? -0.20 :
-        slashFamily === "double_impact" ? -0.42 :
+        slashFamily === "breach_strike" ? -0.18 :
+        slashFamily === "double_impact" ? -0.40 :
         -0.34;
     } catch (_) {}
-    _scene.impactSlash.x = _scene.layout.impactX;
-    _scene.impactSlash.y = _scene.layout.impactY;
+    _scene.impactSlash.x = contact.x;
+    _scene.impactSlash.y = contact.y;
+    _scene.impactSlash.alpha = slashAlpha;
     _scene.impactSlash.scale?.set?.(slashScale, 1);
+
+    clearDraw(_scene.impactBurst);
+    try {
+      const coreColor = _scene.crit ? 0xfff2b5 : 0xffffff;
+      const edgeColor = _scene.crit ? 0xffbf55 : 0xff718a;
+      _scene.impactBurst.lineStyle(3, edgeColor, burstAlpha * 0.72);
+      for (let i = 0; i < 8; i++) {
+        const a = (Math.PI * 2 * i) / 8;
+        const inner = 10 * burstScale;
+        const outer = (24 + (i % 2) * 8) * burstScale;
+        _scene.impactBurst.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+        _scene.impactBurst.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+      }
+      _scene.impactBurst.beginFill(coreColor, burstAlpha * 0.92);
+      _scene.impactBurst.drawCircle(0, 0, 7 * burstScale);
+      _scene.impactBurst.endFill();
+    } catch (_) {}
+    _scene.impactBurst.x = contact.x;
+    _scene.impactBurst.y = contact.y;
+    _scene.impactBurst.alpha = burstAlpha;
 
     clearDraw(_scene.impactRing);
     try {
-      _scene.impactRing.lineStyle(_scene.plan?.hasCrit ? 5 : 4, _scene.crit ? 0xffd774 : 0xff8fa0, ringAlpha);
-      _scene.impactRing.drawCircle(0, 0, 26 + 26 * ringScale);
+      _scene.impactRing.lineStyle(_scene.plan?.hasCrit ? 4 : 3, _scene.crit ? 0xffdc7b : 0xff93a4, ringAlpha);
+      _scene.impactRing.drawCircle(0, 0, 20 + 24 * ringScale);
     } catch (_) {}
-    _scene.impactRing.x = _scene.layout.impactX;
-    _scene.impactRing.y = _scene.layout.impactY;
+    _scene.impactRing.x = contact.x;
+    _scene.impactRing.y = contact.y;
+    _scene.impactRing.alpha = ringAlpha;
+
+    clearDraw(_scene.secondaryRing);
+    try {
+      _scene.secondaryRing.lineStyle(_scene.plan?.waveBreak ? 5 : 3, _scene.plan?.waveBreak ? 0xffd5dc : 0xffd776, secondaryAlpha);
+      _scene.secondaryRing.drawCircle(0, 0, 18 + 28 * secondaryScale);
+    } catch (_) {}
+    _scene.secondaryRing.x = contact.x;
+    _scene.secondaryRing.y = contact.y;
+    _scene.secondaryRing.alpha = secondaryAlpha;
 
     const eventValue = currentTurn ? Math.max(0, Math.round(currentTurn.value || 0)) : Math.max(0, Math.round(_scene.damage));
     const eventKind = currentTurn?.kind || (_scene.crit ? "crit" : "hit");
     _scene.damageText.text = eventKind === "miss" ? "MISS" : eventKind === "block" ? "BLOCK" : eventKind === "heal" ? `+${eventValue}` : `-${eventValue}`;
-    _scene.damageText.style.fill = eventKind === "crit" ? 0xffe083 : eventKind === "heal" ? 0xa7ffd0 : 0xffffff;
+    _scene.damageText.style.fill = eventKind === "crit" ? 0xffe083 : eventKind === "heal" ? 0xa7ffd0 : eventKind === "block" ? 0xc8d3e6 : 0xffffff;
     _scene.damageText.alpha = damageAlpha;
-    _scene.damageText.x = _scene.layout.impactX + 8;
-    _scene.damageText.y = _scene.layout.impactY - 22 - damageLift;
+    _scene.damageText.x = contact.x + 8;
+    _scene.damageText.y = contact.y - 18 - damageLift;
+    _scene.damageText.scale?.set?.(damageScale);
 
-    _scene.critText.text = _scene.plan?.waveBreak && _scene.playTime > _scene.plan.settleAt ? "WAVE BROKEN" : (currentTurn?.kind === "crit" ? "CRITICAL" : "");
-    _scene.critText.alpha = critAlpha || (_scene.plan?.waveBreak && _scene.animating && _scene.playTime > _scene.plan.settleAt ? 0.94 : 0);
-    _scene.critText.x = _scene.layout.impactX;
-    _scene.critText.y = _scene.layout.impactY - 68 - critLift;
+    const finisherVisible = !!(_scene.plan?.waveBreak && _scene.animating && _scene.playTime >= (_scene.plan.impactAt + num(_scene.plan.primaryHitStop, 0) + 0.20));
+    _scene.critText.text = finisherVisible ? "WAVE BROKEN" : (eventKind === "crit" ? "CRITICAL" : "");
+    _scene.critText.alpha = finisherVisible ? Math.max(0.72, secondaryAlpha) : critAlpha;
+    _scene.critText.x = contact.x;
+    _scene.critText.y = contact.y - 66 - critLift;
   }
 
   function attachTicker() {
@@ -1113,12 +1357,6 @@
     renderStatic();
     renderDynamic();
 
-    if (animate) {
-      try {
-        const kind = _scene.plan?.hasCrit || _scene.plan?.waveBreak ? "medium" : "light";
-        _opts?.tg?.HapticFeedback?.impactOccurred?.(kind);
-      } catch (_) {}
-    }
   }
 
   async function init(host, opts = {}) {
