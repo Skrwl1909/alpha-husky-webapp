@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p11-hard-restage-environment-2026-10-08";
+  const VER = "bloodmoon_pixi.js v3-p11-3-1-combat-scale-environment-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -727,11 +727,11 @@
       hpW,
       hpH,
       playerX: Math.round(w * 0.26),
-      playerY: Math.round(h * 0.57),
+      playerY: Math.round(h * 0.54),
       enemyX: Math.round(w * 0.77),
-      enemyY: Math.round(h * 0.55),
+      enemyY: Math.round(h * 0.52),
       impactX: Math.round(w * 0.54),
-      impactY: Math.round(h * 0.35),
+      impactY: Math.round(h * 0.33),
     };
 
     // Arena V3 DOM owns the environment. Pixi remains a transparent combat/VFX
@@ -770,16 +770,16 @@
     clearDraw(_scene.enemyPlate);
     roundRect(_scene.enemyFallback, -58, -174, 116, 174, 24, 0x4a1018, 0.88, 0xff98a7, 0.18, 2);
 
-    const playerMaxW = Math.max(132, Math.round(w * 0.32));
-    const playerMaxH = Math.max(188, Math.round(h * 0.78));
-    const enemyMaxW = Math.max(176, Math.round(w * 0.38));
-    const enemyMaxH = Math.max(205, Math.round(h * 0.84));
+    const playerMaxW = Math.max(168, Math.round(w * 0.42));
+    const playerMaxH = Math.max(220, Math.round(h * 0.86));
+    const enemyMaxW = Math.max(215, Math.round(w * 0.48));
+    const enemyMaxH = Math.max(238, Math.round(h * 0.90));
 
     if (_scene.playerTexture) {
       _scene.playerSprite.texture = _scene.playerTexture;
       fitSprite(_scene.playerSprite, playerMaxW, playerMaxH, "bottom");
       _scene.playerSprite.visible = true;
-      _scene.playerFallback.alpha = 0.14;
+      _scene.playerFallback.alpha = 0;
     } else {
       _scene.playerSprite.visible = false;
       _scene.playerFallback.alpha = 0.82;
@@ -789,7 +789,7 @@
       _scene.enemySprite.texture = _scene.enemyTexture;
       fitSprite(_scene.enemySprite, enemyMaxW, enemyMaxH, "bottom");
       _scene.enemySprite.visible = true;
-      _scene.enemyFallback.alpha = 0.12;
+      _scene.enemyFallback.alpha = 0;
     } else {
       _scene.enemySprite.visible = false;
       _scene.enemyFallback.alpha = 0.90;
