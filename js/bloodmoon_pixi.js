@@ -8,7 +8,7 @@
   let _tick = null;
   let _scene = null;
 
-  const VER = "bloodmoon_pixi.js v3-p11-4-combat-impact-2026-10-08";
+  const VER = "bloodmoon_pixi.js v3-p11-4-premium-vfx-assets-2026-10-08";
   const CLOUD_BASE = "https://res.cloudinary.com/dnjwvxinh/image/upload";
   const CLOUD_TX_512 = "f_auto,q_auto,w_512,c_fit";
   const CLOUD_TX_768 = "f_auto,q_auto,w_768,c_fit";
@@ -616,6 +616,13 @@
     _scene.impactRing.alpha = 0;
     _scene.secondaryRing.alpha = 0;
     _scene.stageFlash.alpha = 0;
+    [_scene.premiumSlash, _scene.premiumImpactBurst, _scene.premiumCritBurst, _scene.premiumWavebreak].forEach((sprite) => {
+      if (!sprite) return;
+      sprite.alpha = 0;
+      sprite.visible = false;
+      sprite.rotation = 0;
+      sprite.scale?.set?.(1);
+    });
   }
 
   function destroy() {
@@ -692,6 +699,16 @@
     const impactBurst = new P.Graphics();
     const impactRing = new P.Graphics();
     const secondaryRing = new P.Graphics();
+
+    const premiumSlash = new P.Sprite(P.Texture.WHITE);
+    const premiumImpactBurst = new P.Sprite(P.Texture.WHITE);
+    const premiumCritBurst = new P.Sprite(P.Texture.WHITE);
+    const premiumWavebreak = new P.Sprite(P.Texture.WHITE);
+    [premiumSlash, premiumImpactBurst, premiumCritBurst, premiumWavebreak].forEach((sprite) => {
+      sprite.visible = false;
+      sprite.alpha = 0;
+      setAnchor(sprite, 0.5, 0.5);
+    });
     const damageText = makeText("-0", { fontFamily: "system-ui", fontSize: 30, fill: 0xffffff, fontWeight: "950" });
     const critText = makeText("CRIT", { fontFamily: "system-ui", fontSize: 15, fill: 0xffe38d, fontWeight: "900" });
     setAnchor(damageText, 0.5, 0.5);
@@ -718,6 +735,10 @@
       impactBurst,
       impactRing,
       secondaryRing,
+      premiumSlash,
+      premiumImpactBurst,
+      premiumCritBurst,
+      premiumWavebreak,
       damageText,
       critText,
     );
@@ -751,6 +772,11 @@
       impactBurst,
       impactRing,
       secondaryRing,
+      premiumSlash,
+      premiumImpactBurst,
+      premiumCritBurst,
+      premiumWavebreak,
+      premiumVfxTextures: {},
       damageText,
       critText,
       battle: null,
@@ -1311,6 +1337,74 @@
     _scene.secondaryRing.y = contact.y;
     _scene.secondaryRing.alpha = secondaryAlpha;
 
+    const premium = _scene.premiumVfxTextures || {};
+    const slashFamilyRotation =
+      _scene.plan?.family === "lunar_crash" ? -0.78 :
+      _scene.plan?.family === "crescent_rush" ? -0.58 :
+      _scene.plan?.family === "pursuit_cut" ? 0.24 :
+      _scene.plan?.family === "breach_strike" ? -0.18 :
+      _scene.plan?.family === "double_impact" ? -0.40 :
+      -0.34;
+
+    if (premium.slash && slashAlpha > 0.001) {
+      _scene.premiumSlash.texture = premium.slash;
+      _scene.premiumSlash.visible = true;
+      _scene.premiumSlash.alpha = slashAlpha;
+      _scene.premiumSlash.x = contact.x;
+      _scene.premiumSlash.y = contact.y;
+      _scene.premiumSlash.rotation = slashFamilyRotation;
+      const w = _scene.layout.width || 320;
+      const base = clamp(w * 0.33, 118, 230);
+      fitSprite(_scene.premiumSlash, base * slashScale, base * 0.42, "center");
+      _scene.impactSlash.alpha = 0;
+    } else {
+      _scene.premiumSlash.visible = false;
+      _scene.premiumSlash.alpha = 0;
+    }
+
+    const primaryBurstTex = _scene.crit ? premium.critBurst : premium.impactBurst;
+    if (primaryBurstTex && burstAlpha > 0.001) {
+      _scene.premiumImpactBurst.texture = primaryBurstTex;
+      _scene.premiumImpactBurst.visible = true;
+      _scene.premiumImpactBurst.alpha = burstAlpha;
+      _scene.premiumImpactBurst.x = contact.x;
+      _scene.premiumImpactBurst.y = contact.y;
+      const size = clamp((_scene.layout.width || 320) * 0.22 * burstScale, 72, 200);
+      fitSprite(_scene.premiumImpactBurst, size, size, "center");
+      _scene.impactBurst.alpha = 0;
+    } else {
+      _scene.premiumImpactBurst.visible = false;
+      _scene.premiumImpactBurst.alpha = 0;
+    }
+
+    if (premium.critBurst && _scene.crit && secondaryAlpha > 0.001 && !_scene.plan?.waveBreak) {
+      _scene.premiumCritBurst.texture = premium.critBurst;
+      _scene.premiumCritBurst.visible = true;
+      _scene.premiumCritBurst.alpha = secondaryAlpha;
+      _scene.premiumCritBurst.x = contact.x;
+      _scene.premiumCritBurst.y = contact.y;
+      const size = clamp((_scene.layout.width || 320) * 0.24 * secondaryScale, 78, 220);
+      fitSprite(_scene.premiumCritBurst, size, size, "center");
+      _scene.secondaryRing.alpha = 0;
+    } else {
+      _scene.premiumCritBurst.visible = false;
+      _scene.premiumCritBurst.alpha = 0;
+    }
+
+    if (premium.wavebreak && _scene.plan?.waveBreak && secondaryAlpha > 0.001) {
+      _scene.premiumWavebreak.texture = premium.wavebreak;
+      _scene.premiumWavebreak.visible = true;
+      _scene.premiumWavebreak.alpha = secondaryAlpha;
+      _scene.premiumWavebreak.x = contact.x;
+      _scene.premiumWavebreak.y = contact.y;
+      const size = clamp((_scene.layout.width || 320) * 0.30 * secondaryScale, 96, 270);
+      fitSprite(_scene.premiumWavebreak, size, size, "center");
+      _scene.secondaryRing.alpha = 0;
+    } else {
+      _scene.premiumWavebreak.visible = false;
+      _scene.premiumWavebreak.alpha = 0;
+    }
+
     const eventValue = currentTurn ? Math.max(0, Math.round(currentTurn.value || 0)) : Math.max(0, Math.round(_scene.damage));
     const eventKind = currentTurn?.kind || (_scene.crit ? "crit" : "hit");
     _scene.damageText.text = eventKind === "miss" ? "MISS" : eventKind === "block" ? "BLOCK" : eventKind === "heal" ? `+${eventValue}` : `-${eventValue}`;
@@ -1350,13 +1444,23 @@
       const tex = await loadTextureSafeMany(resolveBloodMoonEnemyAsset(battle, state));
       return [state, tex || null];
     }));
-    const [playerTexture] = await Promise.all([
+    const [playerTexture, premiumSlash, premiumImpactBurst, premiumCritBurst, premiumWavebreak] = await Promise.all([
       loadTextureSafeMany(resolveBloodMoonPlayerAsset(battle)),
+      loadTextureSafeMany([BLOODMOON_PREMIUM_VFX_ASSETS.impactSlash]),
+      loadTextureSafeMany([BLOODMOON_PREMIUM_VFX_ASSETS.impactBurst]),
+      loadTextureSafeMany([BLOODMOON_PREMIUM_VFX_ASSETS.critBurst]),
+      loadTextureSafeMany([BLOODMOON_PREMIUM_VFX_ASSETS.wavebreakShockwave]),
     ]);
     _scene.playerTexture = playerTexture || null;
     _scene.enemyTextures = Object.fromEntries(enemyLoads);
     _scene.enemyTexture = _scene.enemyTextures.idle || null;
     _scene.enemyPose = "idle";
+    _scene.premiumVfxTextures = {
+      slash: premiumSlash || null,
+      impactBurst: premiumImpactBurst || null,
+      critBurst: premiumCritBurst || null,
+      wavebreak: premiumWavebreak || null,
+    };
   }
 
   async function applyBattle(battle, animate) {
