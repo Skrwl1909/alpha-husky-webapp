@@ -1790,23 +1790,19 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 #bloodMoonBody{padding:8px;overflow-y:auto}
 .bm-v3-shell{gap:7px;padding-bottom:0}
 .bm-v3-arena{min-height:clamp(560px,79vh,780px);border-radius:18px;border-color:rgba(255,80,105,.14);box-shadow:0 28px 70px rgba(0,0,0,.60),0 0 80px rgba(124,8,28,.12)}
-.bm-v3-arena-bg{opacity:.86;filter:contrast(1.08) saturate(.92)}
-.bm-v3-atmosphere{opacity:.42}
-.bm-v3-arena-bg{object-position:center 34%;opacity:.96;filter:contrast(1.14) saturate(.98) brightness(.86)}
-.bm-v3-atmosphere{object-fit:contain;object-position:center 43%;opacity:.22;mix-blend-mode:screen;filter:blur(.2px)}
-.bm-v3-tower{position:absolute;z-index:2;right:-2%;top:9%;width:min(39vw,230px);max-height:52%;object-fit:contain;object-position:center top;opacity:.34;pointer-events:none;filter:drop-shadow(0 18px 28px rgba(0,0,0,.62)) saturate(.85)}
-.bm-v3-moon{z-index:2}
-
-.bm-v3-moon{width:min(52vw,245px);right:-18px;top:8px;opacity:.88;filter:drop-shadow(0 0 52px rgba(255,45,76,.36))}
-.bm-v3-enemy{width:min(90%,520px);max-height:64%;bottom:235px;filter:drop-shadow(0 28px 38px rgba(0,0,0,.82))}
-.bm-v3-vignette{background:linear-gradient(180deg,rgba(0,0,0,.02) 18%,rgba(4,2,4,.10) 45%,rgba(5,2,4,.94) 100%),radial-gradient(circle at 50% 42%,transparent 34%,rgba(0,0,0,.44) 100%)}
+.bm-v3-arena-bg{object-position:center 32%;opacity:.98;filter:contrast(1.10) saturate(.96) brightness(.98)}
+.bm-v3-atmosphere{object-fit:cover;object-position:center 40%;opacity:.18;mix-blend-mode:screen;filter:blur(.2px)}
+.bm-v3-tower{position:absolute;z-index:2;right:-4%;top:6%;width:min(46vw,270px);max-height:58%;object-fit:contain;object-position:center top;opacity:.48;pointer-events:none;filter:drop-shadow(0 20px 30px rgba(0,0,0,.64)) saturate(.88)}
+.bm-v3-moon{z-index:2;width:min(50vw,235px);right:-12px;top:6px;opacity:.90;filter:drop-shadow(0 0 48px rgba(255,45,76,.34))}
+.bm-v3-enemy{width:min(96%,560px);max-height:68%;bottom:44%;transform:translate(-50%,50%);filter:drop-shadow(0 26px 36px rgba(0,0,0,.82))}
+.bm-v3-vignette{background:linear-gradient(180deg,rgba(0,0,0,0) 12%,rgba(4,2,4,.06) 46%,rgba(5,2,4,.92) 100%),radial-gradient(circle at 50% 40%,transparent 40%,rgba(0,0,0,.36) 100%)}
 .bm-v3-hud{min-height:clamp(560px,79vh,780px);padding:12px 13px 13px}
 .bm-v3-kicker{font-size:8px;letter-spacing:.2em;color:rgba(255,186,198,.74)}
 .bm-v3-phase{font-size:8px;padding:5px 7px;border-color:rgba(255,255,255,.09);background:rgba(5,4,7,.38)}
-.bm-v3-encounter{padding-top:220px}
-.bm-v3-act{margin-bottom:4px;font-size:7px;opacity:.88}
-.bm-v3-enemy-name{font-size:clamp(30px,7vw,46px);letter-spacing:.055em;line-height:.95;text-shadow:0 5px 30px #000,0 0 30px rgba(139,18,39,.22)}
-.bm-v3-wave-label{font-size:8px;margin-top:6px;color:rgba(255,166,181,.86)}
+.bm-v3-encounter{padding-top:0;margin-top:auto}
+.bm-v3-act{margin-bottom:3px;font-size:6px;opacity:.78}
+.bm-v3-enemy-name{font-size:clamp(24px,6vw,38px);letter-spacing:.05em;line-height:1;text-shadow:0 5px 30px #000,0 0 30px rgba(139,18,39,.22)}
+.bm-v3-wave-label{font-size:7px;margin-top:4px;color:rgba(255,166,181,.82)}
 .bm-v3-hp{margin-top:8px;max-width:520px}
 .bm-v3-hp-line{font-size:8px;margin-bottom:4px}
 .bm-v3-hp-track{height:8px;background:rgba(255,255,255,.07)}
@@ -1822,7 +1818,7 @@ body.ah-perf-lite .bm-battle-stage.is-replaying .bm-battle-log-item{
 .bm-v3-dock{position:sticky;bottom:max(4px,env(safe-area-inset-bottom));border-radius:13px;padding:4px;background:rgba(6,5,8,.94)}
 .bm-v3-tab{padding:10px 4px;font-size:8px;cursor:pointer}
 
-@media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{max-height:54%;bottom:160px}}
+@media (max-height:700px){.bm-v3-arena,.bm-v3-hud{min-height:400px}.bm-v3-enemy{width:min(92%,500px);max-height:64%;bottom:43%;transform:translate(-50%,50%)}.bm-v3-moon{width:min(44vw,190px)}.bm-v3-tower{width:min(42vw,220px);opacity:.44}}
 @media (prefers-reduced-motion:reduce){.bm-v3-moon,.bm-v3-enemy{transition:none!important}.bm-v3-dock{backdrop-filter:none}}
 html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .bm-v3-pack-echo,body.ah-perf-lite .bm-v3-pack-echo{backdrop-filter:none}
 
