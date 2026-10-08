@@ -8,6 +8,7 @@
     activeUid: "",
     profile: null,
     sending: false,
+    selfView: false,
   };
   const DEFAULT_DAILY_PACK_SIGNALS = 3;
 
@@ -287,6 +288,7 @@
       .pp-history-meta{display:flex;flex-direction:column;align-items:flex-end;gap:5px;min-width:67px}
       .pp-history-proof{font-size:9px;font-weight:950;letter-spacing:.08em;color:rgba(148,188,211,.72);white-space:nowrap}
       .pp-history-status{padding:5px 7px;border:1px solid rgba(75,225,183,.36);border-radius:7px;background:rgba(18,91,74,.17);font-size:8px;font-weight:950;letter-spacing:.09em;color:rgba(116,244,207,.95)}
+      .pp-history-share{margin-top:2px;padding:4px 7px;border:1px solid rgba(125,211,252,.18);border-radius:7px;background:rgba(42,126,170,.10);color:rgba(161,221,247,.88);font:850 7px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
       .pp-recognition-meta{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
       .pp-action-card{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(150px,.95fr);gap:11px;align-items:stretch}
       .pp-action{margin:0;display:flex;align-items:stretch}
@@ -490,6 +492,7 @@
           <div class="pp-history-meta">
             <div class="pp-history-proof">${esc(proofText)}</div>
             <div class="pp-history-status">VERIFIED</div>
+            ${S.selfView ? `<button type="button" class="pp-history-share" data-share-record="${esc(mark?.key || "")}">SHARE</button>` : ""}
           </div>
         </article>`;
     }).join("")}</div>`;
@@ -642,6 +645,16 @@
     if (btn) {
       btn.addEventListener("click", () => { void sendHowl(); });
     }
+    body.querySelectorAll("[data-share-record]").forEach((shareBtn) => {
+      shareBtn.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const key = asText(shareBtn.getAttribute("data-share-record"));
+        if (key && typeof global.ShareCard?.openMoment === "function") {
+          close();
+          void global.ShareCard.openMoment(key);
+        }
+      });
+    });
   }
 
   async function loadProfile(uid) {
@@ -691,6 +704,8 @@
     const uid = asText(targetUid);
     if (!uid) return false;
     S.activeUid = uid;
+    const source = asText(opts?.source).toLowerCase();
+    S.selfView = ["field_record_self", "hub_profile", "hero_profile", "character"].includes(source);
     const back = ensureModal();
     const body = back.querySelector(".pp-body");
     if (body) body.innerHTML = `<div class="pp-empty">Loading profile...</div>`;
