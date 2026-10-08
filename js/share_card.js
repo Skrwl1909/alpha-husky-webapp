@@ -192,7 +192,8 @@
 
   function activeSkinUrl(player) {
     const skin = player?.skin || {};
-    return txt(skin.url || skin.img || skin.preview_url || skin.previewUrl || player?.heroImg || "");
+    // Skin may be a URL string in the canonical profile. Never substitute an avatar.
+    return txt((typeof skin === "string" ? skin : (skin.url || skin.img || skin.preview_url || skin.previewUrl)) || player?.heroImg || "");
   }
   function avatarUrl(player) { return txt(player?.avatar_url || player?.avatarUrl || player?.avatar?.img || player?.avatar?.url || ""); }
   function frameUrl(player) { const f = player?.frame || {}; return txt(f.url || f.img || f.preview_url || f.previewUrl || ""); }
