@@ -6,7 +6,7 @@
   const clean=(v)=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   const num=(v,d=0)=>Number.isFinite(Number(v))?Number(v):d;
   const percent=(v)=>Math.min(100,Math.max(0,num(v)));
-  let tab="overview",sheet="",notice="",scrollMemory={overview:0,build:0,legacy:0},onAction=null;
+  let tab="overview",sheet="",notice="",scrollMemory={overview:0,build:0,legacy:0},onAction=null,lastRenderedTab="overview";
   const el=(s)=>document.querySelector(s);
   function buttonTab(which,label){return '<button type="button" role="tab" aria-selected="'+(tab===which)+'" data-s3-tab="'+which+'">'+label+'</button>';}
   function shell(content){
@@ -70,10 +70,11 @@
     root.querySelector("[data-s3-close]")?.focus();
   }
   function render(stats,ctx){
-    const area=el(".s3-body");if(area)scrollMemory[tab]=area.scrollTop;
+    const area=el(".s3-body");if(area)scrollMemory[lastRenderedTab]=area.scrollTop;
     shell(tab==="overview"?overview(stats,ctx):tab==="build"?build(stats,ctx):legacy(stats,ctx));
     const next=el(".s3-body");if(next)next.scrollTop=scrollMemory[tab]||0;
     if(sheet)showSheet(sheet,stats,ctx);
+    lastRenderedTab=tab;
   }
   function handle(e,stats,ctx){
     const target=e.target?.nodeType===1?e.target:e.target?.parentElement;if(!target)return false;
@@ -91,7 +92,7 @@
     if(claim){e.preventDefault();onAction?.("claim",claim.dataset.s3Claim);return true;}
     return false;
   }
-  function reset(){tab="overview";sheet="";notice="";scrollMemory={overview:0,build:0,legacy:0};}
+  function reset(){tab="overview";lastRenderedTab="overview";sheet="";notice="";scrollMemory={overview:0,build:0,legacy:0};}
   function feedback(message){notice=String(message||"");}
-  window.AlphaStats3={render,handle,reset,feedback,onAction(fn){onAction=fn;}};
+  window.AlphaStats3={render,handle,reset,feedback,openSync(stats,ctx){sheet="sync";showSheet(sheet,stats,ctx);},onAction(fn){onAction=fn;}};
 })();
