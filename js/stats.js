@@ -2153,7 +2153,70 @@
     }
   }
 
+
+  // Character Command V3 is opt-in and reversible without touching backend contracts.
+  const STATS3_ENABLED = true;
+  let _stats3MutationBusy = false;
+  function stats3Context(stats, mystats, extras){
+    return {
+      mystats,
+      goal: buildGoalState(stats, extras),
+      power: getSignalBreakdown(stats, extras),
+      progression: normalizeProgressionV1(stats?.progression_v1),
+      original: {
+        combat: () => renderCombatSnapshot(getCombatBreakdown(stats)),
+        milestones: () => renderSignalMilestonesCard(stats, extras),
+        moonlab: () => renderMoonlabBossWallCard(stats, extras),
+        signal: () => renderSignalBreakdownCard(stats, extras),
+        sync: () => renderMobileAppSyncCard(),
+      }
+    };
+  }
+  function stats3Render(stats, mystats, extras){
+    _lastStats = stats || null;
+    _lastMystats = mystats || null;
+    window.AlphaStats3.render(stats,stats3Context(stats,mystats,extras));
+  }
+  function stats3Feedback(message){
+    window.AlphaStats3?.feedback(message);
+    if(_lastStats && window.AlphaStats3) stats3Render(_lastStats,_lastMystats,_progressionExtras);
+  }
+  async function stats3Training(){
+    if (_stats3MutationBusy || _loading) return;
+    _stats3MutationBusy=true;
+    const beforeRank=n(_lastStats?.statTraining?.rank, NaN);
+    const beforePoints=n(_lastMystats?.unspentPoints, NaN);
+    try{
+      if (!_apiPost && typeof window.apiPost === "function") _apiPost=window.apiPost;
+      if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost=window.S.apiPost;
+      if(typeof _apiPost!=="function") throw new Error("API not ready");
+      const res=await _apiPost("/webapp/stats/training/purchase",{t:Date.now()});
+      if(!res?.ok){
+        try{_tg?.showAlert?.(String(res?.reason||"Training purchase failed."));}catch(_){}
+        return;
+      }
+      await load();
+      const afterRank=n(_lastStats?.statTraining?.rank, NaN);
+      const afterPoints=n(_lastMystats?.unspentPoints, NaN);
+      if(Number.isFinite(beforeRank)&&Number.isFinite(afterRank)&&afterRank>beforeRank){
+        stats3Feedback("Training rank "+beforeRank+" → "+afterRank+(Number.isFinite(beforePoints)&&Number.isFinite(afterPoints)?" · Points "+beforePoints+" → "+afterPoints:""));
+      }else stats3Feedback("Training purchase confirmed. Stats refreshed.");
+      try{_tg?.HapticFeedback?.impactOccurred?.("medium");}catch(_){}
+    }catch(e){
+      if(_dbg)console.error("[Stats3] training failed",e);
+      try{_tg?.showAlert?.("Training purchase failed.");}catch(_){}
+    }finally{_stats3MutationBusy=false;}
+  }
+  function stats3Wire(){
+    window.AlphaStats3?.onAction((type,value)=>{
+      if(type==="upgrade")upgradeStat(value);
+      if(type==="claim")claimSignalMilestone(value);
+      if(type==="training")stats3Training();
+    });
+  }
+
   function render(stats, mystats, extras = _progressionExtras){
+    if(STATS3_ENABLED && window.AlphaStats3) return stats3Render(stats,mystats,extras);
     ensureStyles();
 
     _lastStats = stats || null;
@@ -2452,6 +2515,8 @@
     const el = eventEl(e);
     if (!el || typeof el.closest !== "function") return;
 
+    if(STATS3_ENABLED && window.AlphaStats3 && el.closest("#statsRoot") && window.AlphaStats3.handle(e,_lastStats,stats3Context(_lastStats,_lastMystats,_progressionExtras)))return;
+
     const claimBtn = el.closest('[data-action="claim-signal-milestone"]');
     if (claimBtn) {
       e.preventDefault();
@@ -2494,7 +2559,7 @@
   }
 
   async function upgradeStat(stat){
-    if (_loading) return;
+    if (_loading || _stats3MutationBusy) return;
 
     if (!_apiPost && typeof window.apiPost === "function") _apiPost = window.apiPost;
     if (!_apiPost && typeof window.S?.apiPost === "function") _apiPost = window.S.apiPost;
@@ -2506,6 +2571,8 @@
     }
 
     _loading = true;
+    const stats3Before = n(_lastStats?.totals?.[stat],NaN);
+    const stats3PointsBefore = n(_lastMystats?.unspentPoints,NaN);
 
     try {
       const res = await _apiPost("/webapp/stats/upgrade", {
@@ -2531,6 +2598,13 @@
         return;
       }
 
+      if (STATS3_ENABLED && window.AlphaStats3) {
+        const after=n(nextStats?.totals?.[stat],NaN),pts=n(nextMystats?.unspentPoints,NaN);
+        const actual=Number.isFinite(stats3Before)&&Number.isFinite(after)&&after>stats3Before
+          ? statLabel(stat)+" "+stats3Before+" → "+after+(Number.isFinite(stats3PointsBefore)&&Number.isFinite(pts)?" · Points "+stats3PointsBefore+" → "+pts:"")
+          : "Stat upgrade confirmed. Updated values loaded.";
+        window.AlphaStats3.feedback(actual);
+      }
       render(nextStats, nextMystats, _progressionExtras);
       try { _tg?.HapticFeedback?.impactOccurred?.("medium"); } catch (_) {}
     } catch (e) {
@@ -2721,7 +2795,7 @@
 
   Stats.refresh = load;
   Stats.refreshHubGoal = refreshHubGoal;
-  Stats.open = function(){ show(); load(); };
+  Stats.open = function(){ if(STATS3_ENABLED)window.AlphaStats3?.reset(); show(); load(); };
   Stats.close = function(){ hide(); };
 
   Stats.init = function({ apiPost, tg, dbg } = {}){
@@ -2730,6 +2804,7 @@
     _apiPost = apiPost || _apiPost || window.apiPost || window.S?.apiPost || null;
     _tg = tg || _tg || window.Telegram?.WebApp || null;
     _dbg = !!dbg;
+    stats3Wire();
 
     if (_inited) {
       bindClickOnce(qs("statsRoot"), handleStatsActionClick);
