@@ -7,6 +7,9 @@
   const CARD_H = 1350;
   const DEFAULT_LINK = "https://alphahusky.win/";
   const NETWORK_TIMEOUT_MS = 45000;
+  const STATE_TIMEOUT_MS = 12000;
+  const FONT_TIMEOUT_MS = 2500;
+  const PNG_TIMEOUT_MS = 10000;
   const ASSET_TIMEOUT_MS = 12000;
   const MAX_BADGES = 3;
   const TELEGRAM_SHARE_TIMEOUT_MS = 90000;
@@ -42,6 +45,8 @@
     openPromise: null,
     bound: false,
     skinReady: false,
+    stage: "idle",
+    lastError: "",
   };
 
   const $ = (id) => document.getElementById(id);
@@ -168,10 +173,12 @@
   }
 
   async function loadState() {
-    const data = await withDeadline(() => apiPost("/webapp/share/card/state", {}), NETWORK_TIMEOUT_MS);
+    S.stage = "state";
+    const data = await withDeadline(() => apiPost("/webapp/share/card/state", {}), STATE_TIMEOUT_MS, "STATE_TIMEOUT");
     if (!data || data.ok === false || !data.player) throw new Error(data?.reason || "SHARE_STATE_FAILED");
     S.state = data;
     S.player = data.player;
+    S.stage = "state-ready";
     selectMoment(S.requestedMomentKey);
     return data;
   }
@@ -518,7 +525,11 @@
 
   async function render() {
     if (!S.player) await loadState();
-    try { await document.fonts?.ready; } catch (_) {}
+    S.stage = "fonts";
+    try { await withDeadline(() => document.fonts?.ready || Promise.resolve(), FONT_TIMEOUT_MS, "FONTS_TIMEOUT"); }
+    catch (_) { console.warn("[ShareStudio] fonts timeout: proceeding with fallback fonts"); }
+    S.stage = "assets";
+    setStatus("Loading card artwork…");
     const player = S.player || {};
     const badges = publicBadges(player);
     const [skin, avatar, frame, ...badgeImgs] = await Promise.all([
@@ -537,6 +548,7 @@
       setStatus(S.requestedMomentKey ? "This exact Field Record entry is not verified or no longer available." : "No verified moments available yet.");
       return null;
     }
+    S.stage = "canvas"; setStatus("Rendering card…");
     const canvas = $("shareCardCanvas"); if (!canvas) throw new Error("MISSING_CANVAS");
     canvas.width = CARD_W; canvas.height = CARD_H;
     const ctx = canvas.getContext("2d", { alpha: false }); if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
@@ -544,10 +556,25 @@
     if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, avatar, frame, badges: badgeImgs });
     else drawIdentity(ctx, player, { skin, avatar, frame, badges: badgeImgs });
 
-    S.blob = await new Promise((resolve, reject) => canvas.toBlob((b) => b ? resolve(b) : reject(new Error("PNG_EXPORT_FAILED")), "image/png"));
+    S.stage = "png-export"; setStatus("Preparing PNG…");
+    try {
+      S.blob = await withDeadline(() => new Promise((resolve, reject) => {
+        if (typeof canvas.toBlob !== "function") return reject(new Error("TO_BLOB_UNSUPPORTED"));
+        canvas.toBlob((b) => b ? resolve(b) : reject(new Error("PNG_EXPORT_FAILED")), "image/png");
+      }), PNG_TIMEOUT_MS, "PNG_EXPORT_TIMEOUT");
+    } catch (error) {
+      console.warn("[ShareStudio] canvas export fallback", txt(error?.message));
+      const dataUrl = canvas.toDataURL("image/png");
+      const encoded = dataUrl.split(",")[1];
+      if (!encoded) throw new Error("PNG_EXPORT_FAILED");
+      const binary = atob(encoded), bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      S.blob = new Blob([bytes], { type: "image/png" });
+    }
     if (!S.blob || S.blob.size < 5000) throw new Error("PNG_EXPORT_FAILED");
     if (S.objectUrl) URL.revokeObjectURL(S.objectUrl);
     S.objectUrl = URL.createObjectURL(S.blob); S.upload = null;
+    S.stage = "ready"; S.lastError = "";
     syncUiAfterRender();
     if (!S.skinReady) setStatus("Equipped skin could not be verified or loaded. Preview only — sharing disabled.");
     return S.blob;
@@ -802,8 +829,17 @@
     if (S.openPromise) return S.openPromise;
     S.openPromise = (async () => {
       setBusy(true); setStatus("Loading live record…");
+      S.stage = "starting"; S.lastError = "";
+      const retry = $("shareCardRetryBtn"); if (retry) retry.hidden = true;
       try { await loadState(); syncModeTabs(); await render(); return true; }
-      catch (e) { console.error("[ShareStudio] open failed", e); setStatus("COULDN'T PREPARE THIS RECORD. TRY AGAIN."); toast("Couldn't prepare this record. Try again.", "Share Studio"); return false; }
+      catch (e) {
+        const failedStage = S.stage;
+        S.stage = "failed"; S.lastError = txt(e?.message).slice(0, 100);
+        console.error("[ShareStudio] open failed", { stage: failedStage, reason: S.lastError, httpStatus: Number(e?.status || 0) });
+        setStatus("Could not prepare card (" + failedStage + "). Retry or close and reopen.");
+        const retry = $("shareCardRetryBtn"); if (retry) retry.hidden = false;
+        return false;
+      }
       finally { setBusy(false); S.openPromise = null; }
     })();
     return S.openPromise;
@@ -826,6 +862,7 @@
       if (!S.busy) { S.requestedMomentKey = txt(e.target.value); selectMoment(S.requestedMomentKey); void rerender().catch(() => {}); }
     });
     $("shareCardManualClose")?.addEventListener("click", hideManualPreview);
+    $("shareCardRetryBtn")?.addEventListener("click", () => { if (!S.busy) void open(S.mode, { momentKey: S.requestedMomentKey }); });
     $("shareCardPrimaryBtn")?.addEventListener("click", async () => {
       if (S.busy) return; setBusy(true);
       try {
@@ -837,7 +874,11 @@
     $("shareCardTelegramBtn")?.addEventListener("click", async () => {
       if (S.busy) return; setBusy(true);
       try { await shareTelegram(); setStatus("Telegram confirmed the image was shared."); }
-      catch (e) { const message = telegramShareErrorMessage(e); if (message) { setStatus(message); toast(message); } }
+      catch (e) {
+        console.warn("[ShareStudio] Telegram failed", { status: Number(e?.status || 0), reason: txt(e?.data?.reason || e?.message).slice(0, 100) });
+        const message = telegramShareErrorMessage(e);
+        if (message) { setStatus(message); toast(message); }
+      }
       finally { setBusy(false); }
     });
     $("shareCardXBtn")?.addEventListener("click", async () => {
@@ -862,6 +903,7 @@
     openMoment: (momentKey) => open("moment", { momentKey }),
     hide: close,
     getState: () => ({ mode: S.mode, player: S.player, moment: S.moment }),
+    getDiagnostics: () => ({ stage: S.stage, lastError: S.lastError, playerLoaded: !!S.player, imageReady: !!S.blob, skinReady: S.skinReady, busy: S.busy }),
   };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", bind, { once: true }); else bind();
