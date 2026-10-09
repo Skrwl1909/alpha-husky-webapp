@@ -2815,6 +2815,11 @@
     _inited = true;
 
     bindClickOnce(qs("btnStatsRefresh"), load);
+    bindClickOnce(qs("btnStatsSync"), () => {
+      if (STATS3_ENABLED && window.AlphaStats3 && _lastStats) {
+        window.AlphaStats3.openSync(_lastStats,stats3Context(_lastStats,_lastMystats,_progressionExtras));
+      }
+    });
     bindClickOnce(qs("refreshStats"), load);
     bindClickOnce(qs("closeStats"), Stats.close);
 
