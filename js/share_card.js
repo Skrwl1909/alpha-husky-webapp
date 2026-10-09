@@ -25,6 +25,7 @@
 
   // Exact path case matches the deployed assets on the art branch.
   const IDENTITY_BG_ROOT = "/assets/Share/Identity/";
+  const MOMENT_BG_FILE = "identity_bg_master_dark.webp";
   const IDENTITY_BG_BY_FACTION = {
     rogue_byte: "identity_bg_rogue_byte.webp",
     echo_wardens: "identity_bg_echo_wardens.webp",
@@ -90,6 +91,12 @@
       return await loadImage(IDENTITY_BG_ROOT + IDENTITY_BG_BY_FACTION.pack);
     }
     return null; // Existing vector background remains a reliable fallback.
+  }
+
+  async function loadMomentBackground() {
+    // Verified Moment uses a shared environmental plate, never a faction plate.
+    // Missing artwork leaves the existing deterministic Canvas background intact.
+    return await loadImage(IDENTITY_BG_ROOT + MOMENT_BG_FILE);
   }
 
   function getApiBase() { return txt(global.API_BASE || ""); }
@@ -463,6 +470,47 @@
     ctx.restore();
   }
 
+  function drawMomentBackground(ctx, image, primary, secondary) {
+    if (!image) {
+      drawBackground(ctx, primary, secondary, true);
+      return;
+    }
+
+    // Single master plate for every verified moment. Cover without distortion.
+    const fit = fitCover(image, { x: 0, y: 0, w: CARD_W, h: CARD_H }, .5, .36);
+    ctx.save();
+    ctx.fillStyle = "#03070d";
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+    ctx.drawImage(image, fit.x, fit.y, fit.w, fit.h);
+
+    // The real player skin and verified record remain the focus.
+    ctx.fillStyle = "rgba(2,6,12,.26)";
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+    const top = ctx.createLinearGradient(0, 0, 0, 340);
+    top.addColorStop(0, "rgba(2,6,12,.92)");
+    top.addColorStop(.58, "rgba(2,6,12,.58)");
+    top.addColorStop(1, "rgba(2,6,12,0)");
+    ctx.fillStyle = top;
+    ctx.fillRect(0, 0, CARD_W, 340);
+
+    // Conceal the baked-in art footer; only canonical Field Record text is visible.
+    const bottom = ctx.createLinearGradient(0, 860, 0, CARD_H);
+    bottom.addColorStop(0, "rgba(2,7,14,0)");
+    bottom.addColorStop(.20, "rgba(2,7,14,.78)");
+    bottom.addColorStop(.45, "rgba(2,7,14,.96)");
+    bottom.addColorStop(1, "rgba(2,7,14,.99)");
+    ctx.fillStyle = bottom;
+    ctx.fillRect(0, 860, CARD_W, CARD_H - 860);
+
+    const edge = ctx.createRadialGradient(CARD_W / 2, CARD_H * .45, 280, CARD_W / 2, CARD_H * .45, 940);
+    edge.addColorStop(0, "rgba(0,0,0,0)");
+    edge.addColorStop(1, "rgba(0,0,0,.60)");
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+    ctx.restore();
+  }
+
   function drawFrame(ctx, primary) {
     ctx.save(); rounded(ctx, 34, 34, CARD_W - 68, CARD_H - 68, 36); ctx.strokeStyle = rgba(primary, .36); ctx.lineWidth = 2; ctx.stroke();
     rounded(ctx, 49, 49, CARD_W - 98, CARD_H - 98, 29); ctx.strokeStyle = "rgba(255,255,255,.07)"; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
@@ -560,7 +608,7 @@
 
   function drawMoment(ctx, player, moment, assets) {
     const faction = factionMeta(player), theme = momentTheme(moment, faction), primary = theme.accent, secondary = faction.rgb;
-    drawBackground(ctx, primary, secondary, true); drawFrame(ctx, primary);
+    drawMomentBackground(ctx, assets.background, primary, secondary); drawFrame(ctx, primary);
     drawTracked(ctx, "ALPHA HUSKY", 78, 96, "900 23px system-ui", "rgba(244,248,252,.92)", 7);
     drawTracked(ctx, "RECORDED MOMENT", 78, 134, "780 13px system-ui", rgba(primary, .95), 4);
     drawTracked(ctx, "VERIFIED RECORD", CARD_W - 76, 104, "850 13px system-ui", "rgba(243,247,251,.58)", 3, "right");
@@ -597,7 +645,8 @@
     const [skin, frame, background, ...badgeImgs] = await Promise.all([
       loadImage(activeSkinUrl(player)),
       loadImage(frameUrl(player)),
-      S.mode === "identity" ? loadIdentityBackground(player) : Promise.resolve(null),
+      S.mode === "identity" ? loadIdentityBackground(player)
+        : (S.mode === "moment" && S.moment ? loadMomentBackground() : Promise.resolve(null)),
       ...badges.map((b) => loadImage(b.icon))
     ]);
     S.skinReady = !!(activeSkinUrl(player) && skin);
@@ -618,7 +667,7 @@
     canvas.width = CARD_W; canvas.height = CARD_H;
     const ctx = canvas.getContext("2d", { alpha: false }); if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
-    if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, frame, badges: badgeImgs });
+    if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, frame, background, badges: badgeImgs });
     else drawIdentity(ctx, player, { skin, frame, background, badges: badgeImgs });
 
     S.stage = "png-export"; setStatus("Preparing PNG…");
