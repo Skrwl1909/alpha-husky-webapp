@@ -5818,7 +5818,7 @@ body.missions-open{
   #shareBack .share-moment-picker{display:flex;align-items:center;gap:9px}
   #shareBack .share-moment-picker label{flex:0 0 auto;font:800 10px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.12em;color:rgba(225,235,246,.48)}
   #shareBack #shareMomentSelect{min-width:0;flex:1;height:38px;border-radius:11px;border:1px solid rgba(125,211,252,.14);background:#07111b;color:#edf5fb;padding:0 34px 0 11px;font:750 12px/1 ui-sans-serif,system-ui,sans-serif}
-  #shareBack .share-card-preview-shell{position:relative;border-radius:20px;padding:9px;background:linear-gradient(180deg,rgba(18,28,40,.94),rgba(5,9,15,.98));border:1px solid rgba(125,211,252,.12);box-shadow:0 20px 48px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden}
+  #shareBack .share-card-preview-shell{flex:0 0 auto;position:relative;border-radius:20px;padding:9px;background:linear-gradient(180deg,rgba(18,28,40,.94),rgba(5,9,15,.98));border:1px solid rgba(125,211,252,.12);box-shadow:0 20px 48px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden}
   #shareBack #shareCardCanvasWrap{position:relative;display:grid;place-items:center;border-radius:14px;overflow:hidden;background:#02060b;border:1px solid rgba(255,255,255,.045)}
   #shareBack #shareCardCanvas{display:block;width:100%;height:auto;max-height:min(58dvh,700px);object-fit:contain;margin:0 auto;border-radius:14px;background:#03070d}
   #shareBack #shareCardMeta{font:500 11.5px/1.48 ui-sans-serif,system-ui,sans-serif;color:rgba(229,238,248,.62);padding:0 2px}
@@ -5830,6 +5830,8 @@ body.missions-open{
   #shareBack .share-card-help,#shareBack .share-card-status{font:500 11px/1.48 ui-sans-serif,system-ui,sans-serif;color:rgba(231,239,248,.65)}
   #shareBack .share-card-status{display:none;padding:9px 11px;border-radius:12px;border:1px solid rgba(125,211,252,.13);background:rgba(125,211,252,.045)}
   #shareBack .share-card-status[data-show="1"]{display:block}
+  #shareBack #shareCardRetryBtn[hidden]{display:none!important}
+  #shareBack #shareCardRetryBtn{flex:0 0 auto;border:1px solid rgba(125,211,252,.33)}
   #shareBack .share-card-caption{border-radius:14px;padding:10px 11px;background:rgba(5,10,17,.66);border:1px solid rgba(255,255,255,.06)}
   #shareBack .share-card-caption-label{font:800 9px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(230,239,249,.38);margin-bottom:7px}
   #shareBack #shareCardCaptionPreview{font:550 11.5px/1.45 ui-sans-serif,system-ui,sans-serif;white-space:pre-wrap;color:rgba(237,243,250,.84)}
@@ -6946,6 +6948,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       </div>
       <div class="share-card-help">Sharing to X opens a text post; attach your PNG manually. Save Image requests a download, and Telegram may offer a native file download on supported clients. Neither action can guarantee a file reached your Gallery.</div>
       <div id="shareCardStatus" class="share-card-status" role="status" aria-live="polite"></div>
+      <button type="button" id="shareCardRetryBtn" class="ah-action" hidden>Retry card</button>
       <div class="share-card-caption">
         <div class="share-card-caption-label">Caption</div>
         <div id="shareCardCaptionPreview"></div>
