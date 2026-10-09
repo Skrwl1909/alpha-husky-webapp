@@ -2187,7 +2187,7 @@
       root.addEventListener("click",function(event){
         const target=eventEl(event);
         if(!target?.closest) return;
-        if(!target.closest("[data-s3-tab],[data-s3-sheet],[data-s3-close],[data-s3-upgrade],[data-s3-training],[data-s3-claim],[data-action]")) return;
+        if(!target.closest("[data-s3-tab],[data-s3-sheet],[data-s3-close],[data-s3-dismiss],[data-s3-upgrade],[data-s3-training],[data-s3-claim],[data-action]")) return;
         event.stopPropagation();
         void handleStatsActionClick(event);
       },true);

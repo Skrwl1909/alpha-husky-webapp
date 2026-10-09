@@ -6888,11 +6888,11 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
 <div id="statsBack" class="ah-back" style="display:none">
   <div class="ah-panel" role="dialog" aria-modal="true" aria-label="Stats">
     <div class="ah-panel-hd">
-      <div class="ah-title">Stats</div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <button id="btnStatsSync" class="ah-action" type="button" style="min-height:44px;padding:6px 8px;font-size:11px">Account &amp; Sync</button>
-        <button id="btnStatsRefresh" class="ah-action" type="button" style="padding:6px 10px;">Refresh</button>
-        <button class="ah-x" data-close="statsBack" aria-label="Close" type="button">✕</button>
+      <div class="ah-title">CHARACTER</div>
+      <div class="s3-header-actions">
+        <button id="btnStatsSync" class="ah-action" type="button" aria-label="Account and Mobile Sync" title="Account &amp; Sync"><span aria-hidden="true">◎</span></button>
+        <button id="btnStatsRefresh" class="ah-action" type="button" aria-label="Refresh character stats" title="Refresh"><span aria-hidden="true">↻</span></button>
+        <button class="ah-x" data-close="statsBack" aria-label="Close character stats" type="button">✕</button>
       </div>
     </div>
 
@@ -13186,8 +13186,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 })();
 </script>
   <!-- Character Command: scoped CSS and view renderer, no backend changes -->
-  <link rel="stylesheet" href="/css/stats_v3.css?v=3.0.1">
-  <script src="/js/stats_v3.js?v=3.0.1"></script>
+  <link rel="stylesheet" href="/css/stats_v3.css?v=3.0.2-visual1">
+  <script src="/js/stats_v3.js?v=3.0.2-visual1"></script>
   <!-- STATS (loader + init, cache-bust) -->
 <script>
 (function loadStats(){
