@@ -61,3 +61,9 @@
 @media(max-width:350px){#statsBack .s3-body{padding:9px}#statsBack .s3-attribute{min-height:88px}#statsBack .s3-attr-info strong{font-size:21px}}
 @media(max-height:670px){#statsBack .s3-stage{height:185px}}
 @media(prefers-reduced-motion:reduce){#statsBack .s3-shell *,#statsBack .s3-shell *:before{animation:none!important;transition:none!important}}
+
+#statsBack .ah-panel-hd{gap:6px;padding:8px 9px}
+#statsBack .ah-panel-hd>div:last-child{gap:5px!important;min-width:0}
+#statsBack .ah-panel-hd #btnStatsSync,#statsBack .ah-panel-hd #btnStatsRefresh{touch-action:manipulation;white-space:nowrap;min-height:44px;border-radius:9px}
+#statsBack .ah-panel-hd .ah-x{flex:none;min-width:44px;min-height:44px;touch-action:manipulation}
+@media(max-width:370px){#statsBack .ah-panel-hd .ah-title{font-size:12px}#statsBack .ah-panel-hd #btnStatsSync{font-size:10px!important;padding:6px!important}#statsBack .ah-panel-hd #btnStatsRefresh{font-size:10px;padding:6px!important}}
