@@ -2175,6 +2175,23 @@
   function stats3Render(stats, mystats, extras){
     _lastStats = stats || null;
     _lastMystats = mystats || null;
+    const root=qs("statsRoot");
+    // Real modal must escape parent stacking contexts / fixed overlays.
+    // DEV FRESH PROFILE is intentionally left untouched.
+    const back=qs("statsBack");
+    if(back && back.parentElement!==document.body) document.body.appendChild(back);
+    // Capture-based local delegation survives delayed Stats.init and innerHTML rerenders.
+    // Binding once on the stable root also avoids duplicate upgrade requests.
+    if(root && !root.__stats3InteractionBound){
+      root.__stats3InteractionBound=true;
+      root.addEventListener("click",function(event){
+        const target=eventEl(event);
+        if(!target?.closest) return;
+        if(!target.closest("[data-s3-tab],[data-s3-sheet],[data-s3-close],[data-s3-upgrade],[data-s3-training],[data-s3-claim],[data-action]")) return;
+        event.stopPropagation();
+        void handleStatsActionClick(event);
+      },true);
+    }
     window.AlphaStats3.render(stats,stats3Context(stats,mystats,extras));
   }
   function stats3Feedback(message){
