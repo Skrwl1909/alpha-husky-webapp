@@ -13199,17 +13199,25 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 
   s.onload = () => {
     console.log("[Stats] script loaded:", s.src);
-    window.waitForApiPostReady?.(6000).then((apiPost) => {
+    // Attach UI listeners immediately. Rendering can run before API readiness and
+    // must never leave tabs / stat buttons inert if the readiness promise times out.
+    const initStats = (apiPost) => {
       try {
         if (window.Stats?.init) {
-          window.Stats.init({ tg, apiPost, dbg: !!window.DBG });
+          window.Stats.init({ tg, apiPost: apiPost || window.apiPost || window.S?.apiPost || null, dbg: !!window.DBG });
           window.__statsInited = true;
-          console.log("✅ Stats initialized");
+          console.log("[Stats] UI listeners initialized");
         }
       } catch (e) {
-        console.warn("❌ Stats.init failed", e);
+        console.warn("[Stats] init failed", e);
       }
-    }).catch(() => console.warn("[Stats] apiPost not ready"));
+    };
+    initStats(window.apiPost || window.S?.apiPost || null);
+    if (typeof window.waitForApiPostReady === "function") {
+      window.waitForApiPostReady(6000).then(initStats).catch(() =>
+        console.warn("[Stats] API readiness timed out; event listeners remain active")
+      );
+    }
   };
 
   s.onerror = () => console.warn("[Stats] FAILED to load:", s.src);
