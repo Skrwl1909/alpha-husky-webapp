@@ -12,9 +12,9 @@
   function shell(content){
     const root=el("#statsRoot");if(!root)return;
     root.classList.add("ah-stats-v3");
-    root.innerHTML='<div class="s3-shell"><nav role="tablist" aria-label="Character views" class="s3-tabs">'+buttonTab("overview","OVERVIEW")+buttonTab("build","BUILD")+buttonTab("legacy","LEGACY")+'</nav><div class="s3-body" role="tabpanel">'+(notice?'<div class="s3-notice" role="status">'+clean(notice)+'</div>':'')+content+'</div></div>';
+    root.innerHTML='<div class="s3-shell"><nav role="tablist" aria-label="Character views" class="s3-tabs">'+buttonTab("overview","OVERVIEW")+buttonTab("build","BUILD")+buttonTab("legacy","LEGACY")+'</nav><div class="s3-body" role="tabpanel">'+content+'</div>'+(notice?'<div class="s3-feedback"><div class="s3-notice" role="status" aria-live="polite">'+clean(notice)+'</div><button type="button" class="s3-feedback-close" data-s3-dismiss aria-label="Dismiss status">✕</button></div>':'')+'</div>';
   }
-  function box(title,body){return '<section class="s3-box"><div class="s3-label">'+title+'</div>'+body+'</section>';}
+  function box(title,body,cls=""){return '<section class="s3-box '+cls+'"><div class="s3-label">'+title+'</div>'+body+'</section>';}
   function bar(label,current,max,pct){return '<div class="s3-bar-row"><div><b>'+label+'</b><span>'+clean(current)+' / '+clean(max)+'</span></div><div class="s3-track"><i style="width:'+percent(pct)+'%"></i></div></div>';}
   function details(title,body){return '<button class="s3-more" type="button" data-s3-sheet="'+title+'">'+body+' <span>›</span></button>';}
   function attrRow(k,stats,points){
@@ -30,26 +30,51 @@
     const hpCur=num(hp.current,stats.hpCur),hpMax=num(hp.max,stats.hpMax),xpCur=num(xp.current_in_level,stats.xpCur),xpMax=num(xp.needed_for_next_level,stats.xpNeed);
     const combat=stats.statBreakdown?.snapshot?.display;
     const primary=combat?[["MAX HP",combat.maxHp],["ATTACK",combat.attack],["BASE REDUCTION",combat.baseDefenseReduction],["DODGE",combat.dodge]]:[];
-    return stage(stats,ctx)+'<div class="s3-power"><span>SIGNAL POWER</span><strong>'+clean(sp)+'</strong><button data-s3-tab="build" type="button">'+points+' POINTS READY ›</button></div>'+
-      box("NEXT REAL STEP",'<h3>'+clean(goal.nextThreshold?.label||"Progression syncing")+'</h3><p>'+(num(goal.missingPower)>0?'Missing '+clean(num(goal.missingPower))+' Signal Power · ':'')+clean(goal.bestMove||"")+'</p>')+
+    const pointText=points>0?clean(points)+" "+(points===1?"POINT":"POINTS")+" READY ›":"BUILD ›";
+    const missing=num(goal.missingPower);
+    const nextCopy=(missing>0?'<span class="s3-goal-missing">Missing '+clean(missing)+' Signal Power</span>':'')+
+       (goal.bestMove?'<p>'+clean(goal.bestMove)+'</p>':'');
+    return stage(stats,ctx)+'<div class="s3-power'+(points<=0?' is-empty':'')+'"><span>SIGNAL POWER</span><strong>'+clean(sp)+'</strong><button data-s3-tab="build" type="button" aria-label="'+(points>0?clean(points)+' unspent stat points. Open Build':'Open Build')+'">'+pointText+'</button></div>'+
+      box("NEXT REAL STEP",'<h3>'+clean(goal.nextThreshold?.label||"Progression syncing")+'</h3>'+nextCopy,"s3-next-goal")+
       '<div class="s3-bars">'+bar("HP",hpCur,hpMax,hp.pct??stats.hpPct??(hpMax?100*hpCur/hpMax:0))+bar("XP",xpCur,xpMax,xp.pct??stats.xpPct??(xpMax?100*xpCur/xpMax:0))+(pet.name&&pet.name!=="None"?bar("PET",num(pet.current,pet.xpCur),num(pet.max,pet.xpNeed),pet.pct??stats.petPct):'')+'</div>'+
       box("COMBAT SNAPSHOT",'<div class="s3-combat">'+primary.map(([k,v])=>'<div><span>'+k+'</span><strong>'+clean(v)+'</strong></div>').join('')+'</div>'+(primary.length?'':'<p>Combat data syncing.</p>')+details("combat","All Combat Stats"));
   }
   function build(stats,ctx){
-    const points=num(ctx.mystats?.unspentPoints),training=stats.statTraining||{},rank=num(training.rank);
-    const resources=training.nextCost&&typeof training.nextCost==="object"?Object.entries(training.nextCost).map(([k,v])=>clean(k)+": "+clean(v)).join(" · "):"";
-    const balances=training.balances&&typeof training.balances==="object"?Object.entries(training.balances).map(([k,v])=>clean(k)+": "+clean(v)).join(" · "):"";
-    return '<div class="s3-build-title"><span>AVAILABLE STAT POINTS</span><strong>'+points+'</strong></div><div class="s3-attributes">'+KEYS.map(k=>attrRow(k,stats,points)).join('')+'</div>'+
-    box("STAT TRAINING",'<h3>Rank '+rank+' / 10</h3><p>Training grants one unspent point. Spending that point is a separate action.</p>'+(resources?'<p>Next cost: '+resources+'</p>':'')+(balances?'<p>Balances: '+balances+'</p>':'')+
-      '<button type="button" class="s3-primary" data-s3-training '+(!training.canPurchase?'disabled':'')+'>'+(training.maxed?'MAX TRAINING':!training.enabled?'TRAINING OFFLINE':training.canPurchase?'PURCHASE TRAINING':'TRAINING LOCKED')+'</button>')+
-      details("equipment","Equipment · Pet · Active Sets")+details("attributes","Attribute details");
+    const points=num(ctx.mystats?.unspentPoints),training=stats.statTraining||{},rank=Math.max(0,num(training.rank));
+    const max=10,locked=String(training.lockedReason||"");
+    const chips=(obj)=>obj&&typeof obj==="object"?Object.entries(obj).filter(([,v])=>v!==null&&v!==undefined).map(([k,v])=>'<span class="s3-training-chip">'+clean(k.replace(/_/g," ").toUpperCase())+' <b>'+clean(Number.isFinite(Number(v))?Number(v).toLocaleString("en-GB"):v)+'</b></span>').join(""):"";
+    const cost=chips(training.nextCost),balances=chips(training.balances);
+    const label=training.maxed?"MAX TRAINING":!training.enabled?"TRAINING OFFLINE":locked==="level_locked"?"LEVEL REQUIRED":locked==="insufficient_resources"?"INSUFFICIENT RESOURCES":training.canPurchase?"TRAIN":"TRAINING LOCKED";
+    const progress=Array.from({length:max},(_,i)=>'<i'+(i<rank?' class="is-complete"':'')+'></i>').join("");
+    const unlockNote=training.maxed?"Maximum training rank reached.":training.enabled?"Next rank grants +1 unspent stat point. Spend it separately in Build.":"Training is currently unavailable.";
+    const levelNote=locked==="level_locked"&&num(training.nextRank)>0?'<div class="s3-training-meta">Requires level '+clean(num(training.nextRank)*10)+'</div>':"";
+    const content='<div class="s3-training-top"><span class="s3-label">STAT TRAINING</span><strong class="s3-training-rank">RANK '+clean(rank)+' / '+max+'</strong></div>'+
+      '<div class="s3-training-track" aria-label="Training rank '+clean(rank)+' of '+max+'">'+progress+'</div>'+
+      '<div class="s3-training-note">'+unlockNote+'</div>'+
+      (!training.maxed&&cost?'<div class="s3-training-sub">NEXT COST</div><div class="s3-training-chips">'+cost+'</div>':'')+
+      (balances?'<div class="s3-training-sub">AVAILABLE BALANCES</div><div class="s3-training-chips">'+balances+'</div>':'')+
+      levelNote+'<button type="button" class="s3-primary" data-s3-training '+(!training.canPurchase?'disabled':'')+'>'+label+'</button>';
+    return '<div class="s3-build-title"><span>AVAILABLE STAT POINTS</span><strong>'+clean(points)+'</strong></div><div class="s3-attributes">'+KEYS.map(k=>attrRow(k,stats,points)).join('')+'</div>'+
+       '<section class="s3-box s3-training">'+content+'</section>'+
+       details("equipment","Equipment · Pet · Active Sets")+details("attributes","Attribute details");
   }
   function legacy(stats,ctx){
     const ms=ctx.progression?.signalMilestones?.milestones||[],focus=ms.find(m=>m.status==="claimable")||ms.find(m=>m.status==="locked"),wall=ctx.progression?.moonlabWall;
-    return '<div class="s3-power s3-legacy-power"><span>RECORDED SIGNAL POWER</span><strong>'+clean(num(ctx.power?.signalPower))+'</strong></div>'+
-    box("NEXT MILESTONE",focus?'<h3>'+clean(focus.shortLabel||focus.name)+'</h3><p>'+(focus.status==="claimable"?'Ready to claim':clean(num(focus.missingPower))+' Signal Power remaining')+'</p>'+(focus.status==="claimable"?'<button class="s3-primary" data-s3-claim="'+clean(focus.id)+'">Claim Milestone</button>':''):'<h3>'+clean(ctx.goal?.nextThreshold?.label||"Progression syncing")+'</h3>')+
-    box("MOON LAB BEST WALL",wall?.available?'<h3>Floor '+clean(num(wall.bestFloor??wall.highestClearedFloor))+'</h3><p>Current floor '+clean(num(wall.currentFloor))+' · Sector '+clean(num(wall.sector))+'</p>':'<p>Moon Lab progress syncing.</p>')+
-    details("milestones","Full Milestone Record");
+    const sp=num(ctx.power?.signalPower);
+    let progress="";
+    if(focus&&focus.status==="locked"&&num(focus.threshold)>0){
+      const prior=ms.filter(m=>num(m.threshold)<num(focus.threshold)).reduce((best,m)=>Math.max(best,num(m.threshold)),0);
+      if(prior>0&&num(focus.threshold)>prior){
+        const pct=percent(100*(sp-prior)/(num(focus.threshold)-prior));
+        progress='<div class="s3-legacy-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+Math.round(pct)+'" aria-label="Progress toward next Signal milestone"><i style="width:'+pct+'%"></i></div>';
+      }else progress='<p>Required: '+clean(num(focus.threshold))+' Signal Power</p>';
+    }
+    const milestone=focus?'<h3>'+clean(focus.shortLabel||focus.name)+'</h3><p>'+(focus.status==="claimable"?'Ready to claim':clean(num(focus.missingPower))+' Signal Power remaining')+'</p>'+progress+(focus.status==="claimable"?'<button class="s3-primary" data-s3-claim="'+clean(focus.id)+'">CLAIM MILESTONE</button>':''):'<h3>'+clean(ctx.goal?.nextThreshold?.label||"Progression syncing")+'</h3>';
+    const wallHtml=wall?.available?'<div class="s3-wall-floor">Floor '+clean(num(wall.bestFloor??wall.highestClearedFloor))+'</div><div class="s3-wall-meta">Current floor '+clean(num(wall.currentFloor))+' · Sector '+clean(num(wall.sector))+'</div>':'<p>Moon Lab progress syncing.</p>';
+    return '<div class="s3-power s3-legacy-power"><span>RECORDED SIGNAL POWER</span><strong>'+clean(sp)+'</strong></div>'+
+      box("NEXT MILESTONE",milestone,"s3-legacy-focus")+
+      box("MOON LAB BEST WALL",wallHtml,"s3-legacy-wall")+
+      details("milestones","Full Milestone Record");
   }
   function showSheet(name,stats,ctx){
     const root=el("#statsRoot");if(!root)return;
@@ -78,6 +103,8 @@
   }
   function handle(e,stats,ctx){
     const target=e.target?.nodeType===1?e.target:e.target?.parentElement;if(!target)return false;
+    const dismiss=target.closest("[data-s3-dismiss]");
+    if(dismiss){e.preventDefault();notice="";render(stats,ctx);return true;}
     const close=target.closest("[data-s3-close]");
     if(close){e.preventDefault();sheet="";render(stats,ctx);return true;}
     const tabBtn=target.closest("[data-s3-tab]");
