@@ -737,9 +737,19 @@
     const items = [["Max HP", display.maxHp], ["Attack", display.attack], ["Base Reduction", display.baseDefenseReduction], ["Dodge", display.dodge], ["Crit", display.crit], ["Defense Penetration", display.defensePenetration]];
     return `<div class="ahs-combat-snapshot"><div class="ahs-combat-snapshot-title">COMBAT SNAPSHOT</div><div class="ahs-combat-snapshot-scope">${esc(String(scope.label || "Shared Combat"))}${systems.length ? ` / ${esc(systems.join(" + "))}` : ""}</div><div class="ahs-combat-snapshot-grid">${items.map(([label, value]) => `<div class="ahs-combat-snapshot-item"><span class="ahs-combat-snapshot-label">${esc(label)}</span><span class="ahs-combat-snapshot-value">${esc(value)}</span></div>`).join("")}</div>${scope.note ? `<div class="ahs-combat-snapshot-note">${esc(String(scope.note))}</div>` : ""}</div>`;
   }
+  function stats3HostChrome(back){
+    if (!back || !STATS3_ENABLED) return;
+    const tg = window.Telegram?.WebApp;
+    // Do not impose Telegram-specific top spacing on standalone Android/Web.
+    const platform = String(tg?.platform || "").toLowerCase();
+    const isTelegram = !!(tg && ((typeof tg.initData === "string" && !!tg.initData) || (platform && platform !== "unknown")));
+    back.classList.toggle("s3-telegram-host", isTelegram);
+  }
+
   function show(){
     const b = qs("statsBack");
     if (!b) return;
+    stats3HostChrome(b);
     if ("hidden" in b) b.hidden = false;
     b.style.display = "flex";
     b.dataset.open = "1";
@@ -2179,6 +2189,7 @@
     // Real modal must escape parent stacking contexts / fixed overlays.
     // DEV FRESH PROFILE is intentionally left untouched.
     const back=qs("statsBack");
+    stats3HostChrome(back);
     if(back && back.parentElement!==document.body) document.body.appendChild(back);
     // Capture-based local delegation survives delayed Stats.init and innerHTML rerenders.
     // Binding once on the stable root also avoids duplicate upgrade requests.
