@@ -202,7 +202,6 @@
     // Skin may be a URL string in the canonical profile. Never substitute an avatar.
     return txt((typeof skin === "string" ? skin : (skin.url || skin.img || skin.preview_url || skin.previewUrl)) || player?.heroImg || "/assets/skins/lunarhowl_skin.webp");
   }
-  function avatarUrl(player) { return txt(player?.avatar_url || player?.avatarUrl || player?.avatar?.img || player?.avatar?.url || ""); }
   function frameUrl(player) { const f = player?.frame || {}; return txt(f.url || f.img || f.preview_url || f.previewUrl || ""); }
 
   function publicBadges(player) {
@@ -532,8 +531,8 @@
     setStatus("Loading card artwork…");
     const player = S.player || {};
     const badges = publicBadges(player);
-    const [skin, avatar, frame, ...badgeImgs] = await Promise.all([
-      loadImage(activeSkinUrl(player)), loadImage(avatarUrl(player)), loadImage(frameUrl(player)), ...badges.map((b) => loadImage(b.icon))
+    const [skin, frame, ...badgeImgs] = await Promise.all([
+      loadImage(activeSkinUrl(player)), loadImage(frameUrl(player)), ...badges.map((b) => loadImage(b.icon))
     ]);
     S.skinReady = !!(activeSkinUrl(player) && skin);
     if (S.mode === "moment" && !S.moment) {
@@ -553,8 +552,8 @@
     canvas.width = CARD_W; canvas.height = CARD_H;
     const ctx = canvas.getContext("2d", { alpha: false }); if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
-    if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, avatar, frame, badges: badgeImgs });
-    else drawIdentity(ctx, player, { skin, avatar, frame, badges: badgeImgs });
+    if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, frame, badges: badgeImgs });
+    else drawIdentity(ctx, player, { skin, frame, badges: badgeImgs });
 
     S.stage = "png-export"; setStatus("Preparing PNG…");
     try {
