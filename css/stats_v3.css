@@ -1,5 +1,29 @@
 
-#statsBack .ah-panel{height:min(94dvh,920px);height:min(94dvh,920px);height:min(94svh,920px);max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px);background:#070e17;border:1px solid #31516a;box-shadow:0 18px 60px #000b}
+/* Character Command owns its internal scroll; the top chrome belongs to the host. */
+#statsBack{
+  --s3-modal-top:max(12px,var(--ah-safe-top,0px));
+  box-sizing:border-box;
+  align-items:stretch;
+  padding:var(--s3-modal-top) max(10px,var(--ah-safe-right,0px))
+          max(10px,var(--ah-safe-bottom,0px)) max(10px,var(--ah-safe-left,0px));
+  overscroll-behavior:contain;
+}
+@media(max-width:650px){
+  #statsBack.s3-telegram-host{
+    /* Telegram's floating Back / menu overlay is not part of the CSS env safe area.
+       Reserve a genuine interaction zone instead of shifting controls under it. */
+    --s3-modal-top:max(86px,var(--tg-content-safe-area-inset-top,0px),calc(var(--ah-safe-top,0px) + 56px));
+  }
+}
+#statsBack .ah-panel{
+  height:100%;
+  min-height:0;
+  max-height:100%;
+  box-sizing:border-box;
+  background:#070e17;
+  border:1px solid #31516a;
+  box-shadow:0 18px 60px #000b;
+}
 #statsBack #statsRoot.ah-stats-root{padding:0!important;display:flex;flex-direction:column;overflow:hidden;flex:1;min-height:0}
 #statsBack .s3-shell{display:flex;flex-direction:column;height:100%;min-height:0;background:linear-gradient(140deg,#0e1e30,#060d17)}
 #statsBack .s3-tabs{flex:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:5px 8px 7px;gap:5px;border-bottom:1px solid #233e51;background:#081421}
