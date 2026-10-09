@@ -23,6 +23,16 @@
     pack: { label: "PACK", rgb: [116, 207, 242], secondary: [210, 225, 238], motif: "ALPHA NETWORK" },
   };
 
+  // Exact path case matches the deployed assets on the art branch.
+  const IDENTITY_BG_ROOT = "/assets/Share/Identity/";
+  const IDENTITY_BG_BY_FACTION = {
+    rogue_byte: "identity_bg_rogue_byte.webp",
+    echo_wardens: "identity_bg_echo_wardens.webp",
+    inner_howl: "identity_bg_inner_howl.webp",
+    pack_burners: "identity_bg_pack_burners.webp",
+    pack: "identity_bg_master_dark.webp",
+  };
+
   const MOMENT_STYLE = {
     first_signal: { kicker: "FIRST SIGNAL", headline: "SIGNAL RECORDED", accent: [95, 211, 255], sub: "THE TRAIL BEGINS" },
     tactical_training: { kicker: "TACTICAL TRAINING", headline: "TRAINING VERIFIED", accent: [96, 218, 190], sub: "COMBAT RECORD CONFIRMED" },
@@ -70,6 +80,16 @@
 
   function factionMeta(player) {
     return FACTIONS[normalizeFaction(player?.faction)] || FACTIONS.pack;
+  }
+
+  async function loadIdentityBackground(player) {
+    const file = IDENTITY_BG_BY_FACTION[normalizeFaction(player?.faction)] || IDENTITY_BG_BY_FACTION.pack;
+    const selected = await loadImage(IDENTITY_BG_ROOT + file);
+    if (selected) return selected;
+    if (file !== IDENTITY_BG_BY_FACTION.pack) {
+      return await loadImage(IDENTITY_BG_ROOT + IDENTITY_BG_BY_FACTION.pack);
+    }
+    return null; // Existing vector background remains a reliable fallback.
   }
 
   function getApiBase() { return txt(global.API_BASE || ""); }
@@ -404,6 +424,45 @@
     vig.addColorStop(0, "rgba(0,0,0,0)"); vig.addColorStop(1, "rgba(0,0,0,.82)"); ctx.fillStyle = vig; ctx.fillRect(0, 0, CARD_W, CARD_H);
   }
 
+  function drawIdentityBackground(ctx, image, primary, secondary) {
+    if (!image) {
+      drawBackground(ctx, primary, secondary, false);
+      return;
+    }
+    // Cover, never stretch. Artwork footer captions live in the cropped/darkened
+    // lower area; live player text and badges remain the only readable footer.
+    const fit = fitCover(image, { x: 0, y: 0, w: CARD_W, h: CARD_H }, .5, .34);
+    ctx.save();
+    ctx.fillStyle = "#03070d";
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+    ctx.drawImage(image, fit.x, fit.y, fit.w, fit.h);
+
+    ctx.fillStyle = "rgba(2,6,12,.16)";
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+
+    const header = ctx.createLinearGradient(0, 0, 0, 280);
+    header.addColorStop(0, "rgba(2,6,12,.89)");
+    header.addColorStop(.58, "rgba(2,6,12,.52)");
+    header.addColorStop(1, "rgba(2,6,12,0)");
+    ctx.fillStyle = header;
+    ctx.fillRect(0, 0, CARD_W, 280);
+
+    const footer = ctx.createLinearGradient(0, 835, 0, CARD_H);
+    footer.addColorStop(0, "rgba(2,7,14,0)");
+    footer.addColorStop(.22, "rgba(2,7,14,.80)");
+    footer.addColorStop(.42, "rgba(2,7,14,.98)");
+    footer.addColorStop(1, "rgba(2,7,14,.99)");
+    ctx.fillStyle = footer;
+    ctx.fillRect(0, 835, CARD_W, CARD_H - 835);
+
+    const edge = ctx.createRadialGradient(CARD_W / 2, CARD_H * .45, 300, CARD_W / 2, CARD_H * .45, 940);
+    edge.addColorStop(0, "rgba(0,0,0,0)");
+    edge.addColorStop(1, "rgba(0,0,0,.63)");
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, 0, CARD_W, CARD_H);
+    ctx.restore();
+  }
+
   function drawFrame(ctx, primary) {
     ctx.save(); rounded(ctx, 34, 34, CARD_W - 68, CARD_H - 68, 36); ctx.strokeStyle = rgba(primary, .36); ctx.lineWidth = 2; ctx.stroke();
     rounded(ctx, 49, 49, CARD_W - 98, CARD_H - 98, 29); ctx.strokeStyle = "rgba(255,255,255,.07)"; ctx.lineWidth = 1; ctx.stroke(); ctx.restore();
@@ -414,10 +473,18 @@
     ctx.save(); rounded(ctx, box.x, box.y, box.w, box.h, 34); ctx.clip();
     const haze = ctx.createRadialGradient(CARD_W / 2, box.y + box.h * .48, 30, CARD_W / 2, box.y + box.h * .48, 470);
     haze.addColorStop(0, rgba(primary, .16)); haze.addColorStop(1, "rgba(0,0,0,0)"); ctx.fillStyle = haze; ctx.fillRect(box.x, box.y, box.w, box.h);
+    // Equipped cosmetic frame sits BEHIND the real skin, never across the face.
+    if (frameImg && mode === "identity") {
+      const framing = fitContain(frameImg, { x: box.x - 20, y: box.y - 12, w: box.w + 40, h: box.h + 24 }, 1.00);
+      ctx.save();
+      ctx.globalAlpha = .65;
+      ctx.drawImage(frameImg, framing.x, framing.y, framing.w, framing.h);
+      ctx.restore();
+    }
     if (img) {
       const crop = artworkSourceRect(img);
       const sourceSize = { width: crop.w, height: crop.h };
-      const fit = fitContain(sourceSize, { x: box.x + 34, y: box.y + 8, w: box.w - 68, h: box.h + 18 }, mode === "moment" ? 1.15 : 1.19);
+      const fit = fitContain(sourceSize, { x: box.x + 34, y: box.y + 8, w: box.w - 68, h: box.h + 18 }, mode === "moment" ? 1.15 : 1.06);
       // Soft coloured rim light traces the true equipped-skin silhouette.
       ctx.save(); ctx.globalAlpha = .19; ctx.filter = 'blur(22px)';
       ctx.drawImage(img, crop.x, crop.y, crop.w, crop.h, fit.x - 7, fit.y - 5, fit.w + 14, fit.h + 10);
@@ -432,10 +499,6 @@
     shade.addColorStop(0, "rgba(0,0,0,.12)"); shade.addColorStop(.63, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,.82)"); ctx.fillStyle = shade; ctx.fillRect(box.x, box.y, box.w, box.h);
     ctx.restore();
 
-    if (frameImg && mode === "identity") {
-      const fit = fitContain(frameImg, { x: box.x - 30, y: box.y - 30, w: box.w + 60, h: box.h + 60 }, 1.04);
-      ctx.save(); ctx.globalAlpha = .72; ctx.drawImage(frameImg, fit.x, fit.y, fit.w, fit.h); ctx.restore();
-    }
   }
 
   function drawBadgeStrip(ctx, badges, imgs, primary, y) {
@@ -452,7 +515,7 @@
 
   function drawIdentity(ctx, player, assets) {
     const faction = factionMeta(player), primary = faction.rgb, secondary = faction.secondary;
-    drawBackground(ctx, primary, secondary, false); drawFrame(ctx, primary);
+    drawIdentityBackground(ctx, assets.background, primary, secondary); drawFrame(ctx, primary);
     drawTracked(ctx, "ALPHA HUSKY", 78, 98, "900 24px system-ui", "rgba(242,248,255,.92)", 7);
     drawTracked(ctx, "FIELD IDENTITY", 78, 137, "750 13px system-ui", rgba(primary, .9), 4);
     drawTracked(ctx, faction.label, CARD_W - 76, 111, "850 14px system-ui", rgba(primary, .9), 3, "right");
@@ -531,8 +594,11 @@
     setStatus("Loading card artwork…");
     const player = S.player || {};
     const badges = publicBadges(player);
-    const [skin, frame, ...badgeImgs] = await Promise.all([
-      loadImage(activeSkinUrl(player)), loadImage(frameUrl(player)), ...badges.map((b) => loadImage(b.icon))
+    const [skin, frame, background, ...badgeImgs] = await Promise.all([
+      loadImage(activeSkinUrl(player)),
+      loadImage(frameUrl(player)),
+      S.mode === "identity" ? loadIdentityBackground(player) : Promise.resolve(null),
+      ...badges.map((b) => loadImage(b.icon))
     ]);
     S.skinReady = !!(activeSkinUrl(player) && skin);
     if (S.mode === "moment" && !S.moment) {
@@ -553,7 +619,7 @@
     const ctx = canvas.getContext("2d", { alpha: false }); if (!ctx) throw new Error("NO_CANVAS_CONTEXT");
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     if (S.mode === "moment" && S.moment) drawMoment(ctx, player, S.moment, { skin, frame, badges: badgeImgs });
-    else drawIdentity(ctx, player, { skin, frame, badges: badgeImgs });
+    else drawIdentity(ctx, player, { skin, frame, background, badges: badgeImgs });
 
     S.stage = "png-export"; setStatus("Preparing PNG…");
     try {
