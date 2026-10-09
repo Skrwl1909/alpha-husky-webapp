@@ -6890,6 +6890,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <div class="ah-panel-hd">
       <div class="ah-title">Stats</div>
       <div style="display:flex; gap:10px; align-items:center;">
+        <button id="btnStatsSync" class="ah-action" type="button" style="min-height:44px;padding:6px 8px;font-size:11px">Account &amp; Sync</button>
         <button id="btnStatsRefresh" class="ah-action" type="button" style="padding:6px 10px;">Refresh</button>
         <button class="ah-x" data-close="statsBack" aria-label="Close" type="button">✕</button>
       </div>
@@ -13184,6 +13185,9 @@ document.getElementById('qClose')?.addEventListener('click', () => {
   }
 })();
 </script>
+  <!-- Character Command: scoped CSS and view renderer, no backend changes -->
+  <link rel="stylesheet" href="/css/stats_v3.css?v=3.0.0">
+  <script src="/js/stats_v3.js?v=3.0.0"></script>
   <!-- STATS (loader + init, cache-bust) -->
 <script>
 (function loadStats(){
