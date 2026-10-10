@@ -813,7 +813,7 @@ export const useBattleStore = create<Store>((set, get) => {
     selectShadowSidegrade: (choice) => selectTeammateSidegrade("shadow", choice),
     toggleCommanderTeammate: (unitId) => {
       const current = get();
-      if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP")) return;
+      if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" && getMissionDef(current.selectedMissionId)?.operationId !== DEAD_RELAY.operationId)) return;
       if (!recoverSpawnsForSquad(["alpha", unitId], current.progression?.equippedPet)) return;
       const companions = current.selectedSquadIds.slice(1);
       const next = companions.includes(unitId) ? companions.filter((id) => id !== unitId) : companions.length < 2 ? [...companions, unitId] : companions;
