@@ -274,7 +274,7 @@
 
   function disableListButtons(list, disabled) {
     if (!list) return;
-    qa("[data-set], [data-stat-add]", list).forEach((btn) => {
+    qa("[data-set], [data-stat-add], [data-echo]", list).forEach((btn) => {
       btn.disabled = !!disabled;
     });
   }
@@ -324,18 +324,22 @@
       const badges = pending > 0
         ? `<div class="petBadges"><div class="petBadge petBadgeUpgrade">${escapeHtml(formatPendingLabel(pending))}</div></div>`
         : "";
+      const echoActive = window.PhantomEcho?.equippedFor?.(String(pet.id)) || null;
+      const echoReady = window.PhantomEcho?.isAvailable?.() === true;
       const hasSpriteMeta = !!(pet.spriteSheetUrl && pet.sprite);
       const debug = _dbg
         ? `<div class="petDebug">${escapeHtml(`petKey=${pet.pet_key || pet.type || ""} | petName=${pet.name || ""} | resolvedPetKey=${pet.resolvedPetKey || pet.pet_key || pet.type || ""} | hasSpriteMeta=${hasSpriteMeta} | spriteUrl=${pet.spriteSheetUrl ? "yes" : "no"} | PetSprite=${window.PetSprite ? "yes" : "no"}`)}</div>`
         : "";
 
+      const artwork = img ? `<img class="petImg" src="${img}" alt="${escapeHtml(pet.name || "Pet")}" />` : `<div class="petImg"></div>`;
       return `
         <div class="petRow ${isActive ? "active" : ""}" data-row="${escapeHtml(pet.id)}">
-          ${img ? `<img class="petImg" src="${img}" alt="${escapeHtml(pet.name || "Pet")}" />` : `<div class="petImg"></div>`}
+          ${echoReady ? `<div class="petArt ${echoActive ? "pe-equipped" : ""}">${artwork}</div>` : artwork}
           <div class="petMeta">
             <div class="petName">${escapeHtml(pet.name || "Pet")}</div>
             <div class="petSub">${escapeHtml(sub + desc)}</div>
             ${badges}
+            ${echoReady ? `<button type="button" class="petEchoBtn" data-echo="${escapeHtml(pet.id)}">${echoActive ? "GHOST RELAY EQUIPPED" : "VIEW ECHO"}</button>` : ""}
             <div class="petStats">${statsHtml}</div>
             ${debug}
           </div>
@@ -348,7 +352,7 @@
 
     qa(".petRow", list).forEach((row) => {
       row.addEventListener("click", (e) => {
-        const control = e.target?.closest?.("[data-set], [data-stat-add]");
+        const control = e.target?.closest?.("[data-set], [data-stat-add], [data-echo]");
         if (control) return;
         const petId = row.getAttribute("data-row");
         if (!petId || row.classList.contains("active")) return;
@@ -362,6 +366,15 @@
         e.stopPropagation();
         const petId = btn.getAttribute("data-set");
         if (petId) await setActive(petId);
+      });
+    });
+
+    qa("[data-echo]", list).forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const petId = btn.getAttribute("data-echo");
+        if (petId) window.PhantomEcho?.openPet?.(petId, () => render(state));
       });
     });
 
@@ -435,13 +448,14 @@
     ensureStyles();
     ensureModal().style.display = "block";
     showBack();
-    const state = await loadState();
+    const [state] = await Promise.all([loadState(), window.PhantomEcho?.load?.() || Promise.resolve(null)]);
     if (state) render(state);
   }
 
   function close() {
     const el = document.getElementById("mypetsModal");
     if (el) el.style.display = "none";
+    window.PhantomEcho?.close?.();
     hideBack();
   }
 
@@ -466,6 +480,7 @@
   window.MyPets = {
     init({ apiPost, tg, dbg } = {}) {
       _apiPost = apiPost || _apiPost;
+      window.PhantomEcho?.init?.({apiPost: _apiPost});
       _tg = tg || _tg;
       _dbg = !!dbg;
       if (_inited) {

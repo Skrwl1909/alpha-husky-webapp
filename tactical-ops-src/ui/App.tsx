@@ -15,7 +15,7 @@ import {
   enemyBriefRows,
   resolveCurrentEncounter,
 } from "../data/onboarding";
-import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
+import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 
@@ -58,7 +58,7 @@ function objectiveHeadline(mission: NonNullable<ReturnType<typeof getMissionDef>
   if (objective?.type === "HOLD") return `Control the relay · ${objective.duration} consecutive round changes.`;
   if (objective?.type === "SURVIVE") return `Keep the full squad standing · ${objective.duration} rounds.`;
   if (mission.objectiveType === "RECOVER") return "Reach the relay. Use RECOVER.";
-  if (mission.objectiveType === "BOSS") return "Defeat the SIGNAL COMMANDER.";
+  if (mission.objectiveType === "BOSS") return mission.operationId === DEAD_RELAY.operationId ? "Defeat the DEAD RELAY GUARDIAN." : "Defeat the SIGNAL COMMANDER.";
   return "Eliminate the HOUND patrol.";
 }
 
@@ -187,6 +187,8 @@ function WarTable() {
   const progressionError = useBattleStore((s) => s.progressionError);
   const missionFirstClear = useBattleStore((s) => s.missionFirstClear);
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
+  const deadRelay = progression?.operations?.[DEAD_RELAY.operationId];
+  const courierIntel = progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true;
   const field = progression?.fieldOps;
   const refresh = useBattleStore((s) => s.loadFoundationProgression);
   const loading = useBattleStore((s) => s.progressionStatus === "loading");
@@ -229,7 +231,7 @@ function WarTable() {
   const pressureCopy = field?.region ? pressureEffect(field.region.pressure) : "Refresh to load current field conditions.";
   const currentDirective = field?.board?.reportVersion === 3 ? directiveSetLabel(field.board.directiveSet) : null;
   const firstClearMessage = operation?.status === "cleared"
-    ? "BROKEN SIGNAL COMPLETE · FIELD OPS NOW DRIVE YOUR TACTICAL PROGRESSION"
+    ? deadRelay ? "BROKEN SIGNAL COMPLETE · OPERATION 02 THE DEAD RELAY NOW AVAILABLE" : "BROKEN SIGNAL COMPLETE · FIELD OPS NOW DRIVE YOUR TACTICAL PROGRESSION"
     : operation?.missions["broken-signal-recover"] === "cleared"
       ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
       : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
@@ -390,6 +392,31 @@ function WarTable() {
           </div>
         </section>
 
+        {deadRelay ? <section className="t-panel t-wt-story-archive" aria-label="Operation 02 campaign">
+          <div className="t-wt-section-head">
+            <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 02</span><h2 className="t-title">THE DEAD RELAY</h2></div>
+            <strong>{deadRelay.status === "cleared" ? "CAMPAIGN SECURED" : deadRelay.missions["dead-relay-courier"] === "locked" ? "LOCKED" : "IN PROGRESS"}</strong>
+          </div>
+          <p>Intercept the courier. Hold the relay. Defeat its Guardian. Each first clear unlocks the next stage; your courier Intel changes the Hold mission.</p>
+          <div className="t-mission-strip"><span>COURIER TRACE</span><strong>{courierIntel ? "ACQUIRED · HOUND ARRIVES 1 ROUND LATER" : "NOT RECORDED · EARLY INTERCEPT REQUIRED"}</strong></div>
+          <div className="t-brief-grid t-wt-canon-grid">
+            {DEAD_RELAY.orderedMissionIds.map((id, index) => {
+              const mission = getMissionDef(id);
+              if (!mission) return null;
+              const status = deadRelay.missions[id] || "locked";
+              const active = deadRelay.activeMissionRun?.missionId === id;
+              return <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={id}>
+                <span className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {mission.objectiveType}</span>
+                <strong>{mission.name}</strong>
+                <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
+                <button type="button" className="t-btn" disabled={loading || status === "locked"}
+                  onClick={() => openOperationBrief(id)}>{active ? "RESUME FROM START" : status === "cleared" ? "REPLAY" : status === "available" ? "VIEW BRIEF" : "LOCKED"}</button>
+              </div>;
+            })}
+          </div>
+          <small>Resume restarts the accepted battle from turn 1; mid-battle positions and HP are not saved.</small>
+        </section> : null}
+
         <PackMasteryPanel />
 
         <details className="t-panel t-wt-story-archive">
@@ -462,19 +489,23 @@ function Brief() {
   const progressionError = useBattleStore((s) => s.progressionError);
   const busy = useBattleStore((s) => s.busy);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
-  const savedRun = field?.activeMissionRun;
+  const campaignRun = useBattleStore((s) => s.progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun);
+  const campaignIntel = useBattleStore((s) => s.progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true);
+  const campaignContext = campaignRun?.missionId === selectedMissionId ? campaignRun.campaignContext : { version: 1 as const, courierTraceAcquired: campaignIntel };
+  const baseMission = getMissionDef(selectedMissionId);
+  const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
+  const savedRun = campaignMission ? campaignRun : field?.activeMissionRun;
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
-  const baseMission = getMissionDef(selectedMissionId);
   const mission = baseMission ? missionForContext(baseMission, fieldContext) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
-  const twoSlots = Boolean(mission && (fieldOp || mission.objectiveType === "BOSS"));
+  const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
-    || (fieldOp ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
+    || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
   const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
-  const reinforcementRound = mission && fieldOp ? missionBattleRules(mission, false, fieldContext).reinforcement?.triggerRound : undefined;
+  const reinforcementRound = mission && (fieldOp || campaignMission) ? missionBattleRules(mission, false, fieldContext, campaignContext).reinforcement?.triggerRound : undefined;
   const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
@@ -484,9 +515,13 @@ function Brief() {
     : onboardingEnabled
       ? encounter.teaching
       : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
-  const primaryObjective = fieldOp ? `PRIMARY OBJECTIVE: ${mission.objectiveType}` : mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
+  const primaryObjective = fieldOp || campaignMission ? `PRIMARY OBJECTIVE: ${mission.objectiveType}` : mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
   const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "CNC JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
-  const missionIntel = mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
+  const missionIntel = campaignMission
+    ? mission?.missionId === "dead-relay-courier" ? "EARLY INTERCEPT: first win by round 4 grants Courier Trace. Slower victory still unlocks Hold."
+      : mission?.missionId === "dead-relay-hold" ? `COURIER TRACE ${campaignContext.courierTraceAcquired ? "ACTIVE: HOUND ROUND 3" : "NOT ACQUIRED: HOUND ROUND 2"}`
+      : "Guardian reinforcement arrives on round 3."
+    : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
   return (
     <div className="t-fill">
@@ -504,6 +539,7 @@ function Brief() {
         </header>
 
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
+        {campaignMission ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
         <section className="t-panel t-deploy-overview" aria-label="Mission overview">
           <div className="t-deploy-summary-main">
@@ -538,7 +574,7 @@ function Brief() {
               <div className="t-kicker">Squad</div>
               <h2 className="t-title">{allies.length} / {mission?.squadCap || allies.length} DEPLOYED</h2>
             </div>
-            {resuming ? <span>RESUMING SAVED RUN</span> : null}
+            {resuming ? <span>{campaignMission ? "RESUMING ACCEPTED RUN · ROUND 1 RESTART" : "RESUMING SAVED RUN"}</span> : null}
           </div>
 
           <div className="t-squad-preview t-squad-preview-v29" aria-label="Selected squad">
@@ -712,6 +748,8 @@ function Results() {
   const failureReason = useBattleStore((s) => s.battle.failureReason);
   const results = useBattleStore((s) => s.battle.results);
   const fieldResult = useBattleStore((s) => s.fieldResult);
+  const campaignResult = useBattleStore((s) => s.campaignResult);
+  const saveCampaignResult = useBattleStore((s) => s.saveCampaignResult);
   const saveFieldResult = useBattleStore((s) => s.saveFieldResult);
   const replay = useBattleStore((s) => s.replay);
   const backToHub = useBattleStore((s) => s.backToHub);
@@ -727,11 +765,12 @@ function Results() {
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const mission = getMissionDef(selectedMissionId);
   const fieldOp = mission?.activity === "FIELD_OP";
+  const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
-  const isFirstClear = operationVictory && progression?.operations?.[BROKEN_SIGNAL.operationId]?.missions[mission?.missionId || ""] === "available";
+  const isFirstClear = operationVictory && progression?.operations?.[mission?.operationId || BROKEN_SIGNAL.operationId]?.missions[mission?.missionId || ""] === "available";
   return (
     <div className="t-fill">
       <Background dim={0.6} />
@@ -739,18 +778,26 @@ function Results() {
         <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
           <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
           <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
+          <h2 className="t-title">{campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
           {sessionVictory ? (
             <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
-          {operationVictory && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
+          {operationVictory && !campaignMission && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
           {fieldOp ? <div>
             
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
             {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
+          {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
+            <strong>{campaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
+            <p>{mission?.missionId === "dead-relay-courier"
+              ? progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult?.intelEarned ? "COURIER TRACE ACTIVE · HOUND REINFORCEMENT DELAYED IN HOLD"
+                : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
+              : mission?.missionId === "dead-relay-hold" ? results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
+              : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
+          </div> : null}
           <PlayerIdentityCard />
           <dl className="t-stats">
             <div>
@@ -771,7 +818,14 @@ function Results() {
             </div>
           </dl>
           <div className="t-brief-actions t-result-actions">
-            {fieldOp ? (
+            {campaignMission ? (
+              campaignResult ? <>
+                <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>BACK TO CAMPAIGN</button>
+                <button type="button" className="t-btn" onClick={replay}>REPLAY / SQUAD</button>
+              </> : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
+                {progressionCommitPending ? "Recording..." : results.victory ? "SAVE VICTORY" : "RECORD FAILURE / RETRY"}
+              </button>
+            ) : fieldOp ? (
               <>
                 {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
                   <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>War Table</button>
