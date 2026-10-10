@@ -1,0 +1,46 @@
+name: Tactical Ops PR78 build and squad regression
+on:
+  push:
+    branches:
+      - integration/phantom-echo-p0a-tactical-op02-p1-20261010
+    paths:
+      - "tactical-ops-src/**"
+      - "tools/build_tactical_ops.mjs"
+      - "tools/verify_tactical_ops_dead_relay_squad.mjs"
+      - ".github/workflows/tactical-ops-pr78-build.yml"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: integration/phantom-echo-p0a-tactical-op02-p1-20261010
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Dead Relay squad selection (all three missions + legacy)
+        run: node tools/verify_tactical_ops_dead_relay_squad.mjs
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund
+      - name: Build canonical Tactical Ops bundle
+        run: npm run build:tactical-ops
+      - name: Verify generated bundle
+        run: |
+          test -s js/tactical_ops.js
+          node --check js/tactical_ops.js
+          grep -q "v3.1.2-dead-relay-squad-fix" js/tactical_ops.js
+          grep -q 'tops-3.1.2-dead-relay-squad-fix' js/boot_loaders.js
+      - name: Record build into PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tactical_ops.js js/boot_loaders.js
+          if git diff --cached --quiet; then
+            echo "Bundle already current"
+            exit 0
+          fi
+          git commit -m "build(tactical): refresh Dead Relay P1 runtime [skip ci]"
+          git push origin HEAD:integration/phantom-echo-p0a-tactical-op02-p1-20261010
