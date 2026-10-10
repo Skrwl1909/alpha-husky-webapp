@@ -220,3 +220,89 @@
 @media(prefers-reduced-motion:reduce){
  #statsBack .s3-shell *,#statsBack .s3-shell *::before,#statsBack .s3-shell *::after{animation:none!important;transition:none!important}
 }
+
+/* World Identity V1 — actual optimized environment plates.
+   All live text, stat mutations and equipped player art stay in DOM.
+   Backgrounds are ornamental and have no hit-testing surface. */
+#statsBack .s3-shell{
+  --s3-world-plate:none;
+  --s3-world-position:center top;
+}
+#statsBack .s3-shell[data-s3-view="overview"]{
+  --s3-world-plate:url("/assets/stats3/world_identity/overview_identity_chamber_v1.webp");
+  --s3-world-position:center 27%;
+}
+#statsBack .s3-shell[data-s3-view="build"]{
+  --s3-world-plate:url("/assets/stats3/world_identity/build_augmentation_console_v1.webp");
+  --s3-world-position:center 18%;
+}
+#statsBack .s3-shell[data-s3-view="legacy"]{
+  --s3-world-plate:url("/assets/stats3/world_identity/legacy_signal_archive_v1.webp");
+  --s3-world-position:center 22%;
+}
+/* The selected plate belongs to the existing scrolling scene, not the page
+   or modal. An opaque scrim preserves text contrast and hides unmapped areas. */
+#statsBack .s3-shell .s3-body{
+  background-image:linear-gradient(180deg,rgba(4,11,18,.80),rgba(4,11,18,.72) 44%,rgba(4,11,18,.61) 100%),var(--s3-world-plate);
+  background-position:center,var(--s3-world-position);
+  background-size:cover,cover;
+  background-repeat:no-repeat;
+  background-attachment:local,local;
+}
+#statsBack .s3-shell .s3-body::before{display:none}
+/* Overview is the one place where the environment and the equipped avatar
+   deliberately meet. Center ornament stays subordinate to live portrait. */
+#statsBack .s3-shell[data-s3-view="overview"] .s3-stage{
+  background-image:
+    radial-gradient(ellipse at 50% 42%,rgba(4,13,22,.32),rgba(4,13,22,.02) 40%,rgba(4,13,22,.33) 100%),
+    url("/assets/stats3/world_identity/overview_identity_chamber_v1.webp");
+  background-size:cover,cover;
+  background-position:center,center 31%;
+  background-repeat:no-repeat;
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-stage::before{
+  background:linear-gradient(180deg,rgba(1,7,13,.15),transparent 48%,rgba(1,7,13,.28));
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-stage::after{
+  background:radial-gradient(ellipse at 50% 46%,transparent 12%,rgba(3,9,15,.34) 90%);
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-portrait{
+  z-index:1;
+  filter:drop-shadow(0 7px 16px rgba(0,0,0,.85));
+}
+/* Build: a real machinery bay behind independently clickable 2x3 stat modules. */
+#statsBack .s3-shell[data-s3-view="build"] .s3-attribute{
+  background:linear-gradient(110deg,rgba(19,44,61,.96),rgba(7,19,29,.94));
+  border:1px solid rgba(121,171,194,.48);
+  border-radius:8px;
+  box-shadow:inset 0 1px rgba(191,226,238,.13),inset 2px 0 rgba(84,150,175,.19),0 3px 9px rgba(0,0,0,.43);
+}
+#statsBack .s3-shell[data-s3-view="build"] .s3-training{
+  background:linear-gradient(145deg,rgba(13,34,49,.97),rgba(4,14,24,.95));
+  border-color:rgba(117,180,208,.48);
+  border-radius:9px;
+  box-shadow:inset 0 1px rgba(156,219,236,.14),0 4px 12px rgba(0,0,0,.34);
+}
+#statsBack .s3-shell[data-s3-view="build"] .s3-more{
+  background:linear-gradient(100deg,rgba(16,43,61,.96),rgba(7,24,37,.94));
+}
+/* Legacy: monumental archive is visible in negative space, while records are
+   strong opaque reading surfaces sourced solely from existing progression. */
+#statsBack .s3-shell[data-s3-view="legacy"] .s3-legacy-power,
+#statsBack .s3-shell[data-s3-view="legacy"] .s3-legacy-focus,
+#statsBack .s3-shell[data-s3-view="legacy"] .s3-legacy-wall{
+  background:linear-gradient(115deg,rgba(10,30,44,.94),rgba(5,18,29,.88));
+  border-radius:9px;
+  border-color:rgba(124,186,211,.50);
+  box-shadow:inset 0 1px rgba(175,222,237,.13),0 5px 14px rgba(0,0,0,.37);
+}
+#statsBack .s3-shell[data-s3-view="legacy"] .s3-legacy-focus{border-left:3px solid rgba(94,203,238,.65)}
+#statsBack .s3-shell[data-s3-view="legacy"] .s3-legacy-wall{border-left:3px solid rgba(111,173,196,.80)}
+#statsBack .s3-shell[data-s3-view="legacy"] .s3-more{
+  background:linear-gradient(115deg,rgba(12,39,56,.96),rgba(5,20,33,.91));
+  border-color:rgba(126,193,216,.58);
+}
+/* Prevent a failed image load from ever replacing the dark structural fallback. */
+@media(prefers-reduced-motion:reduce){
+  #statsBack .s3-shell .s3-body{background-attachment:scroll,scroll}
+}
