@@ -12,7 +12,7 @@
   function shell(content){
     const root=el("#statsRoot");if(!root)return;
     root.classList.add("ah-stats-v3");
-    root.innerHTML='<div class="s3-shell"><nav role="tablist" aria-label="Character views" class="s3-tabs">'+buttonTab("overview","OVERVIEW")+buttonTab("build","BUILD")+buttonTab("legacy","LEGACY")+'</nav><div class="s3-body" role="tabpanel">'+content+'</div>'+(notice?'<div class="s3-feedback"><div class="s3-notice" role="status" aria-live="polite">'+clean(notice)+'</div><button type="button" class="s3-feedback-close" data-s3-dismiss aria-label="Dismiss status">✕</button></div>':'')+'</div>';
+    root.innerHTML='<div class="s3-shell" data-s3-view="'+tab+'"><nav role="tablist" aria-label="Character views" class="s3-tabs">'+buttonTab("overview","OVERVIEW")+buttonTab("build","BUILD")+buttonTab("legacy","LEGACY")+'</nav><div class="s3-body" role="tabpanel">'+content+'</div>'+(notice?'<div class="s3-feedback"><div class="s3-notice" role="status" aria-live="polite">'+clean(notice)+'</div><button type="button" class="s3-feedback-close" data-s3-dismiss aria-label="Dismiss status">✕</button></div>':'')+'</div>';
   }
   function box(title,body,cls=""){return '<section class="s3-box '+cls+'"><div class="s3-label">'+title+'</div>'+body+'</section>';}
   function bar(label,current,max,pct){return '<div class="s3-bar-row"><div><b>'+label+'</b><span>'+clean(current)+' / '+clean(max)+'</span></div><div class="s3-track"><i style="width:'+percent(pct)+'%"></i></div></div>';}
