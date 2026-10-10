@@ -128,3 +128,95 @@
 @media(max-width:350px){#statsBack .s3-body{padding:8px 9px}#statsBack .s3-attribute{min-height:88px}#statsBack .s3-attr-info strong{font-size:21px}#statsBack .s3-power button{font-size:9px;padding-inline:6px}#statsBack .ah-panel-hd .ah-title{font-size:12px;letter-spacing:.08em}}
 @media(max-height:670px){#statsBack .s3-stage{height:155px}}
 @media(prefers-reduced-motion:reduce){#statsBack .s3-shell *,#statsBack .s3-shell *:before,#statsBack .s3-shell *:after{animation:none!important;transition:none!important}}
+
+/* WORLD IDENTITY P0 / PASS A+B — strictly scoped, CSS-first art layers.
+   No rendered UI or fake data. Decorative layers never own pointer events. */
+#statsBack{
+  background:linear-gradient(180deg,rgba(3,8,14,.985),rgba(4,10,18,.975));
+  isolation:isolate;
+}
+#statsBack .ah-panel{
+  border-radius:14px 14px 10px 10px;
+  background:#07121d;
+  border-color:rgba(117,179,202,.34);
+  box-shadow:0 14px 35px #000b,inset 0 1px rgba(155,214,237,.13);
+}
+#statsBack .ah-panel-hd{
+  border-bottom:1px solid rgba(117,191,223,.29);
+  background:linear-gradient(170deg,#192d3b,#0b1b29 68%,#071420);
+  box-shadow:inset 0 1px rgba(161,221,240,.12);
+}
+#statsBack .s3-shell{
+  --s3-edge:rgba(107,163,193,.30);
+  --s3-hull:#112638;
+  --s3-cyan:#65d9ff;
+  position:relative;
+  isolation:isolate;
+  background:linear-gradient(#071420,#060d16);
+}
+#statsBack .s3-tabs{z-index:2;position:relative;box-shadow:inset 0 -1px #7fe0ff12}
+#statsBack .s3-body{position:relative;isolation:isolate}
+#statsBack .s3-body::before{
+  position:fixed;content:"";pointer-events:none;
+  inset:auto 13px 12px 13px;height:min(63vh,600px);
+  z-index:-1;opacity:.24;
+  background:linear-gradient(90deg,#040b11 0 7%,transparent 7% 93%,#040b11 93%),
+    repeating-linear-gradient(90deg,transparent 0 51px,#77bedb0a 52px,#77bedb0a 53px,transparent 54px 91px);
+}
+/* One dramatic plate lives inside the existing hero frame; real equipped
+   character keeps its own <img> and layering. */
+#statsBack .s3-shell[data-s3-view="overview"] .s3-stage{
+  border-radius:12px;
+  border:1px solid rgba(126,198,226,.40);
+  background:
+    radial-gradient(ellipse 22% 82% at 50% 44%,rgba(40,189,235,.32),transparent 86%),
+    linear-gradient(90deg,#07121b 0 7%,#1a3749 7.4%,#071a29 9.2%,transparent 13% 87%,#071a29 91%,#1a3749 92.6%,#07121b 94%),
+    repeating-linear-gradient(90deg,transparent 0 22%,rgba(100,164,190,.12) 22.1% 22.5%,transparent 23% 26%),
+    linear-gradient(180deg,#031019 0%,#0b2636 48%,#08121d 100%);
+  box-shadow:inset 0 1px #9ad4ed37,inset 0 -16px 28px #03080fd9,0 8px 25px #0007;
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-stage::before{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(111,191,221,.33),transparent 2%) 10% 50% / 2px 78% no-repeat,
+    linear-gradient(90deg,rgba(111,191,221,.33),transparent 2%) 90% 50% / 2px 78% no-repeat,
+    repeating-linear-gradient(0deg,transparent 0 39px,#a9e6ff07 40px 41px);
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-stage::after{
+  content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 80%,transparent 0 24%,#030b159c 84%);
+}
+#statsBack .s3-stage .s3-portrait{z-index:1;object-fit:contain;object-position:50% 46%}
+#statsBack .s3-stage .s3-stage-title{z-index:2;box-shadow:inset 0 -1px #8dd7ec1c}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-power{
+  border-radius:9px;border-color:rgba(117,180,202,.50);
+  background:linear-gradient(120deg,#15384d 0%,#0a1d2d 55%,#11212d);
+  box-shadow:inset 0 1px #9bd5ea24,0 3px 8px #0004;
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-next-goal{
+  border-radius:9px;
+  border:1px solid #46728c;
+  border-left:3px solid #68cbe7;
+  background:linear-gradient(120deg,#112d3f,#0a1a29 78%);
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-next-goal .s3-label::before{
+  content:"▰";font-size:10px;color:#65d9ff;margin-right:8px;
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-bar-row,
+#statsBack .s3-shell[data-s3-view="overview"] .s3-combat div{
+  border-radius:7px;background:linear-gradient(165deg,#102638,#071725);
+}
+#statsBack .s3-shell[data-s3-view="overview"] .s3-box:not(.s3-next-goal){
+  border-radius:10px;
+  background:linear-gradient(165deg,#112a3c,#081622);
+}
+/* Prepare a common mechanical vocabulary without redesigning Build / Legacy
+   until the Overview vertical-slice screenshot is approved. */
+#statsBack .s3-more{border-radius:8px;border-color:rgba(104,173,203,.38)}
+#statsBack .s3-shell button:focus-visible{outline:2px solid #65d9ff;outline-offset:2px}
+@media(max-width:350px){
+ #statsBack .s3-stage{height:clamp(143px,26dvh,210px)}
+}
+@media(prefers-reduced-motion:reduce){
+ #statsBack .s3-shell *,#statsBack .s3-shell *::before,#statsBack .s3-shell *::after{animation:none!important;transition:none!important}
+}
