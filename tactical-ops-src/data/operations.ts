@@ -29,6 +29,8 @@ export interface MissionDef {
   terminal?: Cell;
 }
 
+export interface CampaignContext { version: 1; courierTraceAcquired: boolean }
+
 export interface TacticalOperationDef {
   operationId: string;
   name: string;
@@ -103,6 +105,11 @@ export const BROKEN_SIGNAL: TacticalOperationDef = {
   operationId: "broken-signal",
   name: "BROKEN SIGNAL",
   orderedMissionIds: ["broken-signal-breach", "broken-signal-recover", "broken-signal-commander"],
+};
+
+export const DEAD_RELAY: TacticalOperationDef = {
+  operationId: "dead-relay", name: "THE DEAD RELAY",
+  orderedMissionIds: ["dead-relay-courier", "dead-relay-hold", "dead-relay-guardian"],
 };
 
 export const MISSION_DEFS: Record<string, MissionDef> = {
@@ -204,6 +211,46 @@ Object.assign(MISSION_DEFS, {
     challenge: { type: "SQUAD", required: ["ally-03", "PET"], label: "Survive with SHADOW and your equipped PET" },
     squadHint: "SHADOW can sustain a defensive group. PET slows help delay the new arrival; CNC offers pressure if you forgo the optional squad challenge.",
   },
+  "dead-relay-courier": {
+    activity: "CANON", missionId: "dead-relay-courier", operationId: DEAD_RELAY.operationId,
+    battlefield: "broken-signal", name: "THE COURIER", objectiveType: "INTERCEPT", squadCap: 3,
+    executable: true,
+    briefCopy: "HOUND is evacuating relay intel. Stop the SIGNAL COURIER before it reaches the south-east exit. Capture it by round 4 on the FIRST successful clear to obtain a tactical advantage in the next mission.",
+    resultsCopy: "Courier stopped. Relay coordinates recovered. The counterattack is imminent.",
+    objective: { type: "INTERCEPT", targetId: "courier", exit: { c: 7, r: 4 } },
+    spawns: [
+      { defId: "hostile", id: "courier", c: 4, r: 0, unitDef: { ...UNIT_DEFS.hostile, defId: "signal-courier", name: "SIGNAL COURIER", move: 1 } },
+      { defId: "hostile", id: "h1", c: 5, r: 3 },
+    ],
+    squadHint: "CNC can suppress the fleeing courier. PET slows make interception easier, while SHADOW keeps a forward blocker alive.",
+  },
+  "dead-relay-hold": {
+    activity: "CANON", missionId: "dead-relay-hold", operationId: DEAD_RELAY.operationId,
+    battlefield: "broken-signal", name: "RELAY UNDER FIRE", objectiveType: "HOLD", squadCap: 3,
+    executable: true,
+    briefCopy: "Hold the relay for 3 consecutive round changes. Any enemy inside the marked zone resets control. Your recovered courier intel delays one HOUND reinforcement by a round.",
+    resultsCopy: "Relay secured. The defensive perimeter is stable. Guardian access confirmed.",
+    objective: { type: "HOLD", terminal: { c: 3, r: 2 }, radius: 1, duration: 3, progress: 0, checkedRound: 1 },
+    spawns: [{ defId: "hostile", id: "h1", c: 5, r: 1 }, { defId: "hostile", id: "h2", c: 6, r: 3 }],
+    directive: { type: "REINFORCEMENTS", name: "REINFORCEMENTS", copy: "A HOUND arrives from the east on round 2, or round 3 if courier intel was captured in the first mission.",
+      reinforcement: { spawn: { defId: "hostile", id: "dead-relay-reinforcement", c: 7, r: 2 }, triggerRound: 2, telegraphed: true, spawned: false } },
+    squadHint: "SHADOW can sustain relay control. CNC and PET prevent enemy contesting.",
+  },
+  "dead-relay-guardian": {
+    activity: "CANON", missionId: "dead-relay-guardian", operationId: DEAD_RELAY.operationId,
+    battlefield: "broken-signal", name: "RELAY GUARDIAN", objectiveType: "BOSS", squadCap: 3,
+    executable: true,
+    briefCopy: "Eliminate the Dead Relay Guardian while a telegraphed HOUND reinforcement closes from the flank. This is the final mission of Operation 02.",
+    resultsCopy: "OPERATION 02 — THE DEAD RELAY SECURED. Canonical campaign archive updated.",
+    objective: { type: "BOSS", targetId: "leader" },
+    spawns: [
+      { defId: "leader", id: "leader", c: 6, r: 2, unitDef: { ...UNIT_DEFS.leader, name: "DEAD RELAY GUARDIAN" } },
+      { defId: "hostile", id: "h1", c: 4, r: 0 }, { defId: "hostile", id: "h2", c: 5, r: 4 },
+    ],
+    directive: { type: "REINFORCEMENTS", name: "GUARDIAN REINFORCEMENT", copy: "One HOUND enters from the south-east on round 3. The entry is telegraphed.",
+      reinforcement: { spawn: { defId: "hostile", id: "guardian-reinforcement", c: 7, r: 4 }, triggerRound: 3, telegraphed: true, spawned: false } },
+    squadHint: "Use your Pack's control and sustain to counter the Guardian's pressure, then focus on the boss.",
+  },
 } satisfies Record<string, MissionDef>);
 
 // V2.6 accepted attempts keep the old RECOVER contract until committed/abandoned.
@@ -224,6 +271,10 @@ export function missionForContext(mission: MissionDef, context?: Partial<FieldCo
 
 /** The accepted Commander squad rules also supply Field Ops' two tactical slots. */
 export function missionSpawnsForSquad(mission: MissionDef, squadIds: string[], pet?: TacticalPet | null, approach: DeploymentApproach = "standard"): SpawnSpec[] | null {
+  if (mission.operationId === DEAD_RELAY.operationId) {
+    const squad = commanderSpawnsForSquad(squadIds, pet);
+    return squad ? [...squad.slice(0, 3), ...(mission.spawns || [])] : null;
+  }
   if (mission.activity === "FIELD_OP") {
     const squad = commanderSpawnsForSquad(squadIds, pet);
     return squad && DEPLOYMENT_APPROACHES[approach] ? [...squad.slice(0, 3).map((spawn, i) => ({ ...spawn, ...DEPLOYMENT_APPROACHES[approach].cells[i] })), ...(mission.spawns || [])] : null;
@@ -232,7 +283,7 @@ export function missionSpawnsForSquad(mission: MissionDef, squadIds: string[], p
     : mission.objectiveType === "BOSS" ? commanderSpawnsForSquad(squadIds, pet) : mission.spawns || null;
 }
 
-export function missionBattleRules(mission: MissionDef, routingTrace = false, context?: Partial<FieldContext>) {
+export function missionBattleRules(mission: MissionDef, routingTrace = false, context?: Partial<FieldContext>, campaignContext?: CampaignContext | null) {
   mission = missionForContext(mission, context);
   const objective: BattleObjective | null = mission.objective ? structuredClone(mission.objective)
     : mission.objectiveType === "RECOVER" && mission.terminal ? { type: "RECOVER", terminal: { ...mission.terminal }, completed: false }
@@ -241,6 +292,9 @@ export function missionBattleRules(mission: MissionDef, routingTrace = false, co
   const reinforcement = directive?.reinforcement || (mission.objectiveType === "BOSS" ? { ...COMMANDER_REINFORCEMENT, spawn: { ...COMMANDER_REINFORCEMENT.spawn }, telegraphed: routingTrace, spawned: false } : null);
   if (mission.activity === "FIELD_OP" && reinforcement && context && context.pressure < 2) {
     reinforcement.triggerRound += 1;
+  }
+  if (mission.missionId === "dead-relay-hold" && reinforcement && campaignContext?.courierTraceAcquired) {
+    reinforcement.triggerRound = 3;
   }
   return { objective, directive, reinforcement };
 }

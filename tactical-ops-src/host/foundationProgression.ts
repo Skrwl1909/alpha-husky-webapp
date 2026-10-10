@@ -1,4 +1,5 @@
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
+import type { CampaignContext } from "../data/operations";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
@@ -25,6 +26,7 @@ export interface FoundationProgressionState {
   updatedAt: number;
   fieldOps?: FieldOpsProgression;
   operations?: Record<string, OperationProgressionState>;
+  campaignIntel?: { "dead-relay": { courierTraceAcquired: boolean } };
   intel?: { routingTrace: boolean; commanderProfile: boolean };
   archive?: { brokenSignal: boolean };
   nextOperationSlot?: "unassigned" | null;
@@ -75,6 +77,22 @@ export interface OperationMissionRun {
   missionId: string;
   squadIds: string[];
   fieldContext?: FieldContext;
+  campaignContext?: CampaignContext;
+}
+
+export interface CampaignReport {
+  victory: boolean;
+  turns: number;
+  objectiveComplete: boolean;
+  squadStanding: number;
+  squadDeployed: number;
+  failureReason?: string;
+}
+
+export interface CampaignResult extends CampaignReport {
+  missionId: string;
+  runId: string;
+  intelEarned: boolean;
 }
 
 export interface OperationProgressionState {
@@ -170,6 +188,12 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   state.activeTacticalProfile = parseTacticalProfile(value.activeTacticalProfile);
   state.equippedPet = parseTacticalPet(value.equippedPet);
   if (operations) state.operations = operations;
+    if (value.campaignIntel && typeof value.campaignIntel === "object") {
+      const intel = (value.campaignIntel as Record<string, unknown>)["dead-relay"];
+      if (intel && typeof intel === "object" && typeof (intel as Record<string, unknown>).courierTraceAcquired === "boolean") {
+        state.campaignIntel = { "dead-relay": { courierTraceAcquired: (intel as Record<string, boolean>).courierTraceAcquired } };
+      }
+    }
   state.kodaSidegrade = operations?.["broken-signal"]?.status === "cleared" && (value.kodaSidegrade === "A" || value.kodaSidegrade === "B") ? value.kodaSidegrade : null;
   state.shadowSidegrade = operations?.["broken-signal"]?.status === "cleared" && (value.shadowSidegrade === "A" || value.shadowSidegrade === "B") ? value.shadowSidegrade : null;
   if (value.intel && typeof value.intel === "object") {
@@ -181,6 +205,21 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   if (value.archive && typeof value.archive === "object") state.archive = { brokenSignal: Boolean((value.archive as Record<string, unknown>).brokenSignal) };
   if (value.nextOperationSlot === "unassigned" || value.nextOperationSlot === null) state.nextOperationSlot = value.nextOperationSlot;
   return state;
+}
+
+function parseCampaignContext(raw: unknown): CampaignContext | null {
+  if (!raw || typeof raw !== "object") return null;
+  const item = raw as Record<string, unknown>;
+  return item.version === 1 && typeof item.courierTraceAcquired === "boolean"
+    ? { version: 1, courierTraceAcquired: item.courierTraceAcquired } : null;
+}
+
+function parseCampaignResult(raw: unknown): CampaignResult | null {
+  if (!raw || typeof raw !== "object") return null;
+  const v = raw as Record<string, unknown>;
+  if (typeof v.victory !== "boolean" || typeof v.objectiveComplete !== "boolean" || typeof v.missionId !== "string" || typeof v.runId !== "string" || typeof v.intelEarned !== "boolean") return null;
+  if (![v.turns, v.squadStanding, v.squadDeployed].every(Number.isInteger)) return null;
+  return { victory: v.victory, objectiveComplete: v.objectiveComplete, turns: Number(v.turns), squadStanding: Number(v.squadStanding), squadDeployed: Number(v.squadDeployed), missionId: v.missionId, runId: v.runId, intelEarned: v.intelEarned, ...(typeof v.failureReason === "string" ? { failureReason: v.failureReason } : {}) };
 }
 
 function parseOperations(raw: unknown): Record<string, OperationProgressionState> | null {
@@ -207,7 +246,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
       if (activeValue.fieldContext != null && !fieldContext) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(fieldContext ? { fieldContext } : {}) };
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -288,7 +327,7 @@ export async function startOperationMission(
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(fieldContext ? { fieldContext } : {}) } };
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
 }
 
 export async function continueOperationMission(
@@ -297,9 +336,10 @@ export async function continueOperationMission(
   runId: string,
   routingTraceAcquired = false,
   fieldReport?: FieldReport,
-): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null }> {
-  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}) });
-  return { state: responseState(response), firstClear: response.firstClear === true, fieldResult: parseFieldResult(response.fieldResult) };
+  campaignReport?: CampaignReport,
+): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null }> {
+  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}) });
+  return { state: responseState(response), firstClear: response.firstClear === true, fieldResult: parseFieldResult(response.fieldResult), campaignResult: parseCampaignResult(response.campaignResult) };
 }
 
 export async function saveKodaSidegrade(requestId: string, expectedRevision: number, kodaSidegrade: KodaSidegrade): Promise<FoundationProgressionState> {
