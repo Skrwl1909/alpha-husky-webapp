@@ -791,7 +791,10 @@
     var current = resolve(gatherInputs()), choice = current.nextMove;
     if (!choice || (expectedKey && expectedKey !== choice.key)) return false;
     if (choice.destination === "tactical") {
-      if (choice.key === "tactical-first-attempt" && !global.GuidedNavigation?.terminal("tactical") && global.GuidedNavigation?.start("tactical") === true) return true;
+      // Guidance highlights a destination but cannot open Tactical Ops itself.
+      if (choice.key === "tactical-first-attempt" && !global.GuidedNavigation?.terminal("tactical")) {
+        global.GuidedNavigation?.start("tactical");
+      }
       return await global.Missions.openTacticalOps();
     }
     if (choice.destination === "mission" || choice.destination === "campaign") return await global.CTA.openTarget(choice.target);
