@@ -818,7 +818,8 @@
    Presentation only; backend remains authoritative.
    --------------------------------------------------------- */
 #hubPursuitRoot[hidden]{display:none!important;}
-#hubBack.has-active-pursuit #hubGoalRoot{display:none!important;}
+#hubBack.has-active-pursuit #hubGoalRoot,
+#hubBack.has-active-pursuit #hubStoryRoot{display:none!important;}
 #hubPursuitRoot{padding:0 14px 12px;}
 .ah-pursuit-card{
   position:relative;
