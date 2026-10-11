@@ -6189,7 +6189,8 @@ function _normalizeRareDropObj(obj) {
   }
   function renderFirstSignalOfferCard(realActive) {
     const signal = firstSignalViewState();
-    if (!signal?.eligible || !signal?.faction_selected) return "";
+    // Oath V1 intentionally allows UNBOUND: faction is not a First Signal UI prerequisite.
+    if (!signal?.eligible) return "";
     if (signal.state && signal.state !== "NOT_STARTED") return "";
     const hasActive = !!(realActive?.status && realActive.status !== "NONE");
     return `
@@ -6207,6 +6208,7 @@ function _normalizeRareDropObj(obj) {
               <div class="m-offer-meta"><div class="m-fit">Story route · onboarding</div></div>
               <div class="m-offer-cta">
                 <button type="button" class="btn primary" data-act="guided_start" ${hasActive ? "disabled" : ""}>Start First Signal</button>
+                ${_guidedError ? `<div role="status" class="m-muted" style="margin-top:8px">${esc(_guidedError)}</div>` : ""}
               </div>
             </div>
           </div>
@@ -6273,7 +6275,7 @@ function _normalizeRareDropObj(obj) {
     const campaign = window.Campaign?.state();
     const camp = campaign?.campaign;
     if (!signal?.eligible) return "";
-    if ((!signal.state || signal.state === "NOT_STARTED") && signal.faction_selected) return "first_signal";
+    if (!signal.state || signal.state === "NOT_STARTED") return "first_signal";
     if (signal.state === "REWARD_RECEIVED") return "gear";
     if (signal.state === "COMPLETED" && !signal.world_discovery && !camp?.markLeft && !camp?.playerDirective && (campaign?.eligible || _guidedFocus)) return "relay";
     return "";
