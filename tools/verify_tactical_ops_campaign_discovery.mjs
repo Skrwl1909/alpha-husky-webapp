@@ -1,0 +1,11 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const s=readFileSync(new URL("../tactical-ops-src/ui/App.tsx",import.meta.url),"utf8");
+const c=readFileSync(new URL("../tactical-ops-src/tactical.css",import.meta.url),"utf8");
+const a=s.indexOf("t-wt-hero-compact"), b=s.indexOf('{deadRelay?.status !== "cleared" ? deadRelayCampaign : null}'), d=s.indexOf('aria-label="Current Field Ops"'), e=s.indexOf('{deadRelay?.status === "cleared" ? deadRelayCampaign : null}');
+assert.ok(a>=0&&a<b&&b<d&&d<e,"Story must precede Field Ops; archive below");
+assert.ok(s.includes('deadRelay?.missions[id] === "available"')&&s.includes('deadRelay?.activeMissionRun?.missionId'),"Next or resume");
+assert.ok(s.includes("CONTINUE CAMPAIGN")&&s.includes("RESUME CAMPAIGN"),"CTA");
+assert.ok(s.includes('disabled={loading || status === "locked"}'),"Locked missions remain gated");
+assert.ok(c.includes("t-wt-campaign-feature")&&c.includes("@media (max-width:620px)"),"Mobile layout");
+console.log("PASS campaign hierarchy / resume / locks / mobile");

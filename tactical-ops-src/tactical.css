@@ -3985,3 +3985,17 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     opacity: .62;
   }
 }
+
+/* Active Operation 02 must read as the next story, not as an archive. */
+#tacticalOpsRoot .t-wt-campaign-feature { padding:1rem 1.05rem; border:1px solid rgba(117,217,244,.55); border-radius:8px; background:radial-gradient(circle at 93% 8%,rgba(156,69,69,.2),transparent 45%),linear-gradient(135deg,rgba(14,35,48,.98),rgba(6,14,22,.98)); box-shadow:0 4px 28px rgba(0,0,0,.3); }
+#tacticalOpsRoot .t-wt-campaign-feature > p { color:#b3c8d1; margin:.65rem 0 .85rem; line-height:1.5; }
+#tacticalOpsRoot .t-wt-campaign-feature .t-wt-canon-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+#tacticalOpsRoot .t-wt-campaign-actions { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.8rem; padding:.82rem; margin-bottom:.8rem; border:1px solid rgba(113,207,235,.28); border-radius:6px; background:rgba(2,12,22,.55); }
+#tacticalOpsRoot .t-wt-campaign-actions strong { display:block; margin-top:.22rem; color:#f1f9ff; font-size:1rem; }
+#tacticalOpsRoot .t-wt-campaign-cta { min-height:44px; white-space:normal; }
+@media (max-width:620px) {
+  #tacticalOpsRoot .t-wt-campaign-feature { padding:.82rem; }
+  #tacticalOpsRoot .t-wt-campaign-feature .t-wt-canon-grid { grid-template-columns:1fr; }
+  #tacticalOpsRoot .t-wt-campaign-actions { align-items:stretch; flex-direction:column; }
+  #tacticalOpsRoot .t-wt-campaign-cta { width:100%; }
+}
