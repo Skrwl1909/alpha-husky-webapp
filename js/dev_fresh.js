@@ -4,6 +4,7 @@
 
   var ROOT_ID = "ahDevFreshRoot";
   var STYLE_ID = "ah-dev-fresh-css";
+  var DOCK_KEY = "ah.devFreshDock.v1";
   var LS_KEYS = ["ah_onboarding_v", "ah_origin_mark", "ah_faction", "ah.sd.markHandoffConsumed.v1", "ah.sd.tacticalDiscovery.v1", "ah.ftue.discoveryGuideSeen.v1", "ah.sd.returnContinuity.v1", "ah.ftue.scoutGuide.v1", "ah.ftue.forgeDiscovery.v1", "ah.ftue.coreSystemDiscovery.v1", "ah.discovery.postFtue.v1", "ah.fieldRecord.activationSeen.v1", "ah.fieldRecord.activationSeen.v1.devFresh"];
 
   var S = {
@@ -11,8 +12,11 @@
     eligible: false,
     active: false,
     busy: false,
-    loaded: false
+    loaded: false,
+    expanded: false,
+    dock: "bottom"
   };
+  try { S.dock = global.localStorage.getItem(DOCK_KEY) === "top" ? "top" : "bottom"; } catch (_) {}
 
   function apiPost() {
     return S.apiPost || global.apiPost || global.apiPostRaw || null;
@@ -23,18 +27,28 @@
     var style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = [
-      "#ahDevFreshRoot{position:fixed;left:8px;right:8px;top:max(8px,var(--ah-inset-top,env(safe-area-inset-top,0px)));z-index:46;pointer-events:none;display:none;}",
-      "#ahDevFreshRoot[data-show='1']{display:block;}",
-      ".ah-devfresh{pointer-events:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 8px;border:1px solid rgba(255,196,72,.55);background:rgba(18,12,4,.92);color:#ffe7b0;border-radius:8px;font:600 11px/1.2 ui-sans-serif,system-ui,sans-serif;letter-spacing:.04em;box-shadow:0 8px 24px rgba(0,0,0,.45);}",
-      ".ah-devfresh[data-active='1']{border-color:#ffb020;background:rgba(48,24,0,.94);color:#fff3d0;}",
-      ".ah-devfresh-mark{display:inline-flex;align-items:center;gap:6px;text-transform:uppercase;}",
-      ".ah-devfresh-dot{width:8px;height:8px;border-radius:50%;background:#8a7a55;box-shadow:0 0 0 2px rgba(255,176,32,.15);}",
-      ".ah-devfresh[data-active='1'] .ah-devfresh-dot{background:#ffb020;box-shadow:0 0 10px #ffb020;}",
-      ".ah-devfresh-actions{margin-left:auto;display:flex;gap:6px;}",
-      ".ah-devfresh button{appearance:none;border:1px solid rgba(255,196,72,.45);background:rgba(255,255,255,.06);color:inherit;font:700 10px/1 ui-sans-serif,system-ui,sans-serif;letter-spacing:.06em;text-transform:uppercase;padding:6px 8px;border-radius:6px;cursor:pointer;}",
-      ".ah-devfresh button[disabled]{opacity:.45;cursor:default;}",
-      ".ah-devfresh button[data-kind='off']{border-color:rgba(255,255,255,.2);}",
-      ".ah-devfresh-note{flex-basis:100%;font:500 10px/1.3 ui-sans-serif,system-ui,sans-serif;color:#d7c39a;letter-spacing:0;text-transform:none;}"
+      "#ahDevFreshRoot{position:fixed;right:10px;left:auto;top:auto;bottom:max(76px,calc(env(safe-area-inset-bottom,0px) + 70px));z-index:46;pointer-events:none;display:none;max-width:calc(100vw - 20px);}",
+      "#ahDevFreshRoot[data-dock='top']{top:max(8px,var(--ah-inset-top,env(safe-area-inset-top,0px)));bottom:auto;}",
+      "#ahDevFreshRoot[data-show='1']{display:flex;justify-content:flex-end;}",
+      ".ah-devfresh{pointer-events:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;max-width:calc(100vw - 20px);font:600 11px/1.35 system-ui,sans-serif;color:#ffe7b0;}",
+      ".ah-devfresh-toggle{appearance:none;display:inline-flex;align-items:center;gap:7px;min-height:42px;padding:9px 12px;border:1px solid rgba(255,196,72,.65);border-radius:12px;background:rgba(20,15,8,.96);box-shadow:0 7px 22px rgba(0,0,0,.5);color:#ffe7b0;font:700 11px system-ui,sans-serif;cursor:pointer;white-space:nowrap;}",
+      ".ah-devfresh[data-active='1'] .ah-devfresh-toggle{border-color:#ffb020;background:rgba(49,26,4,.97);color:#fff3d0;}",
+      ".ah-devfresh-dot{width:8px;height:8px;border-radius:50%;background:#887a62;display:inline-block;}",
+      ".ah-devfresh[data-active='1'] .ah-devfresh-dot{background:#ffb020;box-shadow:0 0 9px #ffb020;}",
+      ".ah-devfresh-panel{box-sizing:border-box;width:min(288px,calc(100vw - 20px));padding:12px;border:1px solid rgba(255,196,72,.55);border-radius:12px;background:rgba(18,12,4,.97);box-shadow:0 12px 30px rgba(0,0,0,.5);}",
+      ".ah-devfresh-panel[hidden]{display:none!important;}",
+      ".ah-devfresh-panel-title{font:700 12px system-ui,sans-serif;letter-spacing:.04em;}",
+      ".ah-devfresh-note{margin:6px 0 10px;font:500 11px/1.4 system-ui,sans-serif;color:#d7c39a;}",
+      ".ah-devfresh-actions{display:flex;gap:6px;}",
+      ".ah-devfresh-panel button{appearance:none;min-height:40px;border:1px solid rgba(255,196,72,.4);background:rgba(255,255,255,.07);color:inherit;font:700 11px system-ui,sans-serif;padding:8px 10px;border-radius:7px;cursor:pointer;}",
+      ".ah-devfresh-actions button{flex:1;}",
+      ".ah-devfresh-panel button[disabled]{opacity:.45;cursor:default;}",
+      ".ah-devfresh-panel button[data-kind='dock']{width:100%;margin-top:8px;}",
+      ".ah-devfresh button:focus-visible{outline:2px solid #fff3d0;outline-offset:2px;}",
+      "#ahDevFreshRoot[data-dock='top'] .ah-devfresh-toggle{order:0;}",
+      "#ahDevFreshRoot[data-dock='top'] .ah-devfresh-panel{order:1;}",
+      "#ahDevFreshRoot[data-dock='bottom'] .ah-devfresh-toggle{order:1;}",
+      "#ahDevFreshRoot[data-dock='bottom'] .ah-devfresh-panel{order:0;}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -72,24 +86,31 @@
       return;
     }
     el.setAttribute("data-show", "1");
+    el.setAttribute("data-dock", S.dock);
     try {
       if (S.active) document.body.setAttribute("data-dev-fresh", "1");
       else document.body.removeAttribute("data-dev-fresh");
     } catch (_) {}
     var note = S.active
-      ? "Isolated fresh test profile. Real Telegram account is untouched. Economy writes are blocked."
-      : "Owner-only. Turns gameplay onto an isolated fresh profile without resetting the real account.";
+      ? "Isolated test profile. Your real account is untouched. Economy writes are blocked."
+      : "Real player is active. Use On to switch to a separate test player.";
+    var stateLabel = S.active ? "ON" : "OFF";
     el.innerHTML =
       '<div class="ah-devfresh" data-active="' + (S.active ? "1" : "0") + '">' +
-        '<span class="ah-devfresh-mark"><span class="ah-devfresh-dot"></span>DEV FRESH PROFILE</span>' +
-        '<span>' + (S.active ? "ON — isolated test player" : "OFF — real player") + "</span>" +
-        '<span class="ah-devfresh-actions">' +
-          '<button type="button" data-kind="on"' + (S.active || S.busy ? " disabled" : "") + ">On</button>" +
-          '<button type="button" data-kind="reset"' + (S.busy ? " disabled" : "") + ">Reset</button>" +
-          '<button type="button" data-kind="off"' + (!S.active || S.busy ? " disabled" : "") + ">Off</button>" +
-        "</span>" +
-        '<span class="ah-devfresh-note">' + note + "</span>" +
-      "</div>";
+        '<button type="button" class="ah-devfresh-toggle" data-kind="toggle" aria-controls="ahDevFreshControls" aria-expanded="' + (S.expanded ? "true" : "false") + '" aria-label="Fresh profile ' + stateLabel + '. Toggle controls">' +
+          '<span class="ah-devfresh-dot" aria-hidden="true"></span><span>FRESH ' + stateLabel + '</span><span aria-hidden="true">' + (S.expanded ? "×" : "☰") + '</span>' +
+        '</button>' +
+        '<section class="ah-devfresh-panel" id="ahDevFreshControls"' + (S.expanded ? "" : " hidden") + '>' +
+          '<div class="ah-devfresh-panel-title">DEV FRESH PROFILE — ' + stateLabel + '</div>' +
+          '<p class="ah-devfresh-note">' + note + '</p>' +
+          '<div class="ah-devfresh-actions">' +
+            '<button type="button" data-kind="on"' + (S.active || S.busy ? " disabled" : "") + '>On</button>' +
+            '<button type="button" data-kind="reset"' + (S.busy ? " disabled" : "") + '>Reset</button>' +
+            '<button type="button" data-kind="off"' + (!S.active || S.busy ? " disabled" : "") + '>Off</button>' +
+          '</div>' +
+          '<button type="button" data-kind="dock">Move to ' + (S.dock === "top" ? "bottom" : "top") + ' corner</button>' +
+        '</section>' +
+      '</div>';
   }
 
   async function call(path) {
@@ -145,7 +166,20 @@
     el.addEventListener("click", function (ev) {
       var btn = ev.target && ev.target.closest ? ev.target.closest("button[data-kind]") : null;
       if (!btn || btn.disabled) return;
-      run(btn.getAttribute("data-kind"));
+      var kind = btn.getAttribute("data-kind");
+      if (kind === "toggle") {
+        S.expanded = !S.expanded;
+        render();
+        return;
+      }
+      if (kind === "dock") {
+        S.dock = S.dock === "top" ? "bottom" : "top";
+        S.expanded = false;
+        try { global.localStorage.setItem(DOCK_KEY, S.dock); } catch (_) {}
+        render();
+        return;
+      }
+      run(kind);
     });
   }
 
