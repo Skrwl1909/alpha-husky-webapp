@@ -76,6 +76,62 @@
     return el;
   }
 
+  // Read-only first-session diagnosis. Owner-only UI; never sends player data anywhere.
+  async function diagnoseFirstSignal() {
+    if (!S.eligible || !S.active || S.busy) return;
+    S.busy = true;
+    render();
+    var result = { source: "DEV FRESH (read-only)", checkedAt: new Date().toISOString() };
+    function brief(data) {
+      if (!data || typeof data !== "object") return { missing: true };
+      var root = (data.data && typeof data.data === "object") ? data.data : (data.state && typeof data.state === "object" ? data.state : data);
+      var fs = root.firstSignal || root.first_signal || (root.tutorial && root.tutorial.first_signal) || {};
+      var faction = root.currentFaction || root.faction || root.faction_id || null;
+      return {
+        ok: data.ok !== false,
+        error: data.reason || data.error || null,
+        first_signal: {
+          present: !!(fs && Object.keys(fs).length),
+          eligible: fs.eligible === true,
+          faction_selected: fs.faction_selected === true,
+          state: fs.state || null,
+          status: fs.status || null,
+          version: fs.version || null
+        },
+        faction_present: !!faction,
+        offers: Array.isArray(root.offers) ? root.offers.length : null
+      };
+    }
+    try {
+      var fn = apiPost();
+      if (typeof fn !== "function") throw Error("apiPost not ready");
+      var settled = await Promise.allSettled([
+        fn("/webapp/tutorial/state", {run_id:"diag_tut_"+Date.now()}),
+        fn("/webapp/missions/state", {run_id:"diag_mis_"+Date.now()}),
+        fn("/webapp/oath/state", {})
+      ]);
+      ["tutorial", "missions", "oath"].forEach(function(key,i){
+        result[key] = settled[i].status === "fulfilled" ? brief(settled[i].value) : { error: String(settled[i].reason?.message || "unavailable") };
+      });
+      var cached = global.Onboarding?.getFirstSignal?.() || {};
+      result.frontend = {
+        eligible: cached.eligible === true,
+        faction_selected: cached.faction_selected === true,
+        state: cached.state || null,
+        missions_card_present: !!document.getElementById("mFirstSignalOffer"),
+        webapp_version: String(global.WEBAPP_VER || "")
+      };
+      var report = JSON.stringify(result, null, 2);
+      try { console.log("[FTUE DIAG]", result); } catch (_) {}
+      global.alert("FTUE READ-ONLY DIAGNOSTIC\\n" + report.slice(0,2800));
+    } catch (err) {
+      global.alert("FTUE diagnosis failed: " + String(err?.message || err));
+    } finally {
+      S.busy = false;
+      render();
+    }
+  }
+
   function render() {
     ensureStyles();
     var el = rootEl();
@@ -108,6 +164,7 @@
             '<button type="button" data-kind="reset"' + (S.busy ? " disabled" : "") + '>Reset</button>' +
             '<button type="button" data-kind="off"' + (!S.active || S.busy ? " disabled" : "") + '>Off</button>' +
           '</div>' +
+          (S.active ? '<button type="button" data-kind="diagnose">Diagnose First Signal (read only)</button>' : '') +
           '<button type="button" data-kind="dock">Move to ' + (S.dock === "top" ? "bottom" : "top") + ' corner</button>' +
         '</section>' +
       '</div>';
@@ -172,6 +229,7 @@
         render();
         return;
       }
+      if (kind === "diagnose") { void diagnoseFirstSignal(); return; }
       if (kind === "dock") {
         S.dock = S.dock === "top" ? "bottom" : "top";
         S.expanded = false;
