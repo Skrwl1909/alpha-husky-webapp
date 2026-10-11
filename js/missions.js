@@ -6187,8 +6187,39 @@ function _normalizeRareDropObj(obj) {
     const tabs = [["active", "Active"], ["available", "Available"], ["elite", "Elite"]];
     return `<div class="m-compact-tabs" role="tablist" aria-label="Mission views">${tabs.map(([key, label]) => `<button type="button" class="m-compact-tab${selected === key ? " is-active" : ""}" data-act="missions_tab" data-tab="${key}" role="tab" aria-selected="${selected === key ? "true" : "false"}">${label}</button>`).join("")}</div><section class="m-compact-panel" role="tabpanel"${selected === "active" ? "" : " hidden"}>${activePanel}</section><section class="m-compact-panel" role="tabpanel"${selected === "available" ? "" : " hidden"}>${availablePanel}</section><section class="m-compact-panel" role="tabpanel"${selected === "elite" ? "" : " hidden"}>${elitePanel}</section>`;
   }
+  function renderFirstSignalOfferCard(realActive) {
+    const signal = firstSignalViewState();
+    if (!signal?.eligible || !signal?.faction_selected) return "";
+    if (signal.state && signal.state !== "NOT_STARTED") return "";
+    const hasActive = !!(realActive?.status && realActive.status !== "NONE");
+    return `
+      <div class="m-offer m-first-signal-offer" id="mFirstSignalOffer" style="border-color:rgba(159,214,255,.65);box-shadow:0 0 0 1px rgba(159,214,255,.12) inset;">
+        <div class="m-offer-main">
+          <div class="m-offer-copy">
+            <div class="m-offer-top">
+              <span class="m-tag is-type">STORY · FIRST MISSION</span>
+              <div class="m-offer-top-right"><span class="m-tag is-t1">FIRST SIGNAL</span></div>
+            </div>
+            <div class="m-offer-title">First Signal</div>
+            <div class="m-muted m-offer-body">A live trace just cut through the dead network. Follow it before it disappears.</div>
+            <div class="m-offer-helper">Your first route stays pinned here until you start it.</div>
+            <div class="m-offer-foot">
+              <div class="m-offer-meta"><div class="m-fit">Story route · onboarding</div></div>
+              <div class="m-offer-cta">
+                <button type="button" class="btn primary" data-act="guided_start" ${hasActive ? "disabled" : ""}>Start First Signal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
   function renderMissionAvailablePanel(offers, realActive) {
-    return `<div class="m-card"><div class="m-row"><div style="min-width:0;"><div class="m-title">Offers</div><div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward intent, and rare cache signals.</div></div><button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button></div><div class="m-hr"></div><div>${offers.length ? offers.map((o) => renderOffer(o, realActive)).join("") : '<div class="m-muted">No offers yet. Refresh to scan for routes.</div>'}</div></div>`;
+    const firstSignalCard = renderFirstSignalOfferCard(realActive);
+    const routeCards = offers.length
+      ? offers.map((o) => renderOffer(o, realActive)).join("")
+      : (firstSignalCard ? "" : '<div class="m-muted">No offers yet. Refresh to scan for routes.</div>');
+    return `<div class="m-card"><div class="m-row"><div style="min-width:0;"><div class="m-title">Offers</div><div class="m-muted" style="margin-top:4px;">Routes rotate with modifier, reward intent, and rare cache signals.</div></div><button type="button" class="btn m-compact-btn m-head-btn" data-act="refresh">Refresh</button></div><div class="m-hr"></div><div>${firstSignalCard}${routeCards}</div></div>`;
   }
   function renderMissionActivePanel(active, payload) {
     if (!active?.status || active.status === "NONE") return '<div class="m-card m-empty">No active mission. Choose an available route.</div>';
@@ -6214,21 +6245,43 @@ function _normalizeRareDropObj(obj) {
   }
   let _guidedFocus = false, _guidedBusy = false, _guidedError = "";
 
+  function firstSignalViewState() {
+    const payload = normalizePayload(_state) || {};
+    const missionSignal = payload?.firstSignal || payload?.first_signal || {};
+    let onboardingSignal = {};
+    let storySignal = {};
+    try { onboardingSignal = window.Onboarding?.getFirstSignal?.() || {}; } catch (_) {}
+    try {
+      const inputs = window.StoryDelivery?.gatherInputs?.() || {};
+      storySignal = inputs?.firstSignal || inputs?.tutorial?.first_signal || {};
+    } catch (_) {}
+    const state = textOrEmpty(missionSignal?.state || onboardingSignal?.state || storySignal?.state).toUpperCase();
+    const status = textOrEmpty(missionSignal?.status || onboardingSignal?.status || storySignal?.status).toUpperCase();
+    return {
+      ...storySignal,
+      ...onboardingSignal,
+      ...missionSignal,
+      eligible: missionSignal?.eligible === true || onboardingSignal?.eligible === true || storySignal?.eligible === true,
+      faction_selected: missionSignal?.faction_selected === true || onboardingSignal?.faction_selected === true || storySignal?.faction_selected === true,
+      state,
+      status,
+    };
+  }
+
   function guidedLead() {
-    const payload = normalizePayload(_state);
-    const signal = payload?.firstSignal || payload?.first_signal;
+    const signal = firstSignalViewState();
     const campaign = window.Campaign?.state();
     const camp = campaign?.campaign;
     if (!signal?.eligible) return "";
-    if (signal.state === "NOT_STARTED" && window.Onboarding?.getFirstSignal()?.faction_selected) return "first_signal";
+    if ((!signal.state || signal.state === "NOT_STARTED") && signal.faction_selected) return "first_signal";
     if (signal.state === "REWARD_RECEIVED") return "gear";
-    if (signal.state === "COMPLETED" && !window.Onboarding?.getFirstSignal()?.world_discovery && !camp?.markLeft && !camp?.playerDirective && (campaign?.eligible || _guidedFocus)) return "relay";
+    if (signal.state === "COMPLETED" && !signal.world_discovery && !camp?.markLeft && !camp?.playerDirective && (campaign?.eligible || _guidedFocus)) return "relay";
     return "";
   }
 
   function renderGuidedLead() {
     const lead = guidedLead();
-    if (!lead) return;
+    if (!lead || lead === "first_signal") return;
     const title = lead === "first_signal" ? "FIRST SIGNAL" : lead === "gear" ? "Rustfang Fangs recovered" : "RELAY-7";
     const action = lead === "first_signal" ? "guided_start" : lead === "gear" ? "guided_gear" : "guided_relay";
     const label = lead === "first_signal" ? "Start First Mission" : lead === "gear" ? "Inspect recovered gear" : "Answer RELAY-7";
@@ -6247,7 +6300,9 @@ function _normalizeRareDropObj(obj) {
     _missionsCompactTabManual = true;
     await loadState({ force: true, reason: "guided_focus" });
     render();
-    document.getElementById("mGuidedLead")?.scrollIntoView({ block: "nearest" });
+    const target = document.getElementById("mFirstSignalOffer") || document.getElementById("mGuidedLead");
+    target?.scrollIntoView({ block: "nearest" });
+    target?.querySelector?.("button")?.focus?.({ preventScroll: true });
     return true;
   }
 
