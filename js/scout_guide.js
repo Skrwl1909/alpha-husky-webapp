@@ -7,10 +7,11 @@
     4: "Rustfang Fangs recovered. Compare them with your equipped gear, then press Equip when you're ready.",
     8: "You're stronger now. Open Missions and select RELAY-7. Let's see where that signal leads.",
     16: "Choose your direction, then leave your mark. One lead is enough to move forward.",
-    32: "The wider world is open. Lose the trail? Explore Alpha in the Hub shows the places you can go."
+    32: "The wider world is open. Lose the trail? Explore Alpha in the Hub shows the places you can go.",
+    64: "Rustfang is equipped. Your next lead is Blood Moon Tower. Follow the Map trail to find it."
   };
   let consumed = 0, active = 0, fresh = false, card = null;
-  try { consumed = (Number(global.localStorage.getItem(KEY)) || 0) & 63; } catch (_) {}
+  try { consumed = (Number(global.localStorage.getItem(KEY)) || 0) & 127; } catch (_) {}
   function read(key) { try { return global.localStorage.getItem(key) || ""; } catch (_) { return ""; } }
 
   // Only current state selects a message. Stored bits only suppress repeats.
@@ -21,6 +22,7 @@
     if (fs.state === "NOT_STARTED") return 1;
     if (fs.state === "MISSION_STARTED") return fs.status === "READY" ? 2 : 0;
     if (fs.state === "REWARD_RECEIVED") return 4;
+    if (fs.state === "COMPLETED" && fs.world_discovery === "pending") return 64;
     if (fs.state !== "COMPLETED" || !payload?.eligible || payload.ok === false || payload.show === false || !camp) return 0;
     if (!camp.markLeft) {
       if (camp.playerDirective || context.campaignOpen) return 16;

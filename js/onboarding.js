@@ -554,7 +554,8 @@
       await refreshFocusedState();
     } finally {
       _focusedBusy = false;
-      if (firstSignalEnabled() && backEl?.style.display !== "none") renderFirstSignal();
+      // Respect an active Forge discovery screen; do not overwrite it with FIRST SIGNAL.
+      if (firstSignalEnabled() && backEl?.style.display !== "none") render();
     }
   }
 
@@ -634,7 +635,7 @@
         <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")} equipped</strong></div>
         <div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
-      label = "Discover Blood Moon Tower";
+      label = "Continue Journey";
     }
 
     bodyEl.innerHTML = `
