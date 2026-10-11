@@ -230,11 +230,46 @@ function WarTable() {
   const areaPressure = field?.region ? pressureLabel(field.region.pressure) : "UNKNOWN";
   const pressureCopy = field?.region ? pressureEffect(field.region.pressure) : "Refresh to load current field conditions.";
   const currentDirective = field?.board?.reportVersion === 3 ? directiveSetLabel(field.board.directiveSet) : null;
+  const deadRelayNextMissionId = deadRelay?.activeMissionRun?.missionId || DEAD_RELAY.orderedMissionIds.find((id) => deadRelay?.missions[id] === "available") || null;
   const firstClearMessage = operation?.status === "cleared"
     ? deadRelay ? "BROKEN SIGNAL COMPLETE · OPERATION 02 THE DEAD RELAY NOW AVAILABLE" : "BROKEN SIGNAL COMPLETE · FIELD OPS NOW DRIVE YOUR TACTICAL PROGRESSION"
     : operation?.missions["broken-signal-recover"] === "cleared"
       ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
       : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
+
+  const deadRelayCampaign = deadRelay ? <section className={`t-panel ${deadRelay.status === "cleared" ? "t-wt-story-archive" : "t-wt-campaign-feature"}`} aria-label="Operation 02 campaign">
+          <div className="t-wt-section-head">
+            <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 02</span><h2 className="t-title">THE DEAD RELAY</h2></div>
+            <strong>{deadRelay.status === "cleared" ? "CAMPAIGN SECURED" : deadRelay.missions["dead-relay-courier"] === "locked" ? "LOCKED" : "IN PROGRESS"}</strong>
+          </div>
+          <p>Intercept the courier. Hold the relay. Defeat its Guardian. Each first clear unlocks the next stage; your courier Intel changes the Hold mission.</p>
+          {deadRelay.status !== "cleared" && deadRelayNextMissionId ? (
+            <div className="t-wt-campaign-actions">
+              <div><span className="t-kicker">NEXT STORY MISSION</span><strong>{getMissionDef(deadRelayNextMissionId)?.name || "THE DEAD RELAY"}</strong></div>
+              <button className="t-btn t-btn-primary t-wt-campaign-cta" type="button" disabled={loading}
+                onClick={() => openOperationBrief(deadRelayNextMissionId)}>
+                {deadRelay.activeMissionRun?.missionId ? "RESUME CAMPAIGN" : "CONTINUE CAMPAIGN"}
+              </button>
+            </div>
+          ) : null}
+          <div className="t-mission-strip"><span>COURIER TRACE</span><strong>{courierIntel ? "ACQUIRED · HOUND ARRIVES 1 ROUND LATER" : "NOT RECORDED · EARLY INTERCEPT REQUIRED"}</strong></div>
+          <div className="t-brief-grid t-wt-canon-grid">
+            {DEAD_RELAY.orderedMissionIds.map((id, index) => {
+              const mission = getMissionDef(id);
+              if (!mission) return null;
+              const status = deadRelay.missions[id] || "locked";
+              const active = deadRelay.activeMissionRun?.missionId === id;
+              return <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={id}>
+                <span className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {mission.objectiveType}</span>
+                <strong>{mission.name}</strong>
+                <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
+                <button type="button" className="t-btn" disabled={loading || status === "locked"}
+                  onClick={() => openOperationBrief(id)}>{active ? "RESUME FROM START" : status === "cleared" ? "REPLAY" : status === "available" ? "VIEW BRIEF" : "LOCKED"}</button>
+              </div>;
+            })}
+          </div>
+          <small>Resume restarts the accepted battle from turn 1; mid-battle positions and HP are not saved.</small>
+        </section> : null;
 
   return (
     <div className="t-fill">
@@ -245,7 +280,7 @@ function WarTable() {
           <div className="t-wt-branding">
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
             <h1 className="t-title t-wt-title">TACTICAL OPS</h1>
-            <p className="t-wt-intro">Rotating combat missions. Build your Commander. Train your squad.</p>
+            <p className="t-wt-intro">Continue your story, then tackle rotating Field Ops and build your Commander.</p>
             {progressionError ? <p className="t-wt-error">{progressionError}</p> : null}
             {missionFirstClear ? <p className="t-wt-highlight">{firstClearMessage}</p> : null}
           </div>
@@ -253,6 +288,8 @@ function WarTable() {
             {loading ? "SYNCING…" : "REFRESH"}
           </button>
         </header>
+
+        {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
 
         <section className="t-wt-status-rail t-wt-status-rail-v29" aria-label="Tactical Ops overview">
           <div className="t-panel t-wt-status-card t-wt-rank-card">
@@ -392,30 +429,9 @@ function WarTable() {
           </div>
         </section>
 
-        {deadRelay ? <section className="t-panel t-wt-story-archive" aria-label="Operation 02 campaign">
-          <div className="t-wt-section-head">
-            <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 02</span><h2 className="t-title">THE DEAD RELAY</h2></div>
-            <strong>{deadRelay.status === "cleared" ? "CAMPAIGN SECURED" : deadRelay.missions["dead-relay-courier"] === "locked" ? "LOCKED" : "IN PROGRESS"}</strong>
-          </div>
-          <p>Intercept the courier. Hold the relay. Defeat its Guardian. Each first clear unlocks the next stage; your courier Intel changes the Hold mission.</p>
-          <div className="t-mission-strip"><span>COURIER TRACE</span><strong>{courierIntel ? "ACQUIRED · HOUND ARRIVES 1 ROUND LATER" : "NOT RECORDED · EARLY INTERCEPT REQUIRED"}</strong></div>
-          <div className="t-brief-grid t-wt-canon-grid">
-            {DEAD_RELAY.orderedMissionIds.map((id, index) => {
-              const mission = getMissionDef(id);
-              if (!mission) return null;
-              const status = deadRelay.missions[id] || "locked";
-              const active = deadRelay.activeMissionRun?.missionId === id;
-              return <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={id}>
-                <span className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {mission.objectiveType}</span>
-                <strong>{mission.name}</strong>
-                <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
-                <button type="button" className="t-btn" disabled={loading || status === "locked"}
-                  onClick={() => openOperationBrief(id)}>{active ? "RESUME FROM START" : status === "cleared" ? "REPLAY" : status === "available" ? "VIEW BRIEF" : "LOCKED"}</button>
-              </div>;
-            })}
-          </div>
-          <small>Resume restarts the accepted battle from turn 1; mid-battle positions and HP are not saved.</small>
-        </section> : null}
+
+
+        {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
 
         <PackMasteryPanel />
 
