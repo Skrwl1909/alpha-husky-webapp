@@ -6291,6 +6291,11 @@ function _normalizeRareDropObj(obj) {
   }
 
   async function openGuided() {
+    const current = firstSignalViewState();
+    if (window.FirstSignalV2?.available?.() && current.eligible &&
+        (current.state === "NOT_STARTED" || current.interceptV2 === true || current.state === "REWARD_RECEIVED")) {
+      return window.FirstSignalV2.open();
+    }
     _guidedFocus = true;
     _guidedError = "";
     window.Onboarding?.close(false);
@@ -6836,6 +6841,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   }
 
   async function doFirstSignalStart() {
+    if (window.FirstSignalV2?.available?.()) return window.FirstSignalV2.open();
     const res = await api("/webapp/missions/action", { action: "first_signal_start", run_id: rid("m:first-signal:start") });
     await loadState({ force: true, reason: "first_signal_start" });
     return res;
