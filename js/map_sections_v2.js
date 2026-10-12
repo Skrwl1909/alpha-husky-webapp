@@ -398,6 +398,7 @@
         });
         poi.dataset.mapV2NodeId = node.id;
         poi.dataset.mapV2Access = access.kind;
+        if (isFirstSessionBloodMoonTarget(node.id)) poi.dataset.mapV2FtueTarget = "true";
         poi.dataset.mapV2RuntimeTone = runtimePresentation(node.id).tone;
         poi.dataset.mapV2Pursuit = pursuitMatchesNode(node.id) ? "true" : "false";
 
@@ -579,10 +580,26 @@
     };
   }
 
+  function isFirstSessionBloodMoonTarget(nodeId) {
+    if (asText(nodeId) !== "blood_moon_tower") return false;
+    // Presentation only: the canonical server-driven discovery must be pending.
+    try {
+      const fs = global.Onboarding?.getFirstSignal?.();
+      return fs?.eligible === true && fs?.state === "COMPLETED" &&
+        asText(fs?.world_discovery || fs?.worldDiscovery).toLowerCase() === "pending";
+    } catch (_) {
+      return false;
+    }
+  }
+
   function activityAccessState(node) {
     const resolved = global.MapObjectiveResolver?.getCurrent?.() || null;
     if (resolved?.resolved && asText(resolved.nodeId) === asText(node?.id)) {
       return { kind: "objective", label: "OBJECTIVE" };
+    }
+    // Blood Moon has a dedicated live router, even when old node metadata says coming_soon.
+    if (isFirstSessionBloodMoonTarget(node?.id)) {
+      return { kind: "objective", label: "FIND TOWER" };
     }
     if (asText(node?.action).toLowerCase() === "coming_soon") {
       return { kind: "sealed", label: "SEALED" };
@@ -760,6 +777,7 @@
     card.dataset.mapV2NodeId = node.id;
     card.dataset.mapV2PoiIndex = String(Math.max(0, Number(poiIndex) || 0));
     card.dataset.mapV2Access = access.kind;
+    if (isFirstSessionBloodMoonTarget(node.id)) card.dataset.mapV2FtueTarget = "true";
     card.dataset.mapV2Pursuit = pursuitMatchesNode(node.id) ? "true" : "false";
     const asset = asText(node.icon || node.asset);
     if (asset) {
