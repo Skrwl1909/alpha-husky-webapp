@@ -307,6 +307,8 @@
     observePostArrivals();
 
     const fs = firstSignal();
+    // Never let a persisted later-stage target overlay a still-running first mission.
+    if (fs.eligible && fs.state !== "COMPLETED") { paint(null); return; }
     if (fs.eligible && fs.state === "COMPLETED") {
       // Arrival is observed on the real destination, including alternate entry routes.
       for (const [id, selector] of [["bloodmoon", "#bloodMoonBack.show"], ["tactical", '#tacticalOpsRoot[data-open="1"]']]) {
