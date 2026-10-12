@@ -1,6 +1,6 @@
 (function(w){
 "use strict";
-var base="assets/ftue/first_signal_v2/",root=null,fs=null,busy=false,pick="",error="";
+var base="/assets/ftue/first_signal_v2/",root=null,fs=null,busy=false,pick="",error="";
 function esc(x){return String(x==null?"":x).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function run(){return "fs2_"+Date.now()+"_"+Math.random().toString(36).slice(2);}
 function project(o){return o?.firstSignal||o?.data?.firstSignal||o?.state?.firstSignal||null;}
