@@ -582,11 +582,14 @@
 
   function isFirstSessionBloodMoonTarget(nodeId) {
     if (asText(nodeId) !== "blood_moon_tower") return false;
-    // Presentation only: the canonical server-driven discovery must be pending.
+    // Presentation only. Onboarding's cached first-signal state may lag the
+    // first world handoff after Equip; StoryDelivery also carries that beat.
     try {
       const fs = global.Onboarding?.getFirstSignal?.();
-      return fs?.eligible === true && fs?.state === "COMPLETED" &&
-        asText(fs?.world_discovery || fs?.worldDiscovery).toLowerCase() === "pending";
+      const world = asText(fs?.world_discovery || fs?.worldDiscovery).toLowerCase();
+      if (world === "done") return false;
+      if (fs?.eligible === true && fs?.state === "COMPLETED" && world === "pending") return true;
+      return global.StoryDelivery?.getState?.()?.id === "S-FS-WORLD";
     } catch (_) {
       return false;
     }
