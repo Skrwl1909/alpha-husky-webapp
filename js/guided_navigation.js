@@ -259,7 +259,10 @@
 
   function noticeText(id, step) {
     if (id === "bloodmoon") {
-      return "The Pack survived the Meme War. Then I reached the Edge. I found the Oracle. The Rewrite began. Trust inside the Pack started breaking. What followed became known as: THE FRACTURE.\n\nFIND BLOOD MOON TOWER";
+      if (step === "open_activity" || step === "tower") return "BLOOD MOON TOWER — TAP THE HIGHLIGHTED MARKER";
+      if (step === "iron_march") return "ENTER IRON MARCH";
+      if (step === "sections") return "RETURN TO WORLD → IRON MARCH";
+      return "OPEN MAP → IRON MARCH → BLOOD MOON TOWER";
     }
     if (id === "tactical") return "FIND TACTICAL OPS";
     const route = POST_ROUTES[id];
