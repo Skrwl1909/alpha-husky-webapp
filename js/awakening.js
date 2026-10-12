@@ -941,6 +941,7 @@
 
   function open(state, options) {
     options = options || {};
+    if (global.Callsign?.isPending?.() || document.body.classList.contains("ah-callsign-open")) return false;
     if (S.open) return false;
     if (S.openedOnce && !options.resume && !options.force) return false;
     S.openedOnce = true;

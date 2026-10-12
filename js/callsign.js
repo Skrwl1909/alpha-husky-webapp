@@ -1,7 +1,7 @@
 (function (global) {
   "use strict";
 
-  const S = { profile: null, state: null, saving: false, back: null };
+  const S = { profile: null, state: null, saving: false, back: null, removeFocusListeners: null };
 
   function profileFrom(raw) {
     if (!raw || typeof raw !== "object") return null;
@@ -50,6 +50,8 @@
   }
 
   function close() {
+    try { S.removeFocusListeners?.(); } catch (_) {}
+    S.removeFocusListeners = null;
     S.back?.remove?.();
     S.back = null;
     document.body?.classList?.remove("ah-callsign-open");
@@ -118,30 +120,36 @@
     // it can trigger saved-info/autofill UI and leave the field visually focused
     // while hardware keyboard input is still not routed to it.
     const focusInput = () => {
-      if (!S.back?.isConnected || document.visibilityState === "hidden") return;
-      try {
-        input.focus({ preventScroll: true });
-        const end = String(input.value || "").length;
-        input.setSelectionRange?.(end, end);
-      } catch (_) {
-        try { input.focus(); } catch (_) {}
-      }
+      if (S.back !== back || !back.isConnected || document.visibilityState === "hidden" || S.saving) return;
+      const active = document.activeElement;
+      if (active && active !== input && back.contains(active) && active.matches("button,textarea,select")) return;
+      try { input.focus({ preventScroll: true }); } catch (_) { try { input.focus(); } catch (_) {} }
     };
     requestAnimationFrame(focusInput);
-    setTimeout(focusInput, 120);
-    setTimeout(() => {
-      if (S.back?.isConnected && document.activeElement !== input) focusInput();
+    const initialFocus = setTimeout(focusInput, 120);
+    const lateFocus = setTimeout(() => {
+      if (S.back === back && document.activeElement !== input) focusInput();
     }, 420);
-
-    // A real pointer interaction is the strongest focus signal on Telegram
-    // Desktop/WebView, so reassert native input focus on first tap/click.
-    input.addEventListener("pointerdown", () => setTimeout(focusInput, 0), { passive: true });
-    input.addEventListener("click", focusInput);
-
-    const onWindowFocus = () => {
-      if (S.back?.isConnected) setTimeout(focusInput, 40);
+    const onResume = () => {
+      if (document.visibilityState === "hidden") return;
+      setTimeout(() => { if (S.back === back && document.activeElement !== input) focusInput(); }, 40);
     };
-    global.addEventListener("focus", onWindowFocus, { once: true });
+    const onTap = () => { if (document.activeElement !== input) focusInput(); };
+    input.addEventListener("pointerdown", onTap, { passive: true });
+    input.addEventListener("click", onTap);
+    global.addEventListener("focus", onResume);
+    document.addEventListener("visibilitychange", onResume);
+    const tg = global.Telegram?.WebApp;
+    try { tg?.onEvent?.("activated", onResume); } catch (_) {}
+    S.removeFocusListeners = () => {
+      clearTimeout(initialFocus);
+      clearTimeout(lateFocus);
+      input.removeEventListener("pointerdown", onTap);
+      input.removeEventListener("click", onTap);
+      global.removeEventListener("focus", onResume);
+      document.removeEventListener("visibilitychange", onResume);
+      try { tg?.offEvent?.("activated", onResume); } catch (_) {}
+    };
   }
 
   function hasMobileSession() {
