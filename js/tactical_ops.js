@@ -4008,4 +4008,69 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-wt-campaign-actions { align-items:stretch; flex-direction:column; }
   #tacticalOpsRoot .t-wt-campaign-cta { width:100%; }
 }
+
+/* FTUE P0: first Tactical contact mobile entry — compact and legible.
+   Scoped to the hub only; combat, briefing, war table and state remain unchanged. */
+@media(max-width:620px){
+  #tacticalOpsRoot .t-hub{
+    justify-content:flex-end;
+    padding:calc(54px + env(safe-area-inset-top,0px)) 17px
+      calc(24px + env(safe-area-inset-bottom,0px));
+  }
+  #tacticalOpsRoot .t-hub-copy{
+    width:100%;
+    max-width:34rem;
+    padding:16px 15px 18px;
+    border:1px solid rgba(113,199,232,.26);
+    border-radius:16px;
+    background:linear-gradient(180deg,rgba(5,12,20,.9),rgba(3,9,16,.97));
+    box-shadow:0 20px 48px rgba(0,0,0,.48);
+  }
+  #tacticalOpsRoot .t-hub h1{
+    font-size:clamp(1.85rem,7.2vw,2.4rem);
+    line-height:1.06;
+    margin:.2rem 0 .25rem;
+  }
+  #tacticalOpsRoot .t-hub h2{
+    margin:.1rem 0 .7rem;
+    font-size:.85rem;
+    letter-spacing:.17em;
+  }
+  #tacticalOpsRoot .t-hub .t-op-card{
+    margin:0 0 .75rem;
+    padding:.8rem .9rem;
+    gap:.2rem;
+    max-width:100%;
+    border-color:rgba(109,200,234,.24);
+    background:rgba(5,13,21,.9);
+  }
+  #tacticalOpsRoot .t-hub .t-op-card strong{
+    font-size:clamp(.8rem,3.25vw,1rem);
+    line-height:1.25;
+    letter-spacing:.09em;
+  }
+  #tacticalOpsRoot .t-hub .t-op-card p{
+    font-size:.78rem;
+    line-height:1.35;
+  }
+  #tacticalOpsRoot .t-hub .t-brief-actions{
+    margin-top:.45rem;
+  }
+  #tacticalOpsRoot .t-hub .t-btn-primary{
+    min-height:52px;
+    width:100%;
+  }
+  #tacticalOpsRoot .t-bg-hero img{
+    object-position:50% 17%;
+    opacity:.32;
+    filter:saturate(.65) brightness(.45) contrast(1.05);
+  }
+  #tacticalOpsRoot .t-hub + .t-vignette{pointer-events:none}
+}
+@media(max-width:620px) and (max-height:740px){
+  #tacticalOpsRoot .t-hub{padding-top:45px;padding-bottom:13px}
+  #tacticalOpsRoot .t-hub-copy{padding:11px 13px}
+  #tacticalOpsRoot .t-hub h2{margin-bottom:.35rem}
+  #tacticalOpsRoot .t-hub .t-op-card{padding:.6rem .7rem;margin-bottom:.45rem}
+}
 `,Ki={requestClose:()=>{},dbg:!1};function qi(e){Ki={...Ki,...e}}function Ji(e,t){let n=Math.max(0,Math.round(e));return n<=599?`compact`:n<=899?`standard`:`wide`}var Yi=`tacticalOpsRoot`,Xi=`tacticalOpsStyles`,Zi=`tacticalOpsFonts`,V={apiPost:null,tg:null,dbg:!1,root:null,isOpen:!1,reactRoot:null,keyHandlerBound:!1,resizeBound:!1,prevBodyOverflow:``,prevHtmlOverflow:``,resizeObserver:null,battleWatcher:null},Qi=Promise.resolve();try{window.__AH_TACTICAL_OPS_VER__=kr,window.__TACTICAL_COMBAT__=Wn}catch{}function $i(){let e=document.getElementById(Xi);e||(e=document.createElement(`style`),e.id=Xi,document.head.appendChild(e)),e.textContent=Gi}function ea(){if(document.getElementById(Zi))return;let e=document.createElement(`link`);e.id=Zi,e.rel=`stylesheet`,e.href=`https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Source+Sans+3:wght@400;600;700&display=swap`,document.head.appendChild(e)}function ta(){let e=V.root||document.getElementById(Yi);if(!e)return;let t=window.visualViewport,n=V.tg?.viewportStableHeight||V.tg?.viewportHeight,r=Math.max(1,Math.round(t?.width||e.clientWidth||window.innerWidth)),i=Math.max(1,Math.round(t?.height||(typeof n==`number`?n:0)||window.innerHeight)),a=Math.round(t?.offsetTop||0),o=Math.round(t?.offsetLeft||0);e.style.position=`fixed`,e.style.left=`${o}px`,e.style.top=`${a}px`,e.style.right=`auto`,e.style.bottom=`auto`,e.style.width=`${r}px`,e.style.height=`${i}px`,e.style.maxHeight=`${i}px`,e.style.setProperty(`--tops-w`,`${r}px`),e.style.setProperty(`--tops-h`,`${i}px`),e.setAttribute(`data-layout`,Ji(r,i)),na(e,r,i)}function na(e,t,n){let r=e.querySelector(`.t-field-wrap`);if(!r)return;let i=e.getAttribute(`data-layout`)||Ji(t,n),a=t=>{let n=e.querySelector(t);return n?Math.round(n.getBoundingClientRect().height):0},o=a(`.t-top`)+a(`.t-dock`),s=i===`wide`?Math.max(160,n):Math.max(160,n-o);e.style.setProperty(`--tops-field-h`,`${s}px`),r.style.display=`block`,r.style.width=`100%`,r.style.minWidth=`0`,r.style.overflow=`hidden`,i===`wide`?(r.style.position=`absolute`,r.style.inset=`0`,r.style.height=`100%`,r.style.minHeight=`100%`,r.style.maxHeight=`none`):(r.style.position=`relative`,r.style.inset=`auto`,r.style.flex=`1 1 auto`,r.style.height=`${s}px`,r.style.minHeight=`${s}px`,r.style.maxHeight=`${s}px`);let c=e.querySelector(`.t-field`);c&&(c.style.position=`absolute`,c.style.inset=`0`,c.style.width=`100%`,c.style.height=`100%`);let l=e.querySelector(`.t-field-art`);l&&(l.style.position=`absolute`,l.style.inset=`0`,l.style.width=`100%`,l.style.height=`100%`,l.style.objectFit=`cover`,l.style.display=`block`)}function ra(){ta()}function ia(){if(!V.resizeBound){window.addEventListener(`resize`,ra);try{window.visualViewport?.addEventListener(`resize`,ra),window.visualViewport?.addEventListener(`scroll`,ra)}catch{}try{V.resizeObserver=new ResizeObserver(ra),V.resizeObserver.observe(document.documentElement),V.root&&V.resizeObserver.observe(V.root)}catch{V.resizeObserver=null}aa(),V.resizeBound=!0}}function aa(){if(V.root&&!V.battleWatcher)try{V.battleWatcher=new MutationObserver(()=>{requestAnimationFrame(()=>ta())}),V.battleWatcher.observe(V.root,{childList:!0,subtree:!0})}catch{V.battleWatcher=null}}function oa(){if(V.resizeBound){window.removeEventListener(`resize`,ra);try{window.visualViewport?.removeEventListener(`resize`,ra),window.visualViewport?.removeEventListener(`scroll`,ra)}catch{}try{V.resizeObserver?.disconnect()}catch{}V.resizeObserver=null;try{V.battleWatcher?.disconnect()}catch{}V.battleWatcher=null,V.resizeBound=!1}}function sa(){V.prevBodyOverflow=document.body.style.overflow,V.prevHtmlOverflow=document.documentElement.style.overflow,document.body.style.overflow=`hidden`,document.documentElement.style.overflow=`hidden`}function ca(){document.body.style.overflow=V.prevBodyOverflow,document.documentElement.style.overflow=V.prevHtmlOverflow}function la(e){if(!V.isOpen||e.key!==`Escape`)return;let t=L.getState();t.screen===`battle`&&t.battle.mode===`targeting`?(t.cancel(),e.preventDefault(),e.stopPropagation()):t.screen===`brief`?(t.backToHub(),e.preventDefault(),e.stopPropagation()):(e.preventDefault(),e.stopPropagation(),_a())}function ua(){V.keyHandlerBound||(document.addEventListener(`keydown`,la,!0),V.keyHandlerBound=!0)}function da(){V.keyHandlerBound&&(document.removeEventListener(`keydown`,la,!0),V.keyHandlerBound=!1)}function fa(){$i(),ea();let e=document.getElementById(Yi);return e||(e=document.createElement(`div`),e.id=Yi,e.setAttribute(`data-open`,`0`),document.body.appendChild(e)),V.root=e,e}function pa(){V.isOpen=!1,da(),oa(),ca(),V.reactRoot&&(V.reactRoot.unmount(),V.reactRoot=null);let e=V.root||document.getElementById(Yi);e&&(e.setAttribute(`data-open`,`0`),e.innerHTML=``);try{L.getState().backToHub()}catch{}}function ma(){let e={close:()=>{pa()},isOpen:()=>V.isOpen},t=window;try{t.AlphaNav?.push?t.AlphaNav.push(Yi,e):(t.navRegister?.(Yi,e),t.navOpen?.(Yi))}catch{}}function ha(e){let t=e&&typeof e==`object`?e:{};typeof t.apiPost==`function`&&(V.apiPost=t.apiPost),t.tg&&(V.tg=t.tg),typeof t.dbg==`boolean`&&(V.dbg=t.dbg);try{if(V.apiPost&&typeof window<`u`){let e=window;typeof e.apiPost!=`function`&&(e.apiPost=V.apiPost)}}catch{}return t.onboarding===`session`?(L.getState().configureOnboarding({enabled:!0}),Qi=Promise.resolve()):t.onboarding===`off`?(L.getState().configureOnboarding({enabled:!1}),Qi=Promise.resolve()):Qi=L.getState().loadFoundationProgression(),qi({requestClose:_a,dbg:V.dbg}),ya}async function ga(e){await Qi,typeof e==`string`&&e&&L.getState().openOperationBrief(e);let t=fa();qi({requestClose:_a,dbg:V.dbg}),V.isOpen=!0,t.setAttribute(`data-open`,`1`),sa(),ua(),ia(),ta(),V.reactRoot||(V.reactRoot=(0,b.createRoot)(t)),V.reactRoot.render((0,y.createElement)(Wi)),ma();try{V.tg?.expand?.()}catch{}requestAnimationFrame(()=>ta()),setTimeout(()=>ta(),50)}function _a(){if(!V.isOpen)return;let e=window;try{if(e.AlphaNav?.close?.(Yi,{source:`tactical-ops-close`}))return}catch{}pa();try{e.navClose?.(Yi)}catch{}}function va(){return{...$r(),open:V.isOpen,version:kr}}var ya={init:ha,open:ga,close:_a,refresh:va,getState:va};function ba(){return window.TacticalOps=ya,ya}var xa=ba();try{let e=window;e.__AH_TACTICAL_OPS_VER__=kr,e.__TACTICAL_COMBAT__=Wn,e.TacticalOps=xa}catch{}return e.API=ya,e.DEF_CURVE=st,e.GRID_COLS=it,e.GRID_ROWS=at,e.METER_MAX=ot,e.STATUS_LABEL=_t,e.STATUS_SHORT=vt,e.VERSION=kr,e.a1Range=Un,e.advanceToNext=Pn,e.aiUsesLegalRules=rn,e.applyAi=Vn,e.applySkill=Jt,e.applyStatus=dt,e.availableSkills=Yt,e.beginUnitTurn=Nn,e.canOccupy=Ot,e.canRecover=In,e.cellKey=Ct,e.chebyshev=St,e.chooseAiAction=nn,e.computeHeal=bt,e.consumeMeter=Bt,e.cooldownLeft=Gt,e.createBattle=kn,e.default=xa,e.effectiveAtk=pt,e.effectiveDef=mt,e.effectiveSpd=ht,e.evaluateOutcome=jn,e.fieldPercent=kt,e.hasStatus=ut,e.inBounds=xt,e.inSkillRange=At,e.incomingDamageMultiplier=gt,e.isLegalTargetType=It,e.living=jt,e.mitigatedDamage=yt,e.occupiedKeys=wt,e.pickReadyId=zt,e.planAi=Hn,e.previewQueue=Vt,e.reachableCells=Dt,e.resetStatusSeq=lt,e.resolveSkillTargets=Nt,e.skillNeedsTargetPick=Ft,e.skillReady=Kt,e.startBattle=Fn,e.tickUntilReady=Rt,e.tryMove=Rn,e.tryRecover=Ln,e.trySkill=Bn,e.trySkip=zn,e.unitAt=Tt,e.unitSkills=Wt,e.unitsInRadius=Mt,e.validTargetIds=Pt,e})({});
