@@ -362,7 +362,7 @@
         background:rgba(0,0,0,.75);z-index:2000000;padding:16px;backdrop-filter:blur(8px);}
       #obBack[hidden]{display:none!important}
 
-      .ob-modal{width:min(560px,100%);background:#0a0c14;border:1px solid rgba(103,232,249,.15);
+      .ob-modal{width:min(560px,100%);background:#0a0c14;color:#f5f8ff;border:1px solid rgba(103,232,249,.15);
         border-radius:20px;overflow:hidden;box-shadow:0 25px 80px rgba(0,0,0,.7);
         animation:obPop 0.4s cubic-bezier(0.34,1.56,0.64,1);}
 
