@@ -808,7 +808,7 @@
       if (window.Oath && typeof window.Oath.isOpen === "function" && window.Oath.isOpen()) return true;
     } catch (_) {}
     try {
-      if (document.body.classList.contains("ah-awakening-open") || document.body.classList.contains("ah-oath-open")) return true;
+      if (document.body.classList.contains("ah-awakening-open") || document.body.classList.contains("ah-oath-open") || document.body.classList.contains("ah-callsign-open")) return true;
     } catch (_) {}
     return false;
   }
