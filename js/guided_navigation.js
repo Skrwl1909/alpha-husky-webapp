@@ -95,7 +95,7 @@
   function legacyEligible(id) {
     const fs = firstSignal();
     if (!fs.eligible || fs.state !== "COMPLETED" || terminal(id) || global.FirstSessionSpine?.view()?.complete) return false;
-    if (id === "bloodmoon") return fs.world_discovery === "pending";
+    if (id === "bloodmoon") return fs.world_discovery === "pending" && fs.faction_selected === true;
     const frame = global.StoryDelivery?.getState?.();
     return frame?.id === "S-TO-DISCOVERY" || frame?.nextMove?.key === "tactical-first-attempt";
   }
@@ -154,7 +154,8 @@
   }
 
   async function syncCompletion() {
-    if (syncing || !terminal("bloodmoon") || firstSignal().world_discovery !== "pending") return;
+    const fs = firstSignal();
+    if (syncing || !terminal("bloodmoon") || fs.world_discovery !== "pending" || fs.faction_selected !== true) return;
     const api = global.S?.apiPost || global.apiPost;
     if (!api) return;
     syncing = true;
@@ -207,7 +208,8 @@
       }
       return;
     }
-    if (saved[id]?.status === "active" || eligible(id)) finish(id, "dismissed");
+    if (!eligible(id)) { paint(null); return; }
+    if (saved[id]?.status === "active") finish(id, "dismissed");
   }
 
   function visible(el) {
@@ -315,7 +317,7 @@
     if (fs.eligible && fs.state === "COMPLETED") {
       // Arrival is observed on the real destination, including alternate entry routes.
       for (const [id, selector] of [["bloodmoon", "#bloodMoonBack.show"], ["tactical", '#tacticalOpsRoot[data-open="1"]']]) {
-        if (find(selector)) {
+        if (eligible(id) && find(selector)) {
           if (!saved[id]?.reached) {
             saved[id] = { ...saved[id], reached: true }; persist();
             global.FirstSessionSpine?.sync();
@@ -333,7 +335,7 @@
       }
     }
 
-    const legacyId = ["bloodmoon", "tactical"].find(id => saved[id]?.status === "active" && !terminal(id));
+    const legacyId = ["bloodmoon", "tactical"].find(id => saved[id]?.status === "active" && eligible(id));
     if (legacyId) {
       let step, next;
       if (legacyId === "bloodmoon") {
