@@ -2627,3 +2627,14 @@ html.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v
 body.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon{
   transition:none!important;
 }
+
+/* Only the post-Rustfang faction handoff is actionable; other objectives stay informational. */
+#mapV2Mount .map-v2-objective.is-faction-action{
+  cursor:pointer;border-color:rgba(111,201,233,.56);
+}
+#mapV2Mount .map-v2-objective.is-faction-action:focus-visible{
+  outline:2px solid #81e5f0;outline-offset:2px;
+}
+#mapV2Mount .map-v2-objective.is-faction-action .map-v2-objective-text{
+  color:#effaff;text-decoration:underline;text-decoration-color:rgba(129,229,240,.48);
+}
