@@ -6689,15 +6689,15 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
   <div class="ah-panel ah-hub-command-panel" role="dialog" aria-modal="true" aria-label="Alpha Husky living network hub">
     <div class="ah-panel-hd ahn-header">
       <div class="ahn-header-brand">
-        <span class="ahn-header-crest" aria-hidden="true">◈</span>
+        <span class="ahn-header-crest" aria-hidden="true"><span class="ahn-glyph ahn-glyph--network-core"></span></span>
         <div class="ah-hub-head-copy"><div class="ah-title">ALPHA HUSKY</div><div class="ah-hub-head-sub">Hub // Living Network</div></div>
       </div>
-      <span class="ahn-header-live"><i aria-hidden="true"></i> LIVE SIGNAL</span>
+      <span class="ahn-header-live"><i aria-hidden="true"></i><span class="ahn-glyph ahn-glyph--online" aria-hidden="true"></span> LIVE SIGNAL</span>
       <button class="ah-x" data-close="hubBack" aria-label="Close Hub" type="button">✕</button>
     </div>
     <main class="ah-panel-scroll ah-hub-command-body" id="ahnHubScroll">
       <section class="ahn-signal-card" aria-label="Current player objective">
-        <div class="ahn-signal-top"><span><i aria-hidden="true"></i> CURRENT SIGNAL</span><span class="ahn-signal-identity">PACK COMMAND</span></div>
+        <div class="ahn-signal-top"><span><i aria-hidden="true"></i><span class="ahn-glyph ahn-glyph--signal" aria-hidden="true"></span> CURRENT SIGNAL</span><span class="ahn-signal-identity">PACK COMMAND</span></div>
         <div class="ahn-signal-content" id="ahnSignalContent">
           <div id="hubStoryRoot"></div>
           <div id="hubPursuitRoot" hidden></div>
@@ -6731,64 +6731,64 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
           <div class="ahn-core-ambient" aria-hidden="true"></div>
           <button class="ahn-core" data-hub-open-systems aria-label="Scan Network and open all game systems" aria-expanded="false" aria-controls="hubSystemsDrawer" type="button">
             <span class="ahn-core-rings" aria-hidden="true"></span>
-            <span class="ahn-core-portrait" aria-hidden="true"><img src="/images/tactical_ops/alpha-portrait.jpg" alt="" decoding="async"></span>
+            <span class="ahn-core-portrait" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_network_core.webp" alt="" decoding="async" fetchpriority="high"></span>
             <span class="ahn-core-title">ALL SYSTEMS</span>
             <span class="ahn-core-subtitle">NETWORK CORE</span>
-            <span class="ahn-core-scan"><span aria-hidden="true">◎</span> SCAN NETWORK <span aria-hidden="true">›</span></span>
+            <span class="ahn-core-scan"><span class="ahn-glyph ahn-glyph--scan" aria-hidden="true"></span> SCAN NETWORK <span aria-hidden="true">›</span></span>
             <span class="ahn-core-static" aria-hidden="true"></span>
           </button>
           <button type="button" class="ahn-node ahn-node--ops" data-action="tactical_ops" aria-label="Open Tactical Ops">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/tactical_ops/alpha-portrait.jpg" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_tactical_ops.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Tactical Ops</span><span class="ahn-node-sub">COMBAT</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--moon" data-action="moonlab" aria-label="Open MoonLab">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/moonlab/tower.jpg" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_moonlab.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">MoonLab</span><span class="ahn-node-sub">BOSS // FLOORS</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--forge" data-action="forge" aria-label="Open Forge">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/alpha_den/war_table_l1.png" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_forge.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Forge</span><span class="ahn-node-sub">CRAFT // GEAR</span>
     <span class="ahn-node-led ahn-node-led--amber" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--pack" data-hub-route="pack_comms" aria-label="Open Pack Comms">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/tactical_ops/presentation/tactical_ops_signal_recovery_marker.png" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_pack_comms.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Pack Comms</span><span class="ahn-node-sub">PACK // SIGNAL</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--howl" data-action="howlboard" aria-label="Open Howlboard">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/factions/inner_howl_80.webp" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_howlboard.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Howlboard</span><span class="ahn-node-sub">PACK // NEWS</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--pets" data-action="pets" aria-label="Open Pets">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/alpha_den/pet_kennel_l1.png" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_pets.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Pets</span><span class="ahn-node-sub">COMPANIONS</span>
     <span class="ahn-node-led ahn-node-led--green" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--inventory" data-hub-route="inventory" aria-label="Open Inventory">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/tactical_ops/presentation/tactical_ops_broken_signal_operation_plate.png" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_inventory.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Inventory</span><span class="ahn-node-sub">GEAR // ITEMS</span>
     <span class="ahn-node-led ahn-node-led--amber" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--factions" data-hub-route="factions" aria-label="Open Factions">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/factions/faction_chamber_neutral.webp" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_factions.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Factions</span><span class="ahn-node-sub">ALLIANCES</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--map" data-hub-route="map" aria-label="Open War Map">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/map/v2/map-v2-world.webp" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_war_map.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">War Map</span><span class="ahn-node-sub">WORLD // ZONES</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--oracle" data-hub-route="oracle" aria-label="Open Oracle">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/factions/faction_chamber_inner_howl.webp" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_oracle.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Oracle</span><span class="ahn-node-sub">LORE // INTEL</span>
     <span class="ahn-node-led" aria-hidden="true"></span>
   </button>
           <button type="button" class="ahn-node ahn-node--siege" data-hub-route="siege" aria-label="Open Siege">
-    <span class="ahn-node-orbit" aria-hidden="true"><img src="/images/map/v2/map-v2-iron-march.webp" alt="" loading="lazy" decoding="async"></span>
+    <span class="ahn-node-orbit" aria-hidden="true"><img src="/assets/images/hub_v2/ahn_siege.webp" alt="" loading="lazy" decoding="async"></span>
     <span class="ahn-node-label">Siege</span><span class="ahn-node-sub">WORLD // CONFLICT</span>
     <span class="ahn-node-led ahn-node-led--amber" aria-hidden="true"></span>
   </button>
@@ -6798,14 +6798,14 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <section class="ah-hub-quick-zone ah-hub-active-routes ahn-routes" aria-label="Active routes">
         <div class="ah-hub-quick-label">ACTIVE ROUTES <span>PLAY NOW</span></div>
         <div class="ah-hub-quick-grid">
-          <button class="ah-hub-quick" data-action="tactical_ops" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Tactical Ops</span></button>
-          <button class="ah-hub-quick" data-action="moonlab" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">MoonLab</span></button>
-          <button class="ah-hub-quick" data-action="forge" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Forge</span></button>
+          <button class="ah-hub-quick" data-action="tactical_ops" type="button"><span class="ahn-route-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--tactical-ops"></span></span><span class="ah-hub-quick-label-text">Tactical Ops</span></button>
+          <button class="ah-hub-quick" data-action="moonlab" type="button"><span class="ahn-route-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--moonlab"></span></span><span class="ah-hub-quick-label-text">MoonLab</span></button>
+          <button class="ah-hub-quick" data-action="forge" type="button"><span class="ahn-route-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--forge"></span></span><span class="ah-hub-quick-label-text">Forge</span></button>
           <button class="ah-hub-quick" data-action="howlboard" data-hub-icon="howlboard" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Howlboard</span></button>
         </div>
       </section>
       <button class="ah-hub-all-systems ahn-directory-trigger" data-hub-open-systems aria-expanded="false" aria-controls="hubSystemsDrawer" type="button">
-        <span class="ahn-directory-trigger-symbol" aria-hidden="true">◎</span>
+        <span class="ahn-directory-trigger-symbol ahn-glyph ahn-glyph--directory" aria-hidden="true"></span>
         <span class="ahn-directory-trigger-copy"><b>OPEN THE NETWORK</b><small>All destinations, identity and pack tools</small></span>
         <span aria-hidden="true" class="ahn-directory-trigger-chevron">⌃</span>
       </button>
@@ -6824,16 +6824,16 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <section class="ah-system-section ahn-directory-featured" aria-label="Core routes">
           <div class="ah-system-section-title">Combat, world &amp; growth</div>
           <div class="ah-system-grid ahn-directory-grid">
-            <button class="ah-tile" data-action="tactical_ops" type="button"><span class="ahn-dir-icon">◈</span><b>Tactical Ops</b></button>
-            <button class="ah-tile" data-action="moonlab" type="button"><span class="ahn-dir-icon">◉</span><b>MoonLab</b></button>
-            <button class="ah-tile" data-action="forge" type="button"><span class="ahn-dir-icon">△</span><b>Forge</b></button>
-            <button class="ah-tile" data-hub-route="map" type="button"><span class="ahn-dir-icon">⌖</span><b>World Map</b></button>
-            <button class="ah-tile" data-hub-route="inventory" type="button"><span class="ahn-dir-icon">▣</span><b>Inventory</b></button>
-            <button class="ah-tile" data-hub-route="factions" type="button"><span class="ahn-dir-icon">◇</span><b>Factions</b></button>
-            <button class="ah-tile" data-hub-route="oracle" type="button"><span class="ahn-dir-icon">✧</span><b>Oracle</b></button>
-            <button class="ah-tile" data-hub-route="siege" type="button"><span class="ahn-dir-icon">⬡</span><b>Siege</b></button>
-            <button class="ah-tile" data-hub-route="pack_comms" type="button"><span class="ahn-dir-icon">⌁</span><b>Pack Comms</b></button>
-            <button class="ah-tile" data-action="pets" type="button"><span class="ahn-dir-icon">✦</span><b>Pets</b></button>
+            <button class="ah-tile" data-action="tactical_ops" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--tactical-ops"></span></span><b>Tactical Ops</b></button>
+            <button class="ah-tile" data-action="moonlab" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--moonlab"></span></span><b>MoonLab</b></button>
+            <button class="ah-tile" data-action="forge" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--forge"></span></span><b>Forge</b></button>
+            <button class="ah-tile" data-hub-route="map" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--war-map"></span></span><b>World Map</b></button>
+            <button class="ah-tile" data-hub-route="inventory" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--inventory"></span></span><b>Inventory</b></button>
+            <button class="ah-tile" data-hub-route="factions" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--factions"></span></span><b>Factions</b></button>
+            <button class="ah-tile" data-hub-route="oracle" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--oracle"></span></span><b>Oracle</b></button>
+            <button class="ah-tile" data-hub-route="siege" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--siege"></span></span><b>Siege</b></button>
+            <button class="ah-tile" data-hub-route="pack_comms" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--pack-comms"></span></span><b>Pack Comms</b></button>
+            <button class="ah-tile" data-action="pets" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--pets"></span></span><b>Pets</b></button>
           </div>
         </section>
 
@@ -6896,11 +6896,11 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       </div>
     </aside>
     <nav class="ahn-footer" aria-label="Hub quick navigation">
-      <button type="button" class="ahn-footer-item is-current" data-hub-nav="hub" aria-current="page"><span aria-hidden="true">⌂</span><small>HUB</small></button>
-      <button type="button" class="ahn-footer-item" data-hub-route="map"><span aria-hidden="true">⌖</span><small>MAP</small></button>
-      <button type="button" class="ahn-footer-core" data-hub-open-systems aria-label="Open the network directory" aria-expanded="false" aria-controls="hubSystemsDrawer"><span aria-hidden="true">◈</span></button>
-      <button type="button" class="ahn-footer-item" data-hub-open-pack><span aria-hidden="true">✦</span><small>PACK</small></button>
-      <button type="button" class="ahn-footer-item" data-action="profile"><span aria-hidden="true">♙</span><small>PROFILE</small></button>
+      <button type="button" class="ahn-footer-item is-current" data-hub-nav="hub" aria-current="page"><span class="ahn-glyph ahn-glyph--home" aria-hidden="true"></span><small>HUB</small></button>
+      <button type="button" class="ahn-footer-item" data-hub-route="map"><span class="ahn-glyph ahn-glyph--war-map" aria-hidden="true"></span><small>MAP</small></button>
+      <button type="button" class="ahn-footer-core" data-hub-open-systems aria-label="Open the network directory" aria-expanded="false" aria-controls="hubSystemsDrawer"><span class="ahn-glyph ahn-glyph--all-systems" aria-hidden="true"></span></button>
+      <button type="button" class="ahn-footer-item" data-hub-open-pack><span class="ahn-glyph ahn-glyph--pack-comms" aria-hidden="true"></span><small>PACK</small></button>
+      <button type="button" class="ahn-footer-item" data-action="profile"><span class="ahn-glyph ahn-glyph--profile" aria-hidden="true"></span><small>PROFILE</small></button>
     </nav>
   </div>
 </div>
@@ -8090,7 +8090,7 @@ body.bc-open #ahCommunityBtn{
     var q = encodeURIComponent(String(ver || "dev"));
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "/css/hub_premium.css?v=" + q + "-living-network-v2";
+    link.href = "/css/hub_premium.css?v=" + q + "-living-network-v2-art-v1";
     document.head.appendChild(link);
   })(window.WEBAPP_VER);
   </script>

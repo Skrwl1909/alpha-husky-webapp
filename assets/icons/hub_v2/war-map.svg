@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" color="#89dfff" role="img" aria-label="war map">
+<title>War Map</title>
+<g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 20l14-8 15 7 15-8v34l-15 8-15-7-14 8z"/><path d="M24 12v34M39 19v34"/><circle cx="31" cy="33" r="5"/><path d="M31 25v-6M31 38v6"/></g>
+</svg>

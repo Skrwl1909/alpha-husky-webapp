@@ -1536,3 +1536,161 @@ body.ah-perf-lite #hubBack.ah-hub-network-v2 .ah-hub-systems-drawer {transition:
   33%{transform:translateX(1px);filter:drop-shadow(1px 0 0 rgba(33,236,255,.58))}
   66%{transform:translateX(-1px);filter:drop-shadow(-1px 0 0 rgba(255,100,111,.2))}
 }
+
+
+/* ==========================================================================
+   HUB V2 ART INTEGRATION — 2026-10-13
+   Presentation only. Art manifest and owner decisions: pedestal deferred;
+   Cloudinary community glyphs untouched. All rules scoped to this Hub sheet.
+   ========================================================================== */
+#hubBack.ah-hub-network-v2 .ah-hub-command-panel{
+  background:
+    linear-gradient(180deg,rgba(1,6,14,.58) 0%,rgba(2,8,18,.78) 35%,rgba(1,7,15,.94) 100%),
+    url("/assets/images/hub_v2/ahn_master_world.webp") center 45%/cover no-repeat,
+    #030b15;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-card{
+  background:
+    linear-gradient(103deg,rgba(2,11,23,.96),rgba(3,15,28,.83) 62%,rgba(3,15,29,.77)),
+    url("/assets/images/hub_v2/ahn_primary_signal.webp") center/cover no-repeat,
+    #061829;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-card::before{
+  background:linear-gradient(90deg,rgba(1,8,17,.65),transparent 85%);
+}
+#hubBack.ah-hub-network-v2 .ahn-stage{
+  background:
+    radial-gradient(ellipse 68% 36% at 50% 49%,rgba(12,99,154,.3),transparent 77%),
+    linear-gradient(180deg,rgba(3,12,23,.28),rgba(2,8,19,.68));
+  border:1px solid rgba(122,224,255,.13);
+  box-shadow:inset 0 0 42px rgba(1,7,18,.8),0 18px 36px rgba(0,5,14,.24);
+}
+#hubBack.ah-hub-network-v2 .ahn-stage-art{
+  opacity:.3;mix-blend-mode:normal;
+  background:
+    radial-gradient(ellipse 75% 70% at 50% 45%,rgba(0,97,159,.28),transparent 80%),
+    linear-gradient(180deg,rgba(12,60,98,.13),transparent 65%);
+  mask-image:linear-gradient(180deg,transparent,#000 10%,#000 82%,transparent);
+}
+#hubBack.ah-hub-network-v2 .ahn-stage::before{
+  content:"";position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:url("/assets/images/hub_v2/ahn_foreground_atmosphere.webp") center 64%/cover no-repeat;
+  opacity:.18;mix-blend-mode:screen;
+}
+#hubBack.ah-hub-network-v2 .ahn-core{
+  background:radial-gradient(circle at 50% 36%,rgba(13,72,110,.95),rgba(3,21,41,.98) 65%,#020e20 95%);
+  border-color:rgba(137,231,255,.82);
+  box-shadow:0 0 0 6px rgba(24,151,204,.09),0 0 40px rgba(33,158,219,.36),inset 0 0 20px rgba(55,181,244,.2);
+  isolation:isolate;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-rings{
+  inset:-35px;z-index:0;pointer-events:none;
+  border:0;box-shadow:none;
+  background:url("/assets/images/hub_v2/ahn_mechanical_ring.webp") center/contain no-repeat;
+  opacity:.75;animation:ahnOrbit 36s linear infinite;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-portrait{
+  position:relative;z-index:1;
+  width:clamp(80px,25vw,104px);height:clamp(80px,25vw,104px);
+  flex:0 0 auto;overflow:visible;border:0;border-radius:0;box-shadow:none;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-portrait img{
+  width:100%;height:100%;object-fit:contain;object-position:center;
+  filter:drop-shadow(0 0 10px rgba(62,187,255,.42));
+}
+#hubBack.ah-hub-network-v2 .ahn-core-title,
+#hubBack.ah-hub-network-v2 .ahn-core-subtitle,
+#hubBack.ah-hub-network-v2 .ahn-core-scan{position:relative;z-index:1;}
+#hubBack.ah-hub-network-v2 .ahn-core-title{font-size:clamp(15px,4.4vw,19px);}
+#hubBack.ah-hub-network-v2 .ahn-core-scan{
+  min-height:29px;padding:5px 10px;margin-top:2px;
+  font-size:clamp(9px,2.4vw,10px);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-static{
+  background:url("/assets/images/hub_v2/ahn_signal_static.webp") center/128px repeat;
+  animation:none;opacity:0;mix-blend-mode:screen;
+}
+#hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-static{opacity:.09;}
+#hubBack.ah-hub-network-v2 .ahn-node{
+  border-color:rgba(120,218,253,.4);
+  background:linear-gradient(180deg,rgba(10,36,56,.86),rgba(2,13,26,.94));
+  box-shadow:inset 0 1px rgba(205,246,255,.15),0 7px 22px rgba(0,6,17,.46);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-orbit{
+  border-radius:16px;border-color:rgba(126,230,255,.61);
+  background:radial-gradient(circle at 50% 35%,#10324b,#03121f);
+  box-shadow:0 0 0 3px rgba(58,174,231,.08),0 0 17px rgba(46,173,241,.16);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-orbit img{
+  object-fit:cover;object-position:center;filter:none;
+}
+#hubBack.ah-hub-network-v2 .ahn-node--ops .ahn-node-orbit img,
+#hubBack.ah-hub-network-v2 .ahn-node--moon .ahn-node-orbit img,
+#hubBack.ah-hub-network-v2 .ahn-node--forge .ahn-node-orbit img,
+#hubBack.ah-hub-network-v2 .ahn-node--factions .ahn-node-orbit img{object-fit:contain;}
+#hubBack.ah-hub-network-v2 .ahn-node--moon{top:11%;}
+#hubBack.ah-hub-network-v2 .ahn-glyph{
+  --ahn-glyph-url:none;
+  display:inline-block;flex:0 0 auto;width:22px;height:22px;
+  color:inherit;background-color:currentColor;
+  -webkit-mask:var(--ahn-glyph-url) center / contain no-repeat;
+  mask:var(--ahn-glyph-url) center / contain no-repeat;
+}
+#hubBack.ah-hub-network-v2 .ahn-glyph--all-systems{--ahn-glyph-url:url("/assets/icons/hub_v2/all-systems.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--directory{--ahn-glyph-url:url("/assets/icons/hub_v2/directory.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--factions{--ahn-glyph-url:url("/assets/icons/hub_v2/factions.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--forge{--ahn-glyph-url:url("/assets/icons/hub_v2/forge.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--home{--ahn-glyph-url:url("/assets/icons/hub_v2/home.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--inventory{--ahn-glyph-url:url("/assets/icons/hub_v2/inventory.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--moonlab{--ahn-glyph-url:url("/assets/icons/hub_v2/moonlab.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--network-core{--ahn-glyph-url:url("/assets/icons/hub_v2/network-core.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--online{--ahn-glyph-url:url("/assets/icons/hub_v2/online.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--oracle{--ahn-glyph-url:url("/assets/icons/hub_v2/oracle.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--pack-comms{--ahn-glyph-url:url("/assets/icons/hub_v2/pack-comms.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--pets{--ahn-glyph-url:url("/assets/icons/hub_v2/pets.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--profile{--ahn-glyph-url:url("/assets/icons/hub_v2/profile.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--scan{--ahn-glyph-url:url("/assets/icons/hub_v2/scan.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--siege{--ahn-glyph-url:url("/assets/icons/hub_v2/siege.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--signal{--ahn-glyph-url:url("/assets/icons/hub_v2/signal.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--tactical-ops{--ahn-glyph-url:url("/assets/icons/hub_v2/tactical-ops.svg");}
+#hubBack.ah-hub-network-v2 .ahn-glyph--war-map{--ahn-glyph-url:url("/assets/icons/hub_v2/war-map.svg");}
+#hubBack.ah-hub-network-v2 .ahn-header-crest .ahn-glyph{
+  width:31px;height:31px;color:#aeeaff;
+}
+#hubBack.ah-hub-network-v2 .ahn-header-live .ahn-glyph{width:13px;height:13px;}
+#hubBack.ah-hub-network-v2 .ahn-signal-top .ahn-glyph{width:13px;height:13px;}
+#hubBack.ah-hub-network-v2 .ahn-core-scan .ahn-glyph{width:16px;height:16px;}
+#hubBack.ah-hub-network-v2 .ahn-dir-icon .ahn-glyph{width:22px;height:22px;}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger-symbol.ahn-glyph{
+  width:32px;height:32px;color:#b5f0ff;
+}
+#hubBack.ah-hub-network-v2 .ahn-footer-item .ahn-glyph{width:24px;height:24px;}
+#hubBack.ah-hub-network-v2 .ahn-footer-core .ahn-glyph{width:33px;height:33px;}
+#hubBack.ah-hub-network-v2 .ahn-route-icon{
+  width:40px;height:40px;min-width:40px;display:grid;place-items:center;
+  border:1px solid rgba(133,225,255,.36);border-radius:12px;
+  color:#9be4ff;background:radial-gradient(circle at 50% 40%,rgba(42,146,200,.28),rgba(4,22,38,.8));
+}
+#hubBack.ah-hub-network-v2 .ah-hub-systems-close,
+#hubBack.ah-hub-network-v2 .ah-x{
+  min-width:44px;min-height:44px;display:grid;place-items:center;
+}
+@media(max-width:380px){
+  #hubBack.ah-hub-network-v2 .ahn-node{width:23.5%;}
+  #hubBack.ah-hub-network-v2 .ahn-node-orbit{width:52px;height:52px;}
+  #hubBack.ah-hub-network-v2 .ahn-core-portrait{
+    width:82px;height:82px;flex-basis:auto;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #hubBack.ah-hub-network-v2 .ahn-core-rings{animation:none!important;}
+  #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-static{opacity:0;}
+}
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core-rings,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core-rings{animation:none!important;}
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-stage::before,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-stage::before{
+  opacity:0;
+}
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-static,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-static{opacity:0;}
