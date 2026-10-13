@@ -1076,3 +1076,463 @@
   70% { box-shadow: 0 0 0 7px rgba(143, 227, 255, 0); }
   100% { box-shadow: 0 0 0 0 rgba(143, 227, 255, 0); }
 }
+
+
+/* ==========================================================================
+   ALPHA HUSKY — LIVING NETWORK HUB V2
+   Full-screen command hub; actual game destinations and canonical story roots.
+   Styles are fully scoped to V2. Legacy components remain as fallback surfaces.
+   ========================================================================== */
+#hubBack.ah-hub-network-v2 {
+  --ahn-blue:#85ddff;--ahn-ice:#e6f8ff;--ahn-amber:#f4b56b;
+  --ahn-line:rgba(103,208,255,.4);
+  position:fixed;inset:0;z-index:8500;box-sizing:border-box;
+  width:100%;height:100dvh;max-width:none;
+  padding:0!important;margin:0;display:flex;
+  align-items:stretch;justify-content:center;
+  background:rgba(2,6,13,.98);
+}
+#hubBack.ah-hub-network-v2 .ah-hub-command-panel {
+  position:relative;isolation:isolate;flex:1 1 auto;
+  width:100%;max-width:680px;height:100dvh;max-height:100dvh;
+  min-height:0;border-radius:0;border:0;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:inset 0 0 0 1px rgba(112,214,255,.10);
+  background:
+    linear-gradient(180deg,rgba(2,8,16,.68),rgba(3,10,19,.84) 30%,rgba(2,7,14,.97)),
+    url("/images/map/v2/map-v2-world.webp") center 32%/cover no-repeat,
+    #040b14;
+}
+#hubBack.ah-hub-network-v2 .ah-hub-command-panel::before {
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 38% at 50% 43%,rgba(0,126,202,.15),transparent 80%),
+    linear-gradient(90deg,rgba(1,10,20,.65),transparent 22%,transparent 78%,rgba(1,10,20,.65));
+}
+#hubBack.ah-hub-network-v2 .ahn-header {
+  flex:0 0 auto;min-height:66px;box-sizing:border-box;
+  padding:
+    calc(max(74px,var(--ah-safe-top,0px),env(safe-area-inset-top,0px)) + 12px)
+    18px 11px;
+  display:flex;align-items:center;gap:10px;justify-content:space-between;
+  background:linear-gradient(180deg,rgba(2,8,17,.96),rgba(3,14,25,.7));
+  border-bottom:1px solid rgba(113,209,251,.18);z-index:3;
+}
+#hubBack.ah-hub-network-v2 .ahn-header-brand {display:flex;align-items:center;gap:11px;min-width:0;}
+#hubBack.ah-hub-network-v2 .ahn-header-crest {
+  flex:0 0 43px;width:43px;height:43px;display:grid;place-items:center;
+  color:#aeeaff;font-size:27px;text-shadow:0 0 14px #4dbfff;
+  clip-path:polygon(50% 0,100% 23%,100% 75%,50% 100%,0 75%,0 23%);
+  background:linear-gradient(145deg,#0c405c,#071522 60%,#154a66);
+  box-shadow:inset 0 0 0 2px #71cefc;
+}
+#hubBack.ah-hub-network-v2 .ah-title {font-size:clamp(16px,5vw,25px);letter-spacing:.22em;white-space:nowrap;}
+#hubBack.ah-hub-network-v2 .ah-hub-head-sub {color:#94dfff;opacity:.86;font-size:9px;letter-spacing:.21em;}
+#hubBack.ah-hub-network-v2 .ahn-header-live {
+  display:flex;align-items:center;gap:6px;color:#a1d7eb;
+  font-size:9px;font-weight:900;letter-spacing:.08em;white-space:nowrap;
+}
+#hubBack.ah-hub-network-v2 .ahn-header-live i,
+#hubBack.ah-hub-network-v2 .ahn-signal-top i {
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:#55e4c1;box-shadow:0 0 8px rgba(85,228,193,.5);
+}
+#hubBack.ah-hub-network-v2 .ah-x {
+  flex:0 0 40px;border:1px solid rgba(144,223,255,.3);
+  background:#091a27;color:#e7f7ff;
+}
+#hubBack.ah-hub-network-v2 .ah-hub-command-body.ah-panel-scroll {
+  position:relative;display:block;flex:1 1 auto;min-height:0;
+  padding:14px 13px 26px!important;
+  overflow-y:auto!important;overflow-x:hidden!important;
+  overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;scrollbar-color:rgba(101,205,245,.4) transparent;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-card {
+  position:relative;isolation:isolate;
+  min-height:126px;box-sizing:border-box;
+  padding:12px 14px 13px;border-radius:14px;
+  border:1px solid rgba(112,207,248,.48);
+  background:
+    linear-gradient(105deg,rgba(4,14,26,.96),rgba(6,18,31,.92) 62%,rgba(5,24,40,.90)),
+    url("/images/map/v2/map-v2-blackglass-reach.webp") center/cover no-repeat;
+  box-shadow:inset 0 1px rgba(214,250,255,.12),0 0 24px rgba(0,126,201,.12);
+  overflow:hidden;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-card::before {
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background:
+    linear-gradient(90deg,rgba(2,9,20,.90) 15%,rgba(2,9,20,.7) 80%),
+    url("/images/map/v2/map-v2-blackglass-reach.webp") 100% 50%/cover no-repeat;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-top {
+  position:relative;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  color:#76d8fa;font-size:9px;font-weight:900;letter-spacing:.20em;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-top > span {display:flex;align-items:center;gap:8px;}
+#hubBack.ah-hub-network-v2 .ahn-signal-identity {opacity:.58;white-space:nowrap;font-size:8px;}
+#hubBack.ah-hub-network-v2 .ahn-signal-content {position:relative;margin-top:7px;}
+#hubBack.ah-hub-network-v2 .ahn-signal-content > :empty {display:none;}
+#hubBack.ah-hub-network-v2.ahp-has-story #hubGoalRoot {display:none!important}
+#hubBack.ah-hub-network-v2:not(.ahp-has-story) #hubStoryRoot {display:none!important}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-card,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-pad,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-objective {
+  min-height:0!important;height:auto!important;max-height:none!important;
+  margin:0!important;padding:0!important;border:0!important;
+  background:transparent!important;box-shadow:none!important;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-pad,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-objective {
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:4px;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-situation,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-objective-title {
+  font-size:clamp(17px,5vw,23px)!important;line-height:1.15!important;
+  font-weight:900!important;color:#eefaff;letter-spacing:0;
+  margin:2px 0 4px!important;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-kicker,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-kicker {font-size:9px!important;letter-spacing:.16em;color:#81d4ee;}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-next,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-objective-copy {
+  font-size:12px!important;line-height:1.38!important;
+  color:rgba(204,229,244,.84)!important;margin:1px 0!important;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-objective-meta {margin:4px 0!important;}
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahs-story-go,
+#hubBack.ah-hub-network-v2 .ahn-signal-content .ahp-primary-action {
+  align-self:stretch;min-height:44px!important;margin:9px 0 0!important;
+  width:100%;border-radius:9px!important;
+  color:#ecfaff!important;background:linear-gradient(110deg,#17516c,#0c314c)!important;
+  border:1px solid #5acfff!important;box-shadow:inset 0 1px rgba(228,253,255,.1),0 3px 16px rgba(0,133,198,.23);
+  font-size:12px!important;font-weight:900;letter-spacing:.13em;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-content [data-next-move-dismiss] {
+  align-self:flex-end;width:auto!important;min-height:32px!important;
+  margin:0!important;padding:2px 9px!important;
+  background:transparent!important;border:0!important;
+  color:#b2cada!important;box-shadow:none!important;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-card[data-signal-ready="0"] .ahn-signal-content {visibility:hidden;}
+#hubBack.ah-hub-network-v2[data-signal-ready="0"] .ahn-signal-content {display:none;}
+#hubBack.ah-hub-network-v2[data-signal-ready="1"] .ahn-signal-loading {display:none}
+#hubBack.ah-hub-network-v2 .ahn-signal-loading {
+  position:relative;min-height:78px;padding:15px 0;
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;text-align:center;
+  color:#b2d8ec;font-size:12px;letter-spacing:.06em;
+}
+#hubBack.ah-hub-network-v2 .ahn-signal-loading[data-state="error"] {color:#f2cba5;}
+#hubBack.ah-hub-network-v2 .ahn-signal-loading button {
+  min-height:38px;padding:7px 22px;border-radius:8px;
+  background:#13415b;color:#eafaff;border:1px solid #5fbddd;font-weight:800;
+}
+#hubBack.ah-hub-network-v2 .ahn-loading-wave {
+  height:3px;width:105px;border-radius:9px;
+  background:linear-gradient(90deg,transparent,#69dbff,transparent);
+  background-size:200% 100%;animation:ahnWave 2s linear infinite;
+}
+/* ---------- Living systems field ---------- */
+#hubBack.ah-hub-network-v2 .ahn-network {margin:15px 0 12px;position:relative;}
+#hubBack.ah-hub-network-v2 .ahn-network-heading {
+  display:flex;justify-content:space-between;align-items:center;
+  color:#aee9ff;font-size:11px;font-weight:950;letter-spacing:.20em;
+  padding:0 6px 5px;
+}
+#hubBack.ah-hub-network-v2 .ahn-network-heading span+span {font-size:9px;color:#76bbd9;letter-spacing:.06em;}
+#hubBack.ah-hub-network-v2 .ahn-stage {
+  position:relative;isolation:isolate;width:100%;min-width:0;
+  height:clamp(510px,150vw,680px);max-height:680px;
+  overflow:hidden;border-radius:16px;
+  background:radial-gradient(circle at 50% 50%,rgba(11,78,113,.2),transparent 56%),
+    linear-gradient(180deg,rgba(3,12,20,.26),rgba(4,12,20,.72));
+}
+#hubBack.ah-hub-network-v2 .ahn-stage-art {
+  position:absolute;inset:0;z-index:-1;pointer-events:none;
+  opacity:.28;mix-blend-mode:screen;
+  background:url("/images/map/v2/map_v2_world_bg.webp") 50% 50%/cover no-repeat;
+  mask-image:linear-gradient(180deg,transparent,#000 15%,#000 78%,transparent);
+}
+#hubBack.ah-hub-network-v2 .ahn-links {
+  position:absolute;inset:0;width:100%;height:100%;z-index:0;
+  overflow:visible;pointer-events:none;
+}
+#hubBack.ah-hub-network-v2 .ahn-link-tracks path {
+  fill:none;stroke:#276788;stroke-opacity:.42;stroke-width:1.5;
+}
+#hubBack.ah-hub-network-v2 .ahn-link-glow path {
+  fill:none;stroke:url(#ahnLinkGradient);stroke-width:1.7;
+  stroke-dasharray:5 18;stroke-linecap:round;opacity:.82;
+  animation:ahnSignalPath 14s linear infinite;
+}
+#hubBack.ah-hub-network-v2 .ahn-stage .ahn-core-ambient {
+  position:absolute;top:49%;left:50%;z-index:0;
+  width:65%;aspect-ratio:1;border-radius:50%;pointer-events:none;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(32,135,205,.23),rgba(6,68,108,.09) 50%,transparent 72%);
+}
+#hubBack.ah-hub-network-v2 .ahn-core {
+  appearance:none;position:absolute;top:49%;left:50%;z-index:3;
+  transform:translate(-50%,-50%);width:clamp(168px,51%,230px);
+  aspect-ratio:1;border-radius:50%;
+  border:2px solid rgba(133,229,255,.85);padding:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  color:#eafbff;text-align:center;cursor:pointer;
+  background:radial-gradient(circle at 47% 34%,rgba(22,96,142,.94),rgba(5,23,45,.97) 60%,#031221);
+  box-shadow:0 0 0 6px rgba(24,151,204,.12),0 0 32px rgba(58,178,236,.35),inset 0 0 22px rgba(43,174,244,.18);
+  -webkit-tap-highlight-color:transparent;
+}
+#hubBack.ah-hub-network-v2 .ahn-core::before {
+  content:"";pointer-events:none;position:absolute;inset:-11px;border-radius:50%;
+  border:1px dashed rgba(131,223,254,.58);
+  animation:ahnOrbit 32s linear infinite;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-rings {
+  position:absolute;inset:-20px;border-radius:50%;
+  border:1px solid rgba(73,169,226,.22);pointer-events:none;
+  box-shadow:0 0 0 8px rgba(72,184,231,.04),0 0 0 16px rgba(72,184,231,.025);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-portrait {
+  position:relative;width:66px;height:66px;flex:0 0 66px;
+  overflow:hidden;border-radius:50%;border:1px solid rgba(174,244,255,.55);
+  box-shadow:0 0 18px rgba(30,166,236,.2);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-portrait img {
+  width:100%;height:100%;object-fit:cover;object-position:center 21%;
+  filter:saturate(.78) contrast(1.12) brightness(.93);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-title {
+  font-family:var(--t-font-display,"Rajdhani",sans-serif);
+  font-size:19px;font-weight:950;letter-spacing:.10em;white-space:nowrap;
+  text-shadow:0 0 13px rgba(77,203,254,.44);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-subtitle {
+  font-size:8px;letter-spacing:.21em;color:#7dcdeb;font-weight:900;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-scan {
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  min-height:33px;padding:5px 14px;margin-top:5px;
+  border-radius:25px;border:1px solid rgba(121,226,255,.9);
+  background:linear-gradient(180deg,#0d476c,#072c4c);
+  box-shadow:0 0 14px rgba(35,188,254,.28);
+  font-weight:900;font-size:10px;letter-spacing:.09em;white-space:nowrap;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-static {
+  position:absolute;inset:8px;border-radius:50%;pointer-events:none;opacity:0;
+  background:repeating-linear-gradient(0deg,transparent 0 8px,rgba(156,246,255,.18) 9px 10px,transparent 11px 21px);
+  animation:ahnStatic 12s steps(1,end) infinite;
+}
+#hubBack.ah-hub-network-v2 .ahn-node {
+  position:absolute;z-index:2;transform:translate(-50%,-50%);
+  appearance:none;width:clamp(76px,25%,124px);
+  padding:5px 3px 7px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;border-radius:10px;border:1px solid rgba(101,208,252,.26);
+  background:linear-gradient(180deg,rgba(7,30,47,.72),rgba(2,12,22,.90));
+  box-shadow:inset 0 1px rgba(163,238,255,.14),0 4px 18px rgba(0,10,20,.33);
+  color:#eafaff;cursor:pointer;text-align:center;touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
+#hubBack.ah-hub-network-v2 .ahn-node-orbit {
+  position:relative;width:clamp(50px,14vw,68px);
+  height:clamp(50px,14vw,68px);max-width:68px;max-height:68px;
+  border:1px solid rgba(143,230,255,.55);border-radius:50%;
+  overflow:hidden;display:grid;place-items:center;
+  background:#091b30;box-shadow:0 0 0 4px rgba(43,152,215,.07),0 0 14px rgba(51,179,247,.18);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-orbit::after {
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 50% 70%,transparent 30%,rgba(2,16,28,.62) 88%);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-orbit img {
+  width:100%;height:100%;object-fit:cover;
+  object-position:center 35%;filter:saturate(.72) contrast(1.14);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-label {
+  max-width:100%;font-size:clamp(9px,2.7vw,12px);font-weight:950;
+  text-shadow:0 1px 3px #000;line-height:1.12;
+}
+#hubBack.ah-hub-network-v2 .ahn-node-sub {
+  max-width:100%;font-size:clamp(6.5px,1.8vw,8px);
+  color:#95bfda;letter-spacing:.04em;line-height:1.05;
+}
+#hubBack.ah-hub-network-v2 .ahn-node-led {
+  position:absolute;top:5px;right:5px;border-radius:50%;
+  width:6px;height:6px;background:#6bbfe5;box-shadow:0 0 9px rgba(96,194,242,.38);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-led--amber {background:#f8b260;box-shadow:0 0 8px rgba(252,166,65,.4);}
+#hubBack.ah-hub-network-v2 .ahn-node-led--green {background:#7ee1bc;box-shadow:0 0 8px rgba(100,230,182,.4);}
+#hubBack.ah-hub-network-v2 .ahn-node--ops {left:13%;top:15%}
+#hubBack.ah-hub-network-v2 .ahn-node--moon {left:50%;top:9%}
+#hubBack.ah-hub-network-v2 .ahn-node--forge {left:87%;top:15%}
+#hubBack.ah-hub-network-v2 .ahn-node--pack {left:13%;top:37%}
+#hubBack.ah-hub-network-v2 .ahn-node--howl {left:87%;top:37%}
+#hubBack.ah-hub-network-v2 .ahn-node--pets {left:13%;top:64%}
+#hubBack.ah-hub-network-v2 .ahn-node--inventory {left:87%;top:64%}
+#hubBack.ah-hub-network-v2 .ahn-node--factions {left:12%;top:87%}
+#hubBack.ah-hub-network-v2 .ahn-node--map {left:37%;top:89%}
+#hubBack.ah-hub-network-v2 .ahn-node--oracle {left:63%;top:89%}
+#hubBack.ah-hub-network-v2 .ahn-node--siege {left:88%;top:87%}
+#hubBack.ah-hub-network-v2 .ahn-node:active,
+#hubBack.ah-hub-network-v2 .ahn-node.ahn-tapped {
+  border-color:#b8eeff;background:#0b3b59;
+  box-shadow:inset 0 0 18px rgba(83,205,255,.16),0 0 22px rgba(58,206,254,.35);
+}
+#hubBack.ah-hub-network-v2 .ahn-node.ahn-tapped .ahn-node-orbit,
+#hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-portrait {animation:ahnTapGlitch .12s steps(2,end) 1;}
+#hubBack.ah-hub-network-v2 .ahn-stage-hint {
+  text-align:center;color:#8ec7de;font-weight:800;
+  letter-spacing:.12em;font-size:9px;padding:8px 0 3px;
+}
+#hubBack.ah-hub-network-v2 .ahn-routes {padding:11px 7px 15px;border-top:1px solid rgba(118,203,242,.28);}
+#hubBack.ah-hub-network-v2 .ah-hub-quick-label {
+  font-size:11px;letter-spacing:.15em;color:#a7dff4;margin:0 3px 9px;
+}
+#hubBack.ah-hub-network-v2 .ah-hub-quick-label span {color:#6bcaf1;font-size:10px;}
+#hubBack.ah-hub-network-v2 .ah-hub-quick {min-height:86px;border-color:rgba(106,196,239,.33);background:linear-gradient(160deg,rgba(12,56,79,.70),rgba(5,18,32,.92));}
+#hubBack.ah-hub-network-v2 .ah-hub-quick .ah-hub-tile-icon {width:40px;height:40px;min-width:40px;}
+#hubBack.ah-hub-network-v2 .ah-hub-quick .ah-hub-icon-img {width:38px;height:38px;}
+#hubBack.ah-hub-network-v2 .ah-hub-quick-label-text {font-size:9px;white-space:normal;line-height:1.15;}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger {
+  position:relative;min-height:74px!important;display:flex;justify-content:flex-start;gap:14px;
+  padding:12px 15px;text-align:left;
+  border:1px solid #71d8ff!important;border-radius:14px;
+  background:linear-gradient(125deg,#155b80,#082d4f)!important;
+  box-shadow:0 0 19px rgba(31,181,245,.26),inset 0 1px rgba(242,254,255,.21);
+  color:#ecfbff!important;letter-spacing:0!important;
+}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger::after {content:none!important}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger-symbol {font-size:32px;text-shadow:0 0 13px #4bc3ff;}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger-copy {display:flex;flex-direction:column;gap:5px;min-width:0;}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger-copy b {font-size:14px;letter-spacing:.12em;}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger-copy small {font-size:10px;color:#b9e7ff;letter-spacing:.04em;text-transform:none;}
+#hubBack.ah-hub-network-v2 .ahn-directory-trigger-chevron {margin-left:auto;font-size:24px;}
+/* ---------- Full-screen directory: real legacy and added routes ---------- */
+#hubBack.ah-hub-network-v2 .ah-hub-systems-drawer {
+  position:absolute;z-index:25;
+  inset:calc(max(74px,var(--ah-safe-top,0px),env(safe-area-inset-top,0px)) + 67px) 0
+    calc(77px + max(0px,var(--ah-safe-bottom,0px))) 0;
+  min-height:0;display:flex;flex-direction:column;
+  background:
+    linear-gradient(180deg,rgba(3,14,25,.98),rgba(3,9,18,.99)),
+    url("/images/map/v2/map-v2-world.webp") center/cover no-repeat;
+  border:1px solid rgba(109,207,252,.36);border-radius:12px;
+  transform:translateY(103%);opacity:0;visibility:hidden;pointer-events:none;
+  transition:transform .28s cubic-bezier(.2,.82,.18,1),opacity .18s ease,visibility 0s linear .28s;
+}
+#hubBack.ah-hub-network-v2 .ah-hub-systems-drawer[data-open="1"] {
+  transform:translateY(0);opacity:1;visibility:visible;pointer-events:auto;transition-delay:0s;
+}
+#hubBack.ah-hub-network-v2 .ah-hub-systems-head {
+  min-height:66px;padding:13px 15px;border-bottom:1px solid rgba(107,202,248,.22);
+}
+#hubBack.ah-hub-network-v2 .ah-hub-systems-title {font-size:18px;color:#e3f8ff;}
+#hubBack.ah-hub-network-v2 .ah-hub-systems-sub {font-size:10px;color:#8dc8e4;}
+#hubBack.ah-hub-network-v2 .ah-hub-systems-scroll {
+  flex:1;min-height:0;padding:14px 13px calc(25px + max(0px,var(--ah-safe-bottom,0px)));
+  overflow-y:auto;overscroll-behavior:contain;
+}
+#hubBack.ah-hub-network-v2 .ah-system-section + .ah-system-section {margin-top:19px;}
+#hubBack.ah-hub-network-v2 .ah-system-section-title {
+  margin:0 0 11px;font-size:11px;color:#9bddf9;letter-spacing:.14em;
+}
+#hubBack.ah-hub-network-v2 .ah-system-grid {gap:9px;}
+#hubBack.ah-hub-network-v2 .ah-system-grid .ah-tile,
+#hubBack.ah-hub-network-v2 .ah-system-tile {
+  min-height:68px;padding:12px;border-radius:10px;gap:11px;
+  border:1px solid rgba(123,207,246,.27);
+  background:linear-gradient(135deg,rgba(12,52,72,.70),rgba(5,16,30,.90));
+  box-shadow:inset 0 1px rgba(197,247,255,.09);
+}
+#hubBack.ah-hub-network-v2 .ah-system-grid .ah-tile b {font-size:12px;white-space:normal;line-height:1.2;}
+#hubBack.ah-hub-network-v2 .ah-system-grid .ah-hub-tile-icon {width:36px;height:36px;min-width:36px;}
+#hubBack.ah-hub-network-v2 .ah-system-grid .ah-hub-icon-img {width:34px;height:34px;}
+#hubBack.ah-hub-network-v2 .ahn-dir-icon {
+  width:34px;min-width:34px;height:34px;border:1px solid rgba(118,217,251,.4);
+  border-radius:9px;display:grid;place-items:center;
+  background:rgba(5,35,56,.66);font-size:19px;color:#b3eeff;
+}
+#hubBack.ah-hub-network-v2 .ahn-directory-intel #hubSignalRoot,
+#hubBack.ah-hub-network-v2 .ahn-directory-intel #hubLivingWorldRoot {display:block;}
+/* ---------- Always accessible footer inside real Hub sheet ---------- */
+#hubBack.ah-hub-network-v2 .ahn-footer {
+  position:relative;z-index:26;flex:0 0 auto;
+  min-height:65px;padding:7px 9px calc(9px + max(12px,var(--ah-safe-bottom,0px),env(safe-area-inset-bottom,0px)));
+  display:grid;grid-template-columns:1fr 1fr 1fr 1fr 1fr;align-items:center;gap:3px;
+  border-top:1px solid rgba(115,218,252,.30);
+  background:linear-gradient(180deg,rgba(3,15,27,.94),rgba(1,8,17,.99));
+}
+#hubBack.ah-hub-network-v2 .ahn-footer-item,
+#hubBack.ah-hub-network-v2 .ahn-footer-core {
+  appearance:none;border:0;min-height:48px;min-width:0;
+  color:#a5cadd;background:transparent;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  gap:2px;cursor:pointer;
+}
+#hubBack.ah-hub-network-v2 .ahn-footer-item span {font-size:23px;line-height:1.2;}
+#hubBack.ah-hub-network-v2 .ahn-footer-item small {font-size:9px;font-weight:900;letter-spacing:.09em;}
+#hubBack.ah-hub-network-v2 .ahn-footer-item.is-current {color:#8ce6ff;text-shadow:0 0 14px #308abb;}
+#hubBack.ah-hub-network-v2 .ahn-footer-core {
+  min-height:58px;width:58px;max-width:100%;justify-self:center;
+  border-radius:50%;border:1px solid #91e2fb;
+  box-shadow:0 0 0 4px rgba(42,156,212,.08),0 0 17px rgba(34,189,251,.27);
+  background:radial-gradient(circle,#155a80,#041528);
+  color:#e7faff;font-size:31px;
+}
+#hubBack.ah-hub-network-v2.ahp-systems-open .ahn-footer-core,
+#hubBack.ah-hub-network-v2 .ahn-footer-core:active {border-color:#def9ff;box-shadow:0 0 19px rgba(46,211,253,.58);}
+@media(min-width:700px) {
+  #hubBack.ah-hub-network-v2 .ahn-header {padding-top:22px;}
+  #hubBack.ah-hub-network-v2 .ah-hub-command-panel {max-width:680px;border-inline:1px solid rgba(99,211,252,.23);}
+  #hubBack.ah-hub-network-v2 .ah-hub-systems-drawer {top:88px;}
+}
+@media(max-width:380px) {
+  #hubBack.ah-hub-network-v2 .ahn-header-live {display:none}
+  #hubBack.ah-hub-network-v2 .ahn-node {width:25%;padding:5px 2px;}
+  #hubBack.ah-hub-network-v2 .ahn-node-orbit {width:48px;height:48px;}
+  #hubBack.ah-hub-network-v2 .ahn-node-label {font-size:9px;}
+  #hubBack.ah-hub-network-v2 .ahn-node-sub {font-size:7px;}
+  #hubBack.ah-hub-network-v2 .ahn-core {width:48%;}
+  #hubBack.ah-hub-network-v2 .ahn-core-portrait {width:55px;height:55px;flex-basis:55px;}
+  #hubBack.ah-hub-network-v2 .ahn-core-title {font-size:17px;}
+  #hubBack.ah-hub-network-v2 .ahn-core-scan {font-size:9px;padding:5px 9px;}
+  #hubBack.ah-hub-network-v2 .ah-hub-quick-label-text {font-size:8px;}
+}
+@media(max-height:720px) {
+  #hubBack.ah-hub-network-v2 .ahn-header {
+    padding-top:calc(max(65px,var(--ah-safe-top,0px),env(safe-area-inset-top,0px)) + 9px);
+  }
+  #hubBack.ah-hub-network-v2 .ahn-stage {height:520px;}
+  #hubBack.ah-hub-network-v2 .ahn-signal-card {min-height:100px;}
+}
+@media(prefers-reduced-motion:reduce) {
+  #hubBack.ah-hub-network-v2 .ahn-link-glow path,
+  #hubBack.ah-hub-network-v2 .ahn-core::before,
+  #hubBack.ah-hub-network-v2 .ahn-core-static,
+  #hubBack.ah-hub-network-v2 .ahn-loading-wave {animation:none!important;}
+  #hubBack.ah-hub-network-v2 .ahn-node.ahn-tapped .ahn-node-orbit,
+  #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-portrait {animation:none!important;}
+  #hubBack.ah-hub-network-v2 .ah-hub-systems-drawer {transition:none!important;}
+}
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-link-glow path,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-link-glow path,
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core::before,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core::before,
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core-static,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core-static,
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-loading-wave,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-loading-wave {animation:none!important;}
+html.ah-perf-lite #hubBack.ah-hub-network-v2 .ah-hub-systems-drawer,
+body.ah-perf-lite #hubBack.ah-hub-network-v2 .ah-hub-systems-drawer {transition:none!important;}
+@keyframes ahnWave {from{background-position:150% 0}to{background-position:-150% 0}}
+@keyframes ahnSignalPath {from{stroke-dashoffset:0}to{stroke-dashoffset:-276}}
+@keyframes ahnOrbit {from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes ahnStatic {
+  0%,91%,94%,100%{opacity:0}
+  92%,93%{opacity:.13}
+}
+@keyframes ahnTapGlitch {
+  0%,100%{transform:translateX(0);filter:none}
+  33%{transform:translateX(1px);filter:drop-shadow(1px 0 0 rgba(33,236,255,.58))}
+  66%{transform:translateX(-1px);filter:drop-shadow(-1px 0 0 rgba(255,100,111,.2))}
+}
