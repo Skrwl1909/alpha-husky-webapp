@@ -14,6 +14,109 @@
   let initialized = false;
   let clickTimer = 0;
 
+  // Read-only inventory attention. Never infer a drop from visual cosmetics.
+  const INV_SEEN_PREFIX = "ah.hub.v2.inventorySeen.v1.";
+  let invOwner = "";
+  let invBaseline = null;
+  let invRequest = 0;
+
+  function inventoryActor() {
+    const tg = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    // Use an account identifier only when actually supplied; never key by a shared device.
+    const account = window.__ahAlphaAccountSession?.user_id ??
+      window.__ahAlphaAccountSession?.userId ??
+      window.PROFILE?.user_id ?? window.PROFILE?.uid ??
+      window.PLAYER_STATE?.user?.id ?? window.PLAYER_STATE?.profile?.uid;
+    const raw = String(tg ?? account ?? "").trim();
+    return /^[a-zA-Z0-9_-]{1,96}$/.test(raw)
+      ? (tg != null ? "tg:" : "account:") + raw : "";
+  }
+
+  function inventorySnapshot(slots) {
+    if (!Array.isArray(slots)) return null;
+    const out = Object.create(null);
+    for (const item of slots) {
+      if (!item || typeof item !== "object") continue;
+      const key = String(item.key ?? item.item_key ?? item.item ?? "").trim();
+      if (!key || key.length > 160) continue;
+      const raw = Number(item.quantity ?? item.amount ?? item.stackQty ?? item.qty ?? 1);
+      const qty = Number.isFinite(raw) ? Math.max(1, Math.trunc(raw)) : 1;
+      out[key] = Math.min(1000000, (out[key] || 0) + qty);
+    }
+    return out;
+  }
+
+  function inventoryLastViewed(actor) {
+    if (actor !== invOwner) { invOwner = actor; invBaseline = null; }
+    if (invBaseline) return invBaseline;
+    try {
+      const raw = window.localStorage?.getItem(INV_SEEN_PREFIX + actor);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (parsed?.version === 1 && parsed.items && typeof parsed.items === "object"
+          && !Array.isArray(parsed.items)) invBaseline = parsed.items;
+    } catch (_) {} // No alert when storage is unavailable or corrupted.
+    return invBaseline;
+  }
+
+  function inventoryRememberViewed(actor, snapshot) {
+    invOwner = actor;
+    invBaseline = snapshot;
+    if (!actor) return;
+    try { window.localStorage?.setItem(INV_SEEN_PREFIX + actor,
+      JSON.stringify({version:1,items:snapshot})); } catch (_) {}
+  }
+
+  function inventoryPaintAttention(unseen) {
+    const node = root?.querySelector(".ahn-node--inventory");
+    if (!node) return;
+    node.dataset.nodeStatus = unseen ? "new" : "normal";
+    node.setAttribute("aria-label", unseen ?
+      "Open Inventory, new items available" : "Open Inventory");
+    const label = node.querySelector(".ahn-node-unseen");
+    if (label) label.hidden = !unseen;
+  }
+
+  function onInventoryViewed(event) {
+    const snapshot = inventorySnapshot(event?.detail?.slots);
+    const actor = inventoryActor();
+    if (!snapshot || !actor) return;
+    ++invRequest; // Invalidate any older fetch completing after the player viewed items.
+    inventoryRememberViewed(actor, snapshot);
+    inventoryPaintAttention(false);
+  }
+
+  async function refreshInventoryAttention() {
+    if (!isOpen()) return false;
+    const actor = inventoryActor();
+    const seq = ++invRequest;
+    if (!actor) { inventoryPaintAttention(false); return false; }
+    if (actor !== invOwner) inventoryPaintAttention(false);
+    const api = window.apiPost || window.S?.apiPost;
+    if (typeof api !== "function") return false;
+    try {
+      const response = await api("/webapp/inventory/state", {});
+      if (seq !== invRequest || actor !== inventoryActor() || !isOpen()) return false;
+      if (response?.ok !== true || !Array.isArray(response.slots)) return false;
+      const current = inventorySnapshot(response.slots);
+      if (!current) return false;
+      const seen = inventoryLastViewed(actor);
+      if (!seen) {
+        // First verified snapshot establishes a baseline, never a fake new-loot alert.
+        inventoryRememberViewed(actor, current);
+        inventoryPaintAttention(false);
+        return true;
+      }
+      const hasNew = Object.keys(current).some(key => current[key] > Number(seen[key] || 0));
+      inventoryPaintAttention(hasNew);
+      return true;
+    } catch (err) {
+      console.warn("[HubNetworkV2] Inventory attention unavailable", err);
+      return false;
+    }
+  }
+
+
   const $ = (selector, scope = document) => scope.querySelector(selector);
   const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
   const isOpen = () => !!root && root.dataset.open === "1" && root.style.display !== "none";
@@ -122,13 +225,16 @@
     switch (key) {
       case "map": open = home?.openMap; break;
       case "inventory": open = home?.openInventory; break;
-      case "factions":
-        if (typeof window.Factions?.open === "function") {
-          window.Factions.open({mode:"auto"});
+      case "factions": {
+        const member=window.Factions?.getMyFactionKey?.();
+        if(member && typeof window.FactionHQ?.open==="function"){
+          void Promise.resolve(window.FactionHQ.open()).catch(err=>console.warn("[HubNetworkV2] Faction HQ failed",err));
           return true;
         }
-        open = window.Factions?.openPicker;
-        break;
+        if(typeof window.Factions?.open==="function"){window.Factions.open({mode:"auto"});return true;}
+        if(!member&&typeof window.FactionChamber?.open==="function"){window.FactionChamber.open();return true;}
+        return false;
+      }
       case "oracle": open = window.Oracle?.open; break;
       case "siege": open = window.Siege?.open; break;
       case "pack_comms": open = window.PackComms?.openFromLauncher; break;
@@ -202,6 +308,10 @@
         closeSystems();
       }
     });
+    window.addEventListener("ah:inventory-viewed", onInventoryViewed);
+    window.addEventListener("ah:session-state-changed", () => {
+      if (isOpen()) void refreshInventoryAttention();
+    });
     // Never store a fake node availability. Only the real destination decides.
   }
 
@@ -209,6 +319,15 @@
     if (!init()) return false;
     closeSystems({restoreFocus:false});
     resetDeck();
+    const n=root.querySelector(".ahn-node--factions");
+    if(n){
+      const member=!!window.Factions?.getMyFactionKey?.();
+      const label=n.querySelector(".ahn-node-label");
+      const sub=n.querySelector(".ahn-node-sub");
+      if(label)label.textContent=member?"Faction HQ":"Factions";
+      if(sub)sub.textContent=member?"YOUR FACTION":"CHOOSE A FACTION";
+    }
+    void refreshInventoryAttention();
     void syncCanonicalSignal();
     return true;
   }
