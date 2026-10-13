@@ -1,0 +1,11 @@
+/* Living Network V2 | original vector glyphs; CSS currentColor system */
+.ahn-hud-icon{display:inline-block;width:24px;height:24px;vertical-align:middle;flex:none;object-fit:contain;filter:drop-shadow(0 0 3px rgba(103,216,255,.22))}
+.ahn-hud-icon--small{width:18px;height:18px}
+.ahn-hud-icon--large{width:36px;height:36px}
+.ahn-hud-icon--amber{color:#f2b36c}
+.ahn-hud-icon--signal{color:#80dfff}
+.ahn-hud-icon--muted{color:#91b7c9}
+/* Note: external <img src=svg> uses SVG defaults to #89dfff via root color; for recoloring,
+   inline SVG with currentColor or use CSS mask-image. */
+
+.icon-all-systems{mask:url("all-systems.svg") center/contain no-repeat;-webkit-mask:url("all-systems.svg") center/contain no-repeat;}
