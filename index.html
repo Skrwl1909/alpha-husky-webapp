@@ -6793,49 +6793,18 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <span class="ahn-node-led ahn-node-led--amber" aria-hidden="true"></span>
   </button>
         </div>
-        <div class="ahn-stage-hint"><span aria-hidden="true">⌄</span> MORE SYSTEMS BELOW</div>
       </section>
-      <section class="ah-hub-quick-zone ah-hub-active-routes ahn-routes" aria-label="Active routes">
-        <div class="ah-hub-quick-label">ACTIVE ROUTES <span>PLAY NOW</span></div>
-        <div class="ah-hub-quick-grid">
-          <button class="ah-hub-quick" data-action="tactical_ops" type="button"><span class="ahn-route-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--tactical-ops"></span></span><span class="ah-hub-quick-label-text">Tactical Ops</span></button>
-          <button class="ah-hub-quick" data-action="moonlab" type="button"><span class="ahn-route-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--moonlab"></span></span><span class="ah-hub-quick-label-text">MoonLab</span></button>
-          <button class="ah-hub-quick" data-action="forge" type="button"><span class="ahn-route-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--forge"></span></span><span class="ah-hub-quick-label-text">Forge</span></button>
-          <button class="ah-hub-quick" data-action="howlboard" data-hub-icon="howlboard" type="button"><span class="ah-hub-tile-icon" aria-hidden="true"></span><span class="ah-hub-quick-label-text">Howlboard</span></button>
-        </div>
-      </section>
-      <button class="ah-hub-all-systems ahn-directory-trigger" data-hub-open-systems aria-expanded="false" aria-controls="hubSystemsDrawer" type="button">
-        <span class="ahn-directory-trigger-symbol ahn-glyph ahn-glyph--directory" aria-hidden="true"></span>
-        <span class="ahn-directory-trigger-copy"><b>OPEN THE NETWORK</b><small>All destinations, identity and pack tools</small></span>
-        <span aria-hidden="true" class="ahn-directory-trigger-chevron">⌃</span>
-      </button>
-  
     </main>
     <aside id="hubSystemsDrawer" class="ah-hub-systems-drawer" data-open="0" aria-hidden="true" aria-label="All Hub systems">
       <div class="ah-hub-systems-head">
         <div>
-          <div class="ah-hub-systems-title">Network Directory</div>
-          <div class="ah-hub-systems-sub">Existing destinations · no new unlocks</div>
+          <div class="ah-hub-systems-title">Pack &amp; Utilities</div>
+          <div class="ah-hub-systems-sub">Additional tools · existing destinations</div>
         </div>
         <button class="ah-hub-systems-close" data-hub-close-systems type="button" aria-label="Close All Systems">✕</button>
       </div>
 
       <div class="ah-hub-systems-scroll">
-        <section class="ah-system-section ahn-directory-featured" aria-label="Core routes">
-          <div class="ah-system-section-title">Combat, world &amp; growth</div>
-          <div class="ah-system-grid ahn-directory-grid">
-            <button class="ah-tile" data-action="tactical_ops" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--tactical-ops"></span></span><b>Tactical Ops</b></button>
-            <button class="ah-tile" data-action="moonlab" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--moonlab"></span></span><b>MoonLab</b></button>
-            <button class="ah-tile" data-action="forge" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--forge"></span></span><b>Forge</b></button>
-            <button class="ah-tile" data-hub-route="map" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--war-map"></span></span><b>World Map</b></button>
-            <button class="ah-tile" data-hub-route="inventory" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--inventory"></span></span><b>Inventory</b></button>
-            <button class="ah-tile" data-hub-route="factions" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--factions"></span></span><b>Factions</b></button>
-            <button class="ah-tile" data-hub-route="oracle" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--oracle"></span></span><b>Oracle</b></button>
-            <button class="ah-tile" data-hub-route="siege" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--siege"></span></span><b>Siege</b></button>
-            <button class="ah-tile" data-hub-route="pack_comms" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--pack-comms"></span></span><b>Pack Comms</b></button>
-            <button class="ah-tile" data-action="pets" type="button"><span class="ahn-dir-icon" aria-hidden="true"><span class="ahn-glyph ahn-glyph--pets"></span></span><b>Pets</b></button>
-          </div>
-        </section>
 
         <section class="ah-system-section" aria-label="Identity and Pack">
           <div class="ah-system-section-title">Identity &amp; Pack</div>
@@ -8090,7 +8059,7 @@ body.bc-open #ahCommunityBtn{
     var q = encodeURIComponent(String(ver || "dev"));
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "/css/hub_premium.css?v=" + q + "-living-network-v2-mobileqa-v2";
+    link.href = "/css/hub_premium.css?v=" + q + "-hub-living-nav-v1";
     document.head.appendChild(link);
   })(window.WEBAPP_VER);
   </script>
@@ -13543,7 +13512,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
   
 <script>document.write('<script src="/js/living_world.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script>document.write('<script src="/js/hub_premium.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '-living-network-v2"><\/script>');</script>
+<script>document.write('<script src="/js/hub_premium.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '-hub-living-nav-v1"><\/script>');</script>
 <script>document.write('<script src="/js/home_nav.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/discovery_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/scout_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>

@@ -122,13 +122,16 @@
     switch (key) {
       case "map": open = home?.openMap; break;
       case "inventory": open = home?.openInventory; break;
-      case "factions":
-        if (typeof window.Factions?.open === "function") {
-          window.Factions.open({mode:"auto"});
+      case "factions": {
+        const member=window.Factions?.getMyFactionKey?.();
+        if(member && typeof window.FactionHQ?.open==="function"){
+          void Promise.resolve(window.FactionHQ.open()).catch(err=>console.warn("[HubNetworkV2] Faction HQ failed",err));
           return true;
         }
-        open = window.Factions?.openPicker;
-        break;
+        if(typeof window.Factions?.open==="function"){window.Factions.open({mode:"auto"});return true;}
+        if(!member&&typeof window.FactionChamber?.open==="function"){window.FactionChamber.open();return true;}
+        return false;
+      }
       case "oracle": open = window.Oracle?.open; break;
       case "siege": open = window.Siege?.open; break;
       case "pack_comms": open = window.PackComms?.openFromLauncher; break;
@@ -209,6 +212,14 @@
     if (!init()) return false;
     closeSystems({restoreFocus:false});
     resetDeck();
+    const n=root.querySelector(".ahn-node--factions");
+    if(n){
+      const member=!!window.Factions?.getMyFactionKey?.();
+      const label=n.querySelector(".ahn-node-label");
+      const sub=n.querySelector(".ahn-node-sub");
+      if(label)label.textContent=member?"Faction HQ":"Factions";
+      if(sub)sub.textContent=member?"YOUR FACTION":"CHOOSE A FACTION";
+    }
     void syncCanonicalSignal();
     return true;
   }
