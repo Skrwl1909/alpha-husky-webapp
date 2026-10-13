@@ -1,262 +1,229 @@
-// Alpha Husky — Hub Premium Command Deck V1
-// Presentation/interaction only. StoryDelivery, Stats, LivingWorld and HomeNav remain state owners.
+// Alpha Husky — Living Network Hub V2.
+// Presentation only. Canonical progression belongs to StoryDelivery, Stats and CTA;
+// game actions remain owned by HomeNav and existing game systems.
 (function () {
   "use strict";
-
-  if (window.__ahHubPremiumV1Bound) return;
-  window.__ahHubPremiumV1Bound = true;
+  if (window.__ahHubNetworkV2Bound) return;
+  window.__ahHubNetworkV2Bound = true;
 
   const ROOT_ID = "hubBack";
-  const DECK_ID = "ahHubDeck";
   const DRAWER_ID = "hubSystemsDrawer";
-  const STORY_ID = "hubStoryRoot";
-  const GOAL_ID = "hubGoalRoot";
-
   let root = null;
-  let deck = null;
-  let dots = [];
-  let slides = [];
   let storyObserver = null;
-  let settleTimer = 0;
-  let activeIndex = 0;
-  let pointerDown = false;
-  let pointerStartX = 0;
-  let pointerStartY = 0;
-  let pointerDragged = false;
-  let suppressClickUntil = 0;
+  let syncToken = 0;
+  let initialized = false;
+  let clickTimer = 0;
 
-  const $ = (sel, ctx = document) => ctx.querySelector(sel);
-  const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
-
-  function now() {
-    return (window.performance && typeof window.performance.now === "function")
-      ? window.performance.now()
-      : Date.now();
-  }
+  const $ = (selector, scope = document) => scope.querySelector(selector);
+  const $$ = (selector, scope = document) => Array.from(scope.querySelectorAll(selector));
+  const isOpen = () => !!root && root.dataset.open === "1" && root.style.display !== "none";
+  const isLite = () => document.documentElement.classList.contains("ah-perf-lite")
+    || document.body.classList.contains("ah-perf-lite")
+    || (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 
   function cacheDom() {
     root = document.getElementById(ROOT_ID);
-    deck = document.getElementById(DECK_ID);
-    dots = root ? $$("[data-hub-deck-dot]", root) : [];
-    slides = deck ? $$(".ah-command-slide", deck) : [];
-    return !!(root && deck && slides.length === 3);
-  }
-
-  function getSlideIndexFromScroll() {
-    if (!deck || !slides.length) return 0;
-    const width = deck.clientWidth || slides[0]?.clientWidth || 1;
-    return Math.max(0, Math.min(slides.length - 1, Math.round(deck.scrollLeft / width)));
-  }
-
-  function setActiveIndex(index, opts) {
-    if (!slides.length || !deck) return;
-    const next = Math.max(0, Math.min(slides.length - 1, Number(index) || 0));
-    activeIndex = next;
-
-    dots.forEach((dot, i) => {
-      const on = i === next;
-      dot.setAttribute("aria-selected", on ? "true" : "false");
-      dot.tabIndex = on ? 0 : -1;
-    });
-
-    slides.forEach((slide, i) => {
-      slide.setAttribute("aria-hidden", i === next ? "false" : "true");
-    });
-
-    if (opts?.scroll) {
-      const left = next * (deck.clientWidth || 0);
-      try {
-        deck.scrollTo({ left, behavior: opts.instant ? "auto" : "smooth" });
-      } catch (_) {
-        deck.scrollLeft = left;
-      }
-    }
-  }
-
-  function syncActiveFromScroll() {
-    window.clearTimeout(settleTimer);
-    settleTimer = window.setTimeout(() => setActiveIndex(getSlideIndexFromScroll()), 70);
+    return !!(root && $(`#${DRAWER_ID}`, root) && $("#ahnNetworkStage", root));
   }
 
   function resetDeck() {
-    if (!cacheDom()) return;
-    activeIndex = 0;
-    deck.scrollLeft = 0;
-    setActiveIndex(0);
+    const scroll = $("#ahnHubScroll", root || document);
+    if (scroll) scroll.scrollTop = 0;
   }
+  function setCard() { resetDeck(); }
 
   function syncStoryPriority() {
-    if (!root) root = document.getElementById(ROOT_ID);
     if (!root) return;
-    const story = document.getElementById(STORY_ID);
-    const hasStory = !!story && story.childElementCount > 0 && String(story.textContent || "").trim().length > 0;
+    const story = $("#hubStoryRoot", root);
+    const hasStory = !!story && story.childElementCount > 0
+      && String(story.textContent || "").trim().length > 0;
     root.classList.toggle("ahp-has-story", hasStory);
   }
-
   function observeStory() {
-    const story = document.getElementById(STORY_ID);
-    if (!story || storyObserver) {
-      syncStoryPriority();
-      return;
-    }
+    const story = $("#hubStoryRoot", root);
+    if (!story || storyObserver || !window.MutationObserver) return;
     storyObserver = new MutationObserver(syncStoryPriority);
     storyObserver.observe(story, { childList: true, subtree: true, characterData: true });
     syncStoryPriority();
   }
 
-  function drawer() {
-    return document.getElementById(DRAWER_ID);
-  }
-
-  function isSystemsOpen() {
-    return drawer()?.dataset.open === "1";
-  }
-
+  function drawer() { return root && $(`#${DRAWER_ID}`, root); }
+  function isSystemsOpen() { return drawer()?.dataset.open === "1"; }
   function openSystems() {
     const panel = drawer();
     if (!panel) return false;
     panel.dataset.open = "1";
     panel.setAttribute("aria-hidden", "false");
-    root?.classList.add("ahp-systems-open");
-    const trigger = root?.querySelector("[data-hub-open-systems]");
-    trigger?.setAttribute("aria-expanded", "true");
-    window.setTimeout(() => panel.querySelector("[data-hub-close-systems]")?.focus({ preventScroll: true }), 30);
+    root.classList.add("ahp-systems-open");
+    $$("[data-hub-open-systems]", root).forEach(el => el.setAttribute("aria-expanded", "true"));
+    window.setTimeout(() => panel.querySelector("[data-hub-close-systems]")?.focus({preventScroll:true}), 260);
     return true;
   }
-
   function closeSystems(opts) {
     const panel = drawer();
     if (!panel || panel.dataset.open !== "1") return false;
     panel.dataset.open = "0";
     panel.setAttribute("aria-hidden", "true");
-    root?.classList.remove("ahp-systems-open");
-    const trigger = root?.querySelector("[data-hub-open-systems]");
-    trigger?.setAttribute("aria-expanded", "false");
-    if (opts?.restoreFocus !== false) {
-      window.setTimeout(() => trigger?.focus({ preventScroll: true }), 20);
-    }
+    root.classList.remove("ahp-systems-open");
+    $$("[data-hub-open-systems]", root).forEach(el => el.setAttribute("aria-expanded", "false"));
+    if (opts?.restoreFocus !== false) window.setTimeout(() =>
+      root?.querySelector(".ahn-core")?.focus({preventScroll:true}), 20);
     return true;
   }
 
-  function wireDeck() {
-    if (!deck || deck.dataset.hubPremiumBound === "1") return;
-    deck.dataset.hubPremiumBound = "1";
+  function signalStatus(kind) {
+    if (!root) return;
+    const element = $("#ahnSignalLoading", root);
+    const btn = root.querySelector("[data-hub-retry]");
+    if (!element) return;
+    root.dataset.signalReady = kind === "ready" ? "1" : "0";
+    element.dataset.state = kind;
+    if (btn) btn.hidden = kind !== "error";
+    const message = element.querySelector("span:not(.ahn-loading-wave)");
+    if (message) message.textContent = kind === "error"
+      ? "Could not sync the current signal." : "Synchronizing current signal…";
+    element.setAttribute("aria-hidden", kind === "ready" ? "true" : "false");
+  }
 
-    deck.addEventListener("scroll", syncActiveFromScroll, { passive: true });
-
-    deck.addEventListener("pointerdown", (event) => {
-      if (event.pointerType === "mouse" && event.button !== 0) return;
-      pointerDown = true;
-      pointerDragged = false;
-      pointerStartX = event.clientX;
-      pointerStartY = event.clientY;
-    }, { passive: true });
-
-    deck.addEventListener("pointermove", (event) => {
-      if (!pointerDown) return;
-      const dx = Math.abs(event.clientX - pointerStartX);
-      const dy = Math.abs(event.clientY - pointerStartY);
-      if (dx > 9 && dx > dy) pointerDragged = true;
-    }, { passive: true });
-
-    const endPointer = () => {
-      if (pointerDown && pointerDragged) suppressClickUntil = now() + 260;
-      pointerDown = false;
-      pointerDragged = false;
-    };
-    deck.addEventListener("pointerup", endPointer, { passive: true });
-    deck.addEventListener("pointercancel", endPointer, { passive: true });
-
-    deck.addEventListener("click", (event) => {
-      if (now() < suppressClickUntil) {
-        event.preventDefault();
-        event.stopPropagation();
+  async function syncCanonicalSignal() {
+    if (!root) return false;
+    const seq = ++syncToken;
+    signalStatus("loading");
+    // Never show the cached story objective before the canonical server refresh.
+    // StoryDelivery handles reentry state, campaign, CTA, FTUE and next moves.
+    let success = false;
+    try {
+      if (typeof window.StoryDelivery?.refreshReturn === "function") {
+        success = (await window.StoryDelivery.refreshReturn()) === true;
+      } else {
+        // Compatible with bootstrap order: the existing module may init later.
+        success = false;
       }
-    }, true);
+    } catch (err) {
+      console.warn("[HubNetworkV2] signal refresh unavailable", err);
+    }
+    if (seq !== syncToken || !isOpen()) return false;
+    syncStoryPriority();
+    signalStatus(success ? "ready" : "error");
+    return success;
+  }
 
-    deck.addEventListener("keydown", (event) => {
-      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
-      event.preventDefault();
-      const dir = event.key === "ArrowRight" ? 1 : -1;
-      setActiveIndex(activeIndex + dir, { scroll: true });
-    });
+  function focusNetwork() {
+    if (!root) return;
+    const scroll = $("#ahnHubScroll", root);
+    if (scroll) scroll.scrollTop = 0;
+  }
+
+  function openExistingRoute(key) {
+    // Existing open methods often return void on success. Do not report them
+    // unavailable merely because they have no boolean return value.
+    const home = window.HomeNav;
+    let open = null;
+    switch (key) {
+      case "map": open = home?.openMap; break;
+      case "inventory": open = home?.openInventory; break;
+      case "factions":
+        if (typeof window.Factions?.open === "function") {
+          window.Factions.open({mode:"auto"});
+          return true;
+        }
+        open = window.Factions?.openPicker;
+        break;
+      case "oracle": open = window.Oracle?.open; break;
+      case "siege": open = window.Siege?.open; break;
+      case "pack_comms": open = window.PackComms?.openFromLauncher; break;
+      default: return false;
+    }
+    if (typeof open !== "function") return false;
+    // Use the owning object for APIs that depend on 'this'.
+    const owner = key === "map" || key === "inventory" ? home
+      : key === "oracle" ? window.Oracle
+      : key === "siege" ? window.Siege
+      : key === "pack_comms" ? window.PackComms : window.Factions;
+    const result = open.call(owner);
+    return result !== false;
+  }
+  function openPackDirectory() {
+    if (!openSystems()) return;
+    const scroll = root.querySelector(".ah-hub-systems-scroll");
+    const section = root.querySelector('.ah-system-section[aria-label="Identity and Pack"]');
+    if (scroll && section) {
+      // Scroll within the existing catalogue, not the entire viewport.
+      window.setTimeout(() => { if (isSystemsOpen()) scroll.scrollTop = Math.max(0, section.offsetTop - scroll.offsetTop); }, 70);
+    }
+  }
+
+  function routeClicked(event) {
+    const route = event.target.closest("[data-hub-route]");
+    if (!route || !root.contains(route)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const key = route.dataset.hubRoute;
+    // Do not invent destinations or rewrite game state.
+    window.HomeNav?.closeAll?.();
+    const opened = openExistingRoute(key);
+    if (opened === false) console.warn("[HubNetworkV2] route unavailable", key);
+  }
+
+  function touchFeedback(event) {
+    const node = event.target.closest(".ahn-node,.ahn-core,.ahn-directory-trigger,.ahn-footer-core,.ahn-footer-item");
+    if (!node || !root?.contains(node) || isLite()) return;
+    node.classList.remove("ahn-tapped");
+    void node.offsetWidth;
+    node.classList.add("ahn-tapped");
+    window.clearTimeout(clickTimer);
+    clickTimer = window.setTimeout(() => node.classList.remove("ahn-tapped"), 180);
+    try { window.Telegram?.WebApp?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
   }
 
   function wireControls() {
-    if (!root || root.dataset.hubPremiumControlsBound === "1") return;
-    root.dataset.hubPremiumControlsBound = "1";
-
+    if (!root || initialized) return;
+    initialized = true;
+    root.addEventListener("pointerdown", touchFeedback, {passive:true});
     root.addEventListener("click", (event) => {
-      const dot = event.target.closest("[data-hub-deck-dot]");
-      if (dot && root.contains(dot)) {
-        const idx = Number(dot.getAttribute("data-hub-deck-dot"));
-        if (Number.isFinite(idx)) setActiveIndex(idx, { scroll: true });
+      const retry = event.target.closest("[data-hub-retry]");
+      if (retry) { void syncCanonicalSignal(); return; }
+      const opener = event.target.closest("[data-hub-open-systems]");
+      if (opener && root.contains(opener)) {
+        event.preventDefault();
+        if (isSystemsOpen()) closeSystems(); else openSystems();
         return;
       }
-
-      if (event.target.closest("[data-hub-open-systems]")) {
-        openSystems();
-        return;
-      }
-
-      if (event.target.closest("[data-hub-close-systems]")) {
-        closeSystems();
-      }
+      const closer = event.target.closest("[data-hub-close-systems]");
+      if (closer && root.contains(closer)) { closeSystems(); return; }
+      const pack = event.target.closest("[data-hub-open-pack]");
+      if (pack && root.contains(pack)) { openPackDirectory(); return; }
+      if (event.target.closest('[data-hub-nav="hub"]')) { focusNetwork(); return; }
+      routeClicked(event);
     });
-
     root.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && isSystemsOpen()) {
         event.preventDefault();
         closeSystems();
       }
     });
-  }
-
-  function ensureGoalPlaceholder() {
-    const goal = document.getElementById(GOAL_ID);
-    if (!goal || goal.childElementCount || String(goal.textContent || "").trim()) return;
-    goal.innerHTML = `
-      <div class="ahp-objective ahp-skeleton" aria-label="Loading next move">
-        <div class="ahp-kicker">NEXT MOVE</div>
-        <div class="ahp-skeleton-line -short"></div>
-        <div class="ahp-skeleton-line"></div>
-        <div class="ahp-skeleton-line"></div>
-        <div class="ahp-skeleton-line"></div>
-      </div>`;
+    // Never store a fake node availability. Only the real destination decides.
   }
 
   function activate() {
     if (!init()) return false;
-    closeSystems({ restoreFocus: false });
-    ensureGoalPlaceholder();
-    syncStoryPriority();
+    closeSystems({restoreFocus:false});
     resetDeck();
+    void syncCanonicalSignal();
     return true;
   }
 
   function init() {
     if (!cacheDom()) return false;
-    root.classList.add("ah-hub-premium");
-    wireDeck();
+    root.classList.add("ah-hub-premium","ah-hub-network-v2");
     wireControls();
     observeStory();
-    setActiveIndex(getSlideIndexFromScroll());
     return true;
   }
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", init, { once: true });
-  } else {
-    init();
-  }
-
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, {once:true});
+  else init();
   window.HubPremium = Object.freeze({
-    init,
-    activate,
-    resetDeck,
-    openSystems,
-    closeSystems,
-    isSystemsOpen,
-    setCard(index) { setActiveIndex(index, { scroll: true }); }
+    init,activate,resetDeck,openSystems,closeSystems,isSystemsOpen,setCard
   });
 })();
