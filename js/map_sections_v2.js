@@ -398,7 +398,13 @@
         });
         poi.dataset.mapV2NodeId = node.id;
         poi.dataset.mapV2Access = access.kind;
-        if (isFirstSessionBloodMoonTarget(node.id)) poi.dataset.mapV2FtueTarget = "true";
+        if (isFirstSessionBloodMoonTarget(node.id)) {
+          poi.dataset.mapV2FtueTarget = "true";
+          const clearTouch = () => poi.classList.remove("is-touched");
+          poi.addEventListener("pointerdown", () => poi.classList.add("is-touched"));
+          for (const eventName of ["pointerup", "pointercancel", "pointerleave", "blur"]) poi.addEventListener(eventName, clearTouch);
+          poi.append(element("span", "map-v2-lunar-beacon"));
+        }
         poi.dataset.mapV2RuntimeTone = runtimePresentation(node.id).tone;
         poi.dataset.mapV2Pursuit = pursuitMatchesNode(node.id) ? "true" : "false";
 
@@ -587,7 +593,7 @@
     try {
       const fs = global.Onboarding?.getFirstSignal?.();
       const world = asText(fs?.world_discovery || fs?.worldDiscovery).toLowerCase();
-      if (world === "done") return false;
+      if (world === "done" || fs?.faction_selected !== true) return false;
       if (fs?.eligible === true && fs?.state === "COMPLETED" && world === "pending") return true;
       return global.StoryDelivery?.getState?.()?.id === "S-FS-WORLD";
     } catch (_) {
