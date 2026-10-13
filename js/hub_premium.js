@@ -115,20 +115,33 @@
   }
 
   function openExistingRoute(key) {
-    if (!root) return false;
+    // Existing open methods often return void on success. Do not report them
+    // unavailable merely because they have no boolean return value.
     const home = window.HomeNav;
+    let open = null;
     switch (key) {
-      case "map": return home?.openMap?.() ?? false;
-      case "inventory": return home?.openInventory?.() ?? false;
+      case "map": open = home?.openMap; break;
+      case "inventory": open = home?.openInventory; break;
       case "factions":
-        if (window.Factions?.open) return window.Factions.open({mode:"auto"});
-        if (window.Factions?.openPicker) return window.Factions.openPicker();
-        return false;
-      case "oracle": return window.Oracle?.open?.() ?? false;
-      case "siege": return window.Siege?.open?.() ?? false;
-      case "pack_comms": return window.PackComms?.openFromLauncher?.() ?? false;
+        if (typeof window.Factions?.open === "function") {
+          window.Factions.open({mode:"auto"});
+          return true;
+        }
+        open = window.Factions?.openPicker;
+        break;
+      case "oracle": open = window.Oracle?.open; break;
+      case "siege": open = window.Siege?.open; break;
+      case "pack_comms": open = window.PackComms?.openFromLauncher; break;
       default: return false;
     }
+    if (typeof open !== "function") return false;
+    // Use the owning object for APIs that depend on 'this'.
+    const owner = key === "map" || key === "inventory" ? home
+      : key === "oracle" ? window.Oracle
+      : key === "siege" ? window.Siege
+      : key === "pack_comms" ? window.PackComms : window.Factions;
+    const result = open.call(owner);
+    return result !== false;
   }
   function openPackDirectory() {
     if (!openSystems()) return;
@@ -147,14 +160,9 @@
     event.stopPropagation();
     const key = route.dataset.hubRoute;
     // Do not invent destinations or rewrite game state.
-    if (key === "map" || key === "inventory") {
-      window.HomeNav?.closeAll?.();
-      openExistingRoute(key);
-    } else {
-      window.HomeNav?.closeAll?.();
-      const opened = openExistingRoute(key);
-      if (opened === false) console.warn("[HubNetworkV2] route unavailable", key);
-    }
+    window.HomeNav?.closeAll?.();
+    const opened = openExistingRoute(key);
+    if (opened === false) console.warn("[HubNetworkV2] route unavailable", key);
   }
 
   function touchFeedback(event) {
