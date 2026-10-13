@@ -1694,3 +1694,46 @@ body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-stage::before{
 }
 html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-static,
 body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-static{opacity:0;}
+
+
+/* ==========================================================================
+   LIVING NETWORK HUB V2 — MOBILE DEVICE QA POLISH (2026-10-13)
+   Presentation-only. Telegram WebView already renders below the Telegram
+   chrome; do not reserve an extra mandatory 65-74px. Preserve actual safe
+   insets on edge-to-edge Android and iOS WebViews.
+   ========================================================================== */
+@media (max-width:699px) {
+  #hubBack.ah-hub-network-v2 .ahn-header {
+    padding-top:calc(max(12px,var(--ah-safe-top,0px),env(safe-area-inset-top,0px)) + 8px);
+  }
+  #hubBack.ah-hub-network-v2 .ah-hub-systems-drawer {
+    top:calc(max(12px,var(--ah-safe-top,0px),env(safe-area-inset-top,0px)) + 67px);
+  }
+  /* Keep the ring behind actionable nodes and reduce its apparent size. */
+  #hubBack.ah-hub-network-v2 .ahn-core {
+    width:clamp(150px,44%,200px);
+    z-index:1;
+  }
+  #hubBack.ah-hub-network-v2 .ahn-core-rings {
+    inset:-19px;
+    opacity:.72;
+  }
+  #hubBack.ah-hub-network-v2 .ahn-node {z-index:2;}
+  #hubBack.ah-hub-network-v2 .ahn-core-title {font-size:clamp(14px,4vw,18px);}
+  #hubBack.ah-hub-network-v2 .ahn-core-scan {font-size:clamp(8px,2.45vw,10px);}
+  /* Directory still has 44px+ touch targets, but no longer wastes rows. */
+  #hubBack.ah-hub-network-v2 .ah-system-grid .ah-tile,
+  #hubBack.ah-hub-network-v2 .ah-system-tile {
+    min-height:60px;
+    padding:9px;
+    gap:9px;
+  }
+  #hubBack.ah-hub-network-v2 .ahn-directory-grid {gap:8px;}
+  #hubBack.ah-hub-network-v2 .ah-system-grid .ah-tile b {font-size:11px;}
+  #hubBack.ah-hub-network-v2 .ahn-dir-icon {
+    width:31px;
+    min-width:31px;
+    height:31px;
+  }
+  #hubBack.ah-hub-network-v2 .ahn-dir-icon .ahn-glyph{width:21px;height:21px;}
+}
