@@ -61,6 +61,7 @@
   var returnPromise = null;
   var nextMoveState = { foundation: null, mission: null };
   var NEXT_MOVE_DISMISSED_KEY = "ah.sd.nextMoveDismissed.v1";
+  var lastArrivedId = "";
 
   function readContinuity() {
     try { return JSON.parse(global.localStorage.getItem(CONTINUITY_KEY) || "null"); } catch (_) { return null; }
@@ -407,6 +408,14 @@
     }
     var worldHandoff = fs.eligible && fs.state === "COMPLETED" && !!fs.worldDiscovery;
     if (worldHandoff && fs.worldDiscovery === "pending") {
+      if (!fs.faction_selected) {
+        return frame({ id: "S-FS-FACTION-HANDOFF", situation: "BUILD IMPROVED",
+          changed: "Rustfang is equipped. Strength rose.",
+          why: "Alone, you survive. With a faction, you matter.", nextLead: "Faction Oath",
+          nextAction: "Pick Faction", openQuestion: "Who do I fight under?",
+          target: { type: "open_action", action: "factions" }, ctaKind: "choose_faction",
+          firstSession: true, hideHubGoal: true, goLabel: "Pick Faction" });
+      }
       return frame({ id: "S-FS-WORLD", situation: "BUILD IMPROVED", changed: "Rustfang is equipped. Strength rose.",
         why: "Your faction shares the Blood Moon Tower fight.", nextLead: "Blood Moon Tower",
         nextAction: "FIND BLOOD MOON TOWER", goLabel: "FIND BLOOD MOON TOWER",
@@ -885,6 +894,11 @@
       + ".ahs-story-go{appearance:none;margin-top:12px;width:100%;padding:11px 12px;border-radius:12px;"
       + "border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));"
       + "color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
+      + ".ahs-story-card.ahs-arrive::after{content:\"\";position:absolute;top:0;bottom:0;left:0;width:24%;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(111,218,236,.14),transparent);animation:ahs-story-arrival .45s ease-out both;}"
+      + ".ahs-story-card.ahs-arrive .ahs-story-go{animation:ahs-story-go-arrival .3s ease-out .15s both;}"
+      + "@keyframes ahs-story-arrival{from{transform:translateX(-120%)}to{transform:translateX(550%)}}"
+      + "@keyframes ahs-story-go-arrival{from{opacity:.65}to{opacity:1}}"
+      + "@media(prefers-reduced-motion:reduce){.ahs-story-card.ahs-arrive::after{display:none;animation:none}.ahs-story-card.ahs-arrive .ahs-story-go{animation:none}}"
       + "#ahs-story-return-cue{position:fixed;left:12px;right:12px;bottom:18px;z-index:12000;display:none;"
       + "padding:10px 12px;border-radius:12px;border:1px solid rgba(145,226,255,.22);"
       + "background:rgba(8,18,29,.94);color:#e7f4ff;font-size:12px;font-weight:800;line-height:1.35;"
@@ -913,6 +927,8 @@
     if (hub) hub.classList.toggle("is-story-first-session", !!(scf && scf.hideHubGoal));
     if (hub) hub.classList.toggle("is-next-move", !!scf?.nextMove);
     if (!root) return scf;
+    var arriving = !!(scf && scf.id !== lastArrivedId && (scf.id === "S-FS-WORLD" || scf.id === "S-FS-FACTION-HANDOFF"));
+    if (scf) lastArrivedId = scf.id;
     if (!scf) {
       root.innerHTML = "";
       return scf;
@@ -957,12 +973,12 @@
     var storyLead = !!continuityFrame(gatherInputs(), scf);
     var go = continuation ? "CONTINUE" : (scf.goLabel || scf.nextAction || "Go");
     root.innerHTML = ""
-      + "<div class=\"ahs-story-card\">"
+      + "<div class=\"ahs-story-card" + (arriving ? " ahs-arrive" : "") + "\">"
       + "  <div class=\"ahs-story-pad\">"
       + "    <div class=\"ahs-story-kicker\">" + (continuation ? "CONTINUE THE SIGNAL" : "CURRENT SITUATION") + "</div>"
       + (continuation && continuation.lastBeat ? "<div class=\"ahs-story-next\"><b>LAST:</b> " + esc(continuation.lastBeat) + "</div>" : "")
       + "    <div class=\"ahs-story-situation\">" + esc(scf.situation) + "</div>"
-      + (continuation && scf.changed ? "<div class=\"ahs-story-next\"><b>NOW:</b> " + esc(scf.changed) + "</div>" : "")
+      + ((continuation || scf.id === "S-FS-FACTION-HANDOFF") && scf.changed ? "<div class=\"ahs-story-next\"><b>NOW:</b> " + esc(scf.changed) + "</div>" : "")
       + "    <div class=\"ahs-story-next\"><b>NEXT:</b> " + esc(scf.nextAction) + "</div>"
       + (scf.target
         ? "    <button type=\"button\" class=\"ahs-story-go\" data-story-go=\"1\">" + esc(go) + "</button>"
