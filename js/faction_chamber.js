@@ -51,11 +51,18 @@
  }
  function startHold(e){if(e.cancelable)e.preventDefault();if(busy||!active||holdTimer)return;holdStart=performance.now();const btn=e.currentTarget;const tick=now=>{const p=Math.min(1,(now-holdStart)/1050);btn.style.setProperty("--hold",Math.round(p*100)+"%");if(p>=1){holdTimer=0;holdRAF=0;void bind();return;}holdRAF=requestAnimationFrame(tick)};holdTimer=1;holdRAF=requestAnimationFrame(tick);}
  function cancelHold(e){if(e?.cancelable)e.preventDefault();if(holdRAF)cancelAnimationFrame(holdRAF);holdRAF=0;holdTimer=0;e?.currentTarget?.style?.setProperty("--hold","0%");}
+ async function refreshBoundJourney(){
+  // Join has succeeded on the backend. Refresh server truth before updating UI.
+  try { await global.Onboarding?.refreshContinuity?.(); } catch(e) { console.warn("[FactionChamber] tutorial refresh failed",e); }
+  try { await global.CTA?.refresh?.(); } catch(e) { console.warn("[FactionChamber] CTA refresh failed",e); }
+  try { global.StoryDelivery?.refreshHub?.("faction_bound"); } catch(e) { console.warn("[FactionChamber] journey refresh failed",e); }
+  try { global.GuidedNavigation?.refresh?.(); } catch(e) { console.warn("[FactionChamber] guide refresh failed",e); }
+ }
  async function bind(){const f=meta(active);if(!f||busy)return;busy=true;const btn=root.querySelector("[data-bind]");if(btn){btn.disabled=true;btn.querySelector("span").textContent="BINDING SIGNAL...";}
   try{if(typeof apiPost!=="function")throw new Error("API_NOT_READY");const run_id="faction:"+Date.now()+":"+Math.random().toString(16).slice(2);const res=await apiPost("/webapp/faction/join",{faction:f.slug,faction_key:f.key,factionSlug:f.slug,run_id});if(!(res&&(res.ok===true||res.success===true||res.data?.ok===true)))throw new Error(res?.reason||res?.data?.reason||"JOIN_FAILED");
    try{localStorage.setItem("ah_faction",f.key)}catch(_){}
    if(global.PLAYER_STATE?.profile)global.PLAYER_STATE.profile.faction=f.key;if(global.PROFILE)global.PROFILE.faction=f.key;
-   haptic("success");bottomBound(f);setTimeout(()=>{close();global.FactionHQ?.open?.();},900);
+   haptic("success");bottomBound(f);void refreshBoundJourney();setTimeout(()=>{close();global.FactionHQ?.open?.();},900);
   }catch(err){busy=false;if(btn){btn.disabled=false;btn.querySelector("span").textContent="HOLD TO BIND";btn.style.setProperty("--hold","0%");}alert("Signal bind failed: "+(err?.message||"unknown"));}
  }
  function bottomBound(f){const bottom=root.querySelector(".fc-bottom");bottom.innerHTML='<div class="fc-creed">SIGNAL BOUND</div><div class="fc-title">WELCOME TO '+esc(f.name)+'</div><div class="fc-copy">Your signal is recognized. Entering your HQ.</div>';}
