@@ -6809,7 +6809,9 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         <span class="ahn-directory-trigger-copy"><b>OPEN THE NETWORK</b><small>All destinations, identity and pack tools</small></span>
         <span aria-hidden="true" class="ahn-directory-trigger-chevron">⌃</span>
       </button>
-      <aside id="hubSystemsDrawer" class="ah-hub-systems-drawer" data-open="0" aria-hidden="true" aria-hidden="true" aria-label="All Hub systems">
+  
+    </main>
+    <aside id="hubSystemsDrawer" class="ah-hub-systems-drawer" data-open="0" aria-hidden="true" aria-label="All Hub systems">
       <div class="ah-hub-systems-head">
         <div>
           <div class="ah-hub-systems-title">Network Directory</div>
@@ -6893,7 +6895,6 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
         </section>
       </div>
     </aside>
-    </main>
     <nav class="ahn-footer" aria-label="Hub quick navigation">
       <button type="button" class="ahn-footer-item is-current" data-hub-nav="hub" aria-current="page"><span aria-hidden="true">⌂</span><small>HUB</small></button>
       <button type="button" class="ahn-footer-item" data-hub-route="map"><span aria-hidden="true">⌖</span><small>MAP</small></button>
@@ -8089,7 +8090,7 @@ body.bc-open #ahCommunityBtn{
     var q = encodeURIComponent(String(ver || "dev"));
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "/css/hub_premium.css?v=" + q;
+    link.href = "/css/hub_premium.css?v=" + q + "-living-network-v2";
     document.head.appendChild(link);
   })(window.WEBAPP_VER);
   </script>
