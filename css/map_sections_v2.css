@@ -2580,3 +2580,50 @@
   }
   #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-poi-name{font-size:10px;max-width:112px}
 }
+
+/* FTUE Lunar Beacon P0 — first eligible Blood Moon POI only. */
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon{
+  position:absolute;left:20px;top:50%;width:36px;height:36px;
+  transform:translate(-50%,-50%);transition:transform 160ms ease-out;
+  pointer-events:none;
+}
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::before,
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::after{
+  content:"";position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  border:1px solid rgba(231,92,76,.7);
+}
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::before{
+  animation:mapV2LunarBeacon 2.4s ease-out 3 both;
+}
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::after{
+  border-color:rgba(231,92,76,.38);
+}
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"].is-touched .map-v2-lunar-beacon{
+  transform:translate(-50%,-50%) scale(.96);
+}
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"].is-touched .map-v2-lunar-beacon::after{
+  border-color:rgba(129,229,240,.88);
+}
+#mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"][data-map-v2-opening="true"] .map-v2-lunar-beacon::before{
+  animation:mapV2LunarBeaconOpen 280ms ease-out 1 both;
+}
+@keyframes mapV2LunarBeacon{
+  0%{transform:scale(.9);opacity:.5}
+  100%{transform:scale(1.35);opacity:0}
+}
+@keyframes mapV2LunarBeaconOpen{
+  0%{transform:scale(1.15);opacity:.65}
+  100%{transform:scale(.6);opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::before{animation:none!important;opacity:0}
+  #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon{transition:none!important}
+}
+html.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::before,
+body.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon::before{
+  animation:none!important;opacity:0;
+}
+html.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon,
+body.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v2-lunar-beacon{
+  transition:none!important;
+}
