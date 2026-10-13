@@ -383,6 +383,7 @@
       .ob-p{line-height:1.35;opacity:.9}
 
       .ob-note{margin-top:10px;font-size:13px;opacity:.75}
+      .ob-note.ob-gain{font-size:16px;opacity:1;color:#81e5f0;font-weight:900}
       .ob-cta{background:rgba(103,232,249,.08);border:1px solid rgba(103,232,249,.2);border-radius:14px;
         padding:12px 14px;margin-top:12px}
 
@@ -582,7 +583,7 @@
     if (!bodyEl) return;
     const state = focusedState();
     const modalTitle = document.querySelector("#obBack .ob-title");
-    if (modalTitle) modalTitle.textContent = state.state === "COMPLETED" ? "BUILD IMPROVED" : "FIRST SIGNAL";
+    if (modalTitle) modalTitle.textContent = "FIRST SIGNAL";
     if (progressFill) progressFill.style.width = state.state === "COMPLETED" ? "100%" : "35%";
     if (btnBack) btnBack.style.display = "none";
     if (btnNext) btnNext.style.display = "none";
@@ -633,7 +634,7 @@
       copy = "What you recover matters. Use it.";
       detail = `${xp > 0 && bones > 0 ? `<div class="ob-note"><strong>+${escapeHtml(xp)} EXP &middot; +${escapeHtml(bones)} Bones</strong></div>` : ""}
         <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")} equipped</strong></div>
-        <div class="ob-note"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
+        <div class="ob-note ob-gain"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
       label = "Continue Journey";
     }
@@ -642,7 +643,6 @@
       <div class="ob-card">
         <div class="ob-icon">${icon}</div>
         <div class="ob-content">
-          <div class="ob-step">FTUE LITE</div>
           <div class="ob-head">${escapeHtml(heading)}</div>
           <div class="ob-p">${escapeHtml(copy)}</div>
           ${detail}
