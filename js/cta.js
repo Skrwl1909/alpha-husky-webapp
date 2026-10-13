@@ -1574,18 +1574,8 @@
 
     switch (key) {
       case "factions":
-        try {
-          if (window.Oath && typeof window.Oath.checkAndOpen === "function") {
-            const opened = await window.Oath.checkAndOpen({ force: true });
-            if (opened) return true;
-          }
-          if (window.Oath && typeof window.Oath.open === "function" && window.Oath.getState) {
-            window.Oath.open(window.Oath.getState());
-            return true;
-          }
-        } catch (err) {
-          warn("Oath open failed", err);
-        }
+        // The Oath is an opening-game step. Post-First-Signal faction selection
+        // must use the existing picker (Faction Chamber for UNBOUND players).
         try {
           if (typeof window.Factions?.openPicker === "function") {
             window.Factions.openPicker();
