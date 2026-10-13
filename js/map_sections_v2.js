@@ -647,6 +647,29 @@
     return { tone: "current", text: title };
   }
 
+  function configureFactionObjective(strip) {
+    const story = global.StoryDelivery?.getState?.();
+    const pickFaction = story?.id === "S-FS-FACTION-HANDOFF"
+      && story?.target?.type === "open_action" && story?.target?.action === "factions";
+    strip.classList.toggle("is-faction-action", pickFaction);
+    if (pickFaction) {
+      strip.setAttribute("role", "button");
+      strip.setAttribute("tabindex", "0");
+      strip.setAttribute("aria-label", "Pick Faction — open faction selection");
+    } else {
+      strip.removeAttribute("role");
+      strip.removeAttribute("tabindex");
+      strip.removeAttribute("aria-label");
+    }
+  }
+
+  function openFactionObjective(strip) {
+    if (!strip.classList.contains("is-faction-action")) return;
+    const story = global.StoryDelivery?.getState?.();
+    if (story?.id !== "S-FS-FACTION-HANDOFF" || story?.target?.action !== "factions") return;
+    try { void Promise.resolve(global.CTA?.openTarget?.(story.target)).catch(() => {}); } catch (_) {}
+  }
+
   function createObjectiveStrip(sectionId) {
     const summary = objectiveSummary(sectionId);
     const strip = element("div", `map-v2-objective is-${summary.tone}`);
@@ -659,6 +682,14 @@
     const routeNode = element("span", "map-v2-objective-route", route);
     routeNode.hidden = !route;
     strip.append(routeNode);
+    strip.addEventListener("click", () => openFactionObjective(strip));
+    strip.addEventListener("keydown", (event) => {
+      if ((event.key === "Enter" || event.key === " ") && strip.classList.contains("is-faction-action")) {
+        event.preventDefault();
+        openFactionObjective(strip);
+      }
+    });
+    configureFactionObjective(strip);
     return strip;
   }
 
@@ -666,6 +697,7 @@
     const sectionId = asText(strip?.dataset?.mapV2ObjectiveSection);
     const summary = objectiveSummary(sectionId === "world" ? null : sectionId);
     strip.className = `map-v2-objective is-${summary.tone}`;
+    configureFactionObjective(strip);
     const text = strip.querySelector?.(".map-v2-objective-text");
     if (text) text.textContent = summary.text;
     const routeNode = strip.querySelector?.(".map-v2-objective-route");
