@@ -62,6 +62,12 @@
   var nextMoveState = { foundation: null, mission: null };
   var NEXT_MOVE_DISMISSED_KEY = "ah.sd.nextMoveDismissed.v1";
   var lastArrivedId = "";
+  var FS_HANDOFF_SEEN_KEY = "ahs_fs_handoff_seen";
+
+  function fsHandoffSeenKey() {
+    var userId = global.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+    return FS_HANDOFF_SEEN_KEY + (userId == null ? "" : ":" + String(userId));
+  }
 
   function readContinuity() {
     try { return JSON.parse(global.localStorage.getItem(CONTINUITY_KEY) || "null"); } catch (_) { return null; }
@@ -891,6 +897,9 @@
       + ".ahs-story-situation{margin-top:6px;font-size:14px;font-weight:800;line-height:1.35;color:#eef8ff;}"
       + ".ahs-story-next{margin-top:8px;font-size:12px;line-height:1.4;color:rgba(210,232,255,.86);}"
       + ".ahs-story-next b{color:#d6f3ff;}"
+      + ".ahs-story-gain{margin-top:8px;font-size:13px;font-weight:900;line-height:1.45;color:#81e5f0;}"
+      + ".ahs-story-card.ahs-arrive .ahs-story-gain{animation:ahs-story-gain-reveal .32s ease-out both;}"
+      + "@keyframes ahs-story-gain-reveal{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}"
       + ".ahs-story-go{appearance:none;margin-top:12px;width:100%;padding:11px 12px;border-radius:12px;"
       + "border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));"
       + "color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
@@ -898,7 +907,9 @@
       + ".ahs-story-card.ahs-arrive .ahs-story-go{animation:ahs-story-go-arrival .3s ease-out .15s both;}"
       + "@keyframes ahs-story-arrival{from{transform:translateX(-120%)}to{transform:translateX(550%)}}"
       + "@keyframes ahs-story-go-arrival{from{opacity:.65}to{opacity:1}}"
-      + "@media(prefers-reduced-motion:reduce){.ahs-story-card.ahs-arrive::after{display:none;animation:none}.ahs-story-card.ahs-arrive .ahs-story-go{animation:none}}"
+      + "@media(prefers-reduced-motion:reduce){.ahs-story-card.ahs-arrive::after{display:none;animation:none}.ahs-story-card.ahs-arrive .ahs-story-go,.ahs-story-card.ahs-arrive .ahs-story-gain{animation:none}}"
+      + "html.ah-perf-lite .ahs-story-card.ahs-arrive::after,body.ah-perf-lite .ahs-story-card.ahs-arrive::after{display:none;animation:none!important;}"
+      + "html.ah-perf-lite .ahs-story-card.ahs-arrive .ahs-story-go,body.ah-perf-lite .ahs-story-card.ahs-arrive .ahs-story-go,html.ah-perf-lite .ahs-story-card.ahs-arrive .ahs-story-gain,body.ah-perf-lite .ahs-story-card.ahs-arrive .ahs-story-gain{animation:none!important;}"
       + "#ahs-story-return-cue{position:fixed;left:12px;right:12px;bottom:18px;z-index:12000;display:none;"
       + "padding:10px 12px;border-radius:12px;border:1px solid rgba(145,226,255,.22);"
       + "background:rgba(8,18,29,.94);color:#e7f4ff;font-size:12px;font-weight:800;line-height:1.35;"
@@ -927,7 +938,12 @@
     if (hub) hub.classList.toggle("is-story-first-session", !!(scf && scf.hideHubGoal));
     if (hub) hub.classList.toggle("is-next-move", !!scf?.nextMove);
     if (!root) return scf;
-    var arriving = !!(scf && scf.id !== lastArrivedId && (scf.id === "S-FS-WORLD" || scf.id === "S-FS-FACTION-HANDOFF"));
+    var factionHandoff = !!(scf && scf.id === "S-FS-FACTION-HANDOFF");
+    var factionHandoffSeen = false;
+    if (factionHandoff) {
+      try { factionHandoffSeen = global.localStorage.getItem(fsHandoffSeenKey()) === "1"; } catch (_) {}
+    }
+    var arriving = !!(scf && scf.id !== lastArrivedId && (scf.id === "S-FS-WORLD" || (factionHandoff && !factionHandoffSeen)));
     if (scf) lastArrivedId = scf.id;
     if (!scf) {
       root.innerHTML = "";
@@ -971,20 +987,23 @@
       return scf;
     }
     var storyLead = !!continuityFrame(gatherInputs(), scf);
-    var go = continuation ? "CONTINUE" : (scf.goLabel || scf.nextAction || "Go");
+    var go = factionHandoff ? (scf.goLabel || "Pick Faction") : (continuation ? "CONTINUE" : (scf.goLabel || scf.nextAction || "Go"));
     root.innerHTML = ""
       + "<div class=\"ahs-story-card" + (arriving ? " ahs-arrive" : "") + "\">"
       + "  <div class=\"ahs-story-pad\">"
-      + "    <div class=\"ahs-story-kicker\">" + (continuation ? "CONTINUE THE SIGNAL" : "CURRENT SITUATION") + "</div>"
-      + (continuation && continuation.lastBeat ? "<div class=\"ahs-story-next\"><b>LAST:</b> " + esc(continuation.lastBeat) + "</div>" : "")
+      + (factionHandoff ? "" : "    <div class=\"ahs-story-kicker\">" + (continuation ? "CONTINUE THE SIGNAL" : "CURRENT SITUATION") + "</div>")
+      + (continuation && continuation.lastBeat && (!factionHandoff || continuation.lastBeat !== scf.changed) ? "<div class=\"ahs-story-next\"><b>LAST:</b> " + esc(continuation.lastBeat) + "</div>" : "")
       + "    <div class=\"ahs-story-situation\">" + esc(scf.situation) + "</div>"
-      + ((continuation || scf.id === "S-FS-FACTION-HANDOFF") && scf.changed ? "<div class=\"ahs-story-next\"><b>NOW:</b> " + esc(scf.changed) + "</div>" : "")
+      + (factionHandoff && scf.changed ? "<div class=\"ahs-story-gain\">" + esc(scf.changed) + "</div>" : ((continuation && scf.changed) ? "<div class=\"ahs-story-next\"><b>NOW:</b> " + esc(scf.changed) + "</div>" : ""))
       + "    <div class=\"ahs-story-next\"><b>NEXT:</b> " + esc(scf.nextAction) + "</div>"
       + (scf.target
         ? "    <button type=\"button\" class=\"ahs-story-go\" data-story-go=\"1\">" + esc(go) + "</button>"
         : "")
       + "  </div>"
       + "</div>";
+    if (factionHandoff && !factionHandoffSeen) {
+      try { global.localStorage.setItem(fsHandoffSeenKey(), "1"); } catch (_) {}
+    }
     var btn = root.querySelector("[data-story-go]");
     if (btn && scf.target) {
       btn.addEventListener("click", function onGo() {
