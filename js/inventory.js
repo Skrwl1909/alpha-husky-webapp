@@ -947,6 +947,12 @@ window.Inventory = {
       }
 
       this.showTab(this.currentTab);
+      // Acknowledge ONLY after successful authenticated Inventory state read.
+      try {
+        if (Array.isArray(res.slots)) {
+          window.dispatchEvent(new CustomEvent("ah:inventory-viewed", {detail:{slots:res.slots}}));
+        }
+      } catch (_) {}
     } catch (err) {
       console.error("Inventory open error:", err);
       const grid = document.getElementById("inventory-grid");

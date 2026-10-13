@@ -1737,3 +1737,29 @@ body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-stat
   }
   #hubBack.ah-hub-network-v2 .ahn-dir-icon .ahn-glyph{width:21px;height:21px;}
 }
+
+/* Hub V2 Living States P0: no static amber/green 'availability' indications. */
+#hubBack.ah-hub-network-v2 .ahn-node .ahn-node-led,
+#hubBack.ah-hub-network-v2 .ahn-node .ahn-node-led--amber,
+#hubBack.ah-hub-network-v2 .ahn-node .ahn-node-led--green {
+  background:#66c9f1;
+  box-shadow:0 0 8px rgba(102,201,241,.4);
+}
+#hubBack.ah-hub-network-v2 .ahn-node[data-node-status="new"] {
+  border-color:#ffc477;
+  box-shadow:inset 0 1px rgba(255,240,202,.14),0 0 18px rgba(255,177,67,.42);
+}
+#hubBack.ah-hub-network-v2 .ahn-node[data-node-status="new"] .ahn-node-orbit {
+  border-color:#ffc477;
+  box-shadow:0 0 0 3px rgba(255,198,109,.15),0 0 18px rgba(255,177,67,.38);
+}
+#hubBack.ah-hub-network-v2 .ahn-node[data-node-status="new"] .ahn-node-led {
+  background:#ffc477;
+  box-shadow:0 0 12px rgba(255,177,67,.85);
+}
+#hubBack.ah-hub-network-v2 .ahn-node-unseen {
+  position:absolute;z-index:4;top:-9px;left:50%;transform:translateX(-50%);
+  display:inline-block;white-space:nowrap;padding:3px 6px;border-radius:5px;
+  background:#ffc477;color:#251404;font-size:8px;font-weight:950;letter-spacing:.06em;
+}
+#hubBack.ah-hub-network-v2 .ahn-node-unseen[hidden] {display:none!important;}
