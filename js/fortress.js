@@ -238,6 +238,8 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
 .ml-arena-veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,9,13,.18),rgba(7,9,13,.08) 40%,rgba(7,9,13,.55))}
 .ml-fighter{position:absolute;bottom:0;height:90%;width:50%;object-fit:contain;object-position:bottom center;filter:drop-shadow(0 18px 28px rgba(0,0,0,.7));transition:transform 180ms var(--ml-out),filter 180ms var(--ml-out);outline:none}
 .ml-fighter.is-you{left:0}
+.ml-arena video.ml-fighter{object-fit:contain;object-position:bottom center}
+.ml-you-plate video{width:44px;height:44px;border-radius:999px;object-fit:cover}
 .ml-fighter.is-boss{right:0}
 .ml-fighter.is-hit{filter:drop-shadow(0 18px 24px rgba(0,0,0,.55)) brightness(1.35)}
 .ml-fighter.is-you.is-hit{transform:translate3d(-6px,2px,0)}
@@ -1359,24 +1361,65 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     return url;
   }
 
-  function getPlayerBattleAvatarUrl(data) {
-    const direct =
-      data?.player?.battleAvatar ||
-      data?.playerBattleAvatar ||
-      data?.player?.avatar ||
-      data?.playerAvatar ||
-      "";
-    if (direct) return cloudThumb(direct, 256);
-    const p = window.__PROFILE__ || window.lastProfile || window.profileState || window._profile || null;
-    const candidates = [p?.avatarPng, p?.avatar, p?.avatarUrl, p?.profileAvatar, p?.characterPng, p?.character, p?.heroImg, p?.heroPng].filter(Boolean);
-    if (candidates[0]) return cloudThumb(candidates[0], 256);
-    const img =
-      document.querySelector("#hero-frame img, #heroFrame img, img#hero-img, img#profile-avatar, #avatarMain img") ||
-      document.querySelector("#equippedRoot img, #equippedModal img");
-    if (img?.src) return cloudThumb(img.src, 256);
-    const tgPhoto = window.Telegram?.WebApp?.initDataUnsafe?.user?.photo_url;
-    if (tgPhoto) return String(tgPhoto);
-    return artUrl("alpha-portrait.jpg");
+  // Battle-only presentation: equipped skin first, never use the cosmetic frame as a fighter.
+  function battleMediaUrl(value) {
+    if (typeof value === "string") return value.trim();
+    if (!value || typeof value !== "object") return "";
+    return String(value.img || value.url || value.preview_url || value.previewUrl || value.src || "").trim();
+  }
+
+  function isBattleVideo(url) {
+    return /\\.(mp4|webm)(?:[?#]|$)/i.test(String(url || ""));
+  }
+
+  function resolvePlayerBattleVisual(data) {
+    const p = window.__PROFILE__ || window.lastProfile || window.profileState || window.PROFILE || {};
+    const activeSkin = battleMediaUrl(p.skin || p.activeSkin);
+    const heroSkin = document.getElementById("player-skin");
+    const liveSkin = heroSkin ? String(heroSkin.currentSrc || heroSkin.src || "").trim() : "";
+    const direct = battleMediaUrl(data?.player?.skin || data?.player?.activeSkin || data?.player?.battleAvatar || data?.playerBattleAvatar || data?.player?.avatar || data?.playerAvatar);
+    const avatar = battleMediaUrl(p.avatarPng || p.avatar || p.avatarUrl || p.profileAvatar);
+    return activeSkin || liveSkin || direct || avatar || "/assets/skins/lunarhowl_skin.webp";
+  }
+
+  function attachBattleVisual(img, source, fallback) {
+    if (!img) return;
+    const safeFallback = fallback || "/assets/skins/lunarhowl_skin.webp";
+    const src = String(source || "").trim() || safeFallback;
+    const isVideo = isBattleVideo(src);
+    const media = isVideo ? document.createElement("video") : img;
+    if (isVideo) {
+      media.className = img.className;
+      media.id = img.id;
+      media.setAttribute("aria-label", img.alt || "Alpha");
+      media.autoplay = true;
+      media.loop = true;
+      media.muted = true;
+      media.playsInline = true;
+      media.setAttribute("playsinline", "");
+      img.replaceWith(media);
+    }
+    let fallbackTried = false;
+    const fail = () => {
+      if (fallbackTried) return;
+      fallbackTried = true;
+      if (isVideo) {
+        const backup = document.createElement("img");
+        backup.id = media.id;
+        backup.className = media.className;
+        backup.alt = img.alt || "Alpha";
+        backup.src = safeFallback;
+        media.replaceWith(backup);
+      } else if (media.src !== new URL(safeFallback, document.baseURI).href) {
+        media.src = safeFallback;
+      }
+    };
+    media.addEventListener("error", fail);
+    media.src = src;
+    if (isVideo) {
+      const playPromise = media.play();
+      if (playPromise?.catch) playPromise.catch(fail);
+    }
   }
 
   function renderFortressBattle(data) {
@@ -1391,7 +1434,7 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     const battleWall = canonBossWallFromState(data);
     const rawBossSprite = data?.boss?.sprite || data?.bossSprite || BOSS_FALLBACK;
     const bossSpriteUrl = bossUrlFromKeyOrName(rawBossSprite);
-    const playerAvatarUrl = getPlayerBattleAvatarUrl(data) || artUrl("alpha-portrait.jpg");
+    const playerVisualUrl = resolvePlayerBattleVisual(data);
     const floorLabel = data.currentFloor ?? data.level ?? data.lvl ?? "?";
 
     function hpPct(cur, max) {
@@ -1424,11 +1467,11 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
         <div class="ml-arena" id="fb-stage">
           <img class="ml-arena-bg" alt="" src="${artUrl("arena.jpg")}">
           <div class="ml-arena-veil"></div>
-          <img class="ml-fighter is-you" id="fb-you-img" alt="Alpha" src="${artUrl("alpha.jpg")}">
+          <img class="ml-fighter is-you" id="fb-you-img" alt="Alpha" src="/assets/skins/lunarhowl_skin.webp">
           <img class="ml-fighter is-boss" id="fb-boss-img" alt="Boss" src="${artUrl("boss-fallback.jpg")}">
         </div>
         <div class="ml-you-plate">
-          <img id="fb-you-av" alt="Alpha" src="${esc(playerAvatarUrl)}">
+          <img id="fb-you-av" alt="Alpha" src="/assets/skins/lunarhowl_skin.webp">
           <div>
             <div class="ml-who"><h2>Alpha</h2><small>Autonomous duel</small></div>
             <div class="ml-hp">
@@ -1463,6 +1506,8 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     const stageHost = $("#fb-stage", wrap);
     const youImgEl = $("#fb-you-img", wrap);
     const bossImgEl = $("#fb-boss-img", wrap);
+    attachBattleVisual(youImgEl, playerVisualUrl);
+    attachBattleVisual($("#fb-you-av", wrap), playerVisualUrl);
     if (bossImgEl && bossSpriteUrl) {
       const probe = new Image();
       probe.onload = () => {
