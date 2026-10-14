@@ -2823,7 +2823,7 @@
 
   Stats.refresh = load;
   Stats.refreshHubGoal = refreshHubGoal;
-  Stats.open = function(){ if(STATS3_ENABLED)window.AlphaStats3?.reset(); show(); load(); };
+  Stats.open = function(options = {}){ if(STATS3_ENABLED){ window.AlphaStats3?.reset(); if(options?.tab === "build") window.AlphaStats3?.openTab?.("build"); } show(); load(); };
   Stats.close = function(){ hide(); };
 
   Stats.init = function({ apiPost, tg, dbg } = {}){

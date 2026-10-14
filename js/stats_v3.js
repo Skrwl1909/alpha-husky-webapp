@@ -121,5 +121,5 @@
   }
   function reset(){tab="overview";lastRenderedTab="overview";sheet="";notice="";scrollMemory={overview:0,build:0,legacy:0};}
   function feedback(message){notice=String(message||"");}
-  window.AlphaStats3={render,handle,reset,feedback,openSync(stats,ctx){sheet="sync";showSheet(sheet,stats,ctx);},onAction(fn){onAction=fn;}};
+  window.AlphaStats3={render,handle,reset,feedback,openTab(name){if(["overview","build","legacy"].includes(name)){tab=name;sheet="";}},openSync(stats,ctx){sheet="sync";showSheet(sheet,stats,ctx);},onAction(fn){onAction=fn;}};
 })();

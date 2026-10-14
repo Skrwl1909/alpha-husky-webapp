@@ -545,6 +545,13 @@
     openForge: () => openForge(),
     openMoonLab: () => openMoonLab(),
     openSupport: () => routeAction("support"),
+    openBuild: () => {
+      if (!document.getElementById("statsBack") || typeof window.Stats?.open !== "function") return false;
+      closeAllBacks();
+      openBack("statsBack");
+      window.Stats.open({ tab: "build" });
+      return true;
+    },
     closeAll: () => closeAllBacks(),
   };
 })();
