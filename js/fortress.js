@@ -1369,7 +1369,7 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
   }
 
   function isBattleVideo(url) {
-    return /\\.(mp4|webm)(?:[?#]|$)/i.test(String(url || ""));
+    return /\.(mp4|webm)(?:[?#]|$)/i.test(String(url || ""));
   }
 
   function resolvePlayerBattleVisual(data) {
@@ -1383,7 +1383,7 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
   }
 
   function attachBattleVisual(img, source, fallback) {
-    if (!img) return;
+    if (!img) return null;
     const safeFallback = fallback || "/assets/skins/lunarhowl_skin.webp";
     const src = String(source || "").trim() || safeFallback;
     const isVideo = isBattleVideo(src);
@@ -1420,6 +1420,7 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
       const playPromise = media.play();
       if (playPromise?.catch) playPromise.catch(fail);
     }
+    return media;
   }
 
   function renderFortressBattle(data) {
@@ -1504,9 +1505,8 @@ body.ah-moonlab-active nav.ah-tabbar{display:none!important;pointer-events:none!
     `;
 
     const stageHost = $("#fb-stage", wrap);
-    const youImgEl = $("#fb-you-img", wrap);
+    const youImgEl = attachBattleVisual($("#fb-you-img", wrap), playerVisualUrl);
     const bossImgEl = $("#fb-boss-img", wrap);
-    attachBattleVisual(youImgEl, playerVisualUrl);
     attachBattleVisual($("#fb-you-av", wrap), playerVisualUrl);
     if (bossImgEl && bossSpriteUrl) {
       const probe = new Image();
