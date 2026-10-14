@@ -9010,6 +9010,22 @@ function normalizeApiPath(path) {
   return String(path || "").split("?")[0];
 }
 
+// Profile hydration still needs this canonical level extractor. It is independent
+// of the removed legacy Level-Up toast and must stay available to loadProfile().
+function coercePlayerLevel(value) {
+  const num = Number(value);
+  return Number.isFinite(num) && num > 0 ? Math.max(1, Math.floor(num)) : null;
+}
+
+function extractProfileLevel(profile) {
+  if (!profile || typeof profile !== "object") return null;
+  return coercePlayerLevel(
+    typeof profile.level === "number"
+      ? profile.level
+      : profile?.stats?.level
+  );
+}
+
 // Level-Up V2 listens to canonical profile refreshes and successful actions.
 // Do not create a second, session-only LEVEL UP toast here.
 function shouldCoalesceReadOnlyState(path) {
