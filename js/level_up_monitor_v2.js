@@ -112,6 +112,9 @@
     }
     if (state.known == null || next < state.known) {
       // First sight and isolated profile resets are baselines, not rewards.
+      state.pending = null;
+      if (state.presentTimer) { global.clearTimeout(state.presentTimer); state.presentTimer = 0; }
+      removeMoment();
       state.known = next;
       write(scope, next);
       return false;
