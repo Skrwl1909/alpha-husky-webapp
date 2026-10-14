@@ -1,0 +1,25 @@
+name: Verify global Level-Up Reward V2
+on:
+  push:
+    branches:
+      - feature/levelup-global-reward-v2-20261014
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-levelup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify JS syntax
+        run: |
+          node --check js/level_up_monitor_v2.js
+          node --check js/stats.js
+          node --check js/stats_v3.js
+          node --check js/home_nav.js
+          node --check tools/verify_level_up_monitor_v2.mjs
+      - name: Run Level-Up V2 regression tests
+        run: node tools/verify_level_up_monitor_v2.mjs
