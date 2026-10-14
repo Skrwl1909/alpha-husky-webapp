@@ -11,6 +11,7 @@
     selfView: false,
   };
   const DEFAULT_DAILY_PACK_SIGNALS = 3;
+  const DEFAULT_PROFILE_PORTRAIT = "/assets/skins/lunarhowl_skin.webp";
 
   const FACTION_ACCENTS = {
     rogue_byte: "0,229,255",
@@ -45,9 +46,9 @@
     const src = asText(url);
     if (!src) return "";
     if (/\.(mp4|webm)(\?|#|$)/i.test(src)) {
-      return `<video class="${esc(cls)}" src="${esc(src)}" autoplay muted loop playsinline onerror="this.hidden=true;"></video>`;
+      return `<video class="${esc(cls)}" src="${esc(src)}" autoplay muted loop playsinline onerror="this.remove();"></video>`;
     }
-    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt || "")}" loading="lazy" onerror="this.hidden=true;">`;
+    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt || "")}" loading="lazy" onerror="this.remove();">`;
   }
 
   function initials(name) {
@@ -248,9 +249,11 @@
       }
       .pp-visual.has-default-frame::after{content:"";position:absolute;inset:4px;border-radius:11px;border:1px solid rgba(var(--pp-accent-rgb,125,211,252),.14);pointer-events:none;z-index:2}
       .pp-skin-window{position:absolute;inset:10% 14% 15%;border-radius:10px;overflow:hidden;background:rgba(255,255,255,.035);border:1px solid rgba(var(--pp-accent-rgb,125,211,252),.15)}
-      .pp-skin{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;object-position:center 24%;display:block}
+      .pp-default-portrait{position:absolute;inset:0;z-index:1;width:100%;height:100%;object-fit:cover;object-position:center 24%;border-radius:10px}
+      .pp-skin{position:relative;z-index:3;width:100%;height:100%;object-fit:cover;object-position:center 24%;display:block}
       .pp-frame{position:absolute;inset:-5px;width:calc(100% + 10px);height:calc(100% + 10px);object-fit:contain;z-index:3;pointer-events:none;filter:drop-shadow(0 12px 21px rgba(0,0,0,.42))}
-      .pp-avatar-fallback{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;border-radius:11px;background:rgba(255,255,255,.04)}
+      .pp-avatar-fallback{position:relative;z-index:2;width:100%;height:100%;object-fit:cover;border-radius:11px;background:rgba(255,255,255,.04)}
+      .pp-skin-window .pp-avatar-fallback{position:absolute;inset:0;border-radius:0}
       .pp-fallback-mark{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:11px;border:1px solid rgba(var(--pp-accent-rgb,125,211,252),.22);background:radial-gradient(circle at 50% 22%,rgba(var(--pp-accent-rgb,125,211,252),.24),transparent 34%),linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));color:rgba(245,248,255,.92);gap:10px;z-index:0}
       .pp-fallback-mark::before{content:"";width:54px;height:64px;border-radius:28px 28px 18px 18px;background:radial-gradient(circle at 50% 24%,rgba(245,248,255,.86) 0 18%,transparent 19%),linear-gradient(180deg,rgba(245,248,255,.42),rgba(var(--pp-accent-rgb,125,211,252),.26));opacity:.62;filter:drop-shadow(0 8px 16px rgba(0,0,0,.25))}
       .pp-fallback-mark b{font-size:30px;line-height:1;font-weight:950;letter-spacing:.03em}
@@ -313,6 +316,8 @@
       .pp-badge:first-child{border-color:rgba(244,195,87,.34);box-shadow:inset 0 0 20px rgba(244,195,87,.06),0 0 14px rgba(244,195,87,.05)}
       .pp-badge-icon,.pp-item-icon{width:42px;height:42px;margin:0 auto 7px;border-radius:10px;object-fit:contain;background:radial-gradient(circle,rgba(35,83,110,.32),rgba(2,9,15,.72));display:flex;align-items:center;justify-content:center;font-size:20px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.28))}
       .pp-icon-empty{color:rgba(178,205,221,.45);font-weight:950}
+      .pp-icon-fallback{position:relative;overflow:hidden}
+      .pp-icon-fallback img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
       .pp-badge-name,.pp-item-name{font-size:10px;font-weight:850;line-height:1.18;overflow-wrap:anywhere;color:rgba(237,244,249,.9)}
       .pp-item-sub{margin-top:3px;font-size:8px;color:rgba(166,192,207,.52);text-transform:uppercase;letter-spacing:.06em}
       .pp-empty{font-size:11px;color:rgba(187,208,222,.58);border:1px dashed rgba(125,211,252,.14);border-radius:9px;padding:11px;background:rgba(5,15,23,.52)}
@@ -430,7 +435,7 @@
     const label = asText(name).slice(0, 1).toUpperCase() || "A";
     if (!src) return `<div class="${esc(cls)} pp-icon-empty">${esc(label)}</div>`;
     if (/^https?:\/\//i.test(src) || src.startsWith("/") || /\.(png|webp|jpg|jpeg|gif|svg)(\?|#|$)/i.test(src)) {
-      return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(name || "")}" loading="lazy" onerror="this.hidden=true;">`;
+      return `<span class="${esc(cls)} pp-icon-fallback"><span>${esc(label)}</span><img src="${esc(src)}" alt="" loading="lazy" onload="this.previousElementSibling?.remove();" onerror="this.remove();"></span>`;
     }
     return `<div class="${esc(cls)}">${esc(src)}</div>`;
   }
@@ -543,18 +548,32 @@
     const left = dailyLeft(social);
     const button = howlButtonState(social, isSelf);
 
+    // Display fallback only: equipped cosmetics and player data remain unchanged.
+    const defaultPortrait = `<img class="pp-default-portrait" src="${DEFAULT_PROFILE_PORTRAIT}" alt="" onerror="this.remove();">`;
+    const avatarPortrait = avatarUrl
+      ? `<img class="pp-avatar-fallback" src="${esc(avatarUrl)}" alt="${esc(p.name || "Avatar")}" onerror="this.remove();">`
+      : "";
+    const framePortrait = frameUrl
+      ? `<img class="pp-frame" src="${esc(frameUrl)}" alt="" onerror="this.remove();">`
+      : "";
     const visual = skinUrl
       ? `
         <div class="${esc(visualClass)}" ${visualStyle}>
-          <div class="pp-skin-window">${fallback}${mediaMarkup(skinUrl, "pp-skin", skin.name || p.name)}</div>
-          ${frameUrl ? `<img class="pp-frame" src="${esc(frameUrl)}" alt="" onerror="this.hidden=true;">` : ""}
+          <div class="pp-skin-window">
+            ${fallback}
+            ${defaultPortrait}
+            ${avatarUrl && avatarUrl !== skinUrl ? avatarPortrait : ""}
+            ${mediaMarkup(skinUrl, "pp-skin", skin.name || p.name)}
+          </div>
+          ${framePortrait}
         </div>
       `
       : `
         <div class="${esc(visualClass)}" ${visualStyle}>
           ${fallback}
-          ${avatarUrl ? `<img class="pp-avatar-fallback" src="${esc(avatarUrl)}" alt="${esc(p.name || "Avatar")}" onerror="this.hidden=true;">` : ""}
-          ${frameUrl ? `<img class="pp-frame" src="${esc(frameUrl)}" alt="" onerror="this.hidden=true;">` : ""}
+          ${defaultPortrait}
+          ${avatarPortrait}
+          ${framePortrait}
         </div>
       `;
 

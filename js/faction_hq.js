@@ -64,9 +64,9 @@
     const src = String(url || "").trim();
     if (!src) return "";
     if (/\.(mp4|webm)(\?|#|$)/i.test(src)) {
-      return `<video class="${esc(cls)}" src="${esc(src)}" autoplay muted loop playsinline></video>`;
+      return `<video class="${esc(cls)}" src="${esc(src)}" autoplay muted loop playsinline onloadeddata="this.previousElementSibling.style.display='none';" onerror="this.previousElementSibling.style.display='grid';this.remove();"></video>`;
     }
-    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt)}" loading="lazy">`;
+    return `<img class="${esc(cls)}" src="${esc(src)}" alt="${esc(alt)}" loading="lazy" onload="this.previousElementSibling.style.display='none';" onerror="this.previousElementSibling.style.display='grid';this.remove();">`;
   }
 
   function num(v) {
@@ -490,13 +490,15 @@ function _contribSummaryLegacy(c) {
       <div class="hq-member-list">
         ${members.map((row) => {
           const visual = row.skin_url || row.avatar_url || "";
+          const avatarInitials = String(row.name || "AH").trim().slice(0, 2).toUpperCase() || "AH";
           const roleLine = row.title || row.role || "Faction member";
           const score = Number(row.weeklyScore || 0);
           return `
             <button type="button" class="hq-member-row ${row.isYou ? "is-you" : ""}" data-pack-profile-uid="${esc(row.uid)}">
               <span class="hq-member-visual">
+                <span class="hq-member-fallback" aria-hidden="true">${esc(avatarInitials)}</span>
                 ${mediaTag(visual, "hq-member-img", row.name || "Member")}
-                ${row.frame_url ? `<img class="hq-member-frame" src="${esc(row.frame_url)}" alt="">` : ""}
+                ${row.frame_url ? `<img class="hq-member-frame" src="${esc(row.frame_url)}" alt="" onerror="this.remove();">` : ""}
               </span>
               <span class="hq-member-main">
                 <span class="hq-member-name">${esc(row.name || "Member")}${row.isYou ? ` <span class="hq-you-pill">YOU</span>` : ``}</span>
@@ -1578,7 +1580,22 @@ function _contribSummaryLegacy(c) {
         background:rgba(0,0,0,.24);
       }
 
+      #factionHQRoot .hq-member-fallback{
+        position:absolute;
+        inset:0;
+        display:grid;
+        place-items:center;
+        border-radius:12px;
+        background:linear-gradient(150deg,rgba(71,128,155,.25),rgba(4,12,19,.88));
+        color:rgba(233,247,255,.9);
+        font-size:13px;
+        font-weight:900;
+        letter-spacing:.04em;
+      }
       #factionHQRoot .hq-member-img{
+        position:absolute;
+        inset:0;
+        z-index:1;
         width:100%;
         height:100%;
         display:block;
@@ -1588,6 +1605,7 @@ function _contribSummaryLegacy(c) {
 
       #factionHQRoot .hq-member-frame{
         position:absolute;
+        z-index:2;
         inset:-5px;
         width:calc(100% + 10px);
         height:calc(100% + 10px);
