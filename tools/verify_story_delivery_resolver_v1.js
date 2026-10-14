@@ -39,12 +39,48 @@ function assertTarget(scf, expected, label) {
   );
 }
 
-const fsFaction = StoryDelivery.resolve({
-  firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" }
+// Before completing First Signal, UNBOUND and faction-bound users follow the same eligible route.
+for (const [state, status, expected] of [
+  ["NOT_STARTED", "", "S-FS-NOT-STARTED"],
+  ["MISSION_STARTED", "RUNNING", "S-FS-RUNNING"],
+  ["MISSION_STARTED", "READY", "S-FS-READY"],
+  ["REWARD_RECEIVED", "", "S-FS-REWARD"]
+]) {
+  const unbound = StoryDelivery.resolve({
+    firstSignal: { eligible: true, faction_selected: false, state, status }
+  });
+  assert.equal(unbound.id, expected, "UNBOUND " + state + "/" + status);
+  assertTarget(unbound, { type: "open_action", action: "first_signal" }, expected);
+  assert.equal(unbound.lockedBrief, false);
+}
+const unboundHandoff = StoryDelivery.resolve({
+  firstSignal: { eligible: true, faction_selected: false, state: "COMPLETED", world_discovery: "pending" }
 });
-assert.equal(fsFaction.id, "S-FS-FACTION");
-assertTarget(fsFaction, { type: "open_action", action: "factions" }, "S-FS-FACTION");
-assert.equal(fsFaction.lockedBrief, false);
+assert.equal(unboundHandoff.id, "S-FS-FACTION-HANDOFF");
+assertTarget(unboundHandoff, { type: "open_action", action: "factions" }, "post-equip faction handoff");
+
+// Awakening stays higher priority; no premature First Signal enrollment.
+const awakeningWindow = { FtueContinuity: { isAwakeningFreshEligible: () => true } };
+const awakeningContext = { window: awakeningWindow, console, module: { exports: {} }, exports: {} };
+vm.createContext(awakeningContext);
+vm.runInContext(source, awakeningContext);
+assert.equal(awakeningContext.window.StoryDelivery.resolve({
+  firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" }
+}).id, "S-AWAKENING");
+
+// Only early Scout guidance is faction-independent; post-equip guidance still needs binding.
+const scoutSource = fs.readFileSync(path.join(root, "js", "scout_guide.js"), "utf8");
+const scoutWindow = { addEventListener() {} };
+const scoutContext = { window: scoutWindow, document: { readyState: "loading", addEventListener() {} } };
+vm.createContext(scoutContext);
+vm.runInContext(scoutSource, scoutContext);
+const scout = scoutContext.window.ScoutGuide;
+assert.equal(scout.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" } }), 1);
+assert.equal(scout.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "MISSION_STARTED", status: "READY" } }), 2);
+assert.equal(scout.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "REWARD_RECEIVED" } }), 4);
+assert.equal(scout.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "COMPLETED", world_discovery: "pending" } }), 0);
+assert.equal(scout.resolve({ firstSignal: { eligible: true, faction_selected: true, state: "COMPLETED", world_discovery: "pending" } }), 64);
+assert.equal(scout.resolve({ firstSignal: { eligible: false, faction_selected: false, state: "NOT_STARTED" } }), 0);
 
 const fsNotStarted = StoryDelivery.resolve({
   firstSignal: { eligible: true, faction_selected: true, state: "NOT_STARTED" }
