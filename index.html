@@ -6868,7 +6868,7 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
       <button type="button" class="ahn-footer-item is-current" data-hub-nav="hub" aria-current="page"><span class="ahn-glyph ahn-glyph--home" aria-hidden="true"></span><small>HUB</small></button>
       <button type="button" class="ahn-footer-item" data-hub-route="map"><span class="ahn-glyph ahn-glyph--war-map" aria-hidden="true"></span><small>MAP</small></button>
       <button type="button" class="ahn-footer-core" data-hub-open-systems aria-label="Open the network directory" aria-expanded="false" aria-controls="hubSystemsDrawer"><span class="ahn-glyph ahn-glyph--all-systems" aria-hidden="true"></span></button>
-      <button type="button" class="ahn-footer-item" data-hub-open-pack><span class="ahn-glyph ahn-glyph--pack-comms" aria-hidden="true"></span><small>PACK</small></button>
+      <button type="button" class="ahn-footer-item" data-hub-route="pack_comms"><span class="ahn-glyph ahn-glyph--pack-comms" aria-hidden="true"></span><small>PACK</small></button>
       <button type="button" class="ahn-footer-item" data-action="profile"><span class="ahn-glyph ahn-glyph--profile" aria-hidden="true"></span><small>PROFILE</small></button>
     </nav>
   </div>
@@ -8059,7 +8059,7 @@ body.bc-open #ahCommunityBtn{
     var q = encodeURIComponent(String(ver || "dev"));
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = "/css/hub_premium.css?v=" + q + "-hub-living-states-v1";
+    link.href = "/css/hub_premium.css?v=" + q + "-hub-navbar-v3-chrome-v1";
     document.head.appendChild(link);
   })(window.WEBAPP_VER);
   </script>
@@ -8091,7 +8091,7 @@ body.bc-open #ahCommunityBtn{
   </script>
   <script>document.write('<script src="/js/sector_combat_config.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\\/script>');</script>
   <script src="/js/capp_client.js?v=capp-proof-v1"></script>
-  <script src="/js/telegram_shell.js?v=world-canvas-mobile-ux-v1"></script>
+  <script src="/js/telegram_shell.js?v=hub-navbar-v3-chrome-v1"></script>
   <script src="/js/start_links.js?v=WEBAPP_VER"></script>
   <script src="/js/start_router.js?v=WEBAPP_VER"></script>
   
@@ -8118,8 +8118,15 @@ body.bc-open #ahCommunityBtn{
   <script>document.write('<script src="/js/map_activity_router.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <!-- 4) Główny skrypt aplikacji -->
 <script>
-  const DEBUG_UI = true;
-  function dbg(msg){ try{ if(!DEBUG_UI) return; const d=document.getElementById('dbg'); d.style.display='block'; d.textContent=msg; }catch(_){} }
+  // Display only: server-authorized DEV FRESH eligibility determines visibility.
+  let __lastDebugLine="";
+  function dbg(msg){try{
+    __lastDebugLine=String(msg??"");
+    const d=document.getElementById("dbg");if(!d)return;
+    if(window.DevFresh?.isEligible?.()!==true){d.style.display="none";return;}
+    d.textContent=__lastDebugLine;d.style.display="block";
+  }catch(_){}}
+  window.addEventListener("ah:dev-fresh-eligibility",()=>dbg(__lastDebugLine));
   function api(path){ const b = (window.API_BASE || ""); return b ? (b + path) : path; }
 
   const start = () => {
@@ -13512,8 +13519,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 </script>
   
 <script>document.write('<script src="/js/living_world.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script>document.write('<script src="/js/hub_premium.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '-hub-living-states-v1"><\/script>');</script>
-<script>document.write('<script src="/js/home_nav.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="/js/hub_premium.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '-hub-navbar-v3-chrome-v1"><\/script>');</script>
+<script>document.write('<script src="/js/home_nav.js?v=navbar-v3-20261014-' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/discovery_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/scout_guide.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/first_session_spine.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
@@ -13521,7 +13528,7 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="/js/guided_navigation.js?v=' + encodeURIComponent(window.WEBAPP_VER + '-ftue-bloodmoon-pr92') + '"><\/script>');</script>
 <script>document.write('<script src="/js/contextual_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="/js/core_system_discovery.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script>document.write('<script src="/js/dev_fresh.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '&compact=20261011"><\/script>');</script>
+<script>document.write('<script src="/js/dev_fresh.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '&compact=20261014-navbar-v3"><\/script>');</script>
 <!-- sd-post-ftue-discovery-v1-20260918 sd-ftue-scout-guide-v1-20260910 sd-post-ftue-next-move-v1-20260911 sd-contextual-discovery-v1-20260911 sd-ftue-core-tactical-grad-v1-20260916 -->
 
 <!-- SUPPORT (Stars) -->
