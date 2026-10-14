@@ -61,6 +61,11 @@
     root.style.setProperty("--ah-safe-bottom", insets.bottom);
     root.style.setProperty("--ah-safe-left", insets.left);
     root.style.setProperty("--ah-safe-right", insets.right);
+    var tg=getWebApp(),safe=tg&&tg.safeAreaInset,content=tg&&tg.contentSafeAreaInset;
+    var s=Math.max(0,Number(safe&&safe.top)||0),c=Math.max(0,Number(content&&content.top)||0);
+    var f=!!(tg&&tg.isFullscreen===true),top=f?s+c:s;
+    root.style.setProperty("--ah-chrome-top",toPx(top));
+    state.chromeInsets={fullscreen:f,safeTop:s,contentTop:c,chromeTop:top};
   }
 
   function applyTelegramSafeArea() {
@@ -314,7 +319,8 @@
     applySafeArea: applyTelegramSafeArea,
     maybeOfferHomeScreen: maybeOfferHomeScreen,
     requestFullscreen: requestTelegramFullscreen,
-    exitFullscreen: exitTelegramFullscreen
+    exitFullscreen: exitTelegramFullscreen,
+    chromeInsets: function(){return state.chromeInsets||{fullscreen:false,safeTop:0,contentTop:0,chromeTop:0};}
   };
 
   applyTelegramSafeArea();

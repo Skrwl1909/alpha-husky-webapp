@@ -96,7 +96,7 @@
     el.style.display = "flex";
     el.dataset.open = "1";
     setBodyLock(true);
-    if (id === "hubBack") document.body.style.touchAction = "manipulation";
+    if (id === "hubBack") { document.body.style.touchAction = "manipulation"; document.body.classList.add("ah-hub-open"); }
     navOpenId(id);
   }
 
@@ -117,6 +117,7 @@
 
     el.style.display = "none";
     delete el.dataset.open;
+    if(id==="hubBack")document.body.classList.remove("ah-hub-open");
     navCloseId(id);
 
     if (!anyOurSheetOpen()) setBodyLock(false);
@@ -125,6 +126,7 @@
   function closeAllBacks() {
     ["hubBack", "charBack", "shareBack", "supportBack", "statsBack"].forEach(closeBack);
     setBodyLock(false);
+    document.body.classList.remove("ah-hub-open");
   }
 
   function wireBackdropClose(id) {

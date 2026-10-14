@@ -193,6 +193,7 @@
       }
     }
     render();
+    try{global.dispatchEvent(new CustomEvent("ah:dev-fresh-eligibility",{detail:{eligible:S.eligible===true}}));}catch(_){}
     return S;
   }
 
