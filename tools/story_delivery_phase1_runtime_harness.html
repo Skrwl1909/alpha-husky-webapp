@@ -106,7 +106,7 @@
             firstSignal: { eligible: true, faction_selected: true, state: "COMPLETED" },
             campaign: { ok: true, eligible: true, show: true, campaign: {} }
           });
-          check("B4", (fsDone.id === "S-FS-COMPLETED" || fsDone.id === "S-CAMPAIGN-INCOMING") && fsDone.target && fsDone.target.action === "campaign", "FIRST SIGNAL COMPLETED → Campaign");
+          check("B4", (fsDone.id === "S-FS-COMPLETED" || fsDone.id === "S-CAMPAIGN-INCOMING") && fsDone.target && fsDone.target.action === "relay_missions", "FIRST SIGNAL COMPLETED → RELAY-7 in Missions");
 
           const breach = SD.resolve({
             firstSignal: { eligible: true, state: "COMPLETED", faction_selected: true },
