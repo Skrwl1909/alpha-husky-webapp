@@ -68,6 +68,15 @@
     const hub = document.getElementById("hubBack");
     const host = document.getElementById("hubStoryRoot");
     if (!visible(hub) || !host) { document.querySelectorAll(".ah-p2-guide").forEach(el => el.remove()); return; }
+    // Other Scout guidance and a first growth Next Move own Hub attention.
+    const otherScout = document.getElementById("ahScoutGuide");
+    const otherContext = document.getElementById("ahContextualDiscovery");
+    const nextMove = w.StoryDelivery?.getState?.()?.nextMove;
+    const pursuit = w.ActivePursuit?.getActive?.();
+    if ((otherScout?.isConnected || otherContext?.isConnected || nextMove || pursuit) && host.querySelector(".ah-p2-guide")) {
+      host.querySelector(".ah-p2-guide").remove();
+    }
+    if (otherScout?.isConnected || otherContext?.isConnected || nextMove || pursuit) return;
     const step = STEPS.find(s => !saved.seenHub.includes(s.id) && !saved.dismissed.includes(s.id));
     const existing = host.querySelector(".ah-p2-guide");
     // Keep the currently visible hint during DOM mutation refreshes.
