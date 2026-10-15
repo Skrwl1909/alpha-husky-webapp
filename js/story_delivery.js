@@ -813,7 +813,7 @@
       }
       return await global.Missions.openTacticalOps();
     }
-    if (choice.destination === "pets") return await global.FtueGrowthP3?.open?.("pets") === true;
+    if (choice.destination === "pets" || choice.destination === "adopt") return await global.FtueGrowthP3?.open?.(choice.destination) === true;
     if (choice.destination === "mission" || choice.destination === "campaign") return await global.CTA.openTarget(choice.target);
     return await global.ContextualDiscovery.openDestination(choice.destination);
   }
