@@ -27,4 +27,10 @@ await check("Equipped companion creates no forced next task",()=>assert.equal(w.
 await check("Unknown stat balance cannot imply points",()=>{w.FtueGrowthP3.observeStats({});assert.equal(w.FtueGrowthP3.choice(),null)});
 await check("No economy write or gameplay effect in P3 module",()=>{assert.ok(!src.includes("/webapp/stats/upgrade"));assert.ok(!src.includes("/webapp/pets/set"));assert.ok(!src.includes("/webapp/forge/upgrade"))});
 await check("Return to Hub observes change without overwriting progress",()=>{assert.ok(refreshes>0);assert.ok(!src.includes("localStorage"))});
+await check("Daily quest hints require genuinely ready/available status in all recognized formats",()=>{
+ const discovery=fs.readFileSync(new URL("../js/contextual_discovery.js",import.meta.url),"utf8");
+ assert.ok(discovery.includes("grouped.ready"));
+ assert.ok(discovery.includes("grouped.available"));
+ assert.ok(discovery.includes('["ready", "available"].includes(status)'));
+});
 console.log("FTUE Growth P3",tests,"checks PASS");
