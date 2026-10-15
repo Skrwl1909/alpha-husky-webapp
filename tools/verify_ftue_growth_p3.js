@@ -7,7 +7,7 @@ const src=fs.readFileSync(new URL("../js/ftue_growth_p3.js",import.meta.url),"ut
 let isGraduate=false,refreshes=0,opened=0;
 const w={ FirstSessionSpine:{view:()=>({complete:isGraduate})},
  StoryDelivery:{refreshHub:()=>{refreshes++}},
- ContextualDiscovery:{openDestination:async()=>{opened++;return true}},
+ Stats:{open:async({tab})=>{assert.equal(tab,"build");opened++;}},
  MyPets:{open:async()=>{opened++}},Adopt:{open:async()=>{opened++}},
  HomeNav:{closeAll:()=>{}} };
 vm.runInNewContext(src,{window:w}, {filename:"ftue_growth_p3.js"});
