@@ -53,8 +53,18 @@
     }
     if (path === "/webapp/quests/state") {
       const board = data.board && !Array.isArray(data.board) ? data.board : data;
-      facts.daily = [...(Array.isArray(board.quests) ? board.quests : []), ...(Array.isArray(board.board) ? board.board : [])]
-        .some(q => ["daily", "daily_pack"].includes(q.category || q.type) && !["claimed", "cooldown", "done", "locked"].includes(q.status));
+      const grouped = board.board && !Array.isArray(board.board) && typeof board.board === "object" ? board.board : board;
+      const candidates = [
+        ...(Array.isArray(grouped.ready) ? grouped.ready.map(q => ({ ...q, status: q.status || "ready" })) : []),
+        ...(Array.isArray(grouped.available) ? grouped.available.map(q => ({ ...q, status: q.status || "available" })) : []),
+        ...(Array.isArray(board.board) ? board.board : []),
+        ...(Array.isArray(board.quests) ? board.quests : [])
+      ];
+      facts.daily = candidates.some(q => {
+        const category = String(q?.category || q?.type || "").toLowerCase();
+        const status = String(q?.status || "").toLowerCase();
+        return ["daily", "daily_pack"].includes(category) && ["ready", "available"].includes(status);
+      });
     }
     // Re-evaluate only the guide; never perform a gameplay action from a response.
     if (["/webapp/forge/upgrade", "/webapp/forge/state", "/webapp/skins", "/webapp/quests/state"].includes(path)) {
