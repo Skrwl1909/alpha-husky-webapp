@@ -69,6 +69,9 @@
     const host = document.getElementById("hubStoryRoot");
     if (!visible(hub) || !host) { document.querySelectorAll(".ah-p2-guide").forEach(el => el.remove()); return; }
     const step = STEPS.find(s => !saved.seenHub.includes(s.id) && !saved.dismissed.includes(s.id));
+    const existing = host.querySelector(".ah-p2-guide");
+    // Keep the currently visible hint during DOM mutation refreshes.
+    if (existing && saved.seenHub.includes(existing.dataset.p2)) return;
     document.querySelectorAll(".ah-p2-guide").forEach(el => el.remove());
     // One optional hint per Hub entry; do not cycle through all three in a single visit.
     if (!step || lastRoot === hub && host.dataset.p2Visit === "shown") return;
