@@ -6925,7 +6925,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     openTacticalOps,
     openGuided,
     refreshGuided: () => { if (_modal?.classList.contains("is-open")) render(); },
-    renderScoutVoice: line => { ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },
+    renderScoutVoice: line => { if (window.ScoutComms?.render) return window.ScoutComms.render(line); ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },
     init,
     open,
     openElite,
