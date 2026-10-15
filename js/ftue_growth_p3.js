@@ -1,11 +1,11 @@
 // FTUE P3: read-only growth opportunities from confirmed game state.
 (function (w) {
   "use strict";
-  let points = null, petState = null, probeInFlight = false, lastProbe = 0;
+  let points = null, petState = null, probeInFlight = false, lastProbe = 0, growthRead = null, epoch = 0;
   const validPoints = n => Number.isFinite(Number(n)) && Number(n) >= 0 ? Number(n) : null;
   function graduated() { return w.FirstSessionSpine?.view?.().complete === true; }
   function observeStats(mystats) {
-    points = validPoints(mystats?.unspentPoints);
+    points = mystats?.unspentPoints == null ? null : validPoints(mystats.unspentPoints);
     w.StoryDelivery?.refreshHub?.("ftue_growth_stats");
   }
   function observePets(state) {
@@ -24,6 +24,30 @@
       if (response?.ok === true) observePets(response.pets);
     } catch (_) { /* unknown means no pet suggestion */ }
     finally { probeInFlight = false; }
+  }
+  // Hub return uses server-authoritative read-only state. Never trust the last Stats modal snapshot.
+  async function refreshOnReturn() {
+    if (!graduated()) { reset(); return false; }
+    if (growthRead) return growthRead;
+    const api = w.apiPost || w.S?.apiPost;
+    if (typeof api !== "function") { points = null; petState = null; return false; }
+    const seq = ++epoch;
+    points = null; petState = null;
+    const task = Promise.allSettled([
+      api("/webapp/mystats/state", {}),
+      api("/webapp/pets/state", {})
+    ]).then(results => {
+      if (seq !== epoch || !graduated()) return false;
+      const statResult = results[0].status === "fulfilled" ? results[0].value : null;
+      const petResult = results[1].status === "fulfilled" ? results[1].value : null;
+      const stats = statResult?.ok === true ? (statResult.data || statResult) : null;
+      if (stats) observeStats(stats);
+      if (petResult?.ok === true) observePets(petResult.pets);
+      w.StoryDelivery?.refreshHub?.("ftue_growth_return");
+      return !!(stats || petResult?.ok === true);
+    }).catch(() => false).finally(() => { if (growthRead === task) growthRead = null; });
+    growthRead = task;
+    return task;
   }
   function choice() {
     if (!graduated()) return null;
@@ -62,6 +86,6 @@
     }
     return false;
   }
-  function reset() { points = null; petState = null; lastProbe = 0; }
-  w.FtueGrowthP3 = Object.freeze({ choice, observeStats, observePets, open, reset });
+  function reset() { epoch++; points = null; petState = null; lastProbe = 0; }
+  w.FtueGrowthP3 = Object.freeze({ choice, observeStats, observePets, refreshOnReturn, open, reset });
 })(window);
