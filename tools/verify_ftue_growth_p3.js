@@ -33,4 +33,8 @@ await check("Daily quest hints require genuinely ready/available status in all r
  assert.ok(discovery.includes("grouped.available"));
  assert.ok(discovery.includes('["ready", "available"].includes(status)'));
 });
+await check("Long-term pursuit stays visible alongside growth lead",()=>{
+ const pursuit=fs.readFileSync(new URL("../js/active_pursuit.js",import.meta.url),"utf8");
+ for(const k of ["growth-stats","growth-adopt","growth-pets"]) assert.ok(pursuit.includes('"'+k+'"'));
+});
 console.log("FTUE Growth P3",tests,"checks PASS");
