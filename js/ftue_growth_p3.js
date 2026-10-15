@@ -47,7 +47,10 @@
   }
   async function open(destination) {
     if (!graduated()) return false;
-    if (destination === "stats") return await w.ContextualDiscovery?.openDestination?.("stats") === true;
+    if (destination === "stats" && typeof w.Stats?.open === "function") {
+      w.HomeNav?.closeAll?.();
+      await w.Stats.open({ tab: "build" }); return true;
+    }
     if (destination === "adopt" && typeof w.Adopt?.open === "function") {
       w.HomeNav?.closeAll?.();
       await w.Adopt.open(); return true;
