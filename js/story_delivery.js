@@ -117,6 +117,7 @@
       var cta = await global.CTA.refresh({ strict: true });
       if (!cta) return false;
       await refreshNextMoveState();
+      await global.FtueGrowthP3?.refreshOnReturn?.();
       returnReady = true;
       return true;
     }).catch(function () { return false; }).finally(function () {
