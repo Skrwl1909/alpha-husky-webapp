@@ -108,7 +108,7 @@ assert.ok(
   fsCompletedCampaign.id === "S-FS-COMPLETED" || fsCompletedCampaign.id === "S-CAMPAIGN-INCOMING",
   "completed + campaign eligible should be S-FS-COMPLETED or S-CAMPAIGN-INCOMING, got " + fsCompletedCampaign.id
 );
-assertTarget(fsCompletedCampaign, { type: "open_action", action: "campaign" }, "S-FS-COMPLETED eligible");
+assertTarget(fsCompletedCampaign, { type: "open_action", action: "relay_missions" }, "S-FS-COMPLETED eligible");
 
 const fsCompletedMap = StoryDelivery.resolve({
   firstSignal: { eligible: true, faction_selected: true, state: "COMPLETED" },
@@ -128,7 +128,7 @@ const incoming = StoryDelivery.resolve({
   campaign: { ok: true, eligible: true, show: true, campaign: {} }
 });
 assert.equal(incoming.id, "S-CAMPAIGN-INCOMING");
-assertTarget(incoming, { type: "open_action", action: "campaign" }, "S-CAMPAIGN-INCOMING");
+assertTarget(incoming, { type: "open_action", action: "relay_missions" }, "S-CAMPAIGN-INCOMING");
 
 const breach = StoryDelivery.resolve({
   firstSignal: { eligible: true, state: "COMPLETED", faction_selected: true },
@@ -184,7 +184,7 @@ assert.equal(
 
 const campaignPrimary = StoryDelivery.campaignIncomingPrimary();
 assert.equal(campaignPrimary.kind, "campaign_incoming");
-assert.equal(JSON.stringify(campaignPrimary.target), JSON.stringify({ type: "open_action", action: "campaign" }));
+assert.equal(JSON.stringify(campaignPrimary.target), JSON.stringify({ type: "open_action", action: "relay_missions" }));
 
 assert.ok(indexSource.includes('id="hubStoryRoot"'), "index.html must contain #hubStoryRoot before Hub goal");
 assert.ok(indexSource.indexOf("hubStoryRoot") < indexSource.indexOf('id="hubGoalRoot"'), "#hubStoryRoot must precede #hubGoalRoot");
