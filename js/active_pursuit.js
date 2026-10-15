@@ -42,7 +42,7 @@
       if (scf.firstSession || scf.lockedBrief || scf.hideHubGoal) return true;
       // An optional post-FTUE suggestion must not displace an active field pursuit.
       // Keep story/mandatory Tactical next moves and live urgency above pursuit.
-      if (scf.nextMove && !["daily", "forge", "skins"].includes(String(scf.nextMove.key || ""))) return true;
+      if (scf.nextMove && !["daily", "forge", "skins", "growth-stats", "growth-adopt", "growth-pets"].includes(String(scf.nextMove.key || ""))) return true;
       return URGENT_STORY_RE.test(String(scf.ctaKind || ""));
     } catch (_) {
       return false;
