@@ -123,7 +123,7 @@ check("Hub ScoutGuide retains dismissal and no new progression calls", () => {
   assert.ok(!src.includes("apiPost("));
 });
 
-check("Real First Signal V2 produces the same avatar/label for each existing display stage", async () => {
+await (async () => {
   vm.runInContext(fs2, b.ctx, { filename: "first_signal_v2.js" });
   const stages = [
     { state: "NOT_STARTED" },
@@ -147,8 +147,8 @@ check("Real First Signal V2 produces the same avatar/label for each existing dis
     assert.match(view, /data-act="/);
     b.window.FirstSignalV2.close();
   }
-  count++;
-  console.log("PASS", "First Signal displays shared Scout portrait for all five stages");
-});
+})();
+count++;
+console.log("PASS", "First Signal displays shared Scout portrait for all five stages");
 
 console.log("verify_scout_portrait_p1: PASS", count, "checks; mock only, no device E2E");
