@@ -1,0 +1,24 @@
+name: FTUE Continuation (mock only)
+on:
+  pull_request:
+    paths:
+      - 'js/story_delivery.js'
+      - 'js/first_session_spine.js'
+      - 'js/discovery_guide.js'
+      - 'js/scout_guide.js'
+      - 'tools/verify_story_delivery_resolver_v1.js'
+      - 'tools/verify_ftue_continuation_v1.js'
+      - '.github/workflows/ftue-continuation-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ftue-mock:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_story_delivery_resolver_v1.js
+      - run: node tools/verify_ftue_continuation_v1.js

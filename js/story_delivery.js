@@ -430,22 +430,8 @@
     }
 
     if (fs.eligible && fs.state !== "COMPLETED") {
-      if (!fs.faction_selected) {
-        return frame({
-          id: "S-FS-FACTION",
-          situation: "A first signal is waiting, but no war-path is locked.",
-          why: "Alone, you survive. With a faction, you matter.",
-          changed: "No faction oath is recorded.",
-          nextLead: "Faction Oath",
-          nextAction: "Pick Faction",
-          openQuestion: "Who do I fight under?",
-          target: { type: "open_action", action: "factions" },
-          ctaKind: "choose_faction",
-          firstSession: true,
-          hideHubGoal: true,
-          goLabel: "Pick Faction"
-        });
-      }
+      // Server-confirmed First Signal eligibility precedes faction binding.
+      // The existing post-equip S-FS-FACTION-HANDOFF remains authoritative.
       if (fs.state === "MISSION_STARTED" && fs.status === "RUNNING") {
         return frame({
           id: "S-FS-RUNNING",

@@ -96,8 +96,8 @@
           const SD = window.StoryDelivery;
           check("B1", typeof SD?.resolve === "function", "StoryDelivery.resolve");
 
-          const fsFaction = SD.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" } });
-          check("B2", fsFaction.id === "S-FS-FACTION" && fsFaction.target && fsFaction.target.action === "factions", "S-FS-FACTION");
+          const fsUnbound = SD.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" } });
+          check("B2", fsUnbound.id === "S-FS-NOT-STARTED" && fsUnbound.target && fsUnbound.target.action === "first_signal", "UNBOUND goes to First Signal before faction");
 
           const fsStart = SD.resolve({ firstSignal: { eligible: true, faction_selected: true, state: "NOT_STARTED" } });
           check("B3", fsStart.id === "S-FS-NOT-STARTED" && fsStart.target && fsStart.target.action === "first_signal", "S-FS-NOT-STARTED");
@@ -106,7 +106,7 @@
             firstSignal: { eligible: true, faction_selected: true, state: "COMPLETED" },
             campaign: { ok: true, eligible: true, show: true, campaign: {} }
           });
-          check("B4", (fsDone.id === "S-FS-COMPLETED" || fsDone.id === "S-CAMPAIGN-INCOMING") && fsDone.target && fsDone.target.action === "campaign", "FIRST SIGNAL COMPLETED → Campaign");
+          check("B4", (fsDone.id === "S-FS-COMPLETED" || fsDone.id === "S-CAMPAIGN-INCOMING") && fsDone.target && fsDone.target.action === "relay_missions", "FIRST SIGNAL COMPLETED → RELAY-7 in Missions");
 
           const breach = SD.resolve({
             firstSignal: { eligible: true, state: "COMPLETED", faction_selected: true },

@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Alpha Husky — FTUE Replay V1 (local only)</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}
+body{margin:0;background:#050d17;color:#e7f5ff;font:14px/1.5 system-ui,sans-serif}
+main{max-width:850px;margin:auto;padding:24px 16px 64px}
+h1{font-size:24px;margin:10px 0 4px}
+.note{background:#34240c;color:#ffe0a2;border:1px solid #a97737;padding:12px;border-radius:12px;font-weight:700}
+.panel{padding:16px;margin-top:14px;background:#0d2031;border:1px solid #24445b;border-radius:14px}
+button{padding:12px 15px;background:#19394c;color:#e7f5ff;border:1px solid #6daabd;border-radius:10px;font:700 13px system-ui;min-height:44px;margin:4px 4px 4px 0;cursor:pointer}
+button:disabled{opacity:.4}button:focus-visible{outline:2px solid #a8eeff;outline-offset:2px}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 ui-monospace,monospace}
+#results{min-height:30px}.ok{color:#8bffc7}.bad{color:#ffb1a6}
+small{color:#b3c8d6}
+</style>
+</head>
+<body>
+<main>
+<div class="note">LOCAL TEST FIXTURE — NOT A PLAYER ACCOUNT. No Telegram auth, backend requests, inventory writes, XP, rewards, wallet or ledger updates.</div>
+<h1>First Session / FTUE Replay V1</h1>
+<p>Drive the real First Signal V2 presentation against an in-memory fake missions API. The "reward" and equip are simulated only inside this page. Run the smoke check or walk through the buttons manually.</p>
+<div class="panel">
+  <button id="open" type="button">Open First Signal</button>
+  <button id="reset" type="button">Reset local replay</button>
+  <button id="smoke" type="button">Run automatic smoke check</button>
+  <button id="faction" type="button" disabled>Simulate faction selection</button>
+</div>
+<div class="panel">
+  <strong>Mock state / navigation (read only)</strong>
+  <pre id="snapshot">Loading…</pre>
+</div>
+<div class="panel">
+  <strong>Smoke test</strong>
+  <pre id="results">Not run</pre>
+</div>
+<small>Served from the repository root for developer QA only. Runtime code is not changed. This replay does not prove server reward issuance, saving or Android parity.</small>
+</main>
+<script>
+(function () {
+  "use strict";
+  // Deliberately no real backend transport; only the exact mock routes below exist.
+  var state, equipped, calls;
+  var reward = {itemKey:"rustfang_fangs",displayName:"Rustfang Fangs"};
+  function fresh() {
+    return {eligible:true,faction_selected:false,state:"NOT_STARTED",status:"",
+      interceptV2:false,interceptSecured:false,world_discovery:null,
+      traceProfiles:{A:"static",B:"repeating"},reward:null};
+  }
+  function copy(value){return JSON.parse(JSON.stringify(value));}
+  function sync(){
+    var target = window.StoryDelivery && window.StoryDelivery.resolve({firstSignal:copy(state)});
+    var scout = window.ScoutGuide && window.ScoutGuide.resolve({firstSignal:copy(state)});
+    document.getElementById("snapshot").textContent =
+      JSON.stringify({state:state.state,status:state.status,secured:state.interceptSecured,
+        faction_selected:state.faction_selected,world_discovery:state.world_discovery,
+        item_equipped:equipped,story:target && target.id,
+        next_action:target && target.target,scout_beat:scout,
+        simulated_actions:calls.length},null,2);
+    document.getElementById("faction").disabled = !(equipped && !state.faction_selected);
+  }
+  function reset(){
+    if(window.FirstSignalV2)window.FirstSignalV2.close();
+    state=fresh();equipped=false;calls=[];sync();
+    document.getElementById("results").textContent="Not run";
+    document.getElementById("results").className="";
+    window.__FTUE_REPLAY_RESULT__=null;
+  }
+  window.apiPost=async function(path,payload){
+    var action=payload && payload.action;
+    if(path==="/webapp/missions/state")return {ok:true,firstSignal:copy(state)};
+    if(path!=="/webapp/missions/action")throw Error("REPLAY ONLY: blocked API "+path);
+    calls.push({action:action||"unknown",traceId:payload && payload.traceId||null});
+    if(action==="first_signal_start" && state.state==="NOT_STARTED" && payload.firstSignalV2===true){
+      state.state="MISSION_STARTED";state.status="RUNNING";state.interceptV2=true;
+      sync();return {ok:true,firstSignal:copy(state)};
+    }
+    if(action==="first_signal_intercept" && state.state==="MISSION_STARTED"){
+      if(payload.traceId==="A"){sync();return {ok:true,correct:false,firstSignal:copy(state)};}
+      if(payload.traceId==="B"){state.interceptSecured=true;state.status="READY";sync();return {ok:true,correct:true,firstSignal:copy(state)};}
+    }
+    if(action==="resolve" && state.state==="MISSION_STARTED" && state.interceptSecured){
+      state.state="REWARD_RECEIVED";state.status="";state.reward=copy(reward);
+      sync();return {ok:true,firstSignal:copy(state)};
+    }
+    throw Error("REPLAY ONLY: invalid transition "+String(action||"unknown"));
+  };
+  window.Missions={close:function(){},open:function(){}};
+  window.Onboarding={isOpen:function(){return false;},refreshContinuity:async function(){sync();}};
+  window.Equipped={openGuidedItem:async function(key){
+    if(key!==reward.itemKey || state.state!=="REWARD_RECEIVED")
+      throw Error("REPLAY ONLY: cannot equip unearned item");
+    equipped=true;state.state="COMPLETED";state.world_discovery="pending";sync();
+  }};
+  window.FtueReplay={
+    reset:reset,
+    state:function(){return copy(state);},
+    calls:function(){return copy(calls);},
+    simulateFaction:function(){
+      if(!equipped)throw Error("Equip Rustfang before faction handoff");
+      state.faction_selected=true;sync();
+    }
+  };
+  state=fresh();equipped=false;calls=[];
+})();
+</script>
+<script src="../js/story_delivery.js"></script>
+<script src="../js/scout_guide.js"></script>
+<script src="../js/first_signal_v2.js"></script>
+<script>
+(function(){
+  "use strict";
+  var R=window.FtueReplay;
+  var open=document.getElementById("open");
+  var reset=document.getElementById("reset");
+  var smoke=document.getElementById("smoke");
+  var faction=document.getElementById("faction");
+  open.onclick=function(){void window.FirstSignalV2.open();};
+  reset.onclick=function(){R.reset();};
+  faction.onclick=function(){R.simulateFaction();};
+  function routing(){
+    return window.StoryDelivery.resolve({firstSignal:R.state()});
+  }
+  function check(condition,label,notes){
+    if(!condition)throw Error(label+(notes?" — "+notes:""));
+  }
+  async function until(predicate,label){
+    for(var i=0;i<80;i++){
+      if(predicate())return;
+      await new Promise(function(resolve){setTimeout(resolve,25);});
+    }
+    throw Error("Timed out: "+label);
+  }
+  function clickAction(action){
+    var button=document.querySelector('#ahFirstSignalV2 button[data-act="'+action+'"]');
+    check(!!button && !button.disabled,"CTA "+action+" available");
+    button.click();
+  }
+  function clickTrace(trace){
+    var button=document.querySelector('#ahFirstSignalV2 button[data-trace="'+trace+'"]');
+    check(!!button && !button.disabled,"TRACE "+trace+" available");
+    button.click();
+  }
+  smoke.onclick=async function(){
+    var notes=[];
+    var result=document.getElementById("results");
+    function pass(label){notes.push("PASS "+label);result.textContent=notes.join("\n");}
+    smoke.disabled=true;
+    window.__FTUE_REPLAY_RESULT__=null;
+    try{
+      R.reset();
+      check(routing().id==="S-FS-NOT-STARTED","UNBOUND first CTA routes to First Signal");
+      check(window.ScoutGuide.resolve({firstSignal:R.state()})===1,"Scout intro for UNBOUND");
+      pass("UNBOUND start + Scout");
+
+      check(await window.FirstSignalV2.open(),"First Signal UI opens");
+      clickAction("scan");
+      await until(function(){return R.state().state==="MISSION_STARTED" &&
+        !!document.querySelector('#ahFirstSignalV2 [data-trace="A"]');},"scan/choice");
+      check(routing().id==="S-FS-RUNNING","RUNNING navigation");
+      pass("scan → running");
+
+      clickAction("close");
+      check(await window.FirstSignalV2.open(),"reopen in progress");
+      check(!!document.querySelector('#ahFirstSignalV2 [data-trace="B"]'),"in-progress choice remains");
+      pass("close + reopen keeps progress");
+
+      clickTrace("A");
+      clickAction("intercept");
+      await until(function(){return !!document.querySelector(".fs2-error");},"incorrect trace feedback");
+      check(R.state().interceptSecured===false,"wrong trace must not secure");
+      pass("wrong trace is rejected");
+
+      clickTrace("B");
+      clickAction("intercept");
+      await until(function(){return R.state().interceptSecured &&
+        !!document.querySelector('#ahFirstSignalV2 [data-act="resolve"]');},"correct trace");
+      check(routing().id==="S-FS-READY","READY navigation");
+      check(window.ScoutGuide.resolve({firstSignal:R.state()})===2,"READY Scout");
+      pass("correct trace → ready + Scout");
+
+      clickAction("resolve");
+      await until(function(){return R.state().state==="REWARD_RECEIVED" &&
+        !!document.querySelector('#ahFirstSignalV2 [data-act="equip"]');},"mock reward receipt");
+      check(routing().id==="S-FS-REWARD","reward navigation");
+      check(window.ScoutGuide.resolve({firstSignal:R.state()})===4,"reward Scout");
+      pass("simulated receipt (no ledger)");
+
+      clickAction("equip");
+      await until(function(){return R.state().state==="COMPLETED";},"mock equip");
+      check(routing().id==="S-FS-FACTION-HANDOFF","post-equip faction target",routing().id);
+      check(routing().target.action==="factions","post-equip opens factions");
+      check(window.ScoutGuide.resolve({firstSignal:R.state()})===0,"no Blood Moon Scout before binding");
+      pass("simulated equip → Pick Faction");
+
+      R.simulateFaction();
+      check(routing().id==="S-FS-WORLD","bound world handoff",routing().id);
+      check(window.ScoutGuide.resolve({firstSignal:R.state()})===64,"bound Scout world lead");
+      pass("bind faction → world lead");
+
+      check(R.calls().map(function(call){return call.action;}).join(",")==="first_signal_start,first_signal_intercept,first_signal_intercept,resolve","expected mock actions only");
+      pass("no production action performed");
+      window.__FTUE_REPLAY_RESULT__={ok:true,passed:notes.length,total:notes.length,notes:notes};
+      result.className="ok";
+    }catch(err){
+      notes.push("FAIL "+String(err && err.message||err));
+      result.textContent=notes.join("\n");result.className="bad";
+      window.__FTUE_REPLAY_RESULT__={ok:false,passed:notes.length-1,total:notes.length,notes:notes};
+    }finally{smoke.disabled=false;}
+  };
+  R.reset();
+})();
+</script>
+</body>
+</html>
