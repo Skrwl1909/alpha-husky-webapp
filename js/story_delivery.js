@@ -737,6 +737,7 @@
       if (!choice && /^campaign/.test(kind) && primary?.target && kind !== "campaign_mark") {
         choice = { key: "campaign:" + JSON.stringify(primary.target), action: asText(primary.title), reason: asText(primary.subtitle) || "Continue your current campaign lead.", destination: "campaign", target: primary.target };
       }
+      if (!choice) choice = global.FtueGrowthP3?.choice?.() || null;
       if (!choice) {
         var useful = global.ContextualDiscovery?.nextMoveFacts?.() || {};
         if (useful.daily) choice = { key: "daily", action: "Open Quest Board", reason: "Daily activities are available.", destination: "quests" };
@@ -812,6 +813,7 @@
       }
       return await global.Missions.openTacticalOps();
     }
+    if (choice.destination === "pets" || choice.destination === "adopt") return await global.FtueGrowthP3?.open?.(choice.destination) === true;
     if (choice.destination === "mission" || choice.destination === "campaign") return await global.CTA.openTarget(choice.target);
     return await global.ContextualDiscovery.openDestination(choice.destination);
   }

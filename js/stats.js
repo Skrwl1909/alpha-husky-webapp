@@ -2185,6 +2185,7 @@
   function stats3Render(stats, mystats, extras){
     _lastStats = stats || null;
     _lastMystats = mystats || null;
+    try { window.FtueGrowthP3?.observeStats?.(_lastMystats); } catch (_) {}
     const root=qs("statsRoot");
     // Real modal must escape parent stacking contexts / fixed overlays.
     // DEV FRESH PROFILE is intentionally left untouched.
@@ -2249,6 +2250,7 @@
 
     _lastStats = stats || null;
     _lastMystats = mystats || null;
+    try { window.FtueGrowthP3?.observeStats?.(_lastMystats); } catch (_) {}
 
     const root = qs("statsRoot");
     if (!root) return;

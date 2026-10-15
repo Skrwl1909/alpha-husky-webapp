@@ -412,7 +412,7 @@
     toast("Active pet updated.");
 
     const state = res.pets || await loadState();
-    if (state) render(state);
+    if (state) { window.FtueGrowthP3?.observePets?.(state); render(state); }
   }
 
   async function spendStatPoint(petId, statKey) {
@@ -441,7 +441,7 @@
     toast(`${String(statKey || "").toUpperCase()} +1`);
 
     const state = res.pets || await loadState();
-    if (state) render(state);
+    if (state) { window.FtueGrowthP3?.observePets?.(state); render(state); }
   }
 
   async function open() {
@@ -449,7 +449,7 @@
     ensureModal().style.display = "block";
     showBack();
     const [state] = await Promise.all([loadState(), window.PhantomEcho?.load?.() || Promise.resolve(null)]);
-    if (state) render(state);
+    if (state) { window.FtueGrowthP3?.observePets?.(state); render(state); }
   }
 
   function close() {
