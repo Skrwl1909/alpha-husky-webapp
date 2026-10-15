@@ -31,8 +31,7 @@
   }
   async function open(destination) {
     if (!graduated()) return false;
-    if (destination === "stats") return w.ContextualDiscovery?.openDestination?.("stats") === true
-      || await w.ContextualDiscovery?.openDestination?.("stats") === true;
+    if (destination === "stats") return await w.ContextualDiscovery?.openDestination?.("stats") === true;
     if (destination === "pets" && typeof w.MyPets?.open === "function") {
       w.HomeNav?.closeAll?.();
       await w.MyPets.open();
