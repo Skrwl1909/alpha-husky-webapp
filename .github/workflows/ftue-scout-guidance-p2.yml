@@ -1,0 +1,19 @@
+name: FTUE Scout Guidance P2
+on:
+  pull_request:
+    paths:
+      - 'js/scout_guidance_p2.js'
+      - 'tools/verify_scout_guidance_p2.js'
+      - '.github/workflows/ftue-scout-guidance-p2.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_scout_guidance_p2.js
