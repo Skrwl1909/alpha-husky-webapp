@@ -1,0 +1,23 @@
+name: Scout Portrait P1 (presentation only)
+on:
+  pull_request:
+    paths:
+      - 'js/scout_comms.js'
+      - 'js/first_signal_v2.js'
+      - 'js/missions.js'
+      - 'index.html'
+      - 'tools/verify_scout_portrait_p1.js'
+      - '.github/workflows/scout-portrait-p1-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scout-portrait:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test Scout Portrait P1
+        run: node tools/verify_scout_portrait_p1.js
