@@ -127,14 +127,16 @@ check("After Drill 2, first-session graduation unlocks Explore Alpha", () => {
   assert.equal(t.discovery.view().intro, true);
 });
 
-check("Explore Alpha guides the player but cannot award anything", async () => {
+await (async () => {
   const ok = await t.discovery.go("character");
   assert.equal(ok, true);
   assert.equal(t.requests.length, 1);
   assert.equal(t.requests[0].id, "character");
   assert.equal(t.requests[0].options.source, "discovery_guide");
   assert.equal(t.discovery.view().intro, false);
-});
+  count++;
+  console.log("PASS", "Explore Alpha guided navigation (no reward)");
+})();
 
 const reloaded = environment({ store: t.store, initialSignal: { ...t.player.firstSignal } });
 check("Returning after graduation retains progress and does not reopen onboarding", () => {
