@@ -1,0 +1,28 @@
+name: FTUE First Growth P3
+on:
+  pull_request:
+    paths:
+      - 'js/ftue_growth_p3.js'
+      - 'js/stats.js'
+      - 'js/mypets.js'
+      - 'js/story_delivery.js'
+      - 'js/scout_guidance_p2.js'
+      - 'tools/verify_ftue_growth_p3.js'
+      - '.github/workflows/ftue-growth-p3.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  growth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_ftue_growth_p3.js
+      - run: node --check js/ftue_growth_p3.js
+      - run: node --check js/story_delivery.js
+      - run: node --check js/scout_guidance_p2.js
+      - run: node --check js/stats.js
+      - run: node --check js/mypets.js
