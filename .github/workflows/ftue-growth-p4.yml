@@ -1,0 +1,23 @@
+name: FTUE P4 First Growth Handoff
+on:
+  pull_request:
+    paths:
+      - 'js/ftue_growth_p3.js'
+      - 'js/story_delivery.js'
+      - 'tools/verify_ftue_growth_p4.js'
+      - '.github/workflows/ftue-growth-p4.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_ftue_growth_p4.js
+      - run: node tools/verify_ftue_growth_p3.js
+      - run: node --check js/ftue_growth_p3.js
+      - run: node --check js/story_delivery.js
