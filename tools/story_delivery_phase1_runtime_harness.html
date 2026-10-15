@@ -96,8 +96,8 @@
           const SD = window.StoryDelivery;
           check("B1", typeof SD?.resolve === "function", "StoryDelivery.resolve");
 
-          const fsFaction = SD.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" } });
-          check("B2", fsFaction.id === "S-FS-FACTION" && fsFaction.target && fsFaction.target.action === "factions", "S-FS-FACTION");
+          const fsUnbound = SD.resolve({ firstSignal: { eligible: true, faction_selected: false, state: "NOT_STARTED" } });
+          check("B2", fsUnbound.id === "S-FS-NOT-STARTED" && fsUnbound.target && fsUnbound.target.action === "first_signal", "UNBOUND goes to First Signal before faction");
 
           const fsStart = SD.resolve({ firstSignal: { eligible: true, faction_selected: true, state: "NOT_STARTED" } });
           check("B3", fsStart.id === "S-FS-NOT-STARTED" && fsStart.target && fsStart.target.action === "first_signal", "S-FS-NOT-STARTED");
