@@ -1,0 +1,26 @@
+name: FTUE UNBOUND P0
+on:
+  pull_request:
+    paths:
+      - 'js/story_delivery.js'
+      - 'js/scout_guide.js'
+      - 'tools/verify_ftue_unbound_p0.js'
+      - '.github/workflows/ftue-unbound-p0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_ftue_unbound_p0.js
+      - run: node tools/verify_ftue_growth_p3.js
+      - run: node tools/verify_ftue_growth_p4.js
+      - run: node tools/verify_scout_guidance_p2.js
+      - run: node tools/verify_scout_portrait_p1.js
+      - run: node --check js/story_delivery.js
+      - run: node --check js/scout_guide.js
