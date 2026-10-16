@@ -229,7 +229,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const selected = getMissionDef(get().selectedMissionId);
       const recordedMission = selected?.activity === "FIELD_OP" || selected?.operationId === DEAD_RELAY.operationId;
       set({ screen: recordedMission ? "results" : "defeat", busy: false, banner: null });
-      if (fieldOp) void get().saveFieldResult();
+      if (selected?.activity === "FIELD_OP") void get().saveFieldResult();
       return true;
     }
     return false;
