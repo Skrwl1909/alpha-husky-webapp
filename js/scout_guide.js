@@ -18,10 +18,12 @@
   function resolve(inputs, context = {}) {
     const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
     const payload = inputs?.campaign, camp = payload?.campaign;
-    if (!fs?.eligible || !fs.faction_selected) return 0;
+    if (!fs?.eligible) return 0;
     if (fs.state === "NOT_STARTED") return 1;
     if (fs.state === "MISSION_STARTED") return fs.status === "READY" ? 2 : 0;
     if (fs.state === "REWARD_RECEIVED") return 4;
+    // Post-equip world guidance still requires a chosen faction.
+    if (!fs.faction_selected) return 0;
     if (fs.state === "COMPLETED" && fs.world_discovery === "pending") return 64;
     if (fs.state !== "COMPLETED" || !payload?.eligible || payload.ok === false || payload.show === false || !camp) return 0;
     if (!camp.markLeft) {
