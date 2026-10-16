@@ -1,0 +1,4104 @@
+{
+  "timestamp": "2026-10-16T21:40:53.632Z",
+  "node": "v22.23.3",
+  "simulationScope": "Pure frontend engine, synthetic fixture, no authenticated backend",
+  "fixtures": [
+    {
+      "id": "T01",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "focus"
+    },
+    {
+      "id": "T02",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "pet:audit-pet"
+      ],
+      "policy": "focus",
+      "pet": true
+    },
+    {
+      "id": "T04a",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "exit"
+    },
+    {
+      "id": "T04b",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "exit",
+      "forceBlock": true
+    },
+    {
+      "id": "T06a",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "pet:audit-pet"
+      ],
+      "policy": "slow",
+      "pet": true
+    },
+    {
+      "id": "T06b",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "pet:audit-pet"
+      ],
+      "policy": "slow",
+      "pet": true,
+      "noSlow": true
+    },
+    {
+      "id": "T07a",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "focus",
+      "koda": "A"
+    },
+    {
+      "id": "T07b",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "focus",
+      "koda": "B"
+    },
+    {
+      "id": "T09",
+      "mission": "dead-relay-hold",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "skip",
+      "intel": true
+    },
+    {
+      "id": "T10",
+      "mission": "dead-relay-hold",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "skip",
+      "intel": false
+    }
+  ],
+  "checks": [
+    {
+      "name": "T01 Courier baseline executed",
+      "pass": true
+    },
+    {
+      "name": "T02 synthetic PET run executed",
+      "pass": true
+    },
+    {
+      "name": "T04 bodyblock real+diagnostic executed",
+      "pass": true
+    },
+    {
+      "name": "T06 HAMSTRING pair executed",
+      "pass": true
+    },
+    {
+      "name": "T07 CNC sidegrade pair executed",
+      "pass": true
+    },
+    {
+      "name": "T09 Hold intel rule trigger round 3",
+      "pass": true
+    },
+    {
+      "name": "T10 Hold without intel trigger round 2",
+      "pass": true
+    },
+    {
+      "name": "all runs replay deterministically",
+      "pass": true
+    }
+  ],
+  "rows": [
+    {
+      "id": "T01",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "focus",
+      "fixture": {
+        "pet": null,
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 3,
+        "actor": null,
+        "courierPos": [
+          6,
+          0
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 10,
+      "courierTurns": 2,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 17,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 2,3;skip",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 3,0;skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 4,3;skip",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 10,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 6,1;skill alpha-strike courier",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 3
+        }
+      ]
+    },
+    {
+      "id": "T02",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "pet:audit-pet"
+      ],
+      "policy": "focus",
+      "fixture": {
+        "pet": {
+          "id": "audit-pet",
+          "name": "TEST PET (synthetic)",
+          "img": "https://example.invalid/audit-pet.png"
+        },
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 2,
+        "actor": null,
+        "courierPos": [
+          6,
+          0
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 10,
+      "courierTurns": 2,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 19,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "pet:audit-pet",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,3;skill pet-bite h1",
+          "events": [
+            "-16"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"pet:audit-pet\"}",
+          "events": [
+            "-19",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "pet:audit-pet",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 5,1;skill pet-bite courier",
+          "events": [
+            "-16"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 3,0;skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 10,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 6,1;skill alpha-strike courier",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 2
+        }
+      ]
+    },
+    {
+      "id": "T04a",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "exit",
+      "fixture": {
+        "pet": null,
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 3,
+        "actor": null,
+        "courierPos": [
+          6,
+          1
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 13,
+      "courierTurns": 3,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 17,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 2,3;skip",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 3,0;skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 4,3;skip",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 10,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 7,2;skip",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 11,
+          "round": 3,
+          "actor": "ally-02",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 12,
+          "round": 3,
+          "actor": "courier",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":1}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            1
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 13,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            1
+          ],
+          "action": "skill alpha-rend courier",
+          "events": [
+            "-35",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            1
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 3
+        }
+      ]
+    },
+    {
+      "id": "T04b",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "exit",
+      "fixture": {
+        "pet": null,
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": true,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 6,
+        "actor": null,
+        "courierPos": [
+          7,
+          2
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 25,
+      "courierTurns": 5,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 17,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":4,\"r\":3}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 2,3;skill u03-tap h1",
+          "events": [
+            "-10"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill u02-shot h1",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "h1",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":2}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 10,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "skill u03-tap h1",
+          "events": [
+            "-10"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 11,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 12,
+          "round": 3,
+          "actor": "ally-02",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "skill u02-shot h1",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 13,
+          "round": 3,
+          "actor": "courier",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":7,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            7,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 14,
+          "round": 3,
+          "actor": "h1",
+          "beforeCourier": [
+            7,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            7,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 15,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            7,
+            0
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            7,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 16,
+          "round": 4,
+          "actor": "ally-03",
+          "beforeCourier": [
+            7,
+            0
+          ],
+          "action": "skill u03-tap h1",
+          "events": [
+            "-10",
+            "DOWN"
+          ],
+          "afterCourier": [
+            7,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 17,
+          "round": 4,
+          "actor": "ally-02",
+          "beforeCourier": [
+            7,
+            0
+          ],
+          "action": "move 3,0;skip",
+          "events": [],
+          "afterCourier": [
+            7,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 18,
+          "round": 4,
+          "actor": "alpha",
+          "beforeCourier": [
+            7,
+            0
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            7,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 19,
+          "round": 4,
+          "actor": "courier",
+          "beforeCourier": [
+            7,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":7,\"r\":1}}",
+          "events": [],
+          "afterCourier": [
+            7,
+            1
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 20,
+          "round": 4,
+          "actor": "ally-03",
+          "beforeCourier": [
+            7,
+            1
+          ],
+          "action": "move 4,3;skip",
+          "events": [],
+          "afterCourier": [
+            7,
+            1
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 21,
+          "round": 5,
+          "actor": "ally-02",
+          "beforeCourier": [
+            7,
+            1
+          ],
+          "action": "move 5,0;skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            7,
+            1
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 22,
+          "round": 5,
+          "actor": "alpha",
+          "beforeCourier": [
+            7,
+            1
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            7,
+            1
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 23,
+          "round": 5,
+          "actor": "courier",
+          "beforeCourier": [
+            7,
+            1
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":7,\"r\":2}}",
+          "events": [],
+          "afterCourier": [
+            7,
+            2
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 24,
+          "round": 5,
+          "actor": "alpha",
+          "beforeCourier": [
+            7,
+            2
+          ],
+          "action": "none;skip",
+          "events": [],
+          "afterCourier": [
+            7,
+            2
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 25,
+          "round": 6,
+          "actor": "ally-02",
+          "beforeCourier": [
+            7,
+            2
+          ],
+          "action": "skill u02-shot courier",
+          "events": [
+            "-19",
+            "DOWN"
+          ],
+          "afterCourier": [
+            7,
+            2
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 6
+        }
+      ]
+    },
+    {
+      "id": "T06a",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "pet:audit-pet"
+      ],
+      "policy": "slow",
+      "fixture": {
+        "pet": {
+          "id": "audit-pet",
+          "name": "TEST PET (synthetic)",
+          "img": "https://example.invalid/audit-pet.png"
+        },
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 2,
+        "actor": null,
+        "courierPos": [
+          6,
+          0
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 10,
+      "courierTurns": 2,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 19,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "pet:audit-pet",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,3;skill pet-hamstring h1",
+          "events": [
+            "-9",
+            "SPD DOWN"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"pet:audit-pet\"}",
+          "events": [
+            "-19",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "pet:audit-pet",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 5,1;skill pet-bite courier",
+          "events": [
+            "-16"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 3,0;skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 10,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 6,1;skill alpha-strike courier",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 2
+        }
+      ]
+    },
+    {
+      "id": "T06b",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "pet:audit-pet"
+      ],
+      "policy": "slow",
+      "fixture": {
+        "pet": {
+          "id": "audit-pet",
+          "name": "TEST PET (synthetic)",
+          "img": "https://example.invalid/audit-pet.png"
+        },
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": true,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 2,
+        "actor": null,
+        "courierPos": [
+          6,
+          0
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 10,
+      "courierTurns": 2,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 19,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "pet:audit-pet",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,3;skill pet-bite h1",
+          "events": [
+            "-16"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"pet:audit-pet\"}",
+          "events": [
+            "-19",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "pet:audit-pet",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 5,1;skill pet-bite courier",
+          "events": [
+            "-16"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 3,0;skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 10,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 6,1;skill alpha-strike courier",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 2
+        }
+      ]
+    },
+    {
+      "id": "T07a",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "focus",
+      "fixture": {
+        "pet": null,
+        "koda": "A",
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 3,
+        "actor": null,
+        "courierPos": [
+          6,
+          0
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 10,
+      "courierTurns": 2,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 17,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 2,3;skip",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 4,0;skill u02-lunge-vanguard courier",
+          "events": [
+            "-29",
+            "SPD UP"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 4,3;skip",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 10,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 6,1;skill alpha-strike courier",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 3
+        }
+      ]
+    },
+    {
+      "id": "T07b",
+      "mission": "dead-relay-courier",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "focus",
+      "fixture": {
+        "pet": null,
+        "koda": "B",
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": [
+          4,
+          0
+        ],
+        "courierHp": 68,
+        "reinforcement": null,
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 3,
+        "actor": null,
+        "courierPos": [
+          6,
+          0
+        ],
+        "courierHp": 0,
+        "reinforcement": null,
+        "outcome": "victory",
+        "reason": null
+      },
+      "totalActorActions": 10,
+      "courierTurns": 2,
+      "slowsApplied": 0,
+      "spawnRound": null,
+      "damageTaken": 17,
+      "survivors": 3,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "move 4,2;skill alpha-rend h1",
+          "events": [
+            "-35",
+            "BLEED"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "skill u02-burst courier",
+          "events": [
+            "-29"
+          ],
+          "afterCourier": [
+            4,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "courier",
+          "beforeCourier": [
+            4,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 2,3;skip",
+          "events": [],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "skill alpha-strike h1",
+          "events": [
+            "-24"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "move 3,0;skill u02-shot courier",
+          "events": [
+            "-19"
+          ],
+          "afterCourier": [
+            5,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "courier",
+          "beforeCourier": [
+            5,
+            0
+          ],
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":6,\"r\":0}}",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 4,3;skip",
+          "events": [],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 10,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": [
+            6,
+            0
+          ],
+          "action": "move 6,1;skill alpha-strike courier",
+          "events": [
+            "-24",
+            "DOWN"
+          ],
+          "afterCourier": [
+            6,
+            0
+          ],
+          "courierSpeed": 11,
+          "postOutcome": "victory",
+          "postRound": 3
+        }
+      ]
+    },
+    {
+      "id": "T09",
+      "mission": "dead-relay-hold",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "skip",
+      "fixture": {
+        "pet": null,
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": true
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": null,
+        "reinforcement": {
+          "triggerRound": 3,
+          "spawned": false
+        },
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 13,
+        "actor": null,
+        "courierPos": null,
+        "reinforcement": {
+          "triggerRound": 3,
+          "spawned": true
+        },
+        "outcome": "defeat",
+        "reason": null
+      },
+      "totalActorActions": 62,
+      "courierTurns": 0,
+      "slowsApplied": 0,
+      "spawnRound": 3,
+      "damageTaken": 341,
+      "survivors": 0,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":4,\"r\":3}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":1},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-02\"}}",
+          "events": [
+            "-18",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 10,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 11,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 12,
+          "round": 3,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 13,
+          "round": 3,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-14"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 14,
+          "round": 3,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 15,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 16,
+          "round": 4,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 17,
+          "round": 4,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 18,
+          "round": 4,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 19,
+          "round": 4,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 20,
+          "round": 4,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-14"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 21,
+          "round": 4,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 22,
+          "round": 5,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 23,
+          "round": 5,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 24,
+          "round": 5,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 25,
+          "round": 5,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 26,
+          "round": 5,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-18",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 27,
+          "round": 5,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 28,
+          "round": 6,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 29,
+          "round": 6,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 30,
+          "round": 6,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 31,
+          "round": 6,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 32,
+          "round": 6,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-14"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 33,
+          "round": 6,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 34,
+          "round": 7,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 35,
+          "round": 7,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 36,
+          "round": 7,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":0},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-02\"}}",
+          "events": [
+            "-18",
+            "DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 37,
+          "round": 7,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 38,
+          "round": 7,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 39,
+          "round": 7,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 40,
+          "round": 8,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 41,
+          "round": 8,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":1},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 42,
+          "round": 8,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 43,
+          "round": 8,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 44,
+          "round": 8,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 45,
+          "round": 9,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 46,
+          "round": 9,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13",
+            "DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 47,
+          "round": 9,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 48,
+          "round": 9,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 49,
+          "round": 9,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":2},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 50,
+          "round": 10,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":0,\"r\":2},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 51,
+          "round": 10,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 52,
+          "round": 10,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 53,
+          "round": 10,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 11
+        },
+        {
+          "index": 54,
+          "round": 11,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 11
+        },
+        {
+          "index": 55,
+          "round": 11,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 11
+        },
+        {
+          "index": 56,
+          "round": 11,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 11
+        },
+        {
+          "index": 57,
+          "round": 11,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 12
+        },
+        {
+          "index": 58,
+          "round": 12,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 12
+        },
+        {
+          "index": 59,
+          "round": 12,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 12
+        },
+        {
+          "index": 60,
+          "round": 12,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 12
+        },
+        {
+          "index": 61,
+          "round": 12,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 13
+        },
+        {
+          "index": 62,
+          "round": 13,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-17",
+            "DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "defeat",
+          "postRound": 13
+        }
+      ]
+    },
+    {
+      "id": "T10",
+      "mission": "dead-relay-hold",
+      "squad": [
+        "alpha",
+        "ally-02",
+        "ally-03"
+      ],
+      "policy": "skip",
+      "fixture": {
+        "pet": null,
+        "koda": null,
+        "shadow": null,
+        "mastery": "none",
+        "forcedBlock": false,
+        "removedSkill": false,
+        "intel": false
+      },
+      "initial": {
+        "round": 1,
+        "actor": "alpha",
+        "courierPos": null,
+        "reinforcement": {
+          "triggerRound": 2,
+          "spawned": false
+        },
+        "outcome": "ongoing",
+        "reason": null
+      },
+      "finish": {
+        "round": 11,
+        "actor": null,
+        "courierPos": null,
+        "reinforcement": {
+          "triggerRound": 2,
+          "spawned": true
+        },
+        "outcome": "defeat",
+        "reason": null
+      },
+      "totalActorActions": 55,
+      "courierTurns": 0,
+      "slowsApplied": 0,
+      "spawnRound": 2,
+      "damageTaken": 328,
+      "survivors": 0,
+      "capReached": false,
+      "trace": [
+        {
+          "index": 1,
+          "round": 1,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 2,
+          "round": 1,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 3,
+          "round": 1,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 4,
+          "round": 1,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":4,\"r\":3}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 1
+        },
+        {
+          "index": 5,
+          "round": 1,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 6,
+          "round": 2,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 7,
+          "round": 2,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 8,
+          "round": 2,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":1},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-02\"}}",
+          "events": [
+            "-18",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 9,
+          "round": 2,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 2
+        },
+        {
+          "index": 10,
+          "round": 2,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 11,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 12,
+          "round": 3,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":5,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 13,
+          "round": 3,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 14,
+          "round": 3,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-14"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 15,
+          "round": 3,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 3
+        },
+        {
+          "index": 16,
+          "round": 3,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 17,
+          "round": 4,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 18,
+          "round": 4,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":2}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 19,
+          "round": 4,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 20,
+          "round": 4,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 21,
+          "round": 4,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-14"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 4
+        },
+        {
+          "index": 22,
+          "round": 4,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 23,
+          "round": 5,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 24,
+          "round": 5,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 25,
+          "round": 5,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":3,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 26,
+          "round": 5,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 27,
+          "round": 5,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-18",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 5
+        },
+        {
+          "index": 28,
+          "round": 5,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 29,
+          "round": 6,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 30,
+          "round": 6,
+          "actor": "ally-02",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 31,
+          "round": 6,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 32,
+          "round": 6,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":2,\"r\":0},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-02\"}}",
+          "events": [
+            "-18",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 33,
+          "round": 6,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-02\"}",
+          "events": [
+            "-14",
+            "DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 6
+        },
+        {
+          "index": 34,
+          "round": 6,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 35,
+          "round": 7,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 36,
+          "round": 7,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 37,
+          "round": 7,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":1},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 38,
+          "round": 7,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 7
+        },
+        {
+          "index": 39,
+          "round": 7,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 40,
+          "round": 8,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 41,
+          "round": 8,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 42,
+          "round": 8,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 43,
+          "round": 8,
+          "actor": "alpha",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 8
+        },
+        {
+          "index": 44,
+          "round": 8,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 45,
+          "round": 9,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"alpha\"}",
+          "events": [
+            "-13",
+            "DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 46,
+          "round": 9,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":2},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 47,
+          "round": 9,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 48,
+          "round": 9,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":1}}",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 9
+        },
+        {
+          "index": 49,
+          "round": 9,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":1,\"r\":3},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 50,
+          "round": 10,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 51,
+          "round": 10,
+          "actor": "ally-03",
+          "beforeCourier": null,
+          "action": "player skip",
+          "events": [],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 52,
+          "round": 10,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"move\",\"to\":{\"c\":0,\"r\":2},\"then\":{\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 10
+        },
+        {
+          "index": 53,
+          "round": 10,
+          "actor": "h2",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-17",
+            "ATK DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 11
+        },
+        {
+          "index": 54,
+          "round": 11,
+          "actor": "dead-relay-reinforcement",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-strike\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-13"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "ongoing",
+          "postRound": 11
+        },
+        {
+          "index": 55,
+          "round": 11,
+          "actor": "h1",
+          "beforeCourier": null,
+          "action": "enemy {\"type\":\"skill\",\"skillId\":\"hostile-maul\",\"targetId\":\"ally-03\"}",
+          "events": [
+            "-17",
+            "DOWN"
+          ],
+          "afterCourier": null,
+          "courierSpeed": null,
+          "postOutcome": "defeat",
+          "postRound": 11
+        }
+      ]
+    }
+  ]
+}
