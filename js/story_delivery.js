@@ -415,38 +415,7 @@
     }
     var worldHandoff = fs.eligible && fs.state === "COMPLETED" && !!fs.worldDiscovery;
     if (worldHandoff && fs.worldDiscovery === "pending") {
-      if (!fs.faction_selected) {
-        return frame({ id: "S-FS-FACTION-HANDOFF", situation: "BUILD IMPROVED",
-          changed: "Rustfang is equipped. Strength rose.",
-          why: "Alone, you survive. With a faction, you matter.", nextLead: "Faction Oath",
-          nextAction: "Pick Faction", openQuestion: "Who do I fight under?",
-          target: { type: "open_action", action: "factions" }, ctaKind: "choose_faction",
-          firstSession: true, hideHubGoal: true, goLabel: "Pick Faction" });
-      }
-      return frame({ id: "S-FS-WORLD", situation: "BUILD IMPROVED", changed: "Rustfang is equipped. Strength rose.",
-        why: "Your faction shares the Blood Moon Tower fight.", nextLead: "Blood Moon Tower",
-        nextAction: "FIND BLOOD MOON TOWER", goLabel: "FIND BLOOD MOON TOWER",
-        target: { type: "open_action", action: "first_signal" }, ctaKind: "first_signal_handoff",
-        firstSession: true, hideHubGoal: true });
-    }
-
-    if (fs.eligible && fs.state !== "COMPLETED") {
-      if (!fs.faction_selected) {
-        return frame({
-          id: "S-FS-FACTION",
-          situation: "A first signal is waiting, but no war-path is locked.",
-          why: "Alone, you survive. With a faction, you matter.",
-          changed: "No faction oath is recorded.",
-          nextLead: "Faction Oath",
-          nextAction: "Pick Faction",
-          openQuestion: "Who do I fight under?",
-          target: { type: "open_action", action: "factions" },
-          ctaKind: "choose_faction",
-          firstSession: true,
-          hideHubGoal: true,
-          goLabel: "Pick Faction"
-        });
-      }
+      // First Signal eligibility is faction-independent; faction handoff happens after equip.
       if (fs.state === "MISSION_STARTED" && fs.status === "RUNNING") {
         return frame({
           id: "S-FS-RUNNING",
