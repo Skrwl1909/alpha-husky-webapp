@@ -1,0 +1,30 @@
+name: Tactical P0B RUN1 simulation
+on:
+  push:
+    branches: [audit/tactical-p0b-run1-20261016]
+    paths-ignore:
+      - "reports/p0b_run1/**"
+permissions:
+  contents: write
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - name: Build simulation harness from actual TypeScript source
+        run: ./node_modules/.bin/esbuild tools/p0b_run1_harness.ts --bundle --platform=node --format=esm --target=es2022 --outfile=/tmp/p0b-run1.mjs
+      - name: Execute deterministic 7-scenario RUN1
+        run: node /tmp/p0b-run1.mjs
+      - name: Commit isolated results for audit review
+        if: always()
+        run: |
+          if [ -f reports/p0b_run1/REPORT.md ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add reports/p0b_run1
+            git diff --cached --quiet || { git commit -m "test(tactical): record RUN1 simulation output [skip ci]" && git push origin HEAD:audit/tactical-p0b-run1-20261016; }
+          fi
