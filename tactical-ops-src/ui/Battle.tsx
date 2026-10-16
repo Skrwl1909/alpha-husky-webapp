@@ -473,7 +473,6 @@ export function BattleScreen() {
       <div className="t-order-wrap">
         <TurnOrderBar />
       </div>
-      <ObjectiveChip />
       {ticker ? <div className="t-ticker">{ticker}</div> : null}
       {reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker t-ticker-warn">ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
       <div className="t-field-wrap">
@@ -566,9 +565,10 @@ export function BattleScreen() {
               style={{ left: `${impactPos.x}%`, top: `${impactPos.y - 4}%` }}
             />
           ) : null}
+          <StatusStrip />
+          <ObjectiveChip />
         </div>
       </div>
-      <StatusStrip />
       {banner ? (
         <div className="t-banner">
           <span>{banner}</span>

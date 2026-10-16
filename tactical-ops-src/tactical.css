@@ -3999,3 +3999,45 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-wt-campaign-actions { align-items:stretch; flex-direction:column; }
   #tacticalOpsRoot .t-wt-campaign-cta { width:100%; }
 }
+
+/* P0-A: Telegram iOS WebKit field HUD containment.
+   Absolutely positioned status/objective cards should be anchored to the
+   battlefield, not participate as absolute children of the CSS grid.
+   This prevents a full-height grid-track-sized card on narrow WebViews. */
+#tacticalOpsRoot .t-field > .t-status,
+#tacticalOpsRoot .t-field > .t-obj-chip {
+  grid-area: auto;
+  position: absolute;
+  top: .4rem;
+  bottom: auto;
+  height: fit-content;
+  min-height: 0;
+  max-height: 140px;
+  align-self: start;
+  overflow: hidden;
+}
+
+#tacticalOpsRoot .t-field > .t-status {
+  left: max(.4rem, env(safe-area-inset-left));
+  right: auto;
+}
+
+#tacticalOpsRoot .t-field > .t-obj-chip {
+  left: auto;
+  right: max(.4rem, env(safe-area-inset-right));
+}
+
+/* The three header columns must not overlap if iOS enlarges text. */
+#tacticalOpsRoot .t-top .t-brand,
+#tacticalOpsRoot .t-top .t-brand > div,
+#tacticalOpsRoot .t-top .t-brand h1,
+#tacticalOpsRoot .t-top .t-turn,
+#tacticalOpsRoot .t-top .t-obj {
+  min-width: 0;
+  max-width: 100%;
+}
+
+#tacticalOpsRoot .t-top .t-brand > div {
+  width: 100%;
+  overflow: hidden;
+}
