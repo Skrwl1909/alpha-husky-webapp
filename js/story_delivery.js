@@ -415,7 +415,23 @@
     }
     var worldHandoff = fs.eligible && fs.state === "COMPLETED" && !!fs.worldDiscovery;
     if (worldHandoff && fs.worldDiscovery === "pending") {
-      // First Signal eligibility is faction-independent; faction handoff happens after equip.
+      if (!fs.faction_selected) {
+        return frame({ id: "S-FS-FACTION-HANDOFF", situation: "BUILD IMPROVED",
+          changed: "Rustfang is equipped. Strength rose.",
+          why: "Alone, you survive. With a faction, you matter.", nextLead: "Faction Oath",
+          nextAction: "Pick Faction", openQuestion: "Who do I fight under?",
+          target: { type: "open_action", action: "factions" }, ctaKind: "choose_faction",
+          firstSession: true, hideHubGoal: true, goLabel: "Pick Faction" });
+      }
+      return frame({ id: "S-FS-WORLD", situation: "BUILD IMPROVED", changed: "Rustfang is equipped. Strength rose.",
+        why: "Your faction shares the Blood Moon Tower fight.", nextLead: "Blood Moon Tower",
+        nextAction: "FIND BLOOD MOON TOWER", goLabel: "FIND BLOOD MOON TOWER",
+        target: { type: "open_action", action: "first_signal" }, ctaKind: "first_signal_handoff",
+        firstSession: true, hideHubGoal: true });
+    }
+
+    if (fs.eligible && fs.state !== "COMPLETED") {
+      // Eligible First Signal precedes faction; post-equip handoff remains above.
       if (fs.state === "MISSION_STARTED" && fs.status === "RUNNING") {
         return frame({
           id: "S-FS-RUNNING",
