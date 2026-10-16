@@ -15,6 +15,7 @@ jobs:
         with:
           node-version: "22"
       - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --no-audit --no-fund esbuild
       - name: Build simulation harness from actual TypeScript source
         run: ./node_modules/.bin/esbuild tools/p0b_run1_harness.ts --bundle --platform=node --format=esm --target=es2022 --outfile=/tmp/p0b-run1.mjs
       - name: Execute deterministic 7-scenario RUN1
