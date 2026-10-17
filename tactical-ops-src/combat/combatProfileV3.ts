@@ -28,5 +28,5 @@ export function applyRunCombatProfile(spawns:SpawnSpec[],v3:TacticalCombatProfil
    if(s.defId.startsWith("pet:")||s.id.startsWith("pet:")){petCount++;if(!v3.pet||s.id!==`pet:${v3.pet.id}`||!s.unitDef)throw Error("combat_pet_mismatch");const {hp,atk,def:armor,spd}=v3.pet;return {...s,unitDef:{...s.unitDef,hp,atk,def:armor,spd}};}
    return s;
  });
- if(alphaCount!==1||petCount!==(v3.pet?1:0))throw Error("combat_squad_mismatch");return result;
+ if(alphaCount!==1||petCount>1||(petCount>0&&!v3.pet))throw Error("combat_squad_mismatch");return result;
 }
