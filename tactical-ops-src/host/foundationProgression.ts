@@ -6,6 +6,7 @@ import type { ShadowSidegrade } from "../data/shadowSidegrade";
 import { parsePackMastery, type PackMastery } from "../data/packMastery";
 import { parseTacticalProfile, type TacticalProfile } from "../combat/playerProfile";
 import { parseCombatProfileV2, type TacticalCombatProfileV2 } from "../combat/combatProfile";
+import { parseCombatProfileV3, type TacticalCombatProfileV3 } from "../combat/combatProfileV3";
 
 export type FoundationStage =
   | "solo-1"
@@ -75,6 +76,7 @@ export type MissionProgressionStatus = "locked" | "available" | "cleared";
 export interface OperationMissionRun {
   tacticalProfile?: TacticalProfile;
   combatProfileV2?: TacticalCombatProfileV2 | null;
+  combatProfileV3?: TacticalCombatProfileV3 | null;
   packMastery?: PackMastery;
   runId: string;
   missionId: string;
@@ -250,7 +252,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
       if (activeValue.fieldContext != null && !fieldContext) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -331,7 +333,7 @@ export async function startOperationMission(
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
 }
 
 export async function continueOperationMission(
