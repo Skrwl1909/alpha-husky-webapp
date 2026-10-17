@@ -30,6 +30,7 @@ import {
 } from "../data/onboarding";
 import { missionForContext, missionBattleRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
+import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
 
@@ -614,12 +615,14 @@ export const useBattleStore = create<Store>((set, get) => {
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
               const acceptedMission = missionForContext(mission, started.run.fieldContext);
-              const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, started.state.equippedPet, started.run.fieldContext?.approach);
+              const frozenPet = started.run.combatProfileV2?.pet;
+              const runPet = frozenPet ? { id: frozenPet.id, name: frozenPet.name, img: frozenPet.img } : started.state.equippedPet;
+              const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, runPet, started.run.fieldContext?.approach);
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
               beginBattle(
                 g,
                 started.run.runId,
-                withTeammateSidegrades(canonicalSpawns, { ...started.state, packMastery: started.run.packMastery || {} }),
+                applyRunCombatProfile(withTeammateSidegrades(canonicalSpawns, { ...started.state, packMastery: started.run.packMastery || {} }), started.run.combatProfileV3 || null, started.run.combatProfileV2),
                 acceptedMission.objectiveType === "RECOVER" ? acceptedMission.terminal : undefined,
                 mission.objectiveType === "BOSS",
                 persisted.progression.intel?.routingTrace === true,
