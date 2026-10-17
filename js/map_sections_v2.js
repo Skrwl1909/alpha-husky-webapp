@@ -183,7 +183,8 @@
 
     const moonButton = button("map-v2-lunar-moon-button", "", () => {});
     moonButton.type = "button";
-    moonButton.setAttribute("aria-label", "Current lunar phase");
+    moonButton.setAttribute("aria-label", "Toggle lunar phase details");
+    moonButton.setAttribute("aria-expanded", "false");
     const moon = element("img", "map-v2-lunar-moon");
     moon.dataset.lunarMoon = "true";
     moon.alt = "";
@@ -222,6 +223,8 @@
     let taps = 0;
     let firstTapAt = 0;
     moonButton.addEventListener("click", () => {
+      const expanded = layer.classList.toggle("is-phase-expanded");
+      moonButton.setAttribute("aria-expanded", expanded ? "true" : "false");
       const now = Date.now();
       if (!firstTapAt || now - firstTapAt > 2600) {
         firstTapAt = now;
@@ -477,23 +480,31 @@
     return stage;
   }
 
-  function createMapHud(sectionId) {
-    const hud = element("div", "map-v2-map-hud");
-    const presentation = sectionId ? sectionPresentation(sectionId) : null;
+  // The shared map header is the only region/world title; avoid a second floating HUD.
+  function syncMapHeader(sectionId) {
+    const shell = document.getElementById("mapBack");
+    const main = shell?.querySelector(".map-head-main");
+    const title = main?.querySelector("h2");
+    if (!main || !title) return;
+    title.textContent = sectionId ? sectionLabel(sectionId) : "WORLD";
+    let backButton = main.querySelector("[data-map-v2-world-back]");
     if (sectionId) {
-      hud.append(
-        button("map-v2-back map-v2-map-back", "Return to World", renderWorld),
-        element("p", "map-v2-kicker", `${presentation.code} // REGION`),
-        element("h3", "map-v2-title", sectionLabel(sectionId)),
-      );
+      if (!backButton) {
+        backButton = button("map-v2-header-back", "←", renderWorld);
+        backButton.dataset.mapV2WorldBack = "true";
+        backButton.setAttribute("aria-label", "Return to World");
+        main.insertBefore(backButton, title);
+      }
     } else {
-      hud.append(
-        element("p", "map-v2-kicker", "ALPHA HUSKY // WORLD"),
-        element("h3", "map-v2-title", "World"),
-        element("p", "map-v2-copy", "Tap a territory to move deeper into the Network."),
-      );
+      backButton?.remove();
     }
-    return hud;
+  }
+
+  function resetMapHeader() {
+    const main = document.querySelector("#mapBack .map-head-main");
+    main?.querySelector("[data-map-v2-world-back]")?.remove();
+    const title = main?.querySelector("h2");
+    if (title) title.textContent = "Regions";
   }
 
   function createCampaignDock(section) {
@@ -679,7 +690,7 @@
       element("span", "map-v2-objective-label", "OBJECTIVE"),
       element("span", "map-v2-objective-text", summary.text),
     );
-    const route = !sectionId ? objectiveRouteText() : "";
+    const route = ""; // Single-line objective; location is shown by map markers.
     const routeNode = element("span", "map-v2-objective-route", route);
     routeNode.hidden = !route;
     strip.append(routeNode);
@@ -703,7 +714,7 @@
     if (text) text.textContent = summary.text;
     const routeNode = strip.querySelector?.(".map-v2-objective-route");
     if (routeNode) {
-      const route = sectionId === "world" ? objectiveRouteText() : "";
+      const route = "";
       routeNode.textContent = route;
       routeNode.hidden = !route;
     }
@@ -800,9 +811,10 @@
     state.selectedNodeId = null;
     state.selectedSurfaceId = null;
     state.root.dataset.mapV2Surface = "world";
+    syncMapHeader(null);
 
     const view = element("section", "map-v2-view map-v2-world map-v2-map-mode");
-    view.append(createMapStage(null), createMapHud(null), createObjectiveStrip(null));
+    view.append(createMapStage(null), createObjectiveStrip(null));
     state.root.replaceChildren(view);
     applyLunarPresentation();
     startRuntimeUpdates(getSections().flatMap((section) => sectionNodes(section.sectionId)));
@@ -928,6 +940,7 @@
 
     state.sectionId = section.sectionId;
     state.root.dataset.mapV2Surface = section.sectionId;
+    syncMapHeader(section.sectionId);
     const nodes = section.nodes.map((assignment) => getNode(assignment.nodeId)).filter(Boolean);
 
     if (!nodes.some((node) => node.id === state.selectedNodeId)) state.selectedNodeId = null;
@@ -936,7 +949,7 @@
     }
 
     const view = element("section", "map-v2-view map-v2-detail map-v2-map-mode");
-    view.append(createMapStage(section.sectionId, nodes, section), createMapHud(section.sectionId), createObjectiveStrip(section.sectionId));
+    view.append(createMapStage(section.sectionId, nodes, section), createObjectiveStrip(section.sectionId));
 
     if (!section.nodes.length) {
       state.selectedNodeId = null;
@@ -997,6 +1010,7 @@
     state.selectedNodeId = null;
     state.selectedSurfaceId = null;
     delete state.root.dataset.mapV2Surface;
+    resetMapHeader();
     state.root.hidden = true;
     state.root.replaceChildren();
   }
