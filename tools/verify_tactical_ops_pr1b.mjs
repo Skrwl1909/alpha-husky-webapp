@@ -45,7 +45,7 @@ try {
   assert.equal(petBattle.units.find(u => u.id === "pet:test-pet-a").maxHp, 85, "pet HP reaches actual battle");
   assert.equal(petBattle.units.find(u => u.id === "alpha").atk, 33, "pet not double-counted into Alpha");
   assert.throws(() => applyRunCombatProfile(petSpawns, v3(true), v2(false)), /combat_profile_version_mismatch/);
-  assert.throws(() => applyRunCombatProfile(freshNonPet, v3(true), v2(true)), /combat_squad_mismatch/);
+  assert.equal(createBattle(null, applyRunCombatProfile(freshNonPet, v3(true), v2(true))).units.find(u => u.id === "alpha").atk, 33, "equipped pet may stay in barracks");
   assert.throws(() => parseCombatProfileV3({ version:3, mode:"battle-v1", alpha:{ hp: 999, atk: 33, def:15, spd:15 }, pet:null }), /invalid_combat_profile_v3/);
   console.log("PR1B_PASS: legacy, Alpha, pet, enemy neutrality, squad mismatch, corrupt V3 — actual createBattle()");
 } finally {
