@@ -1,5 +1,5 @@
 /** Server-sourced, frozen run-specific battle stats. No client computation of RPG power. */
-import type { SpawnSpec } from "../data/units";
+import { UNIT_DEFS, type SpawnSpec } from "../data/units";
 import type { TacticalCombatProfileV2 } from "./combatProfile";
 
 export interface TacticalCombatProfileV3 {
@@ -24,7 +24,7 @@ export function applyRunCombatProfile(spawns:SpawnSpec[],v3:TacticalCombatProfil
  if(!v2||v2.pet?.id!==v3.pet?.id||(v2.pet===null)!==(v3.pet===null))throw Error("combat_profile_version_mismatch");
  let alphaCount=0,petCount=0;
  const result=spawns.map(s=>{
-   if(s.defId==="alpha"){alphaCount++;if(!s.unitDef)throw Error("alpha_unit_def_missing");return {...s,unitDef:{...s.unitDef,...v3.alpha}};}
+   if(s.defId==="alpha"){alphaCount++;return {...s,unitDef:{...(s.unitDef||UNIT_DEFS.alpha),...v3.alpha}};}
    if(s.defId.startsWith("pet:")||s.id.startsWith("pet:")){petCount++;if(!v3.pet||s.id!==`pet:${v3.pet.id}`||!s.unitDef)throw Error("combat_pet_mismatch");const {hp,atk,def:armor,spd}=v3.pet;return {...s,unitDef:{...s.unitDef,hp,atk,def:armor,spd}};}
    return s;
  });
