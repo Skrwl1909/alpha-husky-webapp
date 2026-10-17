@@ -283,7 +283,25 @@
       notice.dataset.destination = id || "";
       notice.dataset.step = step || "";
       notice.querySelector("span").textContent = noticeText(id, step);
-      notice.querySelector("button").onclick = () => dismiss(id);
+      const go = notice.querySelector('[data-guide-go]');
+      const close = notice.querySelector('[data-guide-dismiss]');
+      go.hidden = id !== "tactical";
+      go.onclick = id === "tactical" ? async () => {
+        if (!eligible("tactical") || go.disabled) return;
+        go.disabled = true;
+        try {
+          if (typeof global.ensureTacticalOpsLoaded === "function") {
+            await global.ensureTacticalOpsLoaded();
+          }
+          if (typeof global.TacticalOps?.open !== "function") throw new Error("Tactical Ops unavailable");
+          await global.TacticalOps.open();
+          refresh();
+        } catch (error) {
+          console.warn("[GuidedNavigation] Tactical Ops direct entry failed", error);
+          global.AlphaToast?.show?.({ type: "error", title: "TACTICAL OPS", message: "Could not open Tactical Ops. Try Missions." });
+        } finally { go.disabled = false; }
+      } : null;
+      close.onclick = () => dismiss(id);
     } else {
       delete notice.dataset.destination;
       delete notice.dataset.step;
@@ -378,9 +396,10 @@
   function init() {
     const style = document.createElement("style");
     style.textContent = '.ah-guided-target{outline:2px solid #9fd6ff!important;outline-offset:2px!important;box-shadow:0 0 0 4px rgba(159,214,255,.12)!important}#ahGuidedNavigation{position:fixed;top:max(12px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:2147483646;display:flex;align-items:flex-start;gap:10px;width:min(520px,90vw);padding:10px 12px;border:1px solid rgba(159,214,255,.22);border-radius:12px;background:#08121df2;color:#eef8ff;font:700 12px system-ui;pointer-events:none;box-shadow:0 14px 40px rgba(0,0,0,.35)}#ahGuidedNavigation[hidden]{display:none}#ahGuidedNavigation span{display:block;white-space:pre-line;line-height:1.42}#ahGuidedNavigation button{flex:0 0 auto;pointer-events:auto;min-height:44px;margin-left:auto;background:transparent;border:0;color:#bdd7e8;cursor:pointer}';
+    style.textContent += '#ahGuidedNavigation button[data-guide-go]{border:1px solid rgba(159,214,255,.35);background:rgba(50,120,150,.24);border-radius:8px;padding:0 10px;color:#eefaff;font-weight:900}#ahGuidedNavigation button[data-guide-go][hidden]{display:none}#ahGuidedNavigation button[data-guide-dismiss]{font-size:22px;line-height:1;padding:0 4px;margin-left:0}#ahGuidedNavigation button:disabled{opacity:.55}';
     document.head.appendChild(style);
     notice = document.createElement("aside"); notice.id = "ahGuidedNavigation"; notice.hidden = true;
-    notice.innerHTML = '<span role="status"></span><button type="button">Not now</button>';
+    notice.innerHTML = '<span role="status"></span><button type="button" data-guide-go hidden aria-label="Go to Tactical Ops">GO →</button><button type="button" data-guide-dismiss aria-label="Dismiss guidance">×</button>';
     document.body.appendChild(notice);
     let queued = false;
     new MutationObserver(records => {
