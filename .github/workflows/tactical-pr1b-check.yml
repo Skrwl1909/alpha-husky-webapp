@@ -1,0 +1,30 @@
+name: Tactical PR1B integration check
+on:
+  push:
+    branches:
+      - feat/tactical-p1b-real-combat-units-20261017
+    paths:
+      - "tactical-ops-src/**"
+      - "tools/verify_tactical_ops_pr1b.mjs"
+      - ".github/workflows/tactical-pr1b-check.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: PR1B actual battle integration
+        run: node tools/verify_tactical_ops_pr1b.mjs
+      - name: Tactical regression
+        run: npm run verify:tactical-ops
+      - name: Tactical build
+        run: npm run build:tactical-ops
+      - name: Validate output
+        run: node --check js/tactical_ops.js
