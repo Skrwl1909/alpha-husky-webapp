@@ -22,9 +22,14 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: PR1B actual battle integration
         run: node tools/verify_tactical_ops_pr1b.mjs
-      - name: Tactical regression
-        run: npm run verify:tactical-ops
+      - name: Available Tactical regressions
+        run: |
+          node tools/verify_tactical_ops_dead_relay_squad.mjs
+          node tools/verify_tactical_ops_campaign_discovery.mjs
+          node tools/verify_tactical_ops_ios_field_hud.mjs
       - name: Tactical build
         run: npm run build:tactical-ops
+      - name: Verify failure recording against built bundle
+        run: node tools/verify_tactical_ops_failure_recording.mjs
       - name: Validate output
         run: node --check js/tactical_ops.js
