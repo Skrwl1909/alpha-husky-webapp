@@ -620,7 +620,8 @@
     ) {
       return { kind: "locked", label: "LOCKED" };
     }
-    return { kind: "ready", label: "READY" };
+    // Available location, not proof that its combat session is off cooldown.
+    return { kind: "ready", label: "ENTER" };
   }
 
   function nodeKindLabel(node) {

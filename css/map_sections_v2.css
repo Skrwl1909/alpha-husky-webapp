@@ -2638,3 +2638,33 @@ body.ah-perf-lite #mapV2Mount .map-v2-poi[data-map-v2-ftue-target="true"] .map-v
 #mapV2Mount .map-v2-objective.is-faction-action .map-v2-objective-text{
   color:#effaff;text-decoration:underline;text-decoration-color:rgba(129,229,240,.48);
 }
+
+/* Kacper QA — Map V2 compact header; keep the actual map close X and objective visible. */
+#mapBack.is-map-v2-active .map-v2-map-hud{
+  top:calc(53px + env(safe-area-inset-top));
+  left:max(10px,env(safe-area-inset-left));
+  max-width:min(60%,270px);
+  padding:4px 7px;
+  background:rgba(3,10,15,.78);
+}
+#mapBack.is-map-v2-active .map-v2-map-hud .map-v2-kicker,
+#mapBack.is-map-v2-active .map-v2-map-hud .map-v2-copy{display:none}
+#mapBack.is-map-v2-active .map-v2-map-hud .map-v2-title{
+  font-size:clamp(14px,4vw,18px);
+  line-height:1.15;
+  margin:0;
+}
+#mapBack.is-map-v2-active .map-v2-map-hud .map-v2-map-back{
+  margin:0 0 3px;
+  min-height:26px;
+}
+#mapBack.is-map-v2-active .map-v2-map-mode > .map-v2-objective{
+  top:calc(116px + env(safe-area-inset-top));
+  right:max(10px,env(safe-area-inset-right));
+  left:max(10px,env(safe-area-inset-left));
+  padding:5px 9px;
+}
+@media(max-width:430px){
+  #mapBack.is-map-v2-active .map-v2-map-hud{top:calc(49px + env(safe-area-inset-top));max-width:56%}
+  #mapBack.is-map-v2-active .map-v2-map-mode > .map-v2-objective{top:calc(105px + env(safe-area-inset-top))}
+}

@@ -652,3 +652,23 @@ html.ah-perf-lite #factionHQBack .hq-lunar-ambient img,
 body.ah-perf-lite #factionHQBack .hq-lunar-ambient img{
   transform:none!important;
 }
+
+/* Kacper QA — phase info remains available without a large moon obscuring map art. */
+#mapBack.is-map-v2-active .map-v2-lunar-moon-button{
+  width:44px;
+  top:calc(49px + env(safe-area-inset-top));
+  right:max(10px,env(safe-area-inset-right));
+}
+#mapBack.is-map-v2-active .map-v2-lunar-badge{
+  top:calc(55px + env(safe-area-inset-top));
+  right:calc(61px + env(safe-area-inset-right));
+  max-width:120px;
+  padding:4px 6px;
+}
+#mapBack.is-map-v2-active .map-v2-lunar-lab{
+  top:calc(100px + env(safe-area-inset-top));
+}
+@media(max-width:430px){
+  #mapBack.is-map-v2-active .map-v2-lunar-moon-button{top:calc(47px + env(safe-area-inset-top));width:36px}
+  #mapBack.is-map-v2-active .map-v2-lunar-badge{top:calc(49px + env(safe-area-inset-top));right:calc(52px + env(safe-area-inset-right));max-width:98px}
+}
