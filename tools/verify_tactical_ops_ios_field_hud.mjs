@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-const battle = readFileSync(new URL("../tactical-ops-src/ui/Battle.tsx", import.meta.url), "utf8");
+const battle = readFileSync(new URL("../tactical-ops-src/ui/Battle.tsx", import.meta.url), "utf8").replace(/\r\n/g, "\n");
 const css = readFileSync(new URL("../tactical-ops-src/tactical.css", import.meta.url), "utf8");
 test("status and objective cards are field children, not absolute grid children", () => {
   const fieldStart = battle.indexOf('className="t-field"');
