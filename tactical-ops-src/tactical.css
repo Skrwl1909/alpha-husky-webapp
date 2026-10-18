@@ -4041,3 +4041,51 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   width: 100%;
   overflow: hidden;
 }
+
+
+/* P0 mobile QA 18 Oct: identity on Results must never expand its portrait to viewport height. */
+#tacticalOpsRoot .t-results .t-id-card {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: .65rem;
+  min-width: 0;
+  margin: .6rem 0;
+  padding: .55rem .65rem;
+  border: 1px solid #69c9eb33;
+  border-radius: 6px;
+  background: #0b1b25;
+}
+#tacticalOpsRoot .t-results .t-id-card > img {
+  display: block;
+  width: 52px;
+  height: 56px;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: 50% 15%;
+  border-radius: 4px;
+}
+#tacticalOpsRoot .t-results .t-id-card > div { min-width: 0; }
+#tacticalOpsRoot .t-results .t-id-card strong,
+#tacticalOpsRoot .t-results .t-id-card small { display: block; overflow-wrap: anywhere; }
+#tacticalOpsRoot .t-results .t-id-card strong { color: #e6f8ff; font-size: .78rem; }
+#tacticalOpsRoot .t-results .t-id-card small { color: #a7c0cd; font-size: .64rem; line-height: 1.45; }
+
+/* iOS Telegram: bounded, compact inspection HUD; objective/units remain visible. */
+@media (max-width: 620px) {
+  #tacticalOpsRoot .t-field > .t-status {
+    box-sizing: border-box;
+    width: min(176px, 47%);
+    max-height: 92px;
+    padding: .25rem .32rem;
+    overflow: hidden;
+    align-content: center;
+  }
+  #tacticalOpsRoot .t-field > .t-status img {
+    width: 28px;
+    height: 28px;
+  }
+  #tacticalOpsRoot .t-field > .t-status .t-status-kit,
+  #tacticalOpsRoot .t-field > .t-status .t-chips { display: none; }
+  #tacticalOpsRoot .t-field > .t-status .t-status-main { min-width: 0; }
+}
