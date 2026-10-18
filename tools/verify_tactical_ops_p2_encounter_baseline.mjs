@@ -31,7 +31,7 @@ try {
   const enemies=state.units.filter(x=>x.team==="enemy"&&!x.defeated);const goal=state.objective?.type==="INTERCEPT"?enemies.find(x=>x.id===state.objective.targetId):null;
   let target=goal||enemies.sort((a,b)=>a.hp-b.hp)[0];
   const block=mode==="control"&&u.id==="ally-02"&&state.objective?.type==="INTERCEPT";
-  const dest=block?state.objective.exit:target;
+  const dest=block?state.objective.exit:(state.objective?.type==="HOLD"&&u.id==="alpha"?state.objective.terminal:target);
   let moved=false;
   if(dest&&!u.hasMoved){
    const candidates=movement.reachableCells(u,state.units).sort((a,b)=>d(a,dest)-d(b,dest)||a.r-b.r||a.c-b.c);
