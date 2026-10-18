@@ -215,12 +215,14 @@ Object.assign(MISSION_DEFS, {
     activity: "CANON", missionId: "dead-relay-courier", operationId: DEAD_RELAY.operationId,
     battlefield: "broken-signal", name: "THE COURIER", objectiveType: "INTERCEPT", squadCap: 3,
     executable: true,
-    briefCopy: "HOUND is evacuating relay intel. Stop the SIGNAL COURIER before it reaches the south-east exit. Capture it by round 4 on the FIRST successful clear to obtain a tactical advantage in the next mission.",
+    briefCopy: "HOUND is evacuating relay intel. Stop the reinforced SIGNAL COURIER before it reaches the south-east exit. It moves up to 2 cells each turn, while a HOUND patrol pressures your flank. Slow, intercept or focus fire. Stop it by round 4 on the FIRST successful clear to earn intel for the next mission.",
     resultsCopy: "Courier stopped. Relay coordinates recovered. The counterattack is imminent.",
     objective: { type: "INTERCEPT", targetId: "courier", exit: { c: 7, r: 4 } },
     spawns: [
-      { defId: "hostile", id: "courier", c: 4, r: 0, unitDef: { ...UNIT_DEFS.hostile, defId: "signal-courier", name: "SIGNAL COURIER", move: 1 } },
+      // P2: mission-local chase pressure; no global enemy or player scaling.
+      { defId: "hostile", id: "courier", c: 4, r: 0, unitDef: { ...UNIT_DEFS.hostile, defId: "signal-courier", name: "SIGNAL COURIER", hp: 100, move: 2 } },
       { defId: "hostile", id: "h1", c: 5, r: 3 },
+      { defId: "hostile", id: "h2", c: 3, r: 3 },
     ],
     squadHint: "CNC can suppress the fleeing courier. PET slows make interception easier, while SHADOW keeps a forward blocker alive.",
   },
