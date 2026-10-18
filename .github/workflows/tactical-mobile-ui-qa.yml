@@ -1,0 +1,22 @@
+name: Tactical mobile UI QA
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/tactical.css"
+      - "tools/verify_tactical_ops_results_status_layout.mjs"
+      - ".github/workflows/tactical-mobile-ui-qa.yml"
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_ops_results_status_layout.mjs
+      - run: node tools/verify_tactical_ops_ios_field_hud.mjs
+      - run: npm run build:tactical-ops
+      - run: node --check js/tactical_ops.js
