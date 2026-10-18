@@ -1,0 +1,34 @@
+name: Tactical P2 Courier pressure gameplay gate
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/data/operations.ts"
+      - "tools/verify_tactical_ops_p2_courier_pressure.mjs"
+      - ".github/workflows/tactical-p2-courier.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  encounter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - name: Deterministic synthetic gameplay regression
+        run: node tools/verify_tactical_ops_p2_courier_pressure.mjs | tee p2-courier.log
+      - name: Existing combat and campaign regressions
+        run: |
+          node tools/verify_tactical_ops_pr1b.mjs
+          node tools/verify_tactical_ops_dead_relay_squad.mjs
+          node tools/verify_tactical_ops_campaign_discovery.mjs
+      - run: npm run build:tactical-ops
+      - run: node --check js/tactical_ops.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-p2-courier-test-log
+          path: p2-courier.log
+          if-no-files-found: ignore
