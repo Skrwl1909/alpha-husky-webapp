@@ -1,4 +1,12 @@
-export const BATTLEFIELD_VNEXT_PREVIEW = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tacticalBattlefieldVNext") === "1";
+/** Local, device-scoped Battlefield Lab switch. Never changes canonical player progression. */
+export const BATTLEFIELD_LAB_KEY = "ah_tactical_battlefield_lab_v1";
+export const BATTLEFIELD_VNEXT_PREVIEW = (() => {
+  if (typeof window === "undefined") return false;
+  try {
+    if (new URLSearchParams(window.location.search).get("tacticalBattlefieldVNext") === "1") return true;
+    return window.localStorage.getItem(BATTLEFIELD_LAB_KEY) === "10x7";
+  } catch (_) { return false; }
+})();
 export const GRID_COLS = BATTLEFIELD_VNEXT_PREVIEW ? 10 : 8;
 export const GRID_ROWS = BATTLEFIELD_VNEXT_PREVIEW ? 7 : 5;
 export const METER_MAX = 100;
