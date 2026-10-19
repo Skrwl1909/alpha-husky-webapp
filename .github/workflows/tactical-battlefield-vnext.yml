@@ -20,6 +20,7 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: node tools/verify_tactical_battlefield_preview.mjs
       - run: node tools/verify_tactical_vnext_combat_intelligence.mjs
+      - run: node tools/verify_tactical_vnext_counterplay.mjs
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
