@@ -1,0 +1,23 @@
+name: Tactical VNext grid benchmark
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/combat/battlefieldTopology.ts"
+      - "tools/benchmark_tactical_vnext_grids.mjs"
+      - ".github/workflows/tactical-vnext-grid-benchmark.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  grid-benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: node tools/benchmark_tactical_vnext_grids.mjs
+      - run: node tools/verify_tactical_vnext_step0_baseline.mjs
+      - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
+      - run: npm run build:tactical-ops
