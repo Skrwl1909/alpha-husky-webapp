@@ -25,6 +25,8 @@ function threatScore(t: CombatUnit): number {
 function pickTarget(caster: CombatUnit, candidates: CombatUnit[], skill: SkillDef): CombatUnit | null {
   if (!candidates.length) return null;
   const sorted = [...candidates].sort((a, b) => {
+    if (caster.archetype === "DISRUPTOR") return Number(b.role === "support") - Number(a.role === "support") || threatScore(b) - threatScore(a);
+    if (caster.archetype === "MARKSMAN") return threatScore(b) - threatScore(a) || chebyshev(caster, b) - chebyshev(caster, a);
     if (caster.role === "leader") return threatScore(b) - threatScore(a) || a.hp - b.hp;
     return a.hp - b.hp || chebyshev(caster, a) - chebyshev(caster, b);
   });
@@ -40,7 +42,8 @@ function bestMoveForSkill(caster: CombatUnit, units: CombatUnit[], skill: SkillD
   for (const cell of cells) {
     const d = chebyshev(cell, target);
     const inR = d >= skill.minRange && d <= skill.maxRange;
-    const score = (inR ? 0 : 100) + d;
+    // Marksmen seek a viable firing lane but avoid closing into melee.
+    const score = (inR ? 0 : 100) + (caster.archetype === "MARKSMAN" ? Math.abs(d - Math.max(2, skill.maxRange - 1)) : d);
     if (score < bestScore) {
       bestScore = score;
       best = cell;
@@ -84,6 +87,15 @@ export function chooseAiAction(state: BattleState): AiAction {
   if (objectiveAction) return objectiveAction;
 
   const skills = availableSkills(state, caster).filter((s) => s.ready);
+  // A threatened marksman first creates distance instead of firing illegally at adjacency.
+  if (caster.archetype === "MARKSMAN" && !caster.hasMoved) {
+    const near = foesOf(caster, state.units).some(u => chebyshev(caster, u) <= 1);
+    if (near) {
+      const cells = reachableCells(caster, state.units);
+      const scored = cells.map(cell => ({cell, d: Math.min(...foesOf(caster,state.units).map(u=>chebyshev(cell,u)))})).sort((a,b)=>b.d-a.d || a.cell.c-b.cell.c || a.cell.r-b.cell.r);
+      if (scored[0]?.d > 1) return { type: "move", to: scored[0].cell };
+    }
+  }
   const foes = foesOf(caster, state.units);
   if (!foes.length) return { type: "skip" };
 
