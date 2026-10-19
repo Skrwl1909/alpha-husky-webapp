@@ -44,7 +44,7 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
 /** Announce only; never execute an unannounced action in this module. */
 export function queueEnemyThreat(cycle: ThreatCycle, state: BattleState): ThreatCycle {
   const enemy = state.units.find(u => u.id === state.activeId);
-  if (!enemy || enemy.team !== "enemy" || enemy.defeated) return cycle;
+  if (!enemy || enemy.team !== "enemy" || enemy.defeated || cycle.pending.some(t => t.plan.enemyId === enemy.id)) return cycle;
   const action = chooseAiAction(state);
   const queued = forecast(state, enemy.id, action, cycle.sequence + 1);
   if (!queued) return cycle;
