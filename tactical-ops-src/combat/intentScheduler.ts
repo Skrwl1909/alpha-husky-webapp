@@ -4,6 +4,7 @@ import { chooseAiAction, aiUsesLegalRules } from "./ai";
 import { getSkill } from "../data/skills";
 import { announceIntent, adjudicateIntent, confirmExecutedIntent, type IntentPlan, type TacticalLedgerEvent, type ThreatKind } from "./intentContract";
 import { applyAi } from "./battle";
+import { previewQueue } from "./initiative";
 
 export interface QueuedThreat {
   plan: IntentPlan;
@@ -13,13 +14,35 @@ export interface ThreatCycle {
   pending: ReadonlyArray<QueuedThreat>;
   ledger: ReadonlyArray<TacticalLedgerEvent>;
   sequence: number;
+  /** At least one actual allied turn must occur before a threat can resolve. */
+  reactionObserved: Readonly<Record<string, boolean>>;
 }
-export const emptyThreatCycle = (): ThreatCycle => ({ pending: [], ledger: [], sequence: 0 });
+export const emptyThreatCycle = (): ThreatCycle => ({ pending: [], ledger: [], sequence: 0, reactionObserved: {} });
 
 function plannedSkill(action: AiAction): Extract<AiAction, {type:"skill"}> | null {
   return action.type === "skill" ? action : action.type === "move" && action.then?.type === "skill" ? action.then : null;
 }
 function tile(c: Cell): Cell { return { c: c.c, r: c.r }; }
+/** Only announce if the meter-based queue offers a real allied reaction turn. */
+export function hasAlliedReactionWindow(state: BattleState, enemyId: string): boolean {
+  const next = previewQueue(state, 12);
+  const first = next.indexOf(enemyId);
+  if (first < 0) return false;
+  const nextSame = next.indexOf(enemyId, first + 1);
+  if (nextSame < 0) return false;
+  return next.slice(first + 1, nextSame).some(id =>
+    state.units.some(u => u.id === id && u.team === "ally" && !u.defeated));
+}
+
+export function markAlliedReaction(cycle: ThreatCycle, state: BattleState): ThreatCycle {
+  const actor = state.units.find(u => u.id === state.activeId);
+  if (!actor || actor.team !== "ally" || actor.defeated) return cycle;
+  const next = { ...cycle.reactionObserved };
+  for (const threat of cycle.pending) {
+    if (state.unitTurn > threat.plan.warnsOnUnitTurn) next[threat.plan.id] = true;
+  }
+  return { ...cycle, reactionObserved: next };
+}
 function forecast(state: BattleState, enemyId: string, action: AiAction, sequence: number): QueuedThreat | null {
   if (action.type === "skip") return null;
   const enemy = state.units.find(u => u.id === enemyId);
@@ -45,6 +68,7 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
 export function queueEnemyThreat(cycle: ThreatCycle, state: BattleState): ThreatCycle {
   const enemy = state.units.find(u => u.id === state.activeId);
   if (!enemy || enemy.team !== "enemy" || enemy.defeated || cycle.pending.some(t => t.plan.enemyId === enemy.id)) return cycle;
+  if (!hasAlliedReactionWindow(state, enemy.id)) return cycle;
   const action = chooseAiAction(state);
   const queued = forecast(state, enemy.id, action, cycle.sequence + 1);
   if (!queued) return cycle;
@@ -61,11 +85,14 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
   if (index < 0) return { cycle, state };
   const queued = cycle.pending[index];
   const decision = adjudicateIntent(queued.plan, state);
+  if (decision.status === "COMMIT" && !cycle.reactionObserved[queued.plan.id]) return { cycle, state };
   if (decision.status === "WAIT") return { cycle, state };
   const pending = cycle.pending.filter((_, i) => i !== index);
+  const reactionObserved = { ...cycle.reactionObserved };
+  delete reactionObserved[queued.plan.id];
   if (decision.status === "CANCELED") return {
     state,
-    cycle: { ...cycle, pending, ledger: [...cycle.ledger, ...decision.events] },
+    cycle: { ...cycle, pending, reactionObserved, ledger: [...cycle.ledger, ...decision.events] },
   };
   // Never convert an invalidated locked action into an apparently successful skip.
   if (!aiUsesLegalRules(state, queued.action)) {
@@ -79,7 +106,7 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
   return {
     state: applied.state,
     cycle: {
-      ...cycle, pending,
+      ...cycle, pending, reactionObserved,
       ledger: [...cycle.ledger, ...(executed
           ? [...decision.events, ...confirmExecutedIntent(decision.plan, state.unitTurn, true)]
           : [{ type: "threat_countered" as const, intentId: queued.plan.id, reason: "INVALIDATED" as const, unitTurn: state.unitTurn }])],
