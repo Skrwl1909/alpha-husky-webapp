@@ -31,6 +31,8 @@ import {
 import { missionForContext, missionBattleRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
+import { TACTICAL_VNEXT_ENABLED } from "../combat/intentContract";
+import { emptyThreatCycle, markAlliedReaction, queueEnemyThreat, resolveEnemyThreat, type ThreatCycle } from "../combat/intentScheduler";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
 
@@ -236,6 +238,8 @@ export const useBattleStore = create<Store>((set, get) => {
     return false;
   };
 
+  let threatCycle: ThreatCycle = emptyThreatCycle();
+
   const continueLoop = async (g: number) => {
     if (g !== runGen) return;
     if (await finishIfNeeded(g)) return;
@@ -245,6 +249,7 @@ export const useBattleStore = create<Store>((set, get) => {
     if (g !== runGen) return;
     if (await finishIfNeeded(g)) return;
     const actor = activeUnit(get().battle);
+    if (TACTICAL_VNEXT_ENABLED && actor?.team === "ally") threatCycle = markAlliedReaction(threatCycle, get().battle);
     if (!actor) {
       set({ busy: false });
       return;
@@ -268,6 +273,36 @@ export const useBattleStore = create<Store>((set, get) => {
     if (!actor || actor.team !== "enemy") {
       await continueLoop(g);
       return;
+    }
+    if (TACTICAL_VNEXT_ENABLED) {
+      const locked = threatCycle.pending.find(t => t.plan.enemyId === actor.id);
+      if (locked) {
+        const resolved = resolveEnemyThreat(threatCycle, st);
+        threatCycle = resolved.cycle;
+        if (resolved.state !== st) {
+          set({ battle: resolved.state, queue: refreshQueue(resolved.state) });
+          await continueLoop(g);
+          return;
+        }
+        // Invalidated/countered threats consume the enemy's turn, never retarget.
+        if (!threatCycle.pending.some(t => t.plan.id === locked.plan.id)) {
+          const skipped = trySkip(st);
+          set({ battle: skipped.state, queue: refreshQueue(skipped.state), ticker: "THREAT COUNTERED" });
+          await playEvents(skipped.events, g);
+          if (g === runGen) await continueLoop(g);
+          return;
+        }
+      } else {
+        const nextCycle = queueEnemyThreat(threatCycle, st);
+        if (nextCycle.pending.length > threatCycle.pending.length) {
+          threatCycle = nextCycle;
+          const skipped = trySkip(st);
+          set({ battle: skipped.state, queue: refreshQueue(skipped.state), ticker: "ENEMY INTENT REVEALED" });
+          await playEvents(skipped.events, g);
+          if (g === runGen) await continueLoop(g);
+          return;
+        }
+      }
     }
     const action = planAi(st);
     if (action.type === "move") {
@@ -331,6 +366,7 @@ export const useBattleStore = create<Store>((set, get) => {
 
   const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null) => {
     traceNoticeShown = false;
+    threatCycle = emptyThreatCycle();
     const identity = identityCache(resolvePlayerIdentity());
     const { onboardingEnabled, onboardingStageId } = get();
     const spawns = spawnsOverride || resolveDeploySpawns(onboardingEnabled, onboardingStageId);
