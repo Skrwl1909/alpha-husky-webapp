@@ -4097,3 +4097,12 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 #tacticalOpsRoot .battlefield-vnext-preview .t-token.hound { width: 11%; min-width: 36px; max-width: 110px; }
 #tacticalOpsRoot .battlefield-vnext-preview .t-cell { width: 36px; min-width: 36px; height: 36px; min-height: 36px; }
 #tacticalOpsRoot .battlefield-vnext-preview .t-grid i { width: 7px; height: 7px; }
+
+/* Battlefield Lab is deliberately visible only inside Tactical Ops, including Telegram and APK. */
+#tacticalOpsRoot .t-wt-battlefield-lab{display:flex;align-items:center;justify-content:space-between;gap:14px;border:1px solid rgba(96,205,241,.42);background:linear-gradient(110deg,rgba(5,36,51,.96),rgba(6,18,30,.92));padding:14px;}
+#tacticalOpsRoot .t-wt-battlefield-lab>div{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;}
+#tacticalOpsRoot .t-wt-battlefield-lab strong{font-size:15px;color:#bcf0ff;}
+#tacticalOpsRoot .t-wt-battlefield-lab p{font-size:11px;line-height:1.5;margin:0;color:rgba(217,236,246,.77);}
+#tacticalOpsRoot .t-wt-battlefield-lab .t-btn{min-height:44px;min-width:112px;flex-shrink:0;}
+#tacticalOpsRoot .t-battle-lab-tag{color:#86e9ff;font-weight:800;letter-spacing:.05em;}
+@media(max-width:520px){#tacticalOpsRoot .t-wt-battlefield-lab{flex-direction:column;align-items:stretch;}#tacticalOpsRoot .t-wt-battlefield-lab .t-btn{width:100%;}}
