@@ -9,7 +9,7 @@ try {
     server.ssrLoadModule("/tactical-ops-src/combat/battle.ts"),
   ]);
   const initial = battle.createBattle();
-  assert.deepEqual(scheduler.emptyThreatCycle(), { pending:[], ledger:[], sequence:0 });
+  assert.deepEqual(scheduler.emptyThreatCycle(), { pending:[], ledger:[], sequence:0, reactionObserved:{} });
   const enemy = initial.units.find(u => u.team === "enemy");
   assert(enemy);
   const state = { ...initial, activeId:enemy.id, unitTurn:2 };
