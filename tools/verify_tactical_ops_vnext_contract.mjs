@@ -39,6 +39,9 @@ try {
   const announced = intent.announceIntent(draft, state);
   assert.equal(announced.plan.phase, "WINDUP");
   assert.equal(announced.event.type, "threat_announced");
+  assert(Object.isFrozen(announced.plan) && Object.isFrozen(announced.plan.responses) &&
+    Object.isFrozen(announced.plan.impactTiles) && Object.isFrozen(announced.plan.impactTiles[0]) &&
+    Object.isFrozen(announced.plan.targetTile), "forecast snapshot must be deeply immutable");
   assert.deepEqual(draft, original, "must not mutate caller's intent");
   draft.impactTiles[0].c = 7;
   assert.equal(announced.plan.impactTiles[0].c, alpha.c, "plan snapshots target cells");
@@ -46,6 +49,7 @@ try {
   const due = { ...state, unitTurn: 5 };
   const committed = intent.adjudicateIntent(announced.plan, due);
   assert.equal(committed.status, "COMMIT");
+  assert(Object.isFrozen(committed.plan), "committed plan must stay immutable");
   assert.deepEqual(intent.confirmExecutedIntent(committed.plan, 5, true).map((e) => e.type), ["threat_resolved"]);
   assert.throws(() => intent.confirmExecutedIntent(committed.plan, 5, false), /unconfirmed/);
   assert.throws(() => intent.confirmExecutedIntent(announced.plan, 5, true), /unconfirmed/);
@@ -68,6 +72,7 @@ try {
     missionRevision: 1, combatProfileVersion: 3, masterySnapshotVersion: 1,
     rewardPolicyVersion: 1, source: "BACKEND_SNAPSHOT",
   });
+  assert(Object.isFrozen(run), "server snapshot contract must not be mutable");
   assert.equal(intent.canStartVNextRun(run), false, "flag remains off without backend migration");
   assert.throws(() => intent.parseRunRulesContract({ ...run, rulesetVersion: "legacy" }), /unsupported/);
   assert.throws(() => intent.parseRunRulesContract({ ...run, extra: 1 }), /invalid/);
