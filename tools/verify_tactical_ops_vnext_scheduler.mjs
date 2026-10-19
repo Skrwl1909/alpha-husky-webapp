@@ -12,7 +12,15 @@ try {
   assert.deepEqual(scheduler.emptyThreatCycle(), { pending:[], ledger:[], sequence:0, reactionObserved:{} });
   const enemy = initial.units.find(u => u.team === "enemy");
   assert(enemy);
-  const state = { ...initial, activeId:enemy.id, unitTurn:2 };
+  // The scheduler now deliberately ignores move-only AI turns. Place one ally
+  // in legal attack range so this fixture tests an actual incoming strike.
+  const allyForThreat = initial.units.find(u => u.team === "ally");
+  assert(allyForThreat);
+  const state = { ...initial, activeId:enemy.id, unitTurn:2,
+    units: initial.units.map(u => u.id === allyForThreat.id
+      ? { ...u, c: enemy.c, r: enemy.r + (enemy.r < 6 ? 1 : -1) }
+      : u),
+  };
   const cycle = scheduler.queueEnemyThreat(scheduler.emptyThreatCycle(),state);
   assert.equal(cycle.sequence, 1);
   assert.equal(cycle.pending.length, 1);
