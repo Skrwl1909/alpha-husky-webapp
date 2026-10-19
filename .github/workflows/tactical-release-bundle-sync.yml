@@ -28,12 +28,17 @@ jobs:
           import assert from 'node:assert/strict';
           const b=readFileSync('js/tactical_ops.js','utf8');
           const l=readFileSync('js/boot_loaders.js','utf8');
-          assert(b.includes('tactical_ops.js v3.1.5-p2-mobile'));
+          const v=readFileSync('tactical-ops-src/version.ts','utf8');
+          const bundleVersion=v.match(/VERSION\\s*=\\s*"([^"]+)"/)?.[1];
+          const cacheKey=v.match(/CACHE_KEY\\s*=\\s*"([^"]+)"/)?.[1];
+          assert(bundleVersion && cacheKey, 'missing canonical Tactical Ops version');
+          assert(b.includes(bundleVersion), 'bundle does not match source version');
           assert(b.includes('max-height: 92px'), 'missing merged mobile HUD fix');
           assert(b.includes('.t-results .t-id-card'), 'missing result portrait fix');
           assert(b.includes('reinforced SIGNAL COURIER'), 'missing PR135 gameplay');
-          assert(l.includes('tops-3.1.5-p2-mobile'), 'stale loader cache');
-          console.log('PASS: version, gameplay, iOS HUD, results, loader');
+          assert(l.includes(cacheKey), 'stale loader cache');
+          assert(b.includes('ah_tactical_battlefield_lab_v1'), 'missing Battlefield Lab switch in compiled runtime');
+          console.log('PASS: version, gameplay, iOS HUD, results, Battlefield Lab, loader');
           EOF
       - name: Commit generated release artifacts to PR branch
         run: |
@@ -41,6 +46,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add js/tactical_ops.js js/boot_loaders.js
           if ! git diff --cached --quiet; then
-            git commit -m "build(tactical): ship P2 and mobile fixes in generated IIFE"
+            git commit -m "build(tactical): sync versioned production IIFE from canonical source"
             git push
           fi
