@@ -3,10 +3,11 @@
  * Never synthesize a combat outcome or reward from an announced intent.
  * The legacy meter/SPD engine, mission rules and backend receipts remain authoritative.
  */
-import { GRID_COLS, GRID_ROWS, type BattleState, type Cell } from "./types";
+import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW, type BattleState, type Cell } from "./types";
 
 export const TACTICAL_VNEXT_RULESET = "tactical-intent-vnext.0" as const;
-export const TACTICAL_VNEXT_ENABLED = false as const;
+/** Experimental only in Battlefield Lab; legacy 8×5 and saved live runs keep previous behavior. */
+export const TACTICAL_VNEXT_ENABLED: boolean = BATTLEFIELD_VNEXT_PREVIEW;
 
 export type ThreatKind = "ATTACK" | "AREA" | "JAM" | "ESCAPE" | "REINFORCEMENT" | "CHARGE";
 export type IntentPhase = "WINDUP" | "COMMIT";

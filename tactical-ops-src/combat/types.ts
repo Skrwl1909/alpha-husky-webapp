@@ -88,6 +88,7 @@ export interface UnitDef {
 }
 
 export interface CombatUnit {
+  archetype?: "BULWARK" | "MARKSMAN" | "DISRUPTOR" | "COURIER" | "SKIRMISHER" | "COMMANDER";
   recoverRange?: number;
   id: string;
   defId: string;

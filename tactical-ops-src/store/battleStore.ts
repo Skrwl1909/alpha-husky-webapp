@@ -31,7 +31,7 @@ import {
 import { missionForContext, missionBattleRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
-import { TACTICAL_VNEXT_ENABLED } from "../combat/intentContract";
+import { TACTICAL_VNEXT_ENABLED, type IntentPlan } from "../combat/intentContract";
 import { emptyThreatCycle, markAlliedReaction, queueEnemyThreat, resolveEnemyThreat, type ThreatCycle } from "../combat/intentScheduler";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
@@ -52,6 +52,8 @@ interface UiBattle {
   banner: string | null;
   ticker: string | null;
   floats: FloatText[];
+  /** Read-only telegraphs shown to the player; the battle engine remains authoritative. */
+  threats: ReadonlyArray<IntentPlan>;
   attackingId: string | null;
   lastActionSkillId: string | null;
   impactId: string | null;
@@ -279,6 +281,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (locked) {
         const resolved = resolveEnemyThreat(threatCycle, st);
         threatCycle = resolved.cycle;
+        set({ threats: threatCycle.pending.map(t => t.plan) });
         if (resolved.state !== st) {
           set({ battle: resolved.state, queue: refreshQueue(resolved.state) });
           await playEvents(resolved.events ?? [], g);
@@ -304,6 +307,7 @@ export const useBattleStore = create<Store>((set, get) => {
         const nextCycle = queueEnemyThreat(threatCycle, st);
         if (nextCycle.pending.length > threatCycle.pending.length) {
           threatCycle = nextCycle;
+          set({ threats: threatCycle.pending.map(t => t.plan) });
           const skipped = trySkip(st);
           set({ battle: skipped.state, queue: refreshQueue(skipped.state), ticker: "ENEMY INTENT REVEALED" });
           await playEvents(skipped.events, g);
@@ -394,6 +398,7 @@ export const useBattleStore = create<Store>((set, get) => {
       banner: null,
       ticker: null,
       floats: [],
+      threats: [],
       attackingId: null,
       impactId: null,
       currentRunKey: runKey,
@@ -422,6 +427,7 @@ export const useBattleStore = create<Store>((set, get) => {
     banner: null,
     ticker: null,
     floats: [],
+    threats: [],
     attackingId: null,
     lastActionSkillId: null,
     impactId: null,

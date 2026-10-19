@@ -145,6 +145,7 @@ function Token({
           <i /><i /><i /><i />
         </span>
       ) : null}
+      {unit.archetype && !unit.defeated ? <span className={`t-enemy-archetype t-archetype-${unit.archetype.toLowerCase()}`} aria-label={`Enemy class: ${unit.archetype}`}>{unit.archetype}</span> : null}
       {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
@@ -418,6 +419,7 @@ export function BattleScreen() {
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
+  const threats = useBattleStore((s) => s.threats);
   const attackingId = useBattleStore((s) => s.attackingId);
   const impactId = useBattleStore((s) => s.impactId);
   const impactKey = useBattleStore((s) => s.impactKey);
@@ -496,6 +498,13 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
+          {threats.flatMap((threat) => threat.impactTiles.map((cell, i) => {
+            const pos = fieldPercent(cell.c, cell.r);
+            return <div key={threat.id + ":" + i} className="t-threat-tile" style={{ left: pos.x + "%", top: pos.y + "%" }} aria-hidden="true" />;
+          }))}
+          {threats.length ? <div className="t-threat-warning" role="status" aria-live="polite">
+            {threats.map(threat => <span key={threat.id}>INCOMING {threat.kind} · {threat.predictedEffect} · MOVE / INTERRUPT / GUARD</span>)}
+          </div> : null}
           {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
             return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
