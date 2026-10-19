@@ -34,6 +34,22 @@ export function hasAlliedReactionWindow(state: BattleState, enemyId: string): bo
     state.units.some(u => u.id === id && u.team === "ally" && !u.defeated));
 }
 
+/** Retire invalidated locks immediately, so red markers never outlive their target or source. */
+export function pruneInvalidThreats(cycle: ThreatCycle, state: BattleState): ThreatCycle {
+  if (!cycle.pending.length) return cycle;
+  const pending: QueuedThreat[] = [];
+  const reactionObserved = { ...cycle.reactionObserved };
+  const ledger = [...cycle.ledger];
+  for (const queued of cycle.pending) {
+    const result = adjudicateIntent(queued.plan, state);
+    if (result.status === "CANCELED") {
+      ledger.push(...result.events);
+      delete reactionObserved[queued.plan.id];
+    } else pending.push(queued);
+  }
+  return pending.length === cycle.pending.length ? cycle : { ...cycle, pending, reactionObserved, ledger };
+}
+
 export function markAlliedReaction(cycle: ThreatCycle, state: BattleState): ThreatCycle {
   const actor = state.units.find(u => u.id === state.activeId);
   if (!actor || actor.team !== "ally" || actor.defeated) return cycle;
@@ -44,7 +60,7 @@ export function markAlliedReaction(cycle: ThreatCycle, state: BattleState): Thre
   return { ...cycle, reactionObserved: next };
 }
 function forecast(state: BattleState, enemyId: string, action: AiAction, sequence: number): QueuedThreat | null {
-  if (action.type === "skip") return null;
+  if (action.type === "skip" || !plannedSkill(action)) return null;
   const enemy = state.units.find(u => u.id === enemyId);
   if (!enemy || enemy.defeated || enemy.team !== "enemy") return null;
   const skill = plannedSkill(action);
@@ -62,7 +78,7 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
   const { plan } = announceIntent({
     id: `threat:${state.unitTurn}:${enemyId}:${sequence}`, enemyId, kind,
     targetUnitId: target?.id ?? null, targetTile: anchor, impactTiles,
-    predictedEffect: definition ? definition.name : "Enemy advances to a locked tile",
+    predictedEffect: definition ? definition.name : "Enemy attack",
     warnsOnUnitTurn: state.unitTurn, resolvesOnUnitTurn: state.unitTurn + 1,
     responses: ["KILL", "DISRUPT", "REPOSITION", "BLOCK", "PROTECT", "TRADE"],
     fallbackPolicy: "CANCEL",

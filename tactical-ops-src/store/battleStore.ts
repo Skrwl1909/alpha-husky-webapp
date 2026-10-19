@@ -32,7 +32,7 @@ import { missionForContext, missionBattleRules, missionSpawnsForSquad, type Miss
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, type IntentPlan } from "../combat/intentContract";
-import { emptyThreatCycle, markAlliedReaction, queueEnemyThreat, resolveEnemyThreat, type ThreatCycle } from "../combat/intentScheduler";
+import { emptyThreatCycle, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, type ThreatCycle } from "../combat/intentScheduler";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
 
@@ -246,6 +246,10 @@ export const useBattleStore = create<Store>((set, get) => {
     if (g !== runGen) return;
     if (await finishIfNeeded(g)) return;
     const nxt = advanceToNext(get().battle);
+    if (TACTICAL_VNEXT_ENABLED) {
+      threatCycle = pruneInvalidThreats(threatCycle, nxt.state);
+      set({ threats: threatCycle.pending.map(t => t.plan) });
+    }
     set({ battle: nxt.state, queue: refreshQueue(nxt.state) });
     await playEvents(nxt.events, g);
     if (g !== runGen) return;
@@ -340,6 +344,10 @@ export const useBattleStore = create<Store>((set, get) => {
       await wait(900);
       if (g !== runGen) return;
       set({ banner: null });
+    }
+    if (TACTICAL_VNEXT_ENABLED) {
+      threatCycle = pruneInvalidThreats(threatCycle, get().battle);
+      set({ threats: threatCycle.pending.map(t => t.plan) });
     }
     if (await finishIfNeeded(g)) return;
     await continueLoop(g);
