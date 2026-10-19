@@ -1,0 +1,27 @@
+name: Tactical VNext Step 0 baseline
+on:
+  pull_request:
+    paths:
+      - "tools/verify_tactical_vnext_step0_baseline.mjs"
+      - "tools/simulate_tactical_vnext_step0_legacy.mjs"
+      - "tactical-ops-src/data/operations.ts"
+      - "tactical-ops-src/data/missionContracts.ts"
+      - "tactical-ops-src/combat/types.ts"
+      - ".github/workflows/tactical-vnext-step0-baseline.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_vnext_step0_baseline.mjs
+      - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
+      - run: node tools/verify_tactical_ops_vnext_contract.mjs
+      - run: node tools/verify_tactical_ops_vnext_scheduler.mjs
+      - run: npm run build:tactical-ops
