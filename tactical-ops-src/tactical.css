@@ -4089,3 +4089,11 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-field > .t-status .t-chips { display: none; }
   #tacticalOpsRoot .t-field > .t-status .t-status-main { min-width: 0; }
 }
+
+/* Battlefield VNext preview: preserve tap targets without obscuring adjacent lanes. */
+#tacticalOpsRoot .battlefield-vnext-preview .t-token { width: 10.5%; min-width: 34px; max-width: 104px; }
+#tacticalOpsRoot .battlefield-vnext-preview .t-token.alpha { width: 11.7%; min-width: 38px; max-width: 116px; }
+#tacticalOpsRoot .battlefield-vnext-preview .t-token.leader { width: 12.4%; min-width: 40px; max-width: 124px; }
+#tacticalOpsRoot .battlefield-vnext-preview .t-token.hound { width: 11%; min-width: 36px; max-width: 110px; }
+#tacticalOpsRoot .battlefield-vnext-preview .t-cell { width: 36px; min-width: 36px; height: 36px; min-height: 36px; }
+#tacticalOpsRoot .battlefield-vnext-preview .t-grid i { width: 7px; height: 7px; }
