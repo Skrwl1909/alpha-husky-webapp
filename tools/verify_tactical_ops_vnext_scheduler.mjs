@@ -34,5 +34,19 @@ try {
   assert.equal(canceled.cycle.pending.length,0);
   assert.equal(canceled.cycle.ledger.at(-1).reason,"SOURCE_DEFEATED");
   assert.equal(canceled.state,defeated);
+  const plan = cycle.pending[0].plan;
+  if (plan.targetUnitId) {
+    const gone = { ...state, unitTurn:3, units:state.units.map(u=>u.id===plan.targetUnitId?{...u,defeated:true,hp:0}:u) };
+    const goneResult = scheduler.resolveEnemyThreat(cycle,gone);
+    assert.equal(goneResult.cycle.pending.length,0,"eliminated target cancels intent");
+    assert.equal(goneResult.cycle.ledger.at(-1).reason,"TARGET_GONE");
+    const target = state.units.find(u=>u.id===plan.targetUnitId);
+    const movedCell = {c:target.c===0?1:0,r:target.r};
+    const moved = {...state,unitTurn:3,units:state.units.map(u=>u.id===target.id?{...u,...movedCell}:u)};
+    const movedResult = scheduler.resolveEnemyThreat(cycle,moved);
+    assert.equal(movedResult.cycle.pending.length,0,"moved target cancels locked intent");
+    assert.equal(movedResult.cycle.ledger.at(-1).reason,"TARGET_MOVED");
+  }
+  assert.equal(scheduler.emptyThreatCycle().pending.length,0,"new battle starts without stale intents");
   console.log("VNEXT_SCHEDULER_CONTRACT_PASS: announcement, locked enemy, reaction delay, defeat counter, no live enable");
 } finally { await server.close(); }
