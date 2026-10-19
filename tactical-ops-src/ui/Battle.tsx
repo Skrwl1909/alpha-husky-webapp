@@ -145,6 +145,7 @@ function Token({
           <i /><i /><i /><i />
         </span>
       ) : null}
+      {unit.archetype && !unit.defeated ? <span className={`t-enemy-archetype t-archetype-${unit.archetype.toLowerCase()}`} aria-label={`Enemy class: ${unit.archetype}`}>{unit.archetype}</span> : null}
       {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
@@ -496,7 +497,7 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
-          {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: 40 }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
+          {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
             return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
           }) : null}
@@ -512,7 +513,7 @@ export function BattleScreen() {
             const pos = fieldPercent(reinforcement.spawn.c, reinforcement.spawn.r);
             return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>INBOUND</span><small>HOUND</small></div>;
           })() : null}
-          {Array.from({ length: 40 }, (_, i) => {
+          {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => {
             const c = i % GRID_COLS;
             const r = Math.floor(i / GRID_COLS);
             const key = cellKey(c, r);
