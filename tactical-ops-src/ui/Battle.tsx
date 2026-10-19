@@ -12,6 +12,7 @@ import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../comba
 import { OPERATION } from "../data/units";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
+import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
@@ -126,9 +127,9 @@ function Token({
     attacking ? "attacking" : "",
     signalCarrier ? "trace-carrier" : "",
     unit.role === "leader" ? "boss-target" : "",
-    `depth-${Math.max(0, Math.min(4, unit.r))}`,
+    `depth-${Math.max(0, Math.min(4, Math.floor(unit.r * 4 / (GRID_ROWS - 1))))}`,
     unit.c <= 1 ? "edge-left" : "",
-    unit.c >= 6 ? "edge-right" : "",
+    unit.c >= GRID_COLS - 2 ? "edge-right" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -450,7 +451,7 @@ export function BattleScreen() {
 
   return (
     <div
-      className={`t-battle${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
+      className={`t-battle${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-impact-kind={impactPresentation?.effectClass || "damage"}
     >
       <header className="t-top">
@@ -488,14 +489,14 @@ export function BattleScreen() {
           <div className="t-field-grade" />
           <div className="t-vignette" />
           <div className="t-grid" aria-hidden="true">
-            {Array.from({ length: 40 }, (_, i) => {
-              const c = i % 8;
-              const r = Math.floor(i / 8);
+            {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => {
+              const c = i % GRID_COLS;
+              const r = Math.floor(i / GRID_COLS);
               const pos = fieldPercent(c, r);
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
-          {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: 40 }, (_, i) => ({ c: i % 8, r: Math.floor(i / 8) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
+          {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: 40 }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
             return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
           }) : null}
@@ -512,8 +513,8 @@ export function BattleScreen() {
             return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>INBOUND</span><small>HOUND</small></div>;
           })() : null}
           {Array.from({ length: 40 }, (_, i) => {
-            const c = i % 8;
-            const r = Math.floor(i / 8);
+            const c = i % GRID_COLS;
+            const r = Math.floor(i / GRID_COLS);
             const key = cellKey(c, r);
             if (!moves.has(key)) return null;
             const pos = fieldPercent(c, r);

@@ -67,9 +67,9 @@ export function canOccupy(units: CombatUnit[], c: number, r: number, ignoreId?: 
 }
 
 export function fieldPercent(c: number, r: number): { x: number; y: number } {
-  const n = r / 4;
+  const n = r / (GRID_ROWS - 1);
   const y = 26 + n * 52;
   const half = 34 + n * 8;
-  const a = c / 7;
+  const a = c / (GRID_COLS - 1);
   return { x: 50 - half + half * 2 * a, y };
 }

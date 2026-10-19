@@ -1,5 +1,6 @@
-export const GRID_COLS = 8;
-export const GRID_ROWS = 5;
+export const BATTLEFIELD_VNEXT_PREVIEW = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("tacticalBattlefieldVNext") === "1";
+export const GRID_COLS = BATTLEFIELD_VNEXT_PREVIEW ? 10 : 8;
+export const GRID_ROWS = BATTLEFIELD_VNEXT_PREVIEW ? 7 : 5;
 export const METER_MAX = 100;
 export const DEF_CURVE = 50;
 
