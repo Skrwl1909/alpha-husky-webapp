@@ -4173,3 +4173,32 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 @media (max-width: 620px) {
   #tacticalOpsRoot .t-threat-warning { top: clamp(108px, 15%, 154px); }
 }
+
+/* Tactical threat brief: a dedicated readable layer between the battlefield and dock. */
+#tacticalOpsRoot .t-threat-brief {
+  position: relative;
+  z-index: 30;
+  box-sizing: border-box;
+  width: calc(100% - 24px);
+  max-width: 560px;
+  margin: 0 auto 6px;
+  padding: 9px 12px 10px;
+  border: 1px solid rgba(244, 102, 98, .58);
+  border-left: 3px solid #ff7771;
+  border-radius: 10px;
+  background: linear-gradient(110deg, rgba(34, 12, 23, .98), rgba(14, 23, 38, .98));
+  box-shadow: 0 5px 20px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.07);
+  color: #fff0ec;
+  pointer-events: none;
+}
+#tacticalOpsRoot .t-threat-brief-head { display: flex; align-items: center; gap: 7px; font-size: 10px; line-height: 1.25; font-weight: 850; letter-spacing: .13em; }
+#tacticalOpsRoot .t-threat-brief-pip { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ff7771; box-shadow: 0 0 8px #ff7771; }
+#tacticalOpsRoot .t-threat-brief-head small { margin-left: auto; color: #ffb0a8; font-size: 9px; font-weight: 700; letter-spacing: .06em; }
+#tacticalOpsRoot .t-threat-brief-detail { margin-top: 5px; font-size: 12px; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
+#tacticalOpsRoot .t-threat-brief-action { margin-top: 6px; color: #b6e7f5; font-size: 10px; font-weight: 750; line-height: 1.3; letter-spacing: .06em; }
+#tacticalOpsRoot .t-threat-brief-action span { color: #7395a5; padding: 0 3px; }
+@media (max-width: 620px) {
+  #tacticalOpsRoot .t-threat-brief { width: calc(100% - 16px); padding: 8px 10px; margin-bottom: 4px; }
+  #tacticalOpsRoot .t-threat-brief-detail { font-size: 11px; }
+  #tacticalOpsRoot .t-threat-brief-action { font-size: 9px; }
+}

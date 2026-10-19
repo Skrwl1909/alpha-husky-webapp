@@ -502,9 +502,6 @@ export function BattleScreen() {
             const pos = fieldPercent(cell.c, cell.r);
             return <div key={threat.id + ":" + i} className="t-threat-tile" style={{ left: pos.x + "%", top: pos.y + "%" }} aria-hidden="true" />;
           }))}
-          {threats.length ? <div className="t-threat-warning" role="status" aria-live="polite">
-            {threats.map(threat => <span key={threat.id}><strong>RED TILES = INCOMING {threat.kind}</strong> · {threat.predictedEffect} · Enemy attacks on its next turn. Move the targeted unit off red, interrupt the enemy, or guard.</span>)}
-          </div> : null}
           {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
             return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
@@ -579,6 +576,13 @@ export function BattleScreen() {
           <ObjectiveChip />
         </div>
       </div>
+      {threats.length > 0 ? (
+        <aside className="t-threat-brief" role="status" aria-live="polite" aria-label="Incoming enemy attack">
+          <div className="t-threat-brief-head"><span className="t-threat-brief-pip" aria-hidden="true" /> INCOMING ATTACK <small>RED = DANGER</small></div>
+          <div className="t-threat-brief-detail">{threats.length === 1 ? threats[0].predictedEffect : `${threats.length} ENEMY ATTACKS LOCKED`}</div>
+          <div className="t-threat-brief-action">MOVE OFF RED <span>·</span> INTERRUPT <span>·</span> GUARD</div>
+        </aside>
+      ) : null}
       {banner ? (
         <div className="t-banner">
           <span>{banner}</span>
