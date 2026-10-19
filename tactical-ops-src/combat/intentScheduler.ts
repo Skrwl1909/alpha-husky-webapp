@@ -1,5 +1,5 @@
 /** Shared, opt-in tactical reaction scheduler. No backend writes or live runtime changes. */
-import type { AiAction, BattleState, Cell } from "./types";
+import type { AiAction, BattleEvent, BattleState, Cell } from "./types";
 import { chooseAiAction, aiUsesLegalRules } from "./ai";
 import { getSkill } from "../data/skills";
 import { announceIntent, adjudicateIntent, confirmExecutedIntent, type IntentPlan, type TacticalLedgerEvent, type ThreatKind } from "./intentContract";
@@ -81,7 +81,7 @@ export function queueEnemyThreat(cycle: ThreatCycle, state: BattleState): Threat
 }
 
 /** Execute only when the locked enemy gets a legal turn again. No silent retarget. */
-export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cycle: ThreatCycle; state: BattleState } {
+export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cycle: ThreatCycle; state: BattleState; events?: BattleEvent[] } {
   const index = cycle.pending.findIndex(t => t.plan.enemyId === state.activeId);
   if (index < 0) return { cycle, state };
   const queued = cycle.pending[index];
@@ -106,6 +106,7 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
   const executed = applied.state !== before && applied.events.some(e => e.type === "damage" || e.type === "status" || e.type === "move" || e.type === "heal");
   return {
     state: applied.state,
+    events: applied.events,
     cycle: {
       ...cycle, pending, reactionObserved,
       ledger: [...cycle.ledger, ...(executed
