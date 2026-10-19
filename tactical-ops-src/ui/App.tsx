@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { firstSession, type FirstResultReceipt } from "../host/firstSession";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import { useBattleStore } from "../store/battleStore";
+import { BATTLEFIELD_LAB_KEY, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
 import { loadMuted, setMuted, unlockAudio } from "../audio";
 import { OPERATION } from "../data/units";
 import { SKILLS } from "../data/skills";
@@ -288,6 +289,33 @@ function WarTable() {
             {loading ? "SYNCING…" : "REFRESH"}
           </button>
         </header>
+
+        <section className="t-panel t-wt-battlefield-lab" aria-label="Battlefield Lab testing mode">
+          <div>
+            <span className="t-kicker">BATTLEFIELD LAB · DEVICE TEST</span>
+            <strong>{BATTLEFIELD_VNEXT_PREVIEW ? "10 × 7 · EXPERIMENTAL" : "8 × 5 · CURRENT"}</strong>
+            <p>Compare real missions with your signed-in Alpha account. This setting changes only the battlefield on this device. It does not reset or replace your account.</p>
+          </div>
+          <button type="button" className="t-btn" aria-label={BATTLEFIELD_VNEXT_PREVIEW ? "Switch to current 8 by 5 battlefield" : "Switch to experimental 10 by 7 battlefield"} onClick={() => {
+            try {
+              if (BATTLEFIELD_VNEXT_PREVIEW) {
+                window.localStorage.removeItem(BATTLEFIELD_LAB_KEY);
+                // Also remove a legacy URL preview override, if present.
+                const url = new URL(window.location.href);
+                if (url.searchParams.has("tacticalBattlefieldVNext")) {
+                  url.searchParams.delete("tacticalBattlefieldVNext");
+                  window.location.replace(url.toString());
+                  return;
+                }
+              } else {
+                window.localStorage.setItem(BATTLEFIELD_LAB_KEY, "10x7");
+              }
+              window.location.reload();
+            } catch (_) { window.alert("Could not save the test mode on this device."); }
+          }}>
+            {BATTLEFIELD_VNEXT_PREVIEW ? "USE 8 × 5" : "TEST 10 × 7"}
+          </button>
+        </section>
 
         {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
 
