@@ -21,12 +21,12 @@ export interface IntentPlan {
   kind: ThreatKind;
   phase: IntentPhase;
   targetUnitId: string | null;
-  targetTile: Cell | null;
-  impactTiles: Cell[];
+  targetTile: Readonly<Cell> | null;
+  impactTiles: ReadonlyArray<Readonly<Cell>>;
   predictedEffect: string;
   warnsOnUnitTurn: number;
   resolvesOnUnitTurn: number;
-  responses: CounterCategory[];
+  responses: ReadonlyArray<CounterCategory>;
   fallbackPolicy: FallbackPolicy;
 }
 
@@ -83,14 +83,14 @@ export function announceIntent(
     // Locked unit and tile together: no silent target change or post-hoc location change.
     if (draft.targetTile && !sameTile(target, draft.targetTile)) throw new Error("intent_target_tile_mismatch");
   }
-  const plan: IntentPlan = {
+  const plan: IntentPlan = Object.freeze({
     ...draft,
-    targetTile: draft.targetTile ? { ...draft.targetTile } : null,
-    impactTiles: draft.impactTiles.map((cell) => ({ ...cell })),
-    responses: [...draft.responses],
+    targetTile: draft.targetTile ? Object.freeze({ ...draft.targetTile }) : null,
+    impactTiles: Object.freeze(draft.impactTiles.map((cell) => Object.freeze({ ...cell }))),
+    responses: Object.freeze([...draft.responses]),
     phase: "WINDUP",
     rulesetVersion: TACTICAL_VNEXT_RULESET,
-  };
+  });
   return { plan, event: { type: "threat_announced", intentId: plan.id, enemyId: plan.enemyId, unitTurn: state.unitTurn } };
 }
 
@@ -126,7 +126,7 @@ export function adjudicateIntent(
   }
   if (state.unitTurn < plan.resolvesOnUnitTurn) return { status: "WAIT", plan, events: [] };
   if (plan.phase === "COMMIT") throw new Error("intent_already_committed");
-  const committed = { ...plan, phase: "COMMIT" as const };
+  const committed = Object.freeze({ ...plan, phase: "COMMIT" as const });
   return { status: "COMMIT", plan: committed, events: [
     { type: "threat_committed", intentId: plan.id, unitTurn: state.unitTurn },
   ] };
@@ -154,7 +154,7 @@ export function parseRunRulesContract(raw: unknown): RunRulesContract | null {
         .every((k) => Number.isSafeInteger(x[k]) && (x[k] as number) >= 1)) {
     throw new Error("unsupported_run_rules_contract");
   }
-  return x as unknown as RunRulesContract;
+  return Object.freeze({ ...x }) as unknown as RunRulesContract;
 }
 
 /** Read-only flag. A future rollout must check server capability and bundle version as well. */
