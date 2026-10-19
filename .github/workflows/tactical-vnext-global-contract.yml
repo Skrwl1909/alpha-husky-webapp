@@ -1,0 +1,36 @@
+name: Tactical VNext global contract
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/combat/intentContract.ts"
+      - "tactical-ops-src/data/missionContracts.ts"
+      - "tools/verify_tactical_ops_vnext_contract.mjs"
+      - "docs/TACTICAL_VNEXT_GLOBAL_RULES_CONTRACT_2026-10-19.md"
+      - ".github/workflows/tactical-vnext-global-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: Global VNext coverage + deterministic intent invariants
+        run: node tools/verify_tactical_ops_vnext_contract.mjs
+      - name: Legacy real-unit and campaign regressions
+        run: |
+          node tools/verify_tactical_ops_pr1b.mjs
+          node tools/verify_tactical_ops_dead_relay_squad.mjs
+          node tools/verify_tactical_ops_campaign_discovery.mjs
+          node tools/verify_tactical_ops_ios_field_hud.mjs
+      - name: Validate production bundle can still build
+        run: npm run build:tactical-ops
+      - name: Check bundle syntax and existing failure records
+        run: |
+          node --check js/tactical_ops.js
+          node tools/verify_tactical_ops_failure_recording.mjs
