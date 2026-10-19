@@ -61,7 +61,7 @@
     "chain": {
       "id": "chain",
       "name": "The Chain",
-      "desc": "The primal, unforgiving wilderness of code where everything begins.",
+      "desc": "The post-rug Chain: a frozen world scarred by broken promises, damaged relays, and lost trust.",
       "unlock": { "type": "free" },
       "lockedReason": null
     },
@@ -168,7 +168,7 @@
       "x": 75,
       "y": 30,
       "icon": "images/map/building/blood_moon_tower.png",
-      "desc": "A raid zone tied to the legendary Whisper. The tower listens back.",
+      "desc": "A raid zone where Blood-Moon spikes warp a lunar relay tower. The tower listens back.",
       "lore": {
         "identity": "A lunar relay tower warped by repeated Blood-Moon spikes.",
         "stakes": "When it surges, nearby fronts destabilize and raid pressure escalates.",
@@ -643,7 +643,7 @@
       {
         "id": "chain_intro_01",
         "title": "Static Log — The Chain",
-        "text": "The primal wilderness of code. Every path starts with a mistake.",
+        "text": "Broken promises scarred the Chain. The Pack is rebuilding trust, one kept word at a time.",
         "unlock": { "type": "free" }
       }
     ],
