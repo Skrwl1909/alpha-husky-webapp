@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - "tools/verify_tactical_vnext_step0_baseline.mjs"
+      - "tools/simulate_tactical_vnext_step0_legacy.mjs"
       - "tactical-ops-src/data/operations.ts"
       - "tactical-ops-src/data/missionContracts.ts"
       - "tactical-ops-src/combat/types.ts"
@@ -20,6 +21,7 @@ jobs:
           node-version: "22"
       - run: npm install --no-audit --no-fund
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
+      - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/verify_tactical_ops_vnext_contract.mjs
       - run: node tools/verify_tactical_ops_vnext_scheduler.mjs
       - run: npm run build:tactical-ops
