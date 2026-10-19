@@ -292,6 +292,11 @@ export const useBattleStore = create<Store>((set, get) => {
           if (g === runGen) await continueLoop(g);
           return;
         }
+        const waiting = trySkip(st);
+        set({ battle: waiting.state, queue: refreshQueue(waiting.state), ticker: "THREAT WAITING" });
+        await playEvents(waiting.events, g);
+        if (g === runGen) await continueLoop(g);
+        return;
       } else {
         const nextCycle = queueEnemyThreat(threatCycle, st);
         if (nextCycle.pending.length > threatCycle.pending.length) {
