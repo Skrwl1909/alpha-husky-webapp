@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - "tactical-ops-src/combat/intentScheduler.ts"
+      - "tactical-ops-src/store/battleStore.ts"
+      - "tactical-ops-src/combat/intentContract.ts"
       - "tools/verify_tactical_ops_vnext_scheduler.mjs"
       - ".github/workflows/tactical-vnext-scheduler.yml"
   workflow_dispatch:
