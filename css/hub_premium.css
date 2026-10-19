@@ -1785,3 +1785,15 @@ body.ah-hub-open #ahDevFreshRoot .ah-devfresh-toggle{min-height:44px;}
 @media(max-width:360px){#hubBack.ah-hub-network-v2 .ahn-footer{gap:1px;padding-inline:3px;}#hubBack.ah-hub-network-v2 .ahn-footer-core{width:52px;min-width:52px;height:52px;min-height:52px;}}
 @media(prefers-reduced-motion:reduce){#hubBack.ah-hub-network-v2 .ahn-footer-core,#hubBack.ah-hub-network-v2 .ahn-footer-item{transition:none!important;}}
 html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-footer-core,html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-footer-item{transition:none!important;}
+
+
+/* Living Hub: restore the lightweight mechanical core rotation in Telegram and
+   standalone Android. Perf-lite continues to disable costly fullscreen FX,
+   but a single transform-only orbit remains affordable. Honor OS accessibility. */
+@media (prefers-reduced-motion: no-preference) {
+  html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core-rings,
+  body.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-core-rings {
+    animation: ahnOrbit 36s linear infinite !important;
+    will-change: transform;
+  }
+}
