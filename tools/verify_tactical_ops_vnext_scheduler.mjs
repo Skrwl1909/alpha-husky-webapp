@@ -20,6 +20,15 @@ try {
   assert.equal(cycle.pending[0].plan.enemyId,enemy.id);
   assert.equal(cycle.pending[0].plan.resolvesOnUnitTurn,3);
   assert.equal(scheduler.resolveEnemyThreat(cycle,state).cycle.pending.length,1,"cannot resolve before reaction window");
+  const nextTurn = { ...state, unitTurn:3 };
+  const pendingWithoutReaction = scheduler.resolveEnemyThreat(cycle,nextTurn);
+  assert.equal(pendingWithoutReaction.cycle.pending.length,1,"no enemy resolution without a real allied turn");
+  assert.equal(pendingWithoutReaction.state,nextTurn);
+  const ally = state.units.find(u=>u.team==="ally");
+  assert(ally);
+  const marked = scheduler.markAlliedReaction(cycle,{...state,activeId:ally.id,unitTurn:3});
+  assert.equal(marked.reactionObserved[cycle.pending[0].plan.id],true);
+  assert.equal(scheduler.markAlliedReaction(cycle,state).reactionObserved[cycle.pending[0].plan.id],undefined);
   const defeated = { ...state,unitTurn:3,units:state.units.map(u=>u.id===enemy.id?{...u,defeated:true,hp:0}:u) };
   const canceled=scheduler.resolveEnemyThreat(cycle,defeated);
   assert.equal(canceled.cycle.pending.length,0);
