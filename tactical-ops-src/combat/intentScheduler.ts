@@ -73,6 +73,7 @@ export function queueEnemyThreat(cycle: ThreatCycle, state: BattleState): Threat
   const queued = forecast(state, enemy.id, action, cycle.sequence + 1);
   if (!queued) return cycle;
   return {
+    ...cycle,
     sequence: cycle.sequence + 1,
     pending: [...cycle.pending, queued],
     ledger: [...cycle.ledger, { type: "threat_announced", intentId: queued.plan.id, enemyId: enemy.id, unitTurn: state.unitTurn }],
