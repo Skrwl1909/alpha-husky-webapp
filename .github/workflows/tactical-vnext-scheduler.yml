@@ -1,0 +1,23 @@
+name: Tactical VNext scheduler review
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/combat/intentScheduler.ts"
+      - "tools/verify_tactical_ops_vnext_scheduler.mjs"
+      - ".github/workflows/tactical-vnext-scheduler.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  scheduler:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_ops_vnext_contract.mjs
+      - run: node tools/verify_tactical_ops_vnext_scheduler.mjs
+      - run: node tools/verify_tactical_ops_pr1b.mjs
+      - run: npm run build:tactical-ops
