@@ -4154,3 +4154,22 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     white-space: nowrap;
   }
 }
+
+/* Intent clarity P0: danger text must never sit beneath status/objective cards. */
+#tacticalOpsRoot .t-threat-warning {
+  top: clamp(116px, 15%, 180px);
+  left: 12px;
+  right: 12px;
+  z-index: 24;
+}
+#tacticalOpsRoot .t-threat-warning span {
+  max-width: min(100%, 540px);
+  font-size: 11px;
+  line-height: 1.45;
+  padding: 9px 12px;
+  background: rgba(25, 7, 13, .97);
+}
+#tacticalOpsRoot .t-threat-warning strong { color: #fff; }
+@media (max-width: 620px) {
+  #tacticalOpsRoot .t-threat-warning { top: clamp(108px, 15%, 154px); }
+}
