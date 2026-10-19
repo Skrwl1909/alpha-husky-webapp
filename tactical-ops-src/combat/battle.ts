@@ -16,6 +16,7 @@ import { resetStatusSeq, STATUS_LABEL } from "./effects";
 import { consumeMeter, pickReadyId, tickUntilReady } from "./initiative";
 import { canOccupy, reachableCells } from "./movement";
 import { BATTLEFIELD_VNEXT_PREVIEW, GRID_COLS, GRID_ROWS } from "./types";
+import { identifyEnemyArchetype, archetypeUnitDef } from "./enemyArchetypes";
 import { scaleCell } from "./battlefieldTopology";
 const legacyGrid = { cols: 8, rows: 5 } as const;
 const previewGrid = { cols: 10, rows: 7 } as const;
@@ -43,12 +44,15 @@ function spawnUnit(
   identity?: PlayerIdentity | null,
   unitDef?: UnitDef,
 ): CombatUnit {
-  const def = unitDef || UNIT_DEFS[defId];
-  if (!def) throw new Error(`Unknown unit def ${defId}`);
+  const source = unitDef || UNIT_DEFS[defId];
+  if (!source) throw new Error(`Unknown unit def ${defId}`);
+  const archetype = BATTLEFIELD_VNEXT_PREVIEW ? identifyEnemyArchetype({ id, defId: source.defId, role: source.role, team: source.team }) : null;
+  const def = archetype ? archetypeUnitDef(source, archetype) : source;
   const cds: Record<string, number> = {};
   for (const sid of def.skillIds) cds[sid] = 0;
   const base: CombatUnit = {
     id,
+    ...(archetype ? { archetype } : {}),
     defId: def.defId,
     name: def.name,
     team: def.team,
