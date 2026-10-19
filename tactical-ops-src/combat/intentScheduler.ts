@@ -1,5 +1,5 @@
 /** Shared, opt-in tactical reaction scheduler. No backend writes or live runtime changes. */
-import type { AiAction, BattleEvent, BattleState, Cell } from "./types";
+import { GRID_COLS, GRID_ROWS, type AiAction, type BattleEvent, type BattleState, type Cell } from "./types";
 import { chooseAiAction, aiUsesLegalRules } from "./ai";
 import { getSkill } from "../data/skills";
 import { announceIntent, adjudicateIntent, confirmExecutedIntent, type IntentPlan, type TacticalLedgerEvent, type ThreatKind } from "./intentContract";
@@ -49,13 +49,19 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
   if (!enemy || enemy.defeated || enemy.team !== "enemy") return null;
   const skill = plannedSkill(action);
   const definition = skill ? getSkill(skill.skillId) : null;
+  // Purely defensive enemy actions do not threaten allied tiles and resolve normally.
+  if (definition && (definition.targetType === "SELF" || definition.targetType === "ALLY_AOE")) return null;
   const target = skill?.targetId ? state.units.find(u => u.id === skill.targetId) : null;
   const anchor = target ? tile(target) : skill?.cell ? tile(skill.cell) : action.type === "move" ? tile(action.to) : tile(enemy);
-  const kind: ThreatKind = action.type === "move" && !skill ? "CHARGE" :
+  const impactTiles: Cell[] = definition && ["AREA_RADIUS", "ENEMY_AOE"].includes(definition.targetType)
+    ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) }))
+      .filter(c => Math.max(Math.abs(c.c-anchor.c),Math.abs(c.r-anchor.r)) <= definition.radius)
+    : [anchor];
+  const kind: ThreatKind = definition?.id.includes("interference") || definition?.id.includes("intimidate") ? "JAM" : action.type === "move" && !skill ? "CHARGE" :
     definition?.targetType === "AREA_RADIUS" || definition?.targetType === "ENEMY_AOE" ? "AREA" : "ATTACK";
   const { plan } = announceIntent({
     id: `threat:${state.unitTurn}:${enemyId}:${sequence}`, enemyId, kind,
-    targetUnitId: target?.id ?? null, targetTile: anchor, impactTiles: [anchor],
+    targetUnitId: target?.id ?? null, targetTile: anchor, impactTiles,
     predictedEffect: definition ? definition.name : "Enemy advances to a locked tile",
     warnsOnUnitTurn: state.unitTurn, resolvesOnUnitTurn: state.unitTurn + 1,
     responses: ["KILL", "DISRUPT", "REPOSITION", "BLOCK", "PROTECT", "TRADE"],
