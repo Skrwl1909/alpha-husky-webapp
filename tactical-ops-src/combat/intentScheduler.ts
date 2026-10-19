@@ -96,7 +96,7 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
   };
   // Never convert an invalidated locked action into an apparently successful skip.
   if (!aiUsesLegalRules(state, queued.action)) {
-    return { state, cycle: { ...cycle, pending, ledger: [...cycle.ledger, {
+    return { state, cycle: { ...cycle, pending, reactionObserved, ledger: [...cycle.ledger, {
       type: "threat_countered", intentId: queued.plan.id, reason: "INVALIDATED", unitTurn: state.unitTurn,
     }] } };
   }
