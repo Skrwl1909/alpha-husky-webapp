@@ -503,7 +503,7 @@ export function BattleScreen() {
             return <div key={threat.id + ":" + i} className="t-threat-tile" style={{ left: pos.x + "%", top: pos.y + "%" }} aria-hidden="true" />;
           }))}
           {threats.length ? <div className="t-threat-warning" role="status" aria-live="polite">
-            {threats.map(threat => <span key={threat.id}>INCOMING {threat.kind} · {threat.predictedEffect} · MOVE / INTERRUPT / GUARD</span>)}
+            {threats.map(threat => <span key={threat.id}><strong>RED TILES = INCOMING {threat.kind}</strong> · {threat.predictedEffect} · Enemy attacks on its next turn. Move the targeted unit off red, interrupt the enemy, or guard.</span>)}
           </div> : null}
           {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
