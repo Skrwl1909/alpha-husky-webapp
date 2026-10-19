@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Preview mode smoke: run with simulated browser URL before SSR module imports. */
 import assert from "node:assert/strict";
-globalThis.window={location:{search:"?tacticalBattlefieldVNext=1"}};
+globalThis.window={location:{search:""},localStorage:{getItem:(key)=>key==="ah_tactical_battlefield_lab_v1"?"10x7":null}};
 const {createServer}=await import("vite");
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 try{
@@ -10,7 +10,7 @@ try{
  vite.ssrLoadModule("/tactical-ops-src/data/operations.ts"),
  vite.ssrLoadModule("/tactical-ops-src/combat/battle.ts"),
  vite.ssrLoadModule("/tactical-ops-src/combat/movement.ts")]);
- assert.equal(types.GRID_COLS,10);assert.equal(types.GRID_ROWS,7);
+ assert.equal(types.GRID_COLS,10);assert.equal(types.GRID_ROWS,7);assert.equal(types.BATTLEFIELD_VNEXT_PREVIEW,true);
  for(const m of Object.values(ops.MISSION_DEFS)){
   const rules=ops.missionBattleRules(m);
   const spawns=m.spawns??[];
