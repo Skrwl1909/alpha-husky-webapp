@@ -4106,3 +4106,37 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 #tacticalOpsRoot .t-wt-battlefield-lab .t-btn{min-height:44px;min-width:112px;flex-shrink:0;}
 #tacticalOpsRoot .t-battle-lab-tag{color:#86e9ff;font-weight:800;letter-spacing:.05em;}
 @media(max-width:520px){#tacticalOpsRoot .t-wt-battlefield-lab{flex-direction:column;align-items:stretch;}#tacticalOpsRoot .t-wt-battlefield-lab .t-btn{width:100%;}}
+
+
+/* Battlefield VNext WebApp: keep the tactical HUD within the safe visible viewport.
+   Geometry remains 10x7; the HUD must not consume the battlefield's usable lanes. */
+@media (max-width: 620px) {
+  #tacticalOpsRoot .t-top {
+    box-sizing: border-box;
+    min-height: calc(44px + env(safe-area-inset-top, 0px));
+    max-height: none;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    overflow: hidden;
+  }
+  #tacticalOpsRoot .t-top .t-brand h1 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  #tacticalOpsRoot .t-field > .t-status,
+  #tacticalOpsRoot .t-field > .t-obj-chip {
+    top: max(8px, env(safe-area-inset-top, 0px));
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: calc(50% - 12px);
+  }
+  #tacticalOpsRoot .t-dock {
+    box-sizing: border-box;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  #tacticalOpsRoot .t-act .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
