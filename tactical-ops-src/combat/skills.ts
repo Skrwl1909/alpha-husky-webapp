@@ -4,9 +4,10 @@ import { applyStatus, effectiveAtk, incomingDamageMultiplier, STATUS_LABEL } fro
 import { computeHeal, mitigatedDamage } from "./damage";
 import { resolveSkillTargets, skillNeedsTargetPick, validTargetIds } from "./targeting";
 import { getSkill } from "../data/skills";
+import { resolveGrowthSkill } from "../data/playerGrowth";
 
 export function unitSkills(unit: CombatUnit): SkillDef[] {
-  return unit.skillIds.map(getSkill);
+  return unit.skillIds.map((id) => resolveGrowthSkill(getSkill(id), unit.growth));
 }
 
 export function cooldownLeft(unit: CombatUnit, skillId: string): number {
@@ -34,7 +35,7 @@ export function applySkill(
   if (!caster.skillIds.includes(skillId)) {
     return { state, events: [], ok: false, reason: "unknown-skill" };
   }
-  const skill = getSkill(skillId);
+  const skill = resolveGrowthSkill(getSkill(skillId), caster.growth);
   if (!skillReady(caster, skill)) {
     return { state, events: [], ok: false, reason: "cooldown" };
   }
