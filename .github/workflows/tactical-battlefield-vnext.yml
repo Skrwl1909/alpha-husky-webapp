@@ -1,0 +1,25 @@
+name: Tactical Battlefield VNext
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/combat/**"
+      - "tactical-ops-src/ui/Battle.tsx"
+      - "tools/verify_tactical_battlefield_preview.mjs"
+      - ".github/workflows/tactical-battlefield-vnext.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  battlefield:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_battlefield_preview.mjs
+      - run: node tools/verify_tactical_vnext_step0_baseline.mjs
+      - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
+      - run: node tools/benchmark_tactical_vnext_grids.mjs
+      - run: npm run build:tactical-ops
