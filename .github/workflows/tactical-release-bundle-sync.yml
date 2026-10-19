@@ -29,8 +29,8 @@ jobs:
           const b=readFileSync('js/tactical_ops.js','utf8');
           const l=readFileSync('js/boot_loaders.js','utf8');
           const v=readFileSync('tactical-ops-src/version.ts','utf8');
-          const bundleVersion=v.match(/VERSION\\s*=\\s*"([^"]+)"/)?.[1];
-          const cacheKey=v.match(/CACHE_KEY\\s*=\\s*"([^"]+)"/)?.[1];
+          const bundleVersion=v.match(/VERSION\s*=\s*"([^"]+)"/)?.[1];
+          const cacheKey=v.match(/CACHE_KEY\s*=\s*"([^"]+)"/)?.[1];
           assert(bundleVersion && cacheKey, 'missing canonical Tactical Ops version');
           assert(b.includes(bundleVersion), 'bundle does not match source version');
           assert(b.includes('max-height: 92px'), 'missing merged mobile HUD fix');
