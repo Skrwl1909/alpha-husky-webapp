@@ -281,6 +281,8 @@ export const useBattleStore = create<Store>((set, get) => {
         threatCycle = resolved.cycle;
         if (resolved.state !== st) {
           set({ battle: resolved.state, queue: refreshQueue(resolved.state) });
+          await playEvents(resolved.events ?? [], g);
+          if (g !== runGen) return;
           await wait(160);
           if (g === runGen) await continueLoop(g);
           return;
