@@ -88,6 +88,8 @@ export interface UnitDef {
 }
 
 export interface CombatUnit {
+  /** Immutable server-validated run loadout; never read from localStorage. */
+  growth?: import("../data/playerGrowth").HeroGrowth;
   archetype?: "BULWARK" | "MARKSMAN" | "DISRUPTOR" | "COURIER" | "SKIRMISHER" | "COMMANDER";
   recoverRange?: number;
   id: string;
