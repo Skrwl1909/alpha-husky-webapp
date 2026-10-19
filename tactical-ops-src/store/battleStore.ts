@@ -281,7 +281,8 @@ export const useBattleStore = create<Store>((set, get) => {
         threatCycle = resolved.cycle;
         if (resolved.state !== st) {
           set({ battle: resolved.state, queue: refreshQueue(resolved.state) });
-          await continueLoop(g);
+          await wait(160);
+          if (g === runGen) await continueLoop(g);
           return;
         }
         // Invalidated/countered threats consume the enemy's turn, never retarget.
