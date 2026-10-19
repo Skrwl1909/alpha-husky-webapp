@@ -15,7 +15,7 @@ import { BROKEN_SIGNAL_SPAWNS, UNIT_DEFS, type SpawnSpec } from "../data/units";
 import { resetStatusSeq, STATUS_LABEL } from "./effects";
 import { consumeMeter, pickReadyId, tickUntilReady } from "./initiative";
 import { canOccupy, reachableCells } from "./movement";
-import { BATTLEFIELD_VNEXT_PREVIEW } from "./types";
+import { BATTLEFIELD_VNEXT_PREVIEW, GRID_COLS, GRID_ROWS } from "./types";
 import { scaleCell } from "./battlefieldTopology";
 const legacyGrid = { cols: 8, rows: 5 } as const;
 const previewGrid = { cols: 10, rows: 7 } as const;
@@ -279,7 +279,7 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
   if (reinforced.outcome === "ongoing" && reinforcement && !reinforcement.spawned && reinforced.round >= reinforcement.triggerRound) {
     let entry = reinforcement.spawn;
     if (reinforced.directive?.reinforcement) {
-      const cells = Array.from({ length: 40 }, (_, i) => ({ c: i % 8, r: Math.floor(i / 8) }))
+      const cells = Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) }))
         .filter((cell) => canOccupy(reinforced.units, cell.c, cell.r))
         .sort((a, b) => (Math.abs(a.c - entry.c) + Math.abs(a.r - entry.r)) - (Math.abs(b.c - entry.c) + Math.abs(b.r - entry.r)));
       if (!cells.length) return { state: reinforced, events };
