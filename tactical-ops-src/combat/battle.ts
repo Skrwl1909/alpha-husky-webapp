@@ -15,6 +15,11 @@ import { BROKEN_SIGNAL_SPAWNS, UNIT_DEFS, type SpawnSpec } from "../data/units";
 import { resetStatusSeq, STATUS_LABEL } from "./effects";
 import { consumeMeter, pickReadyId, tickUntilReady } from "./initiative";
 import { canOccupy, reachableCells } from "./movement";
+import { BATTLEFIELD_VNEXT_PREVIEW } from "./types";
+import { scaleCell } from "./battlefieldTopology";
+const legacyGrid = { cols: 8, rows: 5 } as const;
+const previewGrid = { cols: 10, rows: 7 } as const;
+const previewPoint = (p: Cell): Cell => BATTLEFIELD_VNEXT_PREVIEW ? scaleCell(p, legacyGrid, previewGrid) : { ...p };
 import { living } from "./targeting";
 import { applySkill } from "./skills";
 import { chooseAiAction, aiUsesLegalRules } from "./ai";
@@ -88,7 +93,10 @@ export function createBattle(
   directive: MissionDirective | null = null,
 ): BattleState {
   resetStatusSeq();
-  const units = spawns.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef));
+  const placed = spawns.map(s => ({...s,...previewPoint(s)}));
+  const occupied = new Set<string>();
+  for(const s of placed){const key=s.c+","+s.r;if(occupied.has(key))throw new Error("Battlefield spawn collision at "+key);occupied.add(key);}
+  const units = placed.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef));
   return {
     units,
     activeId: null,
@@ -103,8 +111,8 @@ export function createBattle(
     healingActions: 0,
     hostilesEliminated: 0,
     results: null,
-    objective: objective ? structuredClone(objective) : null,
-    reinforcement: reinforcement ? { ...reinforcement, spawn: { ...reinforcement.spawn } } : null,
+    objective: objective ? (() => { const o = structuredClone(objective); if(o.type==="RECOVER" || o.type==="HOLD"){if(o.terminal)o.terminal=previewPoint(o.terminal);} if(o.type==="INTERCEPT")o.exit=previewPoint(o.exit); return o; })() : null,
+    reinforcement: reinforcement ? { ...reinforcement, spawn: { ...reinforcement.spawn, ...previewPoint(reinforcement.spawn) } } : null,
     signalCarrierId,
     directive: directive ? structuredClone(directive) : null,
     routingTraceAcquired: false,
