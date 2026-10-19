@@ -4106,3 +4106,12 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 #tacticalOpsRoot .t-wt-battlefield-lab .t-btn{min-height:44px;min-width:112px;flex-shrink:0;}
 #tacticalOpsRoot .t-battle-lab-tag{color:#86e9ff;font-weight:800;letter-spacing:.05em;}
 @media(max-width:520px){#tacticalOpsRoot .t-wt-battlefield-lab{flex-direction:column;align-items:stretch;}#tacticalOpsRoot .t-wt-battlefield-lab .t-btn{width:100%;}}
+
+/* Battlefield VNext intelligence: readable enemy silhouettes and role callouts. */
+#tacticalOpsRoot .t-enemy-archetype{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);z-index:12;pointer-events:none;padding:3px 5px;border-radius:4px;font-size:8px;font-weight:900;letter-spacing:.06em;line-height:1;white-space:nowrap;color:#fff5e5;border:1px solid rgba(255,174,100,.65);background:rgba(39,17,16,.88);box-shadow:0 0 10px rgba(214,86,54,.22);}
+#tacticalOpsRoot .t-archetype-courier{color:#d4fbff;border-color:#70d7e4;background:rgba(4,44,59,.88);}
+#tacticalOpsRoot .t-archetype-commander{color:#ffe9c6;border-color:#ffb56a;background:rgba(65,22,13,.93);}
+#tacticalOpsRoot .t-archetype-marksman{color:#f2d6ff;border-color:#bc8af6;background:rgba(39,17,56,.9);}
+#tacticalOpsRoot .t-archetype-disruptor{color:#ffdddc;border-color:#f17b82;background:rgba(53,9,25,.9);}
+#tacticalOpsRoot .t-archetype-bulwark{color:#d8edff;border-color:#80bfff;background:rgba(15,30,60,.92);}
+@media(max-width:500px){#tacticalOpsRoot .t-enemy-archetype{font-size:7px;letter-spacing:0;padding:2px 3px;}}
