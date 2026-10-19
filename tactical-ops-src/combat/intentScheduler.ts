@@ -1,6 +1,6 @@
 /** Shared, opt-in tactical reaction scheduler. No backend writes or live runtime changes. */
 import type { AiAction, BattleState, Cell } from "./types";
-import { chooseAiAction } from "./ai";
+import { chooseAiAction, aiUsesLegalRules } from "./ai";
 import { getSkill } from "../data/skills";
 import { announceIntent, adjudicateIntent, confirmExecutedIntent, type IntentPlan, type TacticalLedgerEvent, type ThreatKind } from "./intentContract";
 import { applyAi } from "./battle";
@@ -67,7 +67,12 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
     state,
     cycle: { ...cycle, pending, ledger: [...cycle.ledger, ...decision.events] },
   };
-  // This module is still experimental; engine action legality is checked by applyAi.
+  // Never convert an invalidated locked action into an apparently successful skip.
+  if (!aiUsesLegalRules(state, queued.action)) {
+    return { state, cycle: { ...cycle, pending, ledger: [...cycle.ledger, {
+      type: "threat_countered", intentId: queued.plan.id, reason: "INVALIDATED", unitTurn: state.unitTurn,
+    }] } };
+  }
   const before = state;
   const applied = applyAi(state, queued.action);
   const executed = applied.state !== before && applied.events.some(e => e.type === "damage" || e.type === "status" || e.type === "move" || e.type === "heal");
@@ -75,8 +80,9 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
     state: applied.state,
     cycle: {
       ...cycle, pending,
-      ledger: [...cycle.ledger, ...decision.events,
-        ...(executed ? confirmExecutedIntent(decision.plan, state.unitTurn, true) : [])],
+      ledger: [...cycle.ledger, ...(executed
+          ? [...decision.events, ...confirmExecutedIntent(decision.plan, state.unitTurn, true)]
+          : [{ type: "threat_countered" as const, intentId: queued.plan.id, reason: "INVALIDATED" as const, unitTurn: state.unitTurn }])],
     },
   };
 }
