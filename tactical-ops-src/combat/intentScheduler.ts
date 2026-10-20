@@ -19,7 +19,7 @@ export interface ThreatCycle {
   /** Interrupt has already resolved the enemy telegraph; its next activation must be consumed. */
   interruptedEnemyIds?: ReadonlyArray<string>;
 }
-export const emptyThreatCycle = (): ThreatCycle => ({ pending: [], ledger: [], sequence: 0, reactionObserved: {}, interruptedEnemyIds: [] });
+export const emptyThreatCycle = (): ThreatCycle => ({ pending: [], ledger: [], sequence: 0, reactionObserved: {} });
 
 function plannedSkill(action: AiAction): Extract<AiAction, {type:"skill"}> | null {
   return action.type === "skill" ? action : action.type === "move" && action.then?.type === "skill" ? action.then : null;
