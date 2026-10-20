@@ -1,14 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
-import { build } from "esbuild";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
-const dir = mkdtempSync(join(tmpdir(), "tactical-growth-"));
+import { createServer } from "vite";
+const server = await createServer({ configFile: false, server: { middlewareMode: true, hmr: false }, appType: "custom" });
 try {
-  const out = join(dir, "growth.mjs");
-  await build({ entryPoints: ["tactical-ops-src/data/playerGrowth.ts"], outfile: out, bundle: true, platform: "node", format: "esm" });
-  const { HERO_PATHS, HERO_SKILLS, UPGRADES, validateGrowthSnapshot, resolveGrowthSkill } = await import(out);
+  const { HERO_PATHS, HERO_SKILLS, UPGRADES, validateGrowthSnapshot, resolveGrowthSkill } = await server.ssrLoadModule("/tactical-ops-src/data/playerGrowth.ts");
   assert.equal(Object.keys(HERO_PATHS).length, 3);
   assert.equal(UPGRADES.length, 18);
   for (const [heroId, skills] of Object.entries(HERO_SKILLS)) {
@@ -29,4 +23,4 @@ try {
   assert.throws(() => validateGrowthSnapshot({ ...snapshot, heroes: [{ ...snapshot.heroes[0], discipline: "medic" }, ...snapshot.heroes.slice(1)] }));
   assert.throws(() => validateGrowthSnapshot({ ...snapshot, heroes: [snapshot.heroes[0], snapshot.heroes[0], snapshot.heroes[2]] }));
   console.log("PASS: growth trees, ranks, immutable skill resolution, strict snapshot validation");
-} finally { rmSync(dir, { recursive: true, force: true }); }
+} finally { await server.close(); }
