@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useBattleStore } from "../store/battleStore";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, type Discipline, type HeroId } from "../data/playerGrowth";
 import { getSkill } from "../data/skills";
+import { UNIT_DEFS } from "../data/units";
+import { portraitFallback } from "./PlayerIdentity";
 
 const NAMES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
 const PATH_COPY: Record<Discipline, string> = {
@@ -56,7 +58,7 @@ export function SkillbookPanel() {
           <nav className="t-growth-roster" aria-label="Choose squad member">
             {(Object.keys(NAMES) as HeroId[]).map(id =>
               <button className={id === heroId ? "is-selected" : ""} key={id} aria-pressed={id === heroId}
-                type="button" onClick={() => setHeroId(id)}>{NAMES[id]}</button>)}
+                type="button" onClick={() => setHeroId(id)}><img src={UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /><span>{NAMES[id]}</span></button>)}
           </nav>
           <div className="t-growth-copy"><strong>{NAMES[heroId]}</strong><span>{hero?.discipline ? "SPECIALIZATION LOCKED IN" : "CHOOSE FIRST SPECIALIZATION"}</span></div>
           <div className="t-growth-paths">
