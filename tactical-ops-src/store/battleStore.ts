@@ -35,7 +35,7 @@ import { missionForContext, missionBattleRules, missionSpawnsForSquad, type Miss
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, type IntentPlan } from "../combat/intentContract";
-import { emptyThreatCycle, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, type ThreatCycle } from "../combat/intentScheduler";
+import { emptyThreatCycle, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, interruptLockedThreatAfterControl, type ThreatCycle } from "../combat/intentScheduler";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
 
@@ -888,9 +888,18 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ busy: false, attackingId: null });
         return;
       }
-      set({ battle: res.state, queue: refreshQueue(res.state) });
+      const interrupt = TACTICAL_VNEXT_ENABLED
+        ? interruptLockedThreatAfterControl(threatCycle, battle, res.state, actor.id, id, selectedSkillId, res.events)
+        : { cycle: threatCycle, interrupted: false };
+      if (interrupt.interrupted) threatCycle = interrupt.cycle;
+      set({ battle: res.state, queue: refreshQueue(res.state),
+        ...(interrupt.interrupted ? { threats: threatCycle.pending.map(t => t.plan) } : {}) });
       void (async () => {
         await playEvents(res.events, g);
+        if (interrupt.interrupted) {
+          set({ ticker: "SIGNAL INTERRUPTED · ENEMY INTENT CANCELED" });
+          sfx("status");
+        }
         set({ attackingId: null });
         await afterPlayerAction(g);
       })();
