@@ -96,13 +96,13 @@ export function resolveGrowthSkill(base: SkillDef, hero: HeroGrowth | undefined)
   const skill: SkillDef = {
     ...base,
     maxRange: Math.max(base.minRange, base.maxRange + (upgrade?.rangeDelta ?? 0)),
-    cooldownMax: Math.max(0, base.cooldownMax + (upgrade?.cooldownDelta ?? 0)),
+    cooldownMax: Math.max(base.cooldownMax > 0 ? 1 : 0, base.cooldownMax + (upgrade?.cooldownDelta ?? 0)),
     effects: base.effects.map((effect) => effect.kind === "status" && upgrade?.durationDelta
       ? { ...effect, duration: (effect.duration ?? 1) + upgrade.durationDelta } : { ...effect }),
   };
   switch (hero.discipline) {
     case "vanguard":
-      if (canonicalId === "alpha-howl") skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
+      if (canonicalId === "alpha-howl" && !skill.effects.some(e => e.status === "GUARD")) skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
       break;
     case "howlkeeper":
       if (base.id === "alpha-howl") skill.radius += 1;
@@ -116,10 +116,10 @@ export function resolveGrowthSkill(base: SkillDef, hero: HeroGrowth | undefined)
       }
       break;
     case "sentinel":
-      if (canonicalId === "u03-pack") skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
+      if (canonicalId === "u03-pack" && !skill.effects.some(e => e.status === "GUARD")) skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
       break;
     case "medic":
-      if (canonicalId === "u03-mend") skill.cooldownMax = Math.max(0, skill.cooldownMax - 1);
+      if (canonicalId === "u03-mend") skill.cooldownMax = Math.max(1, skill.cooldownMax - 1);
       break;
   }
   return skill;
