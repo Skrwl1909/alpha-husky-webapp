@@ -1,0 +1,300 @@
+[
+  {
+    "file": "01_frame_main_panel.png",
+    "role": "Main large panel frame for hero cards / mission overview",
+    "source_bbox_px": [
+      26,
+      16,
+      1054,
+      425
+    ],
+    "saved_size_px": [
+      1044,
+      425
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 4.18,
+    "nine_slice_hint_ltrb_px": [
+      110,
+      85,
+      110,
+      85
+    ]
+  },
+  {
+    "file": "02_frame_sidebar_tall.png",
+    "role": "Tall sidebar / portrait frame",
+    "source_bbox_px": [
+      1079,
+      18,
+      1423,
+      695
+    ],
+    "saved_size_px": [
+      360,
+      693
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 5.31,
+    "nine_slice_hint_ltrb_px": [
+      72,
+      96,
+      72,
+      96
+    ]
+  },
+  {
+    "file": "03_frame_content_panel.png",
+    "role": "Medium content panel frame",
+    "source_bbox_px": [
+      25,
+      426,
+      688,
+      676
+    ],
+    "saved_size_px": [
+      679,
+      266
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 0.64,
+    "nine_slice_hint_ltrb_px": [
+      96,
+      72,
+      96,
+      72
+    ]
+  },
+  {
+    "file": "04_frame_square_panel.png",
+    "role": "Square panel / widget frame",
+    "source_bbox_px": [
+      729,
+      423,
+      1054,
+      678
+    ],
+    "saved_size_px": [
+      341,
+      271
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 0.93,
+    "nine_slice_hint_ltrb_px": [
+      64,
+      64,
+      64,
+      64
+    ]
+  },
+  {
+    "file": "05_bar_nav_segmented.png",
+    "role": "Segmented navigation or progression bar",
+    "source_bbox_px": [
+      21,
+      692,
+      1426,
+      787
+    ],
+    "saved_size_px": [
+      1421,
+      111
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 3.21
+  },
+  {
+    "file": "06_button_primary.png",
+    "role": "Primary bright button",
+    "source_bbox_px": [
+      30,
+      795,
+      514,
+      902
+    ],
+    "saved_size_px": [
+      500,
+      123
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 1.88,
+    "nine_slice_hint_ltrb_px": [
+      56,
+      24,
+      56,
+      24
+    ]
+  },
+  {
+    "file": "07_button_secondary.png",
+    "role": "Secondary dark button",
+    "source_bbox_px": [
+      543,
+      803,
+      950,
+      898
+    ],
+    "saved_size_px": [
+      423,
+      111
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 0.95,
+    "nine_slice_hint_ltrb_px": [
+      48,
+      24,
+      48,
+      24
+    ]
+  },
+  {
+    "file": "08_bar_status_orb.png",
+    "role": "Status/info bar with orb anchor",
+    "source_bbox_px": [
+      982,
+      806,
+      1416,
+      895
+    ],
+    "saved_size_px": [
+      448,
+      105
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 5.61,
+    "nine_slice_hint_ltrb_px": [
+      92,
+      24,
+      44,
+      24
+    ]
+  },
+  {
+    "file": "09_corner_left_small.png",
+    "role": "Small left corner trim",
+    "source_bbox_px": [
+      25,
+      912,
+      139,
+      1061
+    ],
+    "saved_size_px": [
+      130,
+      165
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 7.78
+  },
+  {
+    "file": "10_corner_left_inner.png",
+    "role": "Inner left corner trim",
+    "source_bbox_px": [
+      164,
+      910,
+      313,
+      1056
+    ],
+    "saved_size_px": [
+      165,
+      162
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 1.26
+  },
+  {
+    "file": "11_corner_left_large.png",
+    "role": "Large left corner trim",
+    "source_bbox_px": [
+      282,
+      914,
+      416,
+      1061
+    ],
+    "saved_size_px": [
+      150,
+      163
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 1.82
+  },
+  {
+    "file": "12_divider_long_top.png",
+    "role": "Long decorative divider top",
+    "source_bbox_px": [
+      459,
+      923,
+      1047,
+      965
+    ],
+    "saved_size_px": [
+      604,
+      58
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 1.52
+  },
+  {
+    "file": "13_badge_chevron.png",
+    "role": "Chevron badge",
+    "source_bbox_px": [
+      1090,
+      913,
+      1197,
+      988
+    ],
+    "saved_size_px": [
+      123,
+      91
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 3.23
+  },
+  {
+    "file": "14_badge_small_right.png",
+    "role": "Small right badge",
+    "source_bbox_px": [
+      1248,
+      919,
+      1415,
+      964
+    ],
+    "saved_size_px": [
+      180,
+      61
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 6.48
+  },
+  {
+    "file": "15_divider_long_bottom.png",
+    "role": "Long decorative divider bottom",
+    "source_bbox_px": [
+      473,
+      995,
+      1033,
+      1042
+    ],
+    "saved_size_px": [
+      576,
+      63
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 9.46
+  },
+  {
+    "file": "16_badge_wide_bottom.png",
+    "role": "Wide bottom badge / footer chip",
+    "source_bbox_px": [
+      1093,
+      987,
+      1410,
+      1053
+    ],
+    "saved_size_px": [
+      333,
+      82
+    ],
+    "transparent_background": true,
+    "transparent_pixel_pct": 17.4
+  }
+]
