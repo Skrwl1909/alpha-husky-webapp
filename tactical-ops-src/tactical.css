@@ -4369,3 +4369,57 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-command-nav button > strong { font-size: 9px; letter-spacing: .015em; }
   #tacticalOpsRoot .t-command-conditions-head { align-items: flex-start; flex-direction: column; }
 }
+
+/* Command Deck masterasset layer. Keep text and actual server data in HTML. */
+#tacticalOpsRoot .t-command-art-shell {
+  --t-command-assets: "/images/tactical_ops/presentation/command_deck/";
+  background-image: linear-gradient(180deg, rgba(3,10,17,.79), rgba(3,10,17,.88) 48%, rgba(3,10,17,.96)), url("/images/tactical_ops/presentation/command_deck/command_room.webp");
+  background-size: cover;
+  background-position: center center;
+  background-attachment: local;
+}
+#tacticalOpsRoot .t-command-art-shell.t-deployment {
+  background-image: linear-gradient(180deg, rgba(3,10,17,.85), rgba(3,10,17,.90) 42%, rgba(3,10,17,.97)), url("/images/tactical_ops/presentation/command_deck/command_room.webp");
+}
+#tacticalOpsRoot .t-command-framed-nav {
+  border-image: url("/images/tactical_ops/presentation/command_deck/frames/05_bar_nav_segmented.png") 25 45 25 45 / 9px 15px 9px 15px / 0 stretch;
+}
+#tacticalOpsRoot .t-command-art-shell .t-command-pane > .t-panel:not(.t-wt-next-op) {
+  border-image: url("/images/tactical_ops/presentation/command_deck/frames/03_frame_content_panel.png") 66 80 66 80 / 9px 11px 9px 11px / 0 stretch;
+}
+#tacticalOpsRoot .t-command-mission-feature {
+  position: relative;
+  isolation: isolate;
+}
+#tacticalOpsRoot .t-command-mission-feature::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(5,13,22,.9),rgba(5,13,22,.22)), url("/images/tactical_ops/presentation/command_deck/mission_hologram.webp") center / cover;
+  opacity: .55;
+}
+#tacticalOpsRoot .t-command-brief-hero {
+  isolation: isolate;
+}
+#tacticalOpsRoot .t-command-brief-hero::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: url("/images/tactical_ops/presentation/command_deck/mission_hologram.webp") center / cover;
+  opacity: .27;
+}
+#tacticalOpsRoot .t-command-art-shell .t-command-hero-cta,
+#tacticalOpsRoot .t-command-art-shell .t-command-action-dock .t-btn-primary {
+  border-image: url("/images/tactical_ops/presentation/command_deck/frames/06_button_primary.png") 24 54 24 54 / 9px 18px 9px 18px / 0 stretch;
+  background: linear-gradient(180deg,#174f69,#082635);
+  color: #eafdff;
+}
+#tacticalOpsRoot .t-command-art-shell .t-command-action-dock .t-btn-ghost {
+  border-image: url("/images/tactical_ops/presentation/command_deck/frames/07_button_secondary.png") 24 48 24 48 / 9px 15px 9px 15px / 0 stretch;
+}
+@media (max-width: 620px) {
+  #tacticalOpsRoot .t-command-art-shell { background-position: 50% 30%; }
+  #tacticalOpsRoot .t-command-mission-feature::before { opacity: .4; }
+  #tacticalOpsRoot .t-command-art-shell .t-command-pane > .t-panel:not(.t-wt-next-op) { border-image-width: 6px 8px; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  #tacticalOpsRoot .t-command-art-shell { background-image: none; background-color: #07131e; }
+}
