@@ -53,3 +53,70 @@ export function squadTradeoff(ids: readonly string[], equippedPetId?: string | n
   if (equippedPetId && !ids.includes(`pet:${equippedPetId}`)) absent.push("PET pursuit and HAMSTRING");
   return absent.length ? `Not deployed: ${absent.join("; ")}.` : "All currently available squad roles are deployed.";
 }
+
+/** A1/A2/A3 are the existing active ability slots. All equipped skills are shown,
+ * including non-Codex basic attacks; no new capacity number is invented.
+ */
+export interface ActiveProtocolSlot {
+  unitId: string;
+  unitName: string;
+  slot: string;
+  skillId: string;
+  name: string;
+  family: SignalFamily | null;
+  cooldown: number;
+  minRange: number;
+  maxRange: number;
+  description: string;
+  effects: SkillDef["effects"];
+  targetType: SkillDef["targetType"];
+}
+export function activeProtocolSlots(
+  units: readonly Pick<UnitDef, "defId" | "name" | "skillIds">[],
+  snapshot?: GrowthSnapshot | null,
+): ActiveProtocolSlot[] {
+  return units.flatMap(unit => {
+    const hero = snapshot?.heroes.find(h => h.heroId === unit.defId);
+    return unit.skillIds.map(id => {
+      const skill = resolveGrowthSkill(getSkill(id), hero);
+      return {
+        unitId: unit.defId, unitName: unit.name, slot: skill.slot,
+        skillId: id, name: skill.name, family: signalFamily(skill),
+        cooldown: skill.cooldownMax, minRange: skill.minRange,
+        maxRange: skill.maxRange, description: skill.desc,
+        targetType: skill.targetType, effects: skill.effects.map(e => ({ ...e })),
+      };
+    });
+  });
+}
+export interface CounterplayReadiness {
+  id: "INTERRUPT" | "SLOW" | "PROTECT" | "RECOVER";
+  label: string;
+  available: boolean;
+  source: string | null;
+  detail: string;
+}
+export function counterplayReadiness(
+  slots: readonly ActiveProtocolSlot[], snapshot?: GrowthSnapshot | null,
+  intentSchedulerActive = false,
+): CounterplayReadiness[] {
+  const disruptor = snapshot?.heroes.find(h => h.heroId === "ally-02")?.discipline === "disruptor";
+  const interrupt = intentSchedulerActive && disruptor
+    ? slots.find(s => s.unitId === "ally-02" && canonicalGrowthSkillId(s.skillId) === "u02-suppress" &&
+      s.effects.some(e => e.kind === "status" && e.on === "hits")) : undefined;
+  const slow = slots.find(s => s.effects.some(e => e.kind === "status" && e.status === "SPD_DOWN" &&
+    (e.on === "hits" || e.on === "primary" || e.on === "aoe_enemies")));
+  const protect = slots.find(s => s.effects.some(e => e.kind === "status" &&
+    (e.status === "GUARD" || e.status === "DEF_UP") && (e.on === "aoe_allies" || e.on === "primary")));
+  const recover = slots.find(s => s.effects.some(e => e.kind === "heal" &&
+    (e.on === "primary" || e.on === "aoe_allies")));
+  const make = (id: CounterplayReadiness["id"], label: string, slot: ActiveProtocolSlot | undefined, detail: string): CounterplayReadiness =>
+    ({ id, label, available: Boolean(slot), source: slot ? `${slot.unitName} · ${slot.name}` : null, detail });
+  return [
+    make("INTERRUPT", "CANCEL LOCKED ATTACK", interrupt,
+      intentSchedulerActive ? "CNC Disruptor PRESSURE can cancel a confirmed locked attack." : "Available only while VNext intent telegraphs are enabled."),
+    make("SLOW", "SLOW PURSUIT", slow, "Speed reduction can delay a pursuing or escaping unit."),
+    make("PROTECT", "PROTECT ALLIES", protect, "Shield or DEF support reduces danger while allies hold position."),
+    make("RECOVER", "RECOVER HP", recover, "Healing restores allies after damage; it does not cancel a locked attack."),
+  ];
+}
