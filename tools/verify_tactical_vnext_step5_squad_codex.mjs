@@ -72,7 +72,6 @@ try {
     "no forged interrupt without verified CNC Disruptor progression");
   assert.equal(codex.counterplayReadiness(active,undefined,false).find(x=>x.id==="INTERRUPT").available,false,
     "legacy or disabled scheduler cannot advertise interrupt");
-  const petUnit=unitDefs.UNIT_DEFS?.alpha; // No new PET abilities minted by the loadout preview.
   const briefSetup=readFileSync("tactical-ops-src/ui/App.tsx","utf8");
   assert(briefSetup.includes("activeProtocolSlots(allies, previewGrowth)"));
   assert(briefSetup.includes("counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED)"));
