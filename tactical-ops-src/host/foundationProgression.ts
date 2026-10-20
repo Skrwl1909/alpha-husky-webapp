@@ -81,6 +81,11 @@ export interface GrowthProgression extends GrowthSnapshot {
 function parseRunGrowth(raw: unknown): GrowthSnapshot | null {
   try { return validateGrowthSnapshot(raw); } catch { return null; }
 }
+function requireRunGrowth(raw: unknown): GrowthSnapshot {
+  const growth = parseRunGrowth(raw);
+  if (!growth) throw new FoundationProgressionError("invalid_growth_snapshot");
+  return growth;
+}
 function parseGrowthProgression(raw: unknown): GrowthProgression | null {
   const snapshot = parseRunGrowth(raw);
   if (!snapshot || !raw || typeof raw !== "object") return null;
@@ -283,7 +288,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
       if (activeValue.fieldContext != null && !fieldContext) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: parseRunGrowth(activeValue.playerGrowth) || undefined } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -364,7 +369,7 @@ export async function startOperationMission(
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: parseRunGrowth(value.playerGrowth) || undefined } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
 }
 
 export async function continueOperationMission(
@@ -387,11 +392,25 @@ export async function saveTeammateSidegrade(requestId: string, expectedRevision:
   return responseState(await request(`/webapp/tactical-foundation/${teammate}-sidegrade`, { requestId, expectedRevision, [`${teammate}Sidegrade`]: choice }));
 }
 
+export async function upgradePlayerGrowth(
+  requestId: string, expectedRevision: number, heroId: "alpha" | "ally-02" | "ally-03",
+  discipline: string, skillId: string, rank: 1 | 2,
+): Promise<FoundationProgressionState> {
+  return responseState(await request("/webapp/tactical-foundation/growth/upgrade",
+    { requestId, expectedRevision, heroId, discipline, skillId, rank }));
+}
+export async function respecPlayerGrowth(
+  requestId: string, expectedRevision: number, heroId: "alpha" | "ally-02" | "ally-03",
+): Promise<FoundationProgressionState> {
+  return responseState(await request("/webapp/tactical-foundation/growth/respec",
+    { requestId, expectedRevision, heroId }));
+}
+
 export async function savePackMastery(requestId: string, expectedRevision: number, unitId: string, choice: "A" | "B"): Promise<FoundationProgressionState> {
   return responseState(await request("/webapp/tactical-foundation/pack-mastery", { requestId, expectedRevision, unitId, choice }));
 }
 
-export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery"): string {
+export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec"): string {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
