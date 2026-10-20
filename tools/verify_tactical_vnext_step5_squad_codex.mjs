@@ -50,6 +50,32 @@ try {
   assert(equipped.some(p=>p.unit==="SHADOW" && p.family==="Defense"));
   assert(!equipped.some(p=>p.family==="Recon"),"unimplemented scouting must not be fabricated");
 
+  // Pre-deployment active slots must match the actual battle skills, including wrapped sidegrades.
+  const active=codex.activeProtocolSlots(roster,{version:1,revision:2,heroes:[
+    {heroId:"alpha",discipline:"vanguard",ranks:{}},cnc,shadow,
+  ]});
+  assert.equal(active.length,9,"three actual unit slots per hero; no bonus action buttons");
+  assert.equal(active.filter(x=>x.unitId==="ally-02").length,3);
+  const control=active.find(x=>x.unitId==="ally-02" && x.slot==="A3");
+  assert(control && control.skillId===pressureId,"preview uses executable mastery sidegrade id");
+  assert.equal(control.maxRange,pressure.maxRange,"pre-deploy preview must match actual Skillbook-resolved combat reach");
+  const capabilities=codex.counterplayReadiness(active,{
+    version:1,revision:2,heroes:[{heroId:"alpha",discipline:"vanguard",ranks:{}},cnc,shadow],
+  },true);
+  assert.equal(capabilities.find(x=>x.id==="INTERRUPT").available,true);
+  assert.equal(capabilities.find(x=>x.id==="PROTECT").available,true);
+  assert.equal(capabilities.find(x=>x.id==="RECOVER").available,false,"warden has no healing");
+  assert.equal(codex.counterplayReadiness(active,undefined,true).find(x=>x.id==="INTERRUPT").available,false,
+    "no forged interrupt without verified CNC Disruptor progression");
+  assert.equal(codex.counterplayReadiness(active,undefined,false).find(x=>x.id==="INTERRUPT").available,false,
+    "legacy or disabled scheduler cannot advertise interrupt");
+  const petUnit=unitDefs.UNIT_DEFS?.alpha; // No new PET abilities minted by the loadout preview.
+  const briefSetup=readFileSync("tactical-ops-src/ui/App.tsx","utf8");
+  assert(briefSetup.includes("activeProtocolSlots(allies, previewGrowth)"));
+  assert(briefSetup.includes("counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED)"));
+  assert(briefSetup.includes("resuming || busy || kodaSavePending || shadowSavePending"),
+    "accepted runs cannot silently switch variants after server acceptance");
+
   const before={unitTurn:2,activeId:"ally-02",units:[
     {id:"ally-02",defId:"ally-02",team:"ally",defeated:false,c:1,r:1,growth:cnc},
     {id:"alpha",defId:"alpha",team:"ally",defeated:false,c:0,r:1},
