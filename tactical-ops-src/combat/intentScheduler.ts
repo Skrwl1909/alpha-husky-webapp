@@ -137,3 +137,31 @@ export function resolveEnemyThreat(cycle: ThreatCycle, state: BattleState): { cy
     },
   };
 }
+
+/** A real, legal Control skill by the player can cancel a locked intent for its actual target.
+ * Counterplay is only acknowledged after the combat engine produced a status event on that target.
+ * No speculative receipt or optimistic unlock is generated.
+ */
+export function interruptLockedThreatAfterControl(
+  cycle: ThreatCycle, before: BattleState, after: BattleState,
+  casterId: string, targetId: string, skillId: string, events: ReadonlyArray<BattleEvent>,
+): { cycle: ThreatCycle; interrupted: boolean } {
+  const caster = before.units.find(u => u.id === casterId);
+  if (!caster || caster.team !== "ally" || caster.defeated ||
+      caster.defId !== "ally-02" || caster.growth?.discipline !== "disruptor" ||
+      !(skillId === "u02-suppress" || skillId === "u02-pressure-disruptor" || skillId.startsWith("u02-pressure-disruptor:mastery:") || skillId.startsWith("u02-suppress:mastery:")) ||
+      !events.some(e => e.type === "status" && e.unitId === targetId) ||
+      before.unitTurn !== after.unitTurn) return { cycle, interrupted: false };
+  const threatened = cycle.pending.find(t => t.plan.enemyId === targetId);
+  if (!threatened) return { cycle, interrupted: false };
+  const result = adjudicateIntent(threatened.plan, after, true);
+  if (result.status !== "CANCELED") return { cycle, interrupted: false };
+  const reactionObserved = { ...cycle.reactionObserved };
+  delete reactionObserved[threatened.plan.id];
+  return { interrupted: true, cycle: {
+    ...cycle,
+    pending: cycle.pending.filter(t => t.plan.id !== threatened.plan.id),
+    reactionObserved,
+    ledger: [...cycle.ledger, ...result.events],
+  } };
+}
