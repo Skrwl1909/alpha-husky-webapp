@@ -25,8 +25,6 @@ try {
     ["alpha","ally-02",`pet:${pet.id}`],
     ["alpha","ally-03",`pet:${pet.id}`],
   ];
-  const recoverVariants=squadVariants.map(ids=>[ids[0],ids[1]==="ally-03"?"ally-03":ids[2]?.startsWith("pet:")?ids[2]:"ally-02"]);
-  assert.deepEqual(recoverVariants,[["alpha","ally-02"],["alpha","ally-02"],["alpha","ally-03"]].length===0?[]:recoverVariants);
   const recoverChoices=[["alpha","ally-02"],["alpha","ally-03"],["alpha",`pet:${pet.id}`]];
   const growth={version:1,revision:5,heroes:[
     {heroId:"alpha",discipline:"vanguard",ranks:{"alpha-rend":1}},
