@@ -4286,3 +4286,86 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-codex-slots { grid-template-columns:repeat(2,minmax(0,1fr)); }
   #tacticalOpsRoot .t-codex-counters { grid-template-columns:1fr; }
 }
+
+
+/* Tactical Command Deck v1 — screen-first navigation, existing actions preserved. */
+#tacticalOpsRoot .t-command-nav {
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+  margin: 8px 0 14px;
+  padding: 6px;
+  border: 1px solid rgba(104, 203, 238, .28);
+  border-radius: 13px;
+  background: rgba(3, 11, 20, .96);
+  box-shadow: 0 9px 28px rgba(0, 0, 0, .33);
+  backdrop-filter: blur(12px);
+}
+#tacticalOpsRoot .t-command-nav button {
+  min-width: 0;
+  min-height: 58px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 3px;
+  border: 1px solid rgba(100, 151, 178, .2);
+  border-radius: 9px;
+  background: linear-gradient(160deg, #0d2130, #071420);
+  color: #c9dde9;
+  cursor: pointer;
+}
+#tacticalOpsRoot .t-command-nav button > span {
+  color: #7398a9;
+  font: 700 10px/1 var(--t-font-sans);
+  letter-spacing: .18em;
+}
+#tacticalOpsRoot .t-command-nav button > strong {
+  font: 800 clamp(9px, 2.4vw, 12px)/1.2 var(--t-font-sans);
+  letter-spacing: .045em;
+  overflow-wrap: anywhere;
+}
+#tacticalOpsRoot .t-command-nav button.is-current {
+  color: #e7faff;
+  border-color: rgba(114, 220, 247, .82);
+  background: linear-gradient(160deg, rgba(30, 98, 124, .74), #10283a);
+  box-shadow: inset 0 0 0 1px rgba(140, 231, 255, .16), 0 0 17px rgba(57, 162, 208, .12);
+}
+#tacticalOpsRoot .t-command-nav button.is-current > span { color: #f7ce87; }
+#tacticalOpsRoot .t-command-nav button:focus-visible {
+  outline: 2px solid #e6bf76;
+  outline-offset: 2px;
+}
+#tacticalOpsRoot .t-command-pane { min-width: 0; min-height: 180px; animation: t-command-reveal .16s ease-out; }
+#tacticalOpsRoot .t-command-pane > :first-child { margin-top: 0; }
+#tacticalOpsRoot .t-command-pane .t-growth-panel { margin-top: 0; }
+#tacticalOpsRoot .t-command-pane .t-pack-mastery-premium { margin-block: 12px; }
+#tacticalOpsRoot .t-deploy-command-pane { padding-bottom: 5px; }
+#tacticalOpsRoot .t-deploy-command-pane .t-deploy-squad,
+#tacticalOpsRoot .t-deploy-command-pane .t-codex-brief { margin-top: 0; }
+#tacticalOpsRoot .t-command-conditions-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-bottom: .5rem; margin-bottom: .5rem;
+  border-bottom: 1px solid rgba(98, 184, 222, .18);
+}
+#tacticalOpsRoot .t-command-conditions-head strong { font-size: .85rem; }
+#tacticalOpsRoot .t-command-conditions-head b { color: #9fdaeb; font-size: .72rem; }
+#tacticalOpsRoot .t-deployment.t-brief { padding-bottom: max(.65rem, env(safe-area-inset-bottom)); }
+#tacticalOpsRoot .t-deploy-actions-v29 { flex: 0 0 auto; }
+@keyframes t-command-reveal {
+  from { opacity: .7; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-command-pane { animation: none; }
+}
+@media (max-width: 430px) {
+  #tacticalOpsRoot .t-command-nav { gap: 3px; padding: 4px; margin: 7px 0 10px; }
+  #tacticalOpsRoot .t-command-nav button { min-height: 55px; }
+  #tacticalOpsRoot .t-command-nav button > strong { font-size: 9px; letter-spacing: .015em; }
+  #tacticalOpsRoot .t-command-conditions-head { align-items: flex-start; flex-direction: column; }
+}
