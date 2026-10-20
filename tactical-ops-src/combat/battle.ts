@@ -1,3 +1,5 @@
+import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
+import { resolveGrowthSkill } from "../data/playerGrowth";
 import { recoverSignalOpen, resolveTimedObjective } from "./missionRules";
 import type { BattleObjective, MissionDirective } from "./types";
 import type {
@@ -95,12 +97,18 @@ export function createBattle(
   reinforcement: BattleReinforcement | null = null,
   signalCarrierId: string | null = null,
   directive: MissionDirective | null = null,
+  growth?: GrowthSnapshot | null,
 ): BattleState {
   resetStatusSeq();
   const placed = spawns.map(s => ({...s,...previewPoint(s)}));
   const occupied = new Set<string>();
   for(const s of placed){const key=s.c+","+s.r;if(occupied.has(key))throw new Error("Battlefield spawn collision at "+key);occupied.add(key);}
-  const units = placed.map((s) => spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef));
+  const roster = growth ? validateGrowthSnapshot(growth) : null;
+  const units = placed.map((s) => {
+    const unit = spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef);
+    const hero = roster?.heroes.find(h => h.heroId === unit.defId && unit.team === "ally");
+    return hero ? { ...unit, growth: { ...hero, ranks: { ...hero.ranks } } } : unit;
+  });
   return {
     units,
     activeId: null,
@@ -308,8 +316,9 @@ export function startBattle(
   reinforcement: BattleReinforcement | null = null,
   signalCarrierId: string | null = null,
   directive: MissionDirective | null = null,
+  growth?: GrowthSnapshot | null,
 ): { state: BattleState; events: BattleEvent[] } {
-  const fresh = createBattle(identity, spawns, objective, reinforcement, signalCarrierId, directive);
+  const fresh = createBattle(identity, spawns, objective, reinforcement, signalCarrierId, directive, growth);
   return advanceToNext(fresh);
 }
 
@@ -424,5 +433,5 @@ export function planAi(state: BattleState): AiAction {
 export function a1Range(unit: CombatUnit): number {
   const first = unit.skillIds[0];
   if (!first) return 1;
-  return getSkill(first).maxRange;
+  return resolveGrowthSkill(getSkill(first), unit.growth).maxRange;
 }
