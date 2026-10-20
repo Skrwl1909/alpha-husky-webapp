@@ -280,7 +280,7 @@ function WarTable() {
     <div className="t-fill">
       <Background dim={0.5} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
-      <div className="t-brief t-war-table-premium t-war-table-v29" style={{ maxWidth: "64rem" }}>
+      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell" style={{ maxWidth: "64rem" }}>
         <header className="t-panel t-wt-hero t-wt-hero-compact">
           <div className="t-wt-branding">
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
@@ -295,7 +295,7 @@ function WarTable() {
         </header>
 
 
-        <nav className="t-command-nav" aria-label="Tactical command sections">
+        <nav className="t-command-nav t-command-framed-nav" aria-label="Tactical command sections">
           {([
             ["command", "01", "COMMAND"],
             ["missions", "02", "MISSIONS"],
@@ -312,7 +312,7 @@ function WarTable() {
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
-          <section className={`t-panel t-wt-feature t-wt-next-op t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
+          <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
               <img src={visual.art} alt="" aria-hidden="true" />
               <span className="t-wt-art-label">{visual.label}</span>
@@ -330,7 +330,7 @@ function WarTable() {
               </div>
             </div>
             <div className="t-wt-feature-cta">
-              <button className="t-btn t-btn-primary t-wt-main-cta" type="button" disabled={loading} onClick={() => openOperationBrief(recommendedMission.missionId)}>
+              <button className="t-btn t-btn-primary t-wt-main-cta t-command-hero-cta" type="button" disabled={loading} onClick={() => openOperationBrief(recommendedMission.missionId)}>
                 {activeMissionRun ? "RESUME OP" : recommendedSecured ? "DEPLOY AGAIN" : "VIEW BRIEF"}
                 <ChevronRight className="t-ico" />
               </button>
@@ -622,8 +622,8 @@ function Brief() {
   return (
     <div className="t-fill">
       <Background dim={0.58} />
-      <div className="t-brief t-deployment t-deployment-v29">
-        <header className={`t-deploy-hero t-deploy-hero-v29 t-mission-tone-${missionVisual.tone}`}>
+      <div className="t-brief t-deployment t-deployment-v29 t-command-art-shell">
+        <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
           <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
             <div className="t-deploy-mode-label">{missionVisual.label}</div>
@@ -635,7 +635,7 @@ function Brief() {
         </header>
 
 
-        <nav className="t-command-nav t-deploy-command-nav" aria-label="Mission preparation sections">
+        <nav className="t-command-nav t-deploy-command-nav t-command-framed-nav" aria-label="Mission preparation sections">
           {([
             ["mission", "01", "MISSION"],
             ["squad", "02", "SQUAD"],
@@ -879,7 +879,7 @@ function Brief() {
 
 
         </div> : null}
-        <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29">
+        <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
           <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
             DEPLOY SQUAD
