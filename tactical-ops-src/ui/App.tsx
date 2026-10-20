@@ -187,6 +187,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
 
 function WarTable() {
   const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
+  const [squadView, setSquadView] = useState<"skillbook" | "mastery">("skillbook");
   const progression = useBattleStore((s) => s.progression);
   const openOperationBrief = useBattleStore((s) => s.openOperationBrief);
   const progressionError = useBattleStore((s) => s.progressionError);
@@ -280,12 +281,12 @@ function WarTable() {
     <div className="t-fill">
       <Background dim={0.5} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
-      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell" style={{ maxWidth: "64rem" }}>
+      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux" style={{ maxWidth: "64rem" }}>
         <header className="t-panel t-wt-hero t-wt-hero-compact">
           <div className="t-wt-branding">
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
             <h1 className="t-title t-wt-title">TACTICAL OPS</h1>
-            <p className="t-wt-intro">Continue your story, then tackle rotating Field Ops and build your Commander.</p>
+            <p className="t-wt-intro">Your next move starts here.</p>
             {progressionError ? <p className="t-wt-error">{progressionError}</p> : null}
             {missionFirstClear ? <p className="t-wt-highlight">{firstClearMessage}</p> : null}
           </div>
@@ -321,7 +322,7 @@ function WarTable() {
               <div className="t-kicker">{activeMissionRun ? "Resume run" : "Next op"}</div>
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{objectiveHeadline(missionForContext(recommendedMission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
-              <div className="t-wt-reward-chips" aria-label="Mission progression rewards">
+              <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
                 <span><b>{recommendedSecured ? "✓" : "+2"}</b> {recommendedSecured ? "Clear secured · replay" : "Commander"}</span>
                 <span className={recommendedChallenge ? "is-earned" : ""}>
                   <b>{recommendedChallenge ? "✓" : "+1"}</b> {recommendedChallenge ? "Challenge" : "Commander · Challenge"}
@@ -340,7 +341,7 @@ function WarTable() {
         })() : null}
 
 
-        <section className="t-wt-status-rail t-wt-status-rail-v29" aria-label="Tactical Ops overview">
+        <section className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail" aria-label="Tactical Ops overview">
           <div className="t-panel t-wt-status-card t-wt-rank-card">
             <span className="t-kicker">Commander</span>
             <strong>{commanderRank >= 3 ? "RANK 3 · CERTIFIED" : `RANK ${commanderRank}`}</strong>
@@ -365,28 +366,11 @@ function WarTable() {
 
 
         {field?.board && rotationProgress ? (
-          <section className="t-panel t-wt-front" aria-label="Today's Front">
-            <div className="t-wt-front-head">
-              <div>
-                <span className="t-kicker">TODAY'S FRONT</span>
-                <strong>{rotationProgress.securedCount}/{rotationProgress.total} SECURED</strong>
-              </div>
-              <div className="t-wt-front-meta">
-                <span>Challenges {rotationProgress.challengeMissionIds.length}/{rotationProgress.total}</span>
-                {field.commander?.unlockedDirectiveTiers?.includes("advanced") ? <span>Advanced {rotationProgress.advancedMissionIds.length}/{rotationProgress.total}</span> : null}
-              </div>
-            </div>
-            <div className="t-wt-front-list">
-              {activeMissionDefs.map((mission) => (
-                <div className="t-wt-front-row" key={`front-${mission.missionId}`}>
-                  <span>{mission.name}</span>
-                  <b className={securedMissionIds.has(mission.missionId) ? "is-secured" : ""}>{securedMissionIds.has(mission.missionId) ? "SECURED TODAY" : "OPEN"}</b>
-                </div>
-              ))}
-            </div>
-          </section>
+          <button type="button" className="t-premium-front-link" onClick={() => setDeckTab("missions")}>
+            <span><strong>FRONT STATUS</strong><small>{rotationProgress.securedCount}/{rotationProgress.total} SECURED · {rotationProgress.challengeMissionIds.length} CHALLENGES</small></span>
+            <span>VIEW MISSIONS <ChevronRight className="t-ico" /></span>
+          </button>
         ) : null}
-
 
         {field?.activeMissionRun && !field.board?.activeMissionIds.includes(field.activeMissionRun.missionId) ? (
           <section className="t-panel t-wt-legacy-run">
@@ -461,10 +445,11 @@ function WarTable() {
 
         </div> : null}
         {deckTab === "squad" ? <div className="t-command-pane" aria-label="Character progression and mastery">
-        <SkillbookPanel />
-
-
-        <PackMasteryPanel />
+        <div className="t-premium-squad-switch" role="group" aria-label="Squad progression view">
+          <button type="button" aria-pressed={squadView === "skillbook"} className={squadView === "skillbook" ? "is-selected" : ""} onClick={() => setSquadView("skillbook")}>CHARACTER SKILLBOOK</button>
+          <button type="button" aria-pressed={squadView === "mastery"} className={squadView === "mastery" ? "is-selected" : ""} onClick={() => setSquadView("mastery")}>PACK MASTERY</button>
+        </div>
+        {squadView === "skillbook" ? <SkillbookPanel /> : <PackMasteryPanel />}
 
 
         </div> : null}
@@ -622,7 +607,7 @@ function Brief() {
   return (
     <div className="t-fill">
       <Background dim={0.58} />
-      <div className="t-brief t-deployment t-deployment-v29 t-command-art-shell">
+      <div className="t-brief t-deployment t-deployment-v29 t-command-art-shell t-premium-ux">
         <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
           <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
