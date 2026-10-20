@@ -285,6 +285,19 @@ export const useBattleStore = create<Store>((set, get) => {
       await continueLoop(g);
       return;
     }
+    if (TACTICAL_VNEXT_ENABLED && threatCycle.interruptedEnemyIds?.includes(actor.id)) {
+      threatCycle = {
+        ...threatCycle,
+        interruptedEnemyIds: threatCycle.interruptedEnemyIds.filter(id => id !== actor.id),
+      };
+      const skipped = trySkip(st);
+      if (!skipped.ok) throw Error("interrupted_enemy_could_not_skip");
+      set({ battle: skipped.state, queue: refreshQueue(skipped.state),
+        ticker: "INTERRUPTED · ENEMY TURN LOST" });
+      await playEvents(skipped.events, g);
+      if (g === runGen) await continueLoop(g);
+      return;
+    }
     if (TACTICAL_VNEXT_ENABLED) {
       const locked = threatCycle.pending.find(t => t.plan.enemyId === actor.id);
       if (locked) {
