@@ -64,7 +64,10 @@ try {
   },true);
   assert.equal(capabilities.find(x=>x.id==="INTERRUPT").available,true);
   assert.equal(capabilities.find(x=>x.id==="PROTECT").available,true);
-  assert.equal(capabilities.find(x=>x.id==="RECOVER").available,false,"warden has no healing");
+  assert.equal(capabilities.find(x=>x.id==="RECOVER").available,true,"SHADOW Warden still has MEND A2 even if PACK SUPPORT does not heal");
+  const noShadow = active.filter(x=>x.unitId!=="ally-03");
+  assert.equal(codex.counterplayReadiness(noShadow,undefined,false).find(x=>x.id==="RECOVER").available,false,
+    "removing SHADOW loses squad healing");
   assert.equal(codex.counterplayReadiness(active,undefined,true).find(x=>x.id==="INTERRUPT").available,false,
     "no forged interrupt without verified CNC Disruptor progression");
   assert.equal(codex.counterplayReadiness(active,undefined,false).find(x=>x.id==="INTERRUPT").available,false,
