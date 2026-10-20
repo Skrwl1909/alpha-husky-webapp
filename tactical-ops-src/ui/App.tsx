@@ -20,6 +20,7 @@ import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, g
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 import { SkillbookPanel } from "./Skillbook";
+import { equippedSignalCodex, SIGNAL_FAMILIES, squadTradeoff } from "../data/signalCodex";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -556,6 +557,14 @@ function Brief() {
   const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
+  // Render the exact server-accepted roster and skills, including any immutable run snapshot.
+  const previewGrowth = resuming ? savedRun?.playerGrowth : useBattleStore.getState().progression?.playerGrowth;
+  const equippedProtocols = equippedSignalCodex(allies, previewGrowth);
+  const selectedTradeoff = squadTradeoff(
+    selectedSquadIds.length ? selectedSquadIds : allies.map(u => u.defId),
+    equippedPet?.id,
+  );
+
   const hostiles = enemyBriefRows(spawns);
   const footnote = mission
     ? `${mission.objectiveType} · Squad cap ${mission.squadCap}. `
@@ -659,6 +668,28 @@ function Brief() {
               </div>
             </div>
           ) : null}
+        </section>
+
+        <section className="t-panel t-codex-brief" aria-label="Signal Codex equipped capabilities">
+          <div className="t-wt-section-head"><div>
+            <span className="t-kicker">SQUAD BUILD · REAL ABILITIES</span>
+            <h2 className="t-title">SIGNAL CODEX</h2>
+          </div></div>
+          <p className="t-codex-tradeoff">{selectedTradeoff}</p>
+          <p className="t-codex-note">Current squad's equipped protocols, based on real A1/A2/A3 abilities. No extra skills or battle slots are granted.</p>
+          <div className="t-codex-grid">
+            {SIGNAL_FAMILIES.map(family => {
+              const protocols = equippedProtocols.filter(p => p.family === family);
+              return <div className="t-codex-family" key={family}>
+                <strong>{family.toUpperCase()}</strong>
+                {protocols.length ? protocols.map((p, index) =>
+                  <div key={p.unit + p.skillId + index} className="t-codex-skill">
+                    <b>{p.unit} · {p.slot} {p.skillName}</b>
+                    <small>CD {p.cooldown} · {p.description}</small>
+                  </div>) : <small className="t-codex-empty">No equipped protocol in this family.</small>}
+              </div>;
+            })}
+          </div>
         </section>
 
         {conditions.length || fieldOp ? (
