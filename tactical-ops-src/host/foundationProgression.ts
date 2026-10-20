@@ -86,17 +86,22 @@ function requireRunGrowth(raw: unknown): GrowthSnapshot {
   if (!growth) throw new FoundationProgressionError("invalid_growth_snapshot");
   return growth;
 }
-function parseGrowthProgression(raw: unknown): GrowthProgression | null {
-  const snapshot = parseRunGrowth(raw);
-  if (!snapshot || !raw || typeof raw !== "object") return null;
+/** Backend playerGrowth is a progression record; its revision lives on the parent Foundation state.
+ * Only run.playerGrowth contains its own frozen revision. Never conflate the two wire formats.
+ */
+export function parseGrowthProgression(raw: unknown, foundationRevision: number): GrowthProgression | null {
+  if (!raw || typeof raw !== "object" || !Number.isSafeInteger(foundationRevision) || foundationRevision < 0) return null;
   const x = raw as Record<string, unknown>;
-  if (!Number.isSafeInteger(x.earnedPoints) || Number(x.earnedPoints) < 0 ||
+  const snapshot = parseRunGrowth({ ...x, revision: foundationRevision });
+  if (!snapshot || !Number.isSafeInteger(x.earnedPoints) || Number(x.earnedPoints) < 0 ||
       !Number.isSafeInteger(x.spentPoints) || Number(x.spentPoints) < 0 ||
       Number(x.spentPoints) > Number(x.earnedPoints) ||
       !Array.isArray(x.claimedFirstClears) ||
       x.claimedFirstClears.length !== Number(x.earnedPoints) ||
       x.claimedFirstClears.some((v: unknown) => typeof v !== "string") ||
-      new Set(x.claimedFirstClears).size !== x.claimedFirstClears.length) return null;
+      new Set(x.claimedFirstClears).size !== x.claimedFirstClears.length ||
+      snapshot.heroes.some((h) => typeof (h as {respecUsed?: unknown}).respecUsed !== "boolean") ||
+      snapshot.heroes.reduce((sum, h) => sum + Object.values(h.ranks).reduce((acc, rank) => acc + rank, 0), 0) !== Number(x.spentPoints)) return null;
   return { ...snapshot, earnedPoints: Number(x.earnedPoints),
     spentPoints: Number(x.spentPoints), claimedFirstClears: [...x.claimedFirstClears] as string[] };
 }
@@ -181,7 +186,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     updatedAt: Number.isFinite(Number(value.updatedAt)) ? Number(value.updatedAt) : 0,
   };
   if (Object.prototype.hasOwnProperty.call(value, "playerGrowth")) {
-    const parsedGrowth = parseGrowthProgression(value.playerGrowth);
+    const parsedGrowth = parseGrowthProgression(value.playerGrowth, revision);
     if (!parsedGrowth) return null;
     state.playerGrowth = parsedGrowth;
   }
