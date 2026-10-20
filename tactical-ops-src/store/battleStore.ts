@@ -1,3 +1,4 @@
+import { resolveGrowthSkill, type GrowthSnapshot } from "../data/playerGrowth";
 import { fieldReport, type DeploymentApproach, type DirectiveTier, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
 import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
@@ -384,7 +385,7 @@ export const useBattleStore = create<Store>((set, get) => {
     }
   };
 
-  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null) => {
+  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null, growth?: GrowthSnapshot | null) => {
     traceNoticeShown = false;
     threatCycle = emptyThreatCycle();
     const identity = identityCache(resolvePlayerIdentity());
@@ -395,7 +396,7 @@ export const useBattleStore = create<Store>((set, get) => {
       : null;
     const reinforcement = boss ? { ...COMMANDER_REINFORCEMENT, spawn: { ...COMMANDER_REINFORCEMENT.spawn }, telegraphed: routingTrace, spawned: false } : null;
     const rules = mission ? missionBattleRules(mission, routingTrace, fieldContext, campaignContext) : { objective, reinforcement, directive: null };
-    const started = startBattle(identity, spawns, rules.objective, rules.reinforcement, signalCarrierId, rules.directive);
+    const started = startBattle(identity, spawns, rules.objective, rules.reinforcement, signalCarrierId, rules.directive, growth);
     sfx("turn");
     set({
       screen: "battle",
@@ -688,6 +689,7 @@ export const useBattleStore = create<Store>((set, get) => {
                 acceptedMission,
                 started.run.fieldContext,
                 started.run.campaignContext,
+                started.run.playerGrowth || null,
               );
             } catch (error) {
               if (g !== runGen) return;
@@ -799,7 +801,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
       if (!actor.skillIds.includes(skillId)) return;
-      const skill = getSkill(skillId);
+      const skill = resolveGrowthSkill(getSkill(skillId), actor.growth);
       if ((actor.cooldowns[skillId] ?? 0) > 0) return;
       if (battle.mode === "targeting" && battle.actionSkillId === skillId) {
         set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
@@ -1159,7 +1161,7 @@ export function targetIdsNow(): Set<string> {
   const actor = activeUnit(battle);
   if (!actor) return set;
   try {
-    const skill = getSkill(battle.actionSkillId);
+    const skill = resolveGrowthSkill(getSkill(battle.actionSkillId), actor.growth);
     for (const id of validTargetIds(battle.units, actor, skill)) set.add(id);
   } catch {
     /* ignore */
