@@ -21,6 +21,9 @@ for (const feature of ["onClick={deploy}", "onClick={backToHub}", "selectKodaSid
 }
 assert(brief.indexOf("t-deploy-actions-v29") > brief.indexOf('briefTab === "intel"'), "Deploy controls remain outside conditional panes");
 assert(brief.includes('briefTab === "squad"') && brief.indexOf("<PackMasteryPanel snapshot=")>brief.indexOf('briefTab === "squad"'), "Mastery accessible on Squad tab");
+for (const asset of ["command_room.webp", "mission_hologram.webp", "frames/03_frame_content_panel.png", "frames/05_bar_nav_segmented.png", "frames/06_button_primary.png", "frames/07_button_secondary.png"]) {
+  assert(css.includes(asset), "Referenced uploaded asset "+asset);
+}
 assert(css.includes(".t-command-nav") && css.includes("position: sticky") && css.includes("prefers-reduced-motion"), "Navigation CSS and accessibility");
 assert(version.includes("tops-3.3.2-command-deck") && boot.includes("tops-3.3.2-command-deck"), "Canonical runtime version");
 console.log("PASS Command Deck source invariants: War Table and Brief tabs, saved actions, sticky navigation and deploy, version");
