@@ -7,6 +7,8 @@ export type SkillRank = 0 | 1 | 2;
 export interface HeroGrowth {
   heroId: HeroId;
   discipline: Discipline | null;
+  /** Only present on persistent records, not frozen run snapshots. */
+  respecUsed?: boolean;
   ranks: Record<string, SkillRank>;
 }
 export interface GrowthSnapshot {
@@ -64,7 +66,7 @@ export function validateGrowthSnapshot(value: unknown): GrowthSnapshot {
     if (hero.discipline !== null && !HERO_PATHS[id].includes(hero.discipline)) throw Error("invalid_growth_discipline");
     if (!hero.ranks || typeof hero.ranks !== "object" || Array.isArray(hero.ranks)) throw Error("invalid_growth_ranks");
     for (const [skillId, rank] of Object.entries(hero.ranks)) {
-      if (!HERO_SKILLS[id].includes(skillId) || !Number.isInteger(rank) || rank < 0 || rank > 2) throw Error("invalid_growth_rank");
+      if (!HERO_SKILLS[id].includes(skillId) || !Number.isInteger(rank) || rank < 1 || rank > 2) throw Error("invalid_growth_rank");
     }
   }
   return s;
