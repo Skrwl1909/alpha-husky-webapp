@@ -186,6 +186,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
 }
 
 function WarTable() {
+  const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
   const progression = useBattleStore((s) => s.progression);
   const openOperationBrief = useBattleStore((s) => s.openOperationBrief);
   const progressionError = useBattleStore((s) => s.progressionError);
@@ -293,81 +294,21 @@ function WarTable() {
           </button>
         </header>
 
-        <section className="t-panel t-wt-battlefield-lab" aria-label="Battlefield Lab testing mode">
-          <div>
-            <span className="t-kicker">BATTLEFIELD LAB · DEVICE TEST</span>
-            <strong>{BATTLEFIELD_VNEXT_PREVIEW ? "10 × 7 · EXPERIMENTAL" : "8 × 5 · CURRENT"}</strong>
-            <p>Compare real missions with your signed-in Alpha account. This setting changes only the battlefield on this device. It does not reset or replace your account.</p>
-          </div>
-          <button type="button" className="t-btn" aria-label={BATTLEFIELD_VNEXT_PREVIEW ? "Switch to current 8 by 5 battlefield" : "Switch to experimental 10 by 7 battlefield"} onClick={() => {
-            try {
-              if (BATTLEFIELD_VNEXT_PREVIEW) {
-                window.localStorage.removeItem(BATTLEFIELD_LAB_KEY);
-                // Also remove a legacy URL preview override, if present.
-                const url = new URL(window.location.href);
-                if (url.searchParams.has("tacticalBattlefieldVNext")) {
-                  url.searchParams.delete("tacticalBattlefieldVNext");
-                  window.location.replace(url.toString());
-                  return;
-                }
-              } else {
-                window.localStorage.setItem(BATTLEFIELD_LAB_KEY, "10x7");
-              }
-              window.location.reload();
-            } catch (_) { window.alert("Could not save the test mode on this device."); }
-          }}>
-            {BATTLEFIELD_VNEXT_PREVIEW ? "USE 8 × 5" : "TEST 10 × 7"}
-          </button>
-        </section>
 
-        {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
-
-        <section className="t-wt-status-rail t-wt-status-rail-v29" aria-label="Tactical Ops overview">
-          <div className="t-panel t-wt-status-card t-wt-rank-card">
-            <span className="t-kicker">Commander</span>
-            <strong>{commanderRank >= 3 ? "RANK 3 · CERTIFIED" : `RANK ${commanderRank}`}</strong>
-            {commanderTarget ? (
-              <>
-                <progress className="t-progress" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
-                <small>{commanderProgress} / {commanderTarget} progress</small>
-              </>
-            ) : <small>All current command tools unlocked</small>}
-          </div>
-          <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
-            <span className="t-kicker">Area status</span>
-            <strong>{areaPressure}</strong>
-            <small>{pressureCopy}</small>
-          </div>
-          <div className="t-panel t-wt-status-card">
-            <span className="t-kicker">Rotation</span>
-            <strong>{rotationLabel}</strong>
-            <small>{activeMissionIds.length || 0} active Field Ops{currentDirective ? ` · ${currentDirective}` : ""}</small>
-          </div>
-        </section>
-
-        {field?.board && rotationProgress ? (
-          <section className="t-panel t-wt-front" aria-label="Today's Front">
-            <div className="t-wt-front-head">
-              <div>
-                <span className="t-kicker">TODAY'S FRONT</span>
-                <strong>{rotationProgress.securedCount}/{rotationProgress.total} SECURED</strong>
-              </div>
-              <div className="t-wt-front-meta">
-                <span>Challenges {rotationProgress.challengeMissionIds.length}/{rotationProgress.total}</span>
-                {field.commander?.unlockedDirectiveTiers?.includes("advanced") ? <span>Advanced {rotationProgress.advancedMissionIds.length}/{rotationProgress.total}</span> : null}
-              </div>
-            </div>
-            <div className="t-wt-front-list">
-              {activeMissionDefs.map((mission) => (
-                <div className="t-wt-front-row" key={`front-${mission.missionId}`}>
-                  <span>{mission.name}</span>
-                  <b className={securedMissionIds.has(mission.missionId) ? "is-secured" : ""}>{securedMissionIds.has(mission.missionId) ? "SECURED TODAY" : "OPEN"}</b>
-                </div>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
+        <nav className="t-command-nav" aria-label="Tactical command sections">
+          {([
+            ["command", "01", "COMMAND"],
+            ["missions", "02", "MISSIONS"],
+            ["squad", "03", "SQUAD"],
+            ["archive", "04", "ARCHIVE"],
+          ] as const).map(([id, index, label]) => (
+            <button type="button" key={id} className={deckTab === id ? "is-current" : ""}
+              aria-pressed={deckTab === id} onClick={() => setDeckTab(id)}>
+              <span>{index}</span><strong>{label}</strong>
+            </button>
+          ))}
+        </nav>
+        {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
@@ -398,6 +339,55 @@ function WarTable() {
           );
         })() : null}
 
+
+        <section className="t-wt-status-rail t-wt-status-rail-v29" aria-label="Tactical Ops overview">
+          <div className="t-panel t-wt-status-card t-wt-rank-card">
+            <span className="t-kicker">Commander</span>
+            <strong>{commanderRank >= 3 ? "RANK 3 · CERTIFIED" : `RANK ${commanderRank}`}</strong>
+            {commanderTarget ? (
+              <>
+                <progress className="t-progress" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
+                <small>{commanderProgress} / {commanderTarget} progress</small>
+              </>
+            ) : <small>All current command tools unlocked</small>}
+          </div>
+          <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
+            <span className="t-kicker">Area status</span>
+            <strong>{areaPressure}</strong>
+            <small>{pressureCopy}</small>
+          </div>
+          <div className="t-panel t-wt-status-card">
+            <span className="t-kicker">Rotation</span>
+            <strong>{rotationLabel}</strong>
+            <small>{activeMissionIds.length || 0} active Field Ops{currentDirective ? ` · ${currentDirective}` : ""}</small>
+          </div>
+        </section>
+
+
+        {field?.board && rotationProgress ? (
+          <section className="t-panel t-wt-front" aria-label="Today's Front">
+            <div className="t-wt-front-head">
+              <div>
+                <span className="t-kicker">TODAY'S FRONT</span>
+                <strong>{rotationProgress.securedCount}/{rotationProgress.total} SECURED</strong>
+              </div>
+              <div className="t-wt-front-meta">
+                <span>Challenges {rotationProgress.challengeMissionIds.length}/{rotationProgress.total}</span>
+                {field.commander?.unlockedDirectiveTiers?.includes("advanced") ? <span>Advanced {rotationProgress.advancedMissionIds.length}/{rotationProgress.total}</span> : null}
+              </div>
+            </div>
+            <div className="t-wt-front-list">
+              {activeMissionDefs.map((mission) => (
+                <div className="t-wt-front-row" key={`front-${mission.missionId}`}>
+                  <span>{mission.name}</span>
+                  <b className={securedMissionIds.has(mission.missionId) ? "is-secured" : ""}>{securedMissionIds.has(mission.missionId) ? "SECURED TODAY" : "OPEN"}</b>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+
         {field?.activeMissionRun && !field.board?.activeMissionIds.includes(field.activeMissionRun.missionId) ? (
           <section className="t-panel t-wt-legacy-run">
             <div>
@@ -408,6 +398,12 @@ function WarTable() {
             <button type="button" className="t-btn" onClick={() => openOperationBrief(field.activeMissionRun!.missionId)}>RESUME</button>
           </section>
         ) : null}
+
+
+        </div> : null}
+        {deckTab === "missions" ? <div className="t-command-pane" aria-label="Operations and field missions">
+        {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
+
 
         <section className="t-panel t-wt-section t-wt-current-ops" aria-label="Current Field Ops">
           <div className="t-wt-section-head">
@@ -462,11 +458,19 @@ function WarTable() {
 
 
 
-        {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
 
+        </div> : null}
+        {deckTab === "squad" ? <div className="t-command-pane" aria-label="Character progression and mastery">
         <SkillbookPanel />
 
+
         <PackMasteryPanel />
+
+
+        </div> : null}
+        {deckTab === "archive" ? <div className="t-command-pane" aria-label="Campaign archive and test settings">
+        {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
+
 
         <details className="t-panel t-wt-story-archive">
           <summary>
@@ -499,6 +503,7 @@ function WarTable() {
           </div>
         </details>
 
+
         {field?.lastResult ? (
           <details className="t-detail t-wt-last-result t-wt-secondary-detail">
             <summary>Last result · {rotationTime(field.lastResult.recordedAt)}</summary>
@@ -506,12 +511,43 @@ function WarTable() {
             <FieldResultFeedback result={field.lastResult} />
           </details>
         ) : null}
+
+        <section className="t-panel t-wt-battlefield-lab" aria-label="Battlefield Lab testing mode">
+          <div>
+            <span className="t-kicker">BATTLEFIELD LAB · DEVICE TEST</span>
+            <strong>{BATTLEFIELD_VNEXT_PREVIEW ? "10 × 7 · EXPERIMENTAL" : "8 × 5 · CURRENT"}</strong>
+            <p>Compare real missions with your signed-in Alpha account. This setting changes only the battlefield on this device. It does not reset or replace your account.</p>
+          </div>
+          <button type="button" className="t-btn" aria-label={BATTLEFIELD_VNEXT_PREVIEW ? "Switch to current 8 by 5 battlefield" : "Switch to experimental 10 by 7 battlefield"} onClick={() => {
+            try {
+              if (BATTLEFIELD_VNEXT_PREVIEW) {
+                window.localStorage.removeItem(BATTLEFIELD_LAB_KEY);
+                // Also remove a legacy URL preview override, if present.
+                const url = new URL(window.location.href);
+                if (url.searchParams.has("tacticalBattlefieldVNext")) {
+                  url.searchParams.delete("tacticalBattlefieldVNext");
+                  window.location.replace(url.toString());
+                  return;
+                }
+              } else {
+                window.localStorage.setItem(BATTLEFIELD_LAB_KEY, "10x7");
+              }
+              window.location.reload();
+            } catch (_) { window.alert("Could not save the test mode on this device."); }
+          }}>
+            {BATTLEFIELD_VNEXT_PREVIEW ? "USE 8 × 5" : "TEST 10 × 7"}
+          </button>
+        </section>
+
+
+        </div> : null}
       </div>
     </div>
   );
 }
 
 function Brief() {
+  const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">("mission");
   const identity = useBattleStore(s => s.identity);
   const deploy = useBattleStore((s) => s.deploy);
   const backToHub = useBattleStore((s) => s.backToHub);
@@ -598,6 +634,21 @@ function Brief() {
           {fieldOp && field?.board ? <div className="t-deploy-rotation"><span className="t-kicker">Rotation</span><strong>{rotationTime(field.board.nextRotationAt)}</strong></div> : null}
         </header>
 
+
+        <nav className="t-command-nav t-deploy-command-nav" aria-label="Mission preparation sections">
+          {([
+            ["mission", "01", "MISSION"],
+            ["squad", "02", "SQUAD"],
+            ["loadout", "03", "LOADOUT"],
+            ["intel", "04", "INTEL"],
+          ] as const).map(([id, index, label]) => (
+            <button type="button" key={id} className={briefTab === id ? "is-current" : ""}
+              aria-pressed={briefTab === id} onClick={() => setBriefTab(id)}>
+              <span>{index}</span><strong>{label}</strong>
+            </button>
+          ))}
+        </nav>
+        {briefTab === "mission" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Mission objective and rewards">
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
         {campaignMission ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
@@ -628,6 +679,9 @@ function Brief() {
           ) : null}
         </section>
 
+
+        </div> : null}
+        {briefTab === "squad" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Squad composition and mastery">
         <section className="t-panel t-deploy-squad" aria-label="Squad">
           <div className="t-wt-section-head">
             <div>
@@ -674,6 +728,10 @@ function Brief() {
           ) : null}
         </section>
 
+
+        {mission ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
+        </div> : null}
+        {briefTab === "loadout" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Equipped protocols and sidegrades">
         <section className="t-panel t-codex-brief" aria-label="Signal Codex equipped capabilities">
           <div className="t-wt-section-head"><div>
             <span className="t-kicker">SQUAD BUILD · REAL ABILITIES</span>
@@ -755,12 +813,15 @@ function Brief() {
           </div>
         </section>
 
+
+        </div> : null}
+        {briefTab === "intel" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Mission conditions and enemy intelligence">
         {conditions.length || fieldOp ? (
-          <details className="t-panel t-deploy-rules">
-            <summary>
+          <section className="t-panel t-deploy-rules">
+            <div className="t-command-conditions-head">
               <span><span className="t-kicker">Tactical setup</span><strong>CONDITIONS & APPROACH</strong></span>
               <b>{selectedDirectiveTier.toUpperCase()}{selectedApproach !== "standard" ? ` · ${DEPLOYMENT_APPROACHES[selectedApproach].name}` : ""}</b>
-            </summary>
+            </div>
 
             {conditions.length ? <section className="t-conditions" aria-label="Special conditions">
               {conditions.map((condition) => <div className="t-condition t-condition-v29" key={condition.type}>
@@ -782,12 +843,13 @@ function Brief() {
               <div className="t-brief-actions">{(["standard", "south"] as const).map((approach) => <button type="button" key={approach} className={`t-btn ${selectedApproach === approach ? "t-btn-primary" : ""}`} aria-pressed={selectedApproach === approach} disabled={busy || !field?.commander?.unlockedApproaches.includes(approach)} onClick={() => selectApproach(approach)}>{DEPLOYMENT_APPROACHES[approach].name}{approach === "south" && !field?.commander?.unlockedApproaches.includes("south") ? " / RANK 2" : ""}</button>)}</div>
               <small>{DEPLOYMENT_APPROACHES[selectedApproach].copy}</small>
             </div> : null}
-          </details>
+          </section>
         ) : null}
+
 
         {mission ? <details className="t-panel t-deploy-depth">
           <summary><span><span className="t-kicker">Optional depth</span><strong>MASTERY & LOADOUT</strong></span><b>VIEW</b></summary>
-          <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} />
+
 
           <details className="t-detail t-loadout-details"><summary>Squad abilities & hostile intel</summary>
             <div className="t-brief-grid">
@@ -815,6 +877,8 @@ function Brief() {
           </details>
         </details> : null}
 
+
+        </div> : null}
         <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29">
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
           <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
