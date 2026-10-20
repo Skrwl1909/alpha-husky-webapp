@@ -19,6 +19,7 @@ import {
 import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
+import { SkillbookPanel } from "./Skillbook";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -460,6 +461,8 @@ function WarTable() {
 
 
         {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
+
+        <SkillbookPanel />
 
         <PackMasteryPanel />
 
