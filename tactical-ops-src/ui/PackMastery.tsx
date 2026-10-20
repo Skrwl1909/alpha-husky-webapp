@@ -1,5 +1,8 @@
 import { useBattleStore } from "../store/battleStore";
 import { masteryDef, masteryRecord, type PackMastery, type MasteryChange } from "../data/packMastery";
+import { UNIT_DEFS } from "../data/units";
+import { portraitFallback } from "./PlayerIdentity";
+import { useState } from "react";
 
 function compactEffect(unlock: NonNullable<ReturnType<typeof masteryDef>>["trained"]) {
   const labels: Record<string, string> = {
@@ -29,6 +32,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
   const pending = useBattleStore((s) => s.progressionCommitPending || s.busy);
   const select = useBattleStore((s) => s.selectMastery);
   const pet = progression?.equippedPet;
+  const [selectedId, setSelectedId] = useState("ally-02");
   const ids = ["ally-02", "ally-03", ...(pet ? [`pet:${pet.id}`] : [])];
   const runs = [progression?.fieldOps?.activeMissionRun, ...Object.values(progression?.operations || {}).map((op: any) => op.activeMissionRun)] as Array<{ squadIds: string[] } | undefined>;
 
@@ -43,10 +47,13 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
         <small>First clear +2 · challenge +1</small>
       </div>
 
-      <div className="t-pack-list">
+      <nav className="t-premium-mastery-roster" aria-label="Select companion mastery">
+        {ids.map(id => <button type="button" key={id} className={selectedId === id ? "is-selected" : ""} aria-pressed={selectedId === id} onClick={() => setSelectedId(id)}><img src={id.startsWith("pet:") ? UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /><strong>{companionRole(id,pet?.name).label}</strong></button>)}
+      </nav>
+      <div className="t-pack-list t-premium-mastery-selected">
         {ids.map((id) => {
           const def = masteryDef(id);
-          if (!def) return null;
+          if (!def || (ids.includes(selectedId) && id !== selectedId) || (!ids.includes(selectedId) && id !== ids[0])) return null;
           const m = masteryRecord(snapshot || progression?.packMastery, id);
           const locked = runs.some((run) => run?.squadIds.includes(id));
           const active = m.stage >= 3 && m.selected ? def.options[m.selected] : null;
@@ -61,7 +68,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
 
           return (
             <article key={id} className="t-mastery-row t-mastery-premium-row t-mastery-card-v29" data-mastery-companion={id}>
-              <div className="t-mastery-avatar" aria-hidden="true">{role.label}</div>
+              <div className="t-mastery-avatar t-premium-avatar" aria-hidden="true"><img src={id.startsWith("pet:") ? UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /></div>
               <div className="t-mastery-main">
                 <div className="t-mastery-topline">
                   <div>
