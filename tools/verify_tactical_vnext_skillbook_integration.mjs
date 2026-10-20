@@ -35,6 +35,7 @@ try {
   assert(ui.includes("upgradeGrowth") && ui.includes("respecGrowth"), "both authenticated actions required");
   assert(ui.includes("CONFIRM UPGRADE") && ui.includes("CONFIRM RESET"));
   assert(app.includes("<SkillbookPanel />"), "Skillbook must be accessible from War Table");
+  assert(app.includes("t-growth-result") && app.includes("campaignMission && campaignResult") && app.includes("fieldOp && fieldResult"), "results cannot advertise points before server confirmation");
   assert(store.includes("upgradePlayerGrowth(") && store.includes("respecPlayerGrowth("));
   const t = readFileSync("tactical-ops-src/combat/battle.ts", "utf8");
   assert(t.includes("validateGrowthSnapshot(growth)"), "run snapshot required");
