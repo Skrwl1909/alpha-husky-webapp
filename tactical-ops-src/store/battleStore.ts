@@ -1,3 +1,4 @@
+import { resolveGrowthSkill, type GrowthSnapshot } from "../data/playerGrowth";
 import { fieldReport, type DeploymentApproach, type DirectiveTier, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
 import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
@@ -18,6 +19,8 @@ import {
   startFoundationRun,
   saveTeammateSidegrade,
   savePackMastery,
+  upgradePlayerGrowth,
+  respecPlayerGrowth,
   type CampaignResult,
   type CampaignReport,
 } from "../host/foundationProgression";
@@ -136,6 +139,8 @@ interface Store extends UiBattle {
   selectApproach: (approach: DeploymentApproach) => void;
   selectDirectiveTier: (tier: DirectiveTier) => void;
   selectMastery: (unitId: string, choice: "A" | "B") => Promise<void>;
+  upgradeGrowth: (heroId: "alpha" | "ally-02" | "ally-03", discipline: string, skillId: string, rank: 1 | 2) => Promise<void>;
+  respecGrowth: (heroId: "alpha" | "ally-02" | "ally-03") => Promise<void>;
   saveFieldResult: () => Promise<void>;
   saveCampaignResult: () => Promise<void>;
   openOperationBrief: (missionId: string) => void;
@@ -384,7 +389,7 @@ export const useBattleStore = create<Store>((set, get) => {
     }
   };
 
-  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null) => {
+  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null, growth?: GrowthSnapshot | null) => {
     traceNoticeShown = false;
     threatCycle = emptyThreatCycle();
     const identity = identityCache(resolvePlayerIdentity());
@@ -395,7 +400,7 @@ export const useBattleStore = create<Store>((set, get) => {
       : null;
     const reinforcement = boss ? { ...COMMANDER_REINFORCEMENT, spawn: { ...COMMANDER_REINFORCEMENT.spawn }, telegraphed: routingTrace, spawned: false } : null;
     const rules = mission ? missionBattleRules(mission, routingTrace, fieldContext, campaignContext) : { objective, reinforcement, directive: null };
-    const started = startBattle(identity, spawns, rules.objective, rules.reinforcement, signalCarrierId, rules.directive);
+    const started = startBattle(identity, spawns, rules.objective, rules.reinforcement, signalCarrierId, rules.directive, growth);
     sfx("turn");
     set({
       screen: "battle",
@@ -513,6 +518,42 @@ export const useBattleStore = create<Store>((set, get) => {
         const next = identityCache(resolvePlayerIdentity());
         set({ identity: next });
       });
+    },
+    upgradeGrowth: async (heroId, discipline, skillId, rank) => {
+      const current = get();
+      const growth = current.progression?.playerGrowth;
+      if (current.screen !== "war-table" || current.busy || current.progressionCommitPending || !current.progression || !growth) return;
+      const hero = growth.heroes.find(h => h.heroId === heroId);
+      if (!hero || (hero.discipline && hero.discipline !== discipline) ||
+          !((heroId === "alpha" && ["vanguard", "howlkeeper"].includes(discipline)) ||
+            (heroId === "ally-02" && ["pursuer", "disruptor"].includes(discipline)) ||
+            (heroId === "ally-03" && ["sentinel", "medic"].includes(discipline))) ||
+          (growth.earnedPoints - growth.spentPoints) < 1 || (hero.ranks[skillId] ?? 0) + 1 !== rank) return;
+      set({ progressionCommitPending: true, progressionError: null });
+      try {
+        const state = await upgradePlayerGrowth(createFoundationRequestId("growth-upgrade"), current.progression.revision, heroId, discipline, skillId, rank);
+        if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
+      } catch (error) {
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
+        set({ progressionError: "Skillbook choice was not saved. Check your points or refresh and retry." });
+      } finally { set({ progressionCommitPending: false }); }
+    },
+    respecGrowth: async (heroId) => {
+      const current = get();
+      const growth = current.progression?.playerGrowth;
+      const hero = growth?.heroes.find(h => h.heroId === heroId);
+      if (current.screen !== "war-table" || current.busy || current.progressionCommitPending ||
+          !current.progression || !hero || hero.respecUsed || Object.keys(hero.ranks).length === 0) return;
+      set({ progressionCommitPending: true, progressionError: null });
+      try {
+        const state = await respecPlayerGrowth(createFoundationRequestId("growth-respec"), current.progression.revision, heroId);
+        if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
+      } catch (error) {
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
+        set({ progressionError: "Respec was not saved. Refresh your Skillbook and try again." });
+      } finally { set({ progressionCommitPending: false }); }
     },
     selectMastery: async (unitId, choice) => {
       const current = get();
@@ -688,6 +729,7 @@ export const useBattleStore = create<Store>((set, get) => {
                 acceptedMission,
                 started.run.fieldContext,
                 started.run.campaignContext,
+                started.run.playerGrowth || null,
               );
             } catch (error) {
               if (g !== runGen) return;
@@ -799,7 +841,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
       if (!actor.skillIds.includes(skillId)) return;
-      const skill = getSkill(skillId);
+      const skill = resolveGrowthSkill(getSkill(skillId), actor.growth);
       if ((actor.cooldowns[skillId] ?? 0) > 0) return;
       if (battle.mode === "targeting" && battle.actionSkillId === skillId) {
         set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
@@ -1159,7 +1201,7 @@ export function targetIdsNow(): Set<string> {
   const actor = activeUnit(battle);
   if (!actor) return set;
   try {
-    const skill = getSkill(battle.actionSkillId);
+    const skill = resolveGrowthSkill(getSkill(battle.actionSkillId), actor.growth);
     for (const id of validTargetIds(battle.units, actor, skill)) set.add(id);
   } catch {
     /* ignore */

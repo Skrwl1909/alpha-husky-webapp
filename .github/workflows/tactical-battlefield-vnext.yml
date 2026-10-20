@@ -4,6 +4,14 @@ on:
     paths:
       - "tactical-ops-src/combat/**"
       - "tactical-ops-src/ui/Battle.tsx"
+      - "tactical-ops-src/ui/App.tsx"
+      - "tactical-ops-src/ui/Skillbook.tsx"
+      - "tactical-ops-src/tactical.css"
+      - "tools/verify_tactical_vnext_skillbook_integration.mjs"
+      - "tactical-ops-src/data/playerGrowth.ts"
+      - "tactical-ops-src/store/battleStore.ts"
+      - "tactical-ops-src/host/foundationProgression.ts"
+      - "tools/verify_tactical_vnext_player_growth.mjs"
       - "tools/verify_tactical_battlefield_preview.mjs"
       - ".github/workflows/tactical-battlefield-vnext.yml"
   workflow_dispatch:
@@ -21,6 +29,8 @@ jobs:
       - run: node tools/verify_tactical_battlefield_preview.mjs
       - run: node tools/verify_tactical_vnext_combat_intelligence.mjs
       - run: node tools/verify_tactical_vnext_counterplay.mjs
+      - run: node tools/verify_tactical_vnext_player_growth.mjs
+      - run: node tools/verify_tactical_vnext_skillbook_integration.mjs
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs

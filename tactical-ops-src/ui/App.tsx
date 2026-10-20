@@ -19,6 +19,7 @@ import {
 import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
+import { SkillbookPanel } from "./Skillbook";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -461,6 +462,8 @@ function WarTable() {
 
         {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
 
+        <SkillbookPanel />
+
         <PackMasteryPanel />
 
         <details className="t-panel t-wt-story-archive">
@@ -861,6 +864,13 @@ function Results() {
               <dd>{results.damageTaken}</dd>
             </div>
           </dl>
+          {progression?.playerGrowth && results.victory && ((fieldOp && fieldResult) || (campaignMission && campaignResult)) ? (
+            <section className="t-growth-result" aria-label="Server confirmed Skillbook progression">
+              <span className="t-kicker">SERVER-CONFIRMED PROGRESSION</span>
+              <strong>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE</strong>
+              <small>First-time mission clears add one point. Spend available points on the War Table Skillbook before your next deployment.</small>
+            </section>
+          ) : null}
           <div className="t-brief-actions t-result-actions">
             {campaignMission ? (
               campaignResult ? <>
