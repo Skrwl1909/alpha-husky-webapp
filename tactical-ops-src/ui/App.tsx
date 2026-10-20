@@ -524,6 +524,7 @@ function Brief() {
   const selectApproach = useBattleStore((s) => s.selectApproach);
   const field = useBattleStore((s) => s.progression?.fieldOps);
   const packMastery = useBattleStore((s) => s.progression?.packMastery);
+  const playerGrowth = useBattleStore((s) => s.progression?.playerGrowth);
   const selectRecoverTeammate = useBattleStore((s) => s.selectRecoverTeammate);
   const toggleCommanderTeammate = useBattleStore((s) => s.toggleCommanderTeammate);
   const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
@@ -558,7 +559,7 @@ function Brief() {
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
-  const previewGrowth = resuming ? savedRun?.playerGrowth : useBattleStore.getState().progression?.playerGrowth;
+  const previewGrowth = resuming ? savedRun?.playerGrowth : playerGrowth;
   const equippedProtocols = equippedSignalCodex(allies, previewGrowth);
   const selectedTradeoff = squadTradeoff(
     selectedSquadIds.length ? selectedSquadIds : allies.map(u => u.defId),
