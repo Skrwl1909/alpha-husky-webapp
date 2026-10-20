@@ -19,6 +19,8 @@ import {
   startFoundationRun,
   saveTeammateSidegrade,
   savePackMastery,
+  upgradePlayerGrowth,
+  respecPlayerGrowth,
   type CampaignResult,
   type CampaignReport,
 } from "../host/foundationProgression";
@@ -137,6 +139,8 @@ interface Store extends UiBattle {
   selectApproach: (approach: DeploymentApproach) => void;
   selectDirectiveTier: (tier: DirectiveTier) => void;
   selectMastery: (unitId: string, choice: "A" | "B") => Promise<void>;
+  upgradeGrowth: (heroId: "alpha" | "ally-02" | "ally-03", discipline: string, skillId: string, rank: 1 | 2) => Promise<void>;
+  respecGrowth: (heroId: "alpha" | "ally-02" | "ally-03") => Promise<void>;
   saveFieldResult: () => Promise<void>;
   saveCampaignResult: () => Promise<void>;
   openOperationBrief: (missionId: string) => void;
@@ -514,6 +518,42 @@ export const useBattleStore = create<Store>((set, get) => {
         const next = identityCache(resolvePlayerIdentity());
         set({ identity: next });
       });
+    },
+    upgradeGrowth: async (heroId, discipline, skillId, rank) => {
+      const current = get();
+      const growth = current.progression?.playerGrowth;
+      if (current.screen !== "war-table" || current.busy || current.progressionCommitPending || !current.progression || !growth) return;
+      const hero = growth.heroes.find(h => h.heroId === heroId);
+      if (!hero || (hero.discipline && hero.discipline !== discipline) ||
+          !((heroId === "alpha" && ["vanguard", "howlkeeper"].includes(discipline)) ||
+            (heroId === "ally-02" && ["pursuer", "disruptor"].includes(discipline)) ||
+            (heroId === "ally-03" && ["sentinel", "medic"].includes(discipline))) ||
+          (growth.earnedPoints - growth.spentPoints) < 1 || (hero.ranks[skillId] ?? 0) + 1 !== rank) return;
+      set({ progressionCommitPending: true, progressionError: null });
+      try {
+        const state = await upgradePlayerGrowth(createFoundationRequestId("growth-upgrade"), current.progression.revision, heroId, discipline, skillId, rank);
+        if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
+      } catch (error) {
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
+        set({ progressionError: "Skillbook choice was not saved. Check your points or refresh and retry." });
+      } finally { set({ progressionCommitPending: false }); }
+    },
+    respecGrowth: async (heroId) => {
+      const current = get();
+      const growth = current.progression?.playerGrowth;
+      const hero = growth?.heroes.find(h => h.heroId === heroId);
+      if (current.screen !== "war-table" || current.busy || current.progressionCommitPending ||
+          !current.progression || !hero || hero.respecUsed || Object.keys(hero.ranks).length === 0) return;
+      set({ progressionCommitPending: true, progressionError: null });
+      try {
+        const state = await respecPlayerGrowth(createFoundationRequestId("growth-respec"), current.progression.revision, heroId);
+        if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
+      } catch (error) {
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
+        set({ progressionError: "Respec was not saved. Refresh your Skillbook and try again." });
+      } finally { set({ progressionCommitPending: false }); }
     },
     selectMastery: async (unitId, choice) => {
       const current = get();
