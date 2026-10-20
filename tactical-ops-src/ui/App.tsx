@@ -864,6 +864,13 @@ function Results() {
               <dd>{results.damageTaken}</dd>
             </div>
           </dl>
+          {progression?.playerGrowth && results.victory && ((fieldOp && fieldResult) || (campaignMission && campaignResult)) ? (
+            <section className="t-growth-result" aria-label="Server confirmed Skillbook progression">
+              <span className="t-kicker">SERVER-CONFIRMED PROGRESSION</span>
+              <strong>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE</strong>
+              <small>First-time mission clears add one point. Spend available points on the War Table Skillbook before your next deployment.</small>
+            </section>
+          ) : null}
           <div className="t-brief-actions t-result-actions">
             {campaignMission ? (
               campaignResult ? <>
