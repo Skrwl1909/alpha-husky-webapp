@@ -20,6 +20,8 @@ import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, g
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 import { SkillbookPanel } from "./Skillbook";
+import { activeProtocolSlots, counterplayReadiness, equippedSignalCodex, SIGNAL_FAMILIES, squadTradeoff } from "../data/signalCodex";
+import { TACTICAL_VNEXT_ENABLED } from "../combat/intentContract";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -523,6 +525,7 @@ function Brief() {
   const selectApproach = useBattleStore((s) => s.selectApproach);
   const field = useBattleStore((s) => s.progression?.fieldOps);
   const packMastery = useBattleStore((s) => s.progression?.packMastery);
+  const playerGrowth = useBattleStore((s) => s.progression?.playerGrowth);
   const selectRecoverTeammate = useBattleStore((s) => s.selectRecoverTeammate);
   const toggleCommanderTeammate = useBattleStore((s) => s.toggleCommanderTeammate);
   const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
@@ -556,6 +559,16 @@ function Brief() {
   const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
+  // Render the exact server-accepted roster and skills, including any immutable run snapshot.
+  const previewGrowth = resuming ? savedRun?.playerGrowth : playerGrowth;
+  const equippedProtocols = equippedSignalCodex(allies, previewGrowth);
+  const activeSlots = activeProtocolSlots(allies, previewGrowth);
+  const readyCounters = counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED);
+  const selectedTradeoff = squadTradeoff(
+    selectedSquadIds.length ? selectedSquadIds : allies.map(u => u.defId),
+    equippedPet?.id,
+  );
+
   const hostiles = enemyBriefRows(spawns);
   const footnote = mission
     ? `${mission.objectiveType} · Squad cap ${mission.squadCap}. `
@@ -661,6 +674,87 @@ function Brief() {
           ) : null}
         </section>
 
+        <section className="t-panel t-codex-brief" aria-label="Signal Codex equipped capabilities">
+          <div className="t-wt-section-head"><div>
+            <span className="t-kicker">SQUAD BUILD · REAL ABILITIES</span>
+            <h2 className="t-title">SIGNAL CODEX</h2>
+          </div></div>
+          <p className="t-codex-tradeoff">{selectedTradeoff}</p>
+          <p className="t-codex-note">Current squad's equipped protocols, based on real A1/A2/A3 abilities. No extra skills or battle slots are granted.</p>
+          <div className="t-codex-loadout">
+            <strong>ACTIVE LOADOUT · EXISTING ABILITY SLOTS</strong>
+            <small>Change your squad above. Saved CNC / SHADOW variants can be selected below when unlocked; existing A1 / A2 / A3 cooldown rules stay in force.</small>
+            {allies.map(unit => (
+              <div className="t-codex-unit" key={unit.defId}>
+                <b>{unit.name} · {unit.defId.startsWith("pet:") ? "2 ABILITIES" : "3 ABILITIES"}</b>
+                <div className="t-codex-slots">
+                  {activeSlots.filter(x => x.unitId === unit.defId).map((slot, index) => (
+                    <div key={slot.skillId+index} className="t-codex-slot">
+                      <strong>{slot.slot} · {slot.name}</strong>
+                      <small>{slot.family || "BASIC ATTACK"} · CD {slot.cooldown} · RANGE {slot.minRange}–{slot.maxRange}</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="t-codex-counterlist" aria-label="Tactical counter options">
+            <strong>COUNTERPLAY AVAILABLE TO THIS SQUAD</strong>
+            <div className="t-codex-counters">
+              {readyCounters.map(counter => (
+                <div key={counter.id} className={`t-codex-counter ${counter.available ? "is-ready" : "is-missing"}`}>
+                  <b>{counter.label} · {counter.available ? "READY" : "NOT EQUIPPED"}</b>
+                  <small>{counter.source || counter.detail}</small>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="t-codex-variants">
+            <strong>EXISTING SAVED VARIANTS</strong>
+            {resuming ? <small className="t-codex-note">Accepted run · squad and variants are locked until this mission ends.</small> : null}
+          {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
+            <div className="t-panel t-brief-block t-sidegrade-card">
+              <div className="t-kicker">CNC · BUG HUNTER WARDEN</div>
+              {sidegradesUnlocked ? <>
+                <div className="t-brief-actions">
+                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "A"} className={`t-btn ${kodaSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("A")}>A · VANGUARD</button>
+                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
+                </div>
+                <small>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
+              </> : <small>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
+            </div>
+          ) : null}
+
+          {mission && spawns.some((spawn) => spawn.defId === "ally-03") ? (
+            <div className="t-panel t-brief-block t-sidegrade-card">
+              <div className="t-kicker">SHADOW · STAFF SUPPORT</div>
+              {sidegradesUnlocked ? <>
+                <div className="t-brief-actions">
+                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "A"} className={`t-btn ${shadowSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("A")}>A · RESTORER</button>
+                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
+                </div>
+                <small>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
+              </> : <small>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
+            </div>
+          ) : null}
+
+
+          </div>
+          <div className="t-codex-grid">
+            {SIGNAL_FAMILIES.map(family => {
+              const protocols = equippedProtocols.filter(p => p.family === family);
+              return <div className="t-codex-family" key={family}>
+                <strong>{family.toUpperCase()}</strong>
+                {protocols.length ? protocols.map((p, index) =>
+                  <div key={p.unit + p.skillId + index} className="t-codex-skill">
+                    <b>{p.unit} · {p.slot} {p.skillName}</b>
+                    <small>CD {p.cooldown} · {p.description}</small>
+                  </div>) : <small className="t-codex-empty">No equipped protocol in this family.</small>}
+              </div>;
+            })}
+          </div>
+        </section>
+
         {conditions.length || fieldOp ? (
           <details className="t-panel t-deploy-rules">
             <summary>
@@ -694,32 +788,6 @@ function Brief() {
         {mission ? <details className="t-panel t-deploy-depth">
           <summary><span><span className="t-kicker">Optional depth</span><strong>MASTERY & LOADOUT</strong></span><b>VIEW</b></summary>
           <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} />
-
-          {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
-            <div className="t-panel t-brief-block t-sidegrade-card">
-              <div className="t-kicker">CNC · BUG HUNTER WARDEN</div>
-              {sidegradesUnlocked ? <>
-                <div className="t-brief-actions">
-                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "A"} className={`t-btn ${kodaSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("A")}>A · VANGUARD</button>
-                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
-                </div>
-                <small>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
-              </> : <small>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
-            </div>
-          ) : null}
-
-          {mission && spawns.some((spawn) => spawn.defId === "ally-03") ? (
-            <div className="t-panel t-brief-block t-sidegrade-card">
-              <div className="t-kicker">SHADOW · STAFF SUPPORT</div>
-              {sidegradesUnlocked ? <>
-                <div className="t-brief-actions">
-                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "A"} className={`t-btn ${shadowSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("A")}>A · RESTORER</button>
-                  <button type="button" disabled={busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
-                </div>
-                <small>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
-              </> : <small>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
-            </div>
-          ) : null}
 
           <details className="t-detail t-loadout-details"><summary>Squad abilities & hostile intel</summary>
             <div className="t-brief-grid">

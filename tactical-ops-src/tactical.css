@@ -4250,3 +4250,39 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 #tacticalOpsRoot .t-growth-result { margin:14px 0; padding:14px; border-radius:10px; border:1px solid rgba(107,198,224,.44); background:linear-gradient(125deg,rgba(15,57,76,.72),rgba(9,20,36,.94)); }
 #tacticalOpsRoot .t-growth-result strong { display:block; margin:7px 0 5px; color:#b0ecff; font-size:clamp(15px,3vw,18px); letter-spacing:.06em; }
 #tacticalOpsRoot .t-growth-result small { display:block; color:#bed3df; font-size:11px; line-height:1.45; }
+
+/* VNext Step 5: existing-skill Signal Codex and squad opportunity cost. */
+#tacticalOpsRoot .t-codex-brief { padding:clamp(12px,3vw,20px); margin-block:14px; border:1px solid rgba(89,196,225,.35); background:linear-gradient(130deg,rgba(11,34,51,.97),rgba(8,16,30,.96)); }
+#tacticalOpsRoot .t-codex-tradeoff { color:#ffd79b; font-size:12px; line-height:1.5; margin:8px 0; }
+#tacticalOpsRoot .t-codex-note { color:#a7c3d2; font-size:11px; line-height:1.5; margin:8px 0 14px; }
+#tacticalOpsRoot .t-codex-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+#tacticalOpsRoot .t-codex-family { min-width:0; padding:11px; border:1px solid rgba(117,172,191,.26); border-radius:9px; background:rgba(10,21,34,.85); }
+#tacticalOpsRoot .t-codex-family>strong { display:block; color:#9ee7fc; font-size:11px; letter-spacing:.11em; margin-bottom:7px; }
+#tacticalOpsRoot .t-codex-skill { padding:7px 0; border-top:1px solid rgba(128,170,192,.15); }
+#tacticalOpsRoot .t-codex-skill b,#tacticalOpsRoot .t-codex-skill small { display:block; overflow-wrap:anywhere; }
+#tacticalOpsRoot .t-codex-skill b { color:#e2f2fb; font-size:11px; }
+#tacticalOpsRoot .t-codex-skill small,#tacticalOpsRoot .t-codex-empty { color:#a9bdcb; font-size:10px; line-height:1.5; }
+@media(max-width:420px) {#tacticalOpsRoot .t-codex-grid {grid-template-columns:1fr}}
+
+/* One pre-deployment loadout: existing authored slots, saved variants and counter options. */
+#tacticalOpsRoot .t-codex-loadout,#tacticalOpsRoot .t-codex-counterlist,#tacticalOpsRoot .t-codex-variants { margin:12px 0; padding:12px; background:rgba(5,18,31,.7); border:1px solid rgba(110,177,205,.25); border-radius:10px; }
+#tacticalOpsRoot .t-codex-loadout>strong,#tacticalOpsRoot .t-codex-counterlist>strong,#tacticalOpsRoot .t-codex-variants>strong { display:block; color:#a6edff; font-size:11px; letter-spacing:.09em; margin-bottom:8px; }
+#tacticalOpsRoot .t-codex-loadout>small { display:block; font-size:11px; line-height:1.5; color:#b9cbd9; margin-bottom:12px; }
+#tacticalOpsRoot .t-codex-unit { margin-top:11px; }
+#tacticalOpsRoot .t-codex-unit>b { display:block; color:#e4f5fc; font-size:12px; padding-bottom:6px; }
+#tacticalOpsRoot .t-codex-slots { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; }
+#tacticalOpsRoot .t-codex-slot { min-width:0; border-radius:7px; padding:9px 7px; background:rgba(30,65,83,.45); border:1px solid rgba(115,173,202,.27); overflow-wrap:anywhere; }
+#tacticalOpsRoot .t-codex-slot strong { display:block; color:#d5f0fb; font-size:10px; line-height:1.4; }
+#tacticalOpsRoot .t-codex-slot small { display:block; color:#b0c9d8; font-size:9px; line-height:1.45; margin-top:4px; }
+#tacticalOpsRoot .t-codex-counters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+#tacticalOpsRoot .t-codex-counter { border-radius:7px; padding:9px; border:1px solid rgba(110,167,190,.28); min-width:0; }
+#tacticalOpsRoot .t-codex-counter.is-ready { border-color:rgba(91,212,183,.45); background:rgba(21,76,72,.25); }
+#tacticalOpsRoot .t-codex-counter.is-missing { background:rgba(21,28,37,.53); opacity:.78; }
+#tacticalOpsRoot .t-codex-counter b,#tacticalOpsRoot .t-codex-counter small { display:block; overflow-wrap:anywhere; }
+#tacticalOpsRoot .t-codex-counter b { font-size:10px; line-height:1.35; color:#e1f6f7; }
+#tacticalOpsRoot .t-codex-counter small { margin-top:4px; font-size:10px; line-height:1.4; color:#aec5d3; }
+#tacticalOpsRoot .t-codex-variants .t-sidegrade-card { padding:10px; margin:7px 0; }
+@media(max-width:450px) {
+  #tacticalOpsRoot .t-codex-slots { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #tacticalOpsRoot .t-codex-counters { grid-template-columns:1fr; }
+}

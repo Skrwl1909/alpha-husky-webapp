@@ -9,6 +9,9 @@ on:
       - "tactical-ops-src/tactical.css"
       - "tools/verify_tactical_vnext_skillbook_integration.mjs"
       - "tactical-ops-src/data/playerGrowth.ts"
+      - "tactical-ops-src/data/signalCodex.ts"
+      - "tools/verify_tactical_vnext_step5_squad_codex.mjs"
+      - "tools/verify_tactical_vnext_step5_squad_matrix.mjs"
       - "tactical-ops-src/store/battleStore.ts"
       - "tactical-ops-src/host/foundationProgression.ts"
       - "tools/verify_tactical_vnext_player_growth.mjs"
@@ -31,6 +34,8 @@ jobs:
       - run: node tools/verify_tactical_vnext_counterplay.mjs
       - run: node tools/verify_tactical_vnext_player_growth.mjs
       - run: node tools/verify_tactical_vnext_skillbook_integration.mjs
+      - run: node tools/verify_tactical_vnext_step5_squad_codex.mjs
+      - run: node tools/verify_tactical_vnext_step5_squad_matrix.mjs
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
