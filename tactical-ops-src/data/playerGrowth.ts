@@ -69,17 +69,42 @@ export function validateGrowthSnapshot(value: unknown): GrowthSnapshot {
   }
   return s;
 }
+/** Resolve both the chosen discipline and the invested skill rank into real combat data.
+ * Never touch the canonical SkillDef, and never infer ownership from client storage.
+ */
 export function resolveGrowthSkill(base: SkillDef, hero: HeroGrowth | undefined): SkillDef {
   if (!hero || !HERO_SKILLS[hero.heroId]?.includes(base.id)) return base;
   const rank = hero.ranks[base.id] ?? 0;
-  if (rank === 0) return base;
-  const upgrade = UPGRADES.find((u) => u.skillId === base.id && u.rank === rank);
-  if (!upgrade) return base;
-  return {
+  if (!Number.isInteger(rank) || rank < 0 || rank > 2) return base;
+  const upgrade = rank ? UPGRADES.find((u) => u.skillId === base.id && u.rank === rank) : undefined;
+  const skill: SkillDef = {
     ...base,
-    maxRange: Math.max(base.minRange, base.maxRange + (upgrade.rangeDelta ?? 0)),
-    cooldownMax: Math.max(0, base.cooldownMax + (upgrade.cooldownDelta ?? 0)),
-    effects: base.effects.map((effect) => effect.kind === "status" && upgrade.durationDelta
+    maxRange: Math.max(base.minRange, base.maxRange + (upgrade?.rangeDelta ?? 0)),
+    cooldownMax: Math.max(0, base.cooldownMax + (upgrade?.cooldownDelta ?? 0)),
+    effects: base.effects.map((effect) => effect.kind === "status" && upgrade?.durationDelta
       ? { ...effect, duration: (effect.duration ?? 1) + upgrade.durationDelta } : { ...effect }),
   };
+  switch (hero.discipline) {
+    case "vanguard":
+      if (base.id === "alpha-howl") skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
+      break;
+    case "howlkeeper":
+      if (base.id === "alpha-howl") skill.radius += 1;
+      break;
+    case "pursuer":
+      if (base.id === "u02-shot") skill.maxRange += 1;
+      break;
+    case "disruptor":
+      if (base.id === "u02-suppress") {
+        skill.effects = skill.effects.map(e => e.kind === "status" ? { ...e, duration: (e.duration ?? 1) + 1 } : e);
+      }
+      break;
+    case "sentinel":
+      if (base.id === "u03-pack") skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
+      break;
+    case "medic":
+      if (base.id === "u03-mend") skill.cooldownMax = Math.max(0, skill.cooldownMax - 1);
+      break;
+  }
+  return skill;
 }
