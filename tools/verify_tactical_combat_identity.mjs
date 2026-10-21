@@ -30,6 +30,8 @@ try {
     growth:{heroId:"ally-02",discipline:"disruptor",ranks:{"u02-suppress":2}},
     combatMastery:{progress:8,stage:3,selected:"A"}};
   assert.equal(id.skillRankLabel(cnc,"u02-suppress:mastery:CNC:3:A"),"SIGNATURE");
+  const cncSpawn=pack.withPackMastery([{id:"ally-02",defId:"ally-02",c:2,r:1}],{"ally-02":{progress:8,stage:3,selected:"A",unlockedOptions:["A","B"]}});
+  assert.equal(cncSpawn[0].unitDef.skillIds[2],"u02-suppress:mastery:CNC:3:A","real generated mastery variant");
   const control=[{type:"status",unitId:"enemy",text:"ATK REDUCED",kind:"status"}];
   const interrupted=id.confirmedSkillMoment(cnc,"u02-suppress:mastery:CNC:3:A",control,3,true);
   assert.equal(interrupted?.consequence,"ENEMY INTENT CANCELED");
