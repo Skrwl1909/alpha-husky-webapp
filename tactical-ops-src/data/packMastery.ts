@@ -42,6 +42,7 @@ export function withPackMastery(spawns: SpawnSpec[], pack?: PackMastery): SpawnS
     const config = masteryDef(spawn.id), record = masteryRecord(pack, spawn.id);
     if (!config || record.stage < 2) return spawn;
     const def = structuredClone(spawn.unitDef || UNIT_DEFS[spawn.defId]);
+    def.combatMastery = { progress: record.progress, stage: record.stage, selected: record.selected };
     const unlocks = [config.trained, ...(record.stage >= 3 && record.selected ? [config.options[record.selected]] : [])];
     for (const { effect } of unlocks) {
       if (effect.move) def.move += effect.move;
