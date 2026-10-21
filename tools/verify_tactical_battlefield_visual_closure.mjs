@@ -17,6 +17,6 @@ assert(tail.includes(".t-skill-rank.is-signature"),"compact signature stamp");
 assert(tail.includes(".t-threat-tile {z-index:16;}"),"danger overlay must outrank sprite effects");
 assert(tail.includes(".t-sprite-fx {pointer-events:none"),"combat art must not absorb taps");
 assert(css.includes("prefers-reduced-motion:reduce"),"motion accessibility retained");
-assert(version.includes("3.4.2-battlefield-visual-closure"));
-assert(boot.includes("tops-3.4.2-battlefield-visual-closure"));
+assert(version.includes("3.4.3-battlefield-shell-closure"));
+assert(boot.includes("tops-3.4.3-battlefield-shell-closure"));
 console.log("PASS Tactical battlefield visual closure: movement, status fallback, signature labels, threats, accessibility");
