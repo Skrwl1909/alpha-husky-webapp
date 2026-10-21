@@ -5,6 +5,7 @@ import { getSkill } from "../data/skills";
 import { UNIT_DEFS } from "../data/units";
 import { portraitFallback } from "./PlayerIdentity";
 import { skillChangePreview } from "./combatIdentity";
+import { tacticalEmblemFor } from "./tacticalEmblems";
 
 const NAMES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
 const PATH_COPY: Record<Discipline, string> = {
@@ -64,7 +65,7 @@ export function SkillbookPanel() {
               <button className={id === heroId ? "is-selected" : ""} key={id} aria-pressed={id === heroId}
                 type="button" onClick={() => setHeroId(id)}><img src={UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /><span>{NAMES[id]}</span></button>)}
           </nav>
-          <div className="t-growth-copy"><strong>{NAMES[heroId]}</strong><span>{hero?.discipline ? "SPECIALIZATION LOCKED IN" : "CHOOSE FIRST SPECIALIZATION"}</span></div>
+          <div className="t-growth-copy"><img className="t-growth-core-emblem" src={tacticalEmblemFor(heroId, hero?.discipline) || ""} alt="" onError={e => { e.currentTarget.style.display = "none"; }} /><strong>{NAMES[heroId]}</strong><span>{hero?.discipline ? "SPECIALIZATION LOCKED IN" : "CHOOSE FIRST SPECIALIZATION"}</span></div>
           <div className="t-growth-paths">
             {HERO_PATHS[heroId].map(choice =>
               <button key={choice} type="button"
@@ -72,7 +73,7 @@ export function SkillbookPanel() {
                 disabled={pending || (hero?.discipline != null && hero.discipline !== choice)}
                 aria-pressed={choice === path}
                 onClick={() => { setPath(choice); setSkillId(null); }}>
-                <b>{choice.toUpperCase()}</b><small>{PATH_COPY[choice]}</small>
+                <img className="t-growth-path-emblem" src={tacticalEmblemFor(heroId, choice) || ""} alt="" loading="lazy" onError={e => { e.currentTarget.style.display = "none"; }} /><b>{choice.toUpperCase()}</b><small>{PATH_COPY[choice]}</small>
               </button>)}
           </div>
           <div className="t-growth-skill-list">
