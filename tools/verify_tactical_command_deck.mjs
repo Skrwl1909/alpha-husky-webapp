@@ -25,7 +25,7 @@ for (const asset of ["command_room.webp", "mission_hologram.webp", "frames/03_fr
   assert(css.includes(asset), "Referenced uploaded asset "+asset);
 }
 assert(css.includes(".t-command-nav") && css.includes("position: sticky") && css.includes("prefers-reduced-motion"), "Navigation CSS and accessibility");
-assert(version.includes("tops-3.3.3-command-deck-premium-ux") && boot.includes("tops-3.3.3-command-deck-premium-ux"), "Canonical runtime version");
+assert(version.includes("tops-3.3.4-command-deck-complete") && boot.includes("tops-3.3.4-command-deck-complete"), "Canonical runtime version");
 console.log("PASS Command Deck source invariants: War Table and Brief tabs, saved actions, sticky navigation and deploy, version");
 
 const skillbook = readFileSync("tactical-ops-src/ui/Skillbook.tsx", "utf8");
@@ -37,3 +37,11 @@ assert(skillbook.includes('UNIT_DEFS[id].portrait'), "Skillbook roster includes 
 assert(mastery.includes("t-premium-mastery-roster") && mastery.includes("selectedId"), "Mastery shows one companion at a time");
 assert(css.includes("t-premium-front-link") && css.includes("t-premium-squad-switch"), "Compact Command and Squad UI styling");
 console.log("PASS Command Deck premium UX: compact command and exclusive squad progression views");
+
+const currentMastery = readFileSync("tactical-ops-src/ui/PackMastery.tsx","utf8");
+assert(war.includes("t-op-selector") && war.includes("t-op-selected"),"only selected field op");
+assert(brief.includes("t-loadout-unit-picker") && brief.includes("t-codex-reference"),"focused unit loadout");
+assert(brief.includes("t-brief-optional-toggle") && brief.includes("showBriefMastery"),"brief mastery opt-in");
+assert(currentMastery.includes("pet?.img"),"pet uses server-validated portrait");
+assert(css.includes("padding-bottom:calc(115px + env(safe-area-inset-bottom"),"content cleared from deploy dock");
+console.log("PASS Command Deck completion UX invariants");

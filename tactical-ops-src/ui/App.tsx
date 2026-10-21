@@ -188,6 +188,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
 function WarTable() {
   const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
   const [squadView, setSquadView] = useState<"skillbook" | "mastery">("skillbook");
+  const [selectedFieldOp, setSelectedFieldOp] = useState<string | null>(null);
   const progression = useBattleStore((s) => s.progression);
   const openOperationBrief = useBattleStore((s) => s.openOperationBrief);
   const progressionError = useBattleStore((s) => s.progressionError);
@@ -397,8 +398,18 @@ function WarTable() {
             </div>
             <span>{activeMissionIds.length} ACTIVE</span>
           </div>
-          <div className="t-wt-mission-list">
-            {activeMissionDefs.map((mission) => {
+          <nav className="t-op-selector" aria-label="Select a Field Op">
+            {activeMissionDefs.map((mission, index) => (
+              <button key={mission.missionId} type="button" aria-pressed={(selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0]) === mission.missionId}
+                className={(selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0]) === mission.missionId ? "is-selected" : ""}
+                onClick={() => setSelectedFieldOp(mission.missionId)}>
+                <span>{String(index + 1).padStart(2, "0")}</span><strong>{mission.name}</strong>
+                <small>{securedMissionIds.has(mission.missionId) ? "SECURED" : "AVAILABLE"}</small>
+              </button>
+            ))}
+          </nav>
+          <div className="t-wt-mission-list t-op-selected">
+            {activeMissionDefs.filter(mission => mission.missionId === (selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0])).map((mission) => {
               const record = field?.records[mission.missionId];
               const securedToday = record?.lastClearCycle === field?.board?.cycleId;
               const bonusEarned = record?.lastChallengeCycle === field?.board?.cycleId;
@@ -533,6 +544,8 @@ function WarTable() {
 
 function Brief() {
   const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">("mission");
+  const [loadoutUnit, setLoadoutUnit] = useState<string>("alpha");
+  const [showBriefMastery, setShowBriefMastery] = useState(false);
   const identity = useBattleStore(s => s.identity);
   const deploy = useBattleStore((s) => s.deploy);
   const backToHub = useBattleStore((s) => s.backToHub);
@@ -714,7 +727,12 @@ function Brief() {
         </section>
 
 
-        {mission ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
+        {mission ? <div className="t-brief-mastery-optional">
+          <button type="button" className="t-brief-optional-toggle" aria-expanded={showBriefMastery} onClick={() => setShowBriefMastery(value => !value)}>
+            <strong>PACK MASTERY</strong><span>{showBriefMastery ? "HIDE DETAILS −" : "VIEW PROGRESSION +"}</span>
+          </button>
+          {showBriefMastery ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
+        </div> : null}
         </div> : null}
         {briefTab === "loadout" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Equipped protocols and sidegrades">
         <section className="t-panel t-codex-brief" aria-label="Signal Codex equipped capabilities">
@@ -727,7 +745,15 @@ function Brief() {
           <div className="t-codex-loadout">
             <strong>ACTIVE LOADOUT · EXISTING ABILITY SLOTS</strong>
             <small>Change your squad above. Saved CNC / SHADOW variants can be selected below when unlocked; existing A1 / A2 / A3 cooldown rules stay in force.</small>
-            {allies.map(unit => (
+            <nav className="t-loadout-unit-picker" aria-label="Select unit abilities">
+              {allies.map(unit => <button type="button" key={unit.defId} className={(allies.some(x => x.defId === loadoutUnit) ? loadoutUnit : allies[0]?.defId) === unit.defId ? "is-selected" : ""}
+                aria-pressed={(allies.some(x => x.defId === loadoutUnit) ? loadoutUnit : allies[0]?.defId) === unit.defId}
+                onClick={() => setLoadoutUnit(unit.defId)}>
+                <img src={unit.portrait} alt="" onError={portraitFallback} />
+                <span>{unit.defId === "ally-02" ? "CNC" : unit.defId === "ally-03" ? "SHADOW" : unit.defId.startsWith("pet:") ? "PET" : unit.name}</span>
+              </button>)}
+            </nav>
+            {allies.filter(unit => unit.defId === (allies.some(x => x.defId === loadoutUnit) ? loadoutUnit : allies[0]?.defId)).map(unit => (
               <div className="t-codex-unit" key={unit.defId}>
                 <b>{unit.name} · {unit.defId.startsWith("pet:") ? "2 ABILITIES" : "3 ABILITIES"}</b>
                 <div className="t-codex-slots">
@@ -783,6 +809,7 @@ function Brief() {
 
 
           </div>
+          <details className="t-codex-reference"><summary>ALL PROTOCOL FAMILIES · REFERENCE</summary>
           <div className="t-codex-grid">
             {SIGNAL_FAMILIES.map(family => {
               const protocols = equippedProtocols.filter(p => p.family === family);
@@ -796,6 +823,7 @@ function Brief() {
               </div>;
             })}
           </div>
+          </details>
         </section>
 
 
