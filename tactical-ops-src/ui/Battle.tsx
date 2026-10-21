@@ -10,6 +10,7 @@ import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } fro
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
 import { FX_ROOT } from "./combatFxAtlas";
 import { tacticalEmblemFor } from "./tacticalEmblems";
+import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { OPERATION } from "../data/units";
@@ -56,6 +57,27 @@ function ActIcon({ archetype }: { archetype?: ActionArchetype }) {
   if (archetype === "support") return <Shield {...props} />;
   if (archetype === "objective") return <Target {...props} />;
   return <Swords {...props} />;
+}
+
+/** Cosmetic P2 art. Keep Lucide fallback if a static PNG fails to load. */
+function ActionArt({ src, archetype, fallback }: { src: string | null; archetype?: ActionArchetype; fallback?: "skip" }) {
+  const fallbackArt = fallback === "skip"
+    ? <ChevronsRight className="t-act-svg" aria-hidden="true" />
+    : <ActIcon archetype={archetype} />;
+  if (!src) return fallbackArt;
+  return (
+    <span className="t-act-art" key={src} aria-hidden="true">
+      <img
+        className="t-act-image"
+        src={src}
+        alt=""
+        draggable={false}
+        decoding="async"
+        onError={(event) => event.currentTarget.parentElement?.classList.add("has-icon-error")}
+      />
+      <span className="t-act-fallback">{fallbackArt}</span>
+    </span>
+  );
 }
 
 function formatMod(label: string, effective: number, base: number): string {
@@ -385,7 +407,7 @@ function SkillHud() {
               selectSkill(sk.id);
             }}
           >
-            <ActIcon archetype={presentation?.archetype} />
+            <ActionArt src={sk ? tacticalActionImageForSkill(sk.id) : null} archetype={presentation?.archetype} />
             <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
             {rankLabel ? <span className="t-skill-rank" aria-label={`Upgrade ${rankLabel}`}>{rankLabel}</span> : null}
             <span className="name">{sk?.name ?? "—"}</span>
@@ -405,7 +427,7 @@ function SkillHud() {
             selectRecover();
           }}
         >
-          <ActIcon archetype={RECOVER_PRESENTATION.archetype} />
+          <ActionArt src={tacticalActionImageForCommand("recover")} archetype={RECOVER_PRESENTATION.archetype} />
           <span className="slot">OBJ</span>
           <span className="name">RECOVER</span>
           <span className="meta">{RECOVER_PRESENTATION.cue}</span>
@@ -647,7 +669,7 @@ export function BattleScreen() {
             skipTurn();
           }}
         >
-          <ChevronsRight className="t-act-svg" aria-hidden="true" />
+          <ActionArt src={tacticalActionImageForCommand("skip")} fallback="skip" />
           Skip
         </button>
       </footer>

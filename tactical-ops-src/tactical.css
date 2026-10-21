@@ -4600,6 +4600,48 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 #tacticalOpsRoot .t-combat-emblem {height:17px;width:17px;object-fit:contain;flex:none;}
 @media(max-width:390px){#tacticalOpsRoot .t-growth-path-emblem{width:34px;height:34px;}#tacticalOpsRoot .t-combat-emblem{width:13px;height:13px;}}
 
+/* Tactical Ops P2 — authored action art (cosmetic-only, no new hit areas). */
+#tacticalOpsRoot .t-act-art {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  margin: -2px auto 0;
+  pointer-events: none;
+}
+#tacticalOpsRoot .t-act-art .t-act-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 0 4px #3ec6ff33);
+}
+#tacticalOpsRoot .t-act-art .t-act-fallback { display: none; }
+#tacticalOpsRoot .t-act-art.has-icon-error .t-act-image { display: none; }
+#tacticalOpsRoot .t-act-art.has-icon-error .t-act-fallback { display: grid; place-items: center; }
+#tacticalOpsRoot .t-act.cooling .t-act-image,
+#tacticalOpsRoot .t-act:disabled .t-act-image {
+  filter: grayscale(.75) brightness(.65);
+}
+#tacticalOpsRoot .t-act.on .t-act-image { filter: drop-shadow(0 0 5px #3ec6ff77); }
+#tacticalOpsRoot .t-skip .t-act-art { width: 26px; height: 26px; flex-basis: 26px; margin: 0 auto; }
+#tacticalOpsRoot .t-skip:disabled .t-act-image { filter: grayscale(1) brightness(.65); }
+#tacticalOpsRoot .t-cell.move::after {
+  background-image: url("/images/tactical_ops/actions/action_system_move.png"), radial-gradient(circle, #3ec6ff70 0%, #3ec6ff14 72%, transparent);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 82% 82%, 100% 100%;
+  width: 19px;
+  height: 19px;
+}
+#tacticalOpsRoot .t-growth-skill-label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+#tacticalOpsRoot .t-growth-action-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
+@media (max-width: 390px) {
+  #tacticalOpsRoot .t-act-art { width: 24px; height: 24px; flex-basis: 24px; }
+  #tacticalOpsRoot .t-skip .t-act-art { width: 23px; height: 23px; flex-basis: 23px; }
+}
+
 /* 12-frame, row-major 4x3 transparent atlases. Never intercept battlefield taps. */
 #tacticalOpsRoot .t-sprite-fx {position:absolute;z-index:14;transform:translate(-50%,-50%);width:clamp(60px,11vw,118px);height:clamp(60px,11vw,118px);pointer-events:none;overflow:visible;}
 #tacticalOpsRoot .t-sprite-fx-clip {width:100%;height:100%;overflow:hidden;animation:t-fx-visibility 1s steps(1,end) both;}
