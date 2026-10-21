@@ -70,6 +70,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
             <article key={id} className="t-mastery-row t-mastery-premium-row t-mastery-card-v29" data-mastery-companion={id}>
               <div className="t-mastery-avatar t-premium-avatar" aria-hidden="true"><img src={id.startsWith("pet:") ? pet?.img || UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /></div>
               <div className="t-mastery-main">
+                {m.stage >= 2 ? <div className={`t-mastery-combat-badge ${m.stage >= 3 ? "is-signature" : "is-trained"}`}>{m.stage >= 3 ? "SIGNATURE EVOLUTION · 8/8" : "AWAKENED · 3/8"}</div> : null}
                 <div className="t-mastery-topline">
                   <div>
                     <strong>{role.label}</strong>
@@ -140,12 +141,12 @@ export function MasteryFeedback({ changes, victory }: { changes?: MasteryChange[
   return <section className="t-mastery-feedback" aria-label="Pack Mastery"><div className="t-kicker">PACK MASTERY</div>{changes.map((change) => {
     const def = masteryDef(change.unitId);
     if (!def) return null;
-    return <div className="t-mastery-row" key={change.unitId} data-mastery-unit={change.unitId}>
+    return <div className={`t-mastery-row t-mastery-reward ${change.beforeStage !== change.stage ? "is-unlock" : ""}`} key={change.unitId} data-mastery-unit={change.unitId}>
       <div className="t-mastery-heading"><strong>{def.name}</strong><span>{change.stage === 3 ? "STAGE 3 COMPLETE" : `STAGE ${change.beforeStage !== change.stage ? `${change.beforeStage} → ` : ""}${change.stage}`}</span>{change.gained > 0 || change.stage < 3 ? <b>+{change.gained} MASTERY</b> : null}</div>
       {change.gained > 0 ? <small>{masteryReason(change)}</small> : null}
       <progress className="t-progress" aria-label={`${def.name} mastery`} value={change.progress} max={8} />
-      {change.beforeStage < 2 && change.stage >= 2 ? <details className="t-detail"><summary>UNLOCKED · {def.trained.name}</summary><p>{def.trained.copy}</p></details> : null}
-      {change.newOptions.length ? <details className="t-detail"><summary>SPECIALIZATIONS UNLOCKED</summary><p>{def.options.A.name} (active) · {def.options.B.name}</p><p>{def.options.A.copy}</p><p>Choose outside a committed attempt.</p></details> : null}
+      {change.beforeStage < 2 && change.stage >= 2 ? <div className="t-mastery-unlock"><strong>AWAKENED · {def.trained.name}</strong><p>{def.trained.copy}</p></div> : null}
+      {change.newOptions.length ? <div className="t-mastery-unlock is-signature"><strong>SIGNATURE EVOLUTION · 8/8</strong><p>{def.options.A.name} / {def.options.B.name}</p><p>Specializations unlocked. Choose outside an active run.</p></div> : null}
       {!change.gained && change.progress < 8 ? <small>{victory ? "Award already earned. Try another mission or challenge." : "Clear a Field Op to progress."}</small> : null}
     </div>;
   })}</section>;
