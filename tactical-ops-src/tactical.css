@@ -4527,3 +4527,20 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-op-selector button {min-height:76px;}
   #tacticalOpsRoot .t-op-selector button strong {font-size:9px;}
 }
+
+/* Mobile Mission Brief: action buttons follow content, never overlay squad/loadout. */
+@media (max-width: 768px) {
+  #tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-actions.t-deploy-actions-v29.t-command-action-dock {
+    position: static !important;
+    inset: auto !important;
+    bottom: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+    margin-top: 12px;
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+  #tacticalOpsRoot .t-deployment.t-premium-ux {
+    padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  }
+}
