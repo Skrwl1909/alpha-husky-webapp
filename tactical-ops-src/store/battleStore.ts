@@ -26,6 +26,7 @@ import {
 } from "../host/foundationProgression";
 import { VERSION } from "../version";
 import { confirmedPathfinderMove, confirmedSkillMoment, type CombatMoment } from "../ui/combatIdentity";
+import { spriteEvents, pathfinderFx, fx, type CombatFx } from "../ui/combatFxAtlas";
 import {
   DEFAULT_ONBOARDING_STAGE,
   getOnboardingEncounter,
@@ -63,6 +64,7 @@ interface UiBattle {
   impactId: string | null;
   impactKey: number;
   combatMoment: CombatMoment | null;
+  combatFx: CombatFx[];
   muted: boolean;
   queue: string[];
   identity: PlayerIdentity;
@@ -182,6 +184,14 @@ export const useBattleStore = create<Store>((set, get) => {
     set({ combatMoment: moment });
     void wait(1150).then(() => {
       if (generation === runGen && get().combatMoment?.id === moment.id) set({ combatMoment: null });
+    });
+  };
+  const publishFx = (effects: CombatFx[], generation: number) => {
+    if (!effects.length) return;
+    const capped=effects.slice(0,5);
+    set({ combatFx: capped });
+    void wait(Math.max(...capped.map(effect=>effect.durationMs))+70).then(()=>{
+      if(generation===runGen && get().combatFx[0]?.id===capped[0].id)set({combatFx:[]});
     });
   };
   const pushFloat = (unitId: string, text: string, kind: string) => {
@@ -437,6 +447,7 @@ export const useBattleStore = create<Store>((set, get) => {
       attackingId: null,
       impactId: null,
       combatMoment: null,
+      combatFx: [],
       currentRunKey: runKey,
       currentFieldContext: fieldContext || null,
       fieldResult: null,
@@ -469,6 +480,7 @@ export const useBattleStore = create<Store>((set, get) => {
     impactId: null,
     impactKey: 0,
     combatMoment: null,
+    combatFx: [],
     muted: false,
     queue: [],
     identity: resolvePlayerIdentity(),
@@ -859,7 +871,10 @@ export const useBattleStore = create<Store>((set, get) => {
       sfx("move");
       set({ battle: res.state, queue: refreshQueue(res.state), ticker: `${actor.name}  ·  repositions` });
       const moved = res.state.units.find(u => u.id === actor.id);
-      if (moved) publishMoment(confirmedPathfinderMove(actor, moved, impactSeq++), runGen);
+      if (moved) {
+        publishMoment(confirmedPathfinderMove(actor, moved, impactSeq++), runGen);
+        publishFx(pathfinderFx(actor, moved, impactSeq++), runGen);
+      }
     },
     selectSkill: (skillId: string) => {
       const { battle, busy } = get();
@@ -884,6 +899,7 @@ export const useBattleStore = create<Store>((set, get) => {
         }
         set({ battle: res.state, queue: refreshQueue(res.state) });
         publishMoment(confirmedSkillMoment(actor, skillId, res.events, impactSeq++, false), g);
+        publishFx(spriteEvents(actor,skillId,res.events,impactSeq++,false),g);
         void (async () => {
           await playEvents(res.events, g);
           set({ attackingId: null });
@@ -922,6 +938,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ battle: res.state, queue: refreshQueue(res.state),
         ...(interrupt.interrupted ? { threats: threatCycle.pending.map(t => t.plan) } : {}) });
       publishMoment(confirmedSkillMoment(actor, selectedSkillId, res.events, impactSeq++, interrupt.interrupted), g);
+      publishFx(spriteEvents(actor,selectedSkillId,res.events,impactSeq++,interrupt.interrupted),g);
       void (async () => {
         await playEvents(res.events, g);
         if (interrupt.interrupted) {
@@ -944,6 +961,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       const g = ++runGen;
       set({ busy: true, battle: res.state, queue: refreshQueue(res.state), ticker: "SIGNAL RECOVERED" });
+      if(battle.objective?.type==="RECOVER") publishFx([fx("objective_recover",impactSeq++,undefined,battle.objective.terminal)],g);
       void (async () => {
         await playEvents(res.events, g);
         await afterPlayerAction(g);

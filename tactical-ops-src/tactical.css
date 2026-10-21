@@ -4641,3 +4641,27 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-act-art { width: 24px; height: 24px; flex-basis: 24px; }
   #tacticalOpsRoot .t-skip .t-act-art { width: 23px; height: 23px; flex-basis: 23px; }
 }
+
+/* 12-frame, row-major 4x3 transparent atlases. Never intercept battlefield taps. */
+#tacticalOpsRoot .t-sprite-fx {position:absolute;z-index:14;transform:translate(-50%,-50%);width:clamp(60px,11vw,118px);height:clamp(60px,11vw,118px);pointer-events:none;overflow:visible;}
+#tacticalOpsRoot .t-sprite-fx-clip {width:100%;height:100%;overflow:hidden;animation:t-fx-visibility 1s steps(1,end) both;}
+#tacticalOpsRoot .t-sprite-fx-sheet {width:400%;height:300%;background-size:100% 100%;background-repeat:no-repeat;animation:t-fx-atlas 1s steps(1,end) both;will-change:transform;}
+@keyframes t-fx-atlas {
+  0%,8.333%{transform:translate(0,0);}
+  8.334%,16.666%{transform:translate(-25%,0);}
+  16.667%,24.999%{transform:translate(-50%,0);}
+  25%,33.333%{transform:translate(-75%,0);}
+  33.334%,41.666%{transform:translate(0,-33.333%);}
+  41.667%,49.999%{transform:translate(-25%,-33.333%);}
+  50%,58.333%{transform:translate(-50%,-33.333%);}
+  58.334%,66.666%{transform:translate(-75%,-33.333%);}
+  66.667%,74.999%{transform:translate(0,-66.666%);}
+  75%,83.333%{transform:translate(-25%,-66.666%);}
+  83.334%,91.666%{transform:translate(-50%,-66.666%);}
+  91.667%,100%{transform:translate(-75%,-66.666%);}
+}
+@keyframes t-fx-visibility{0%,99%{opacity:1;}100%{opacity:0;}}
+@media(prefers-reduced-motion:reduce){
+  #tacticalOpsRoot .t-sprite-fx-sheet{animation:none!important;transform:translate(-50%,-33.333%);}
+  #tacticalOpsRoot .t-sprite-fx-clip{animation:none!important;}
+}
