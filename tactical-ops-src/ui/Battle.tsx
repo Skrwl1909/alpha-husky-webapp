@@ -7,6 +7,7 @@ import { fieldPercent, cellKey } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
+import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { OPERATION } from "../data/units";
@@ -229,6 +230,7 @@ function StatusStrip() {
   return (
     <aside className={`t-status ${unit.team}${isAlpha ? " is-alpha" : ""}`} onPointerDown={(e) => e.stopPropagation()} aria-label="Selected unit">
       <img src={unit.portrait || unit.sprite} alt="" />
+      {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}>{combatIdentityLabel(unit)}</span> : null}
       <div className="t-status-main">
         <div className="t-status-head">
           <div className="t-status-name">{unit.name}</div>
@@ -365,11 +367,13 @@ function SkillHud() {
         const on = battle.actionSkillId && sk && battle.actionSkillId === sk.id;
         const cooling = sk && !sk.ready;
         const presentation = sk ? getActionPresentation(sk) : null;
+        const tier = sk && actor ? combatTier(actor, sk.id) : "base";
+        const rankLabel = sk && actor ? skillRankLabel(actor, sk.id) : null;
         return (
           <button
             key={i}
             type="button"
-            className={`t-act ${on ? "on" : ""} ${cooling ? "cooling" : ""} ${presentation ? `kind-${presentation.archetype} fx-${presentation.effectClass}` : ""}`}
+            className={`t-act t-growth-${tier} ${on ? "on" : ""} ${cooling ? "cooling" : ""} ${presentation ? `kind-${presentation.archetype} fx-${presentation.effectClass}` : ""}`}
             disabled={!allyTurn || !sk || !!cooling}
             aria-pressed={!!on}
             aria-label={sk ? `${sk.slot} ${sk.name}. ${sk.desc}` : `Empty slot A${i + 1}`}
@@ -381,6 +385,7 @@ function SkillHud() {
           >
             <ActIcon archetype={presentation?.archetype} />
             <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
+            {rankLabel ? <span className="t-skill-rank" aria-label={`Upgrade ${rankLabel}`}>{rankLabel}</span> : null}
             <span className="name">{sk?.name ?? "—"}</span>
             {presentation ? <span className="meta">{presentation.cue}</span> : null}
             {cooling ? <span className="cd">{sk!.cd}T</span> : null}
@@ -416,6 +421,7 @@ export function BattleScreen() {
   const inspectId = useBattleStore((s) => s.battle.inspectId);
   const actionSkillId = useBattleStore((s) => s.battle.actionSkillId);
   const lastActionSkillId = useBattleStore((s) => s.lastActionSkillId);
+  const combatMoment = useBattleStore((s) => s.combatMoment);
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
@@ -555,6 +561,14 @@ export function BattleScreen() {
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
               />
             ))}
+          {combatMoment && (() => {
+            const target = units.find(u => u.id === combatMoment.targetId);
+            if (!target) return null;
+            const pos = fieldPercent(target.c, target.r);
+            return <div key={combatMoment.id} className={`t-master-fx fx-affinity-${combatMoment.affinity} fx-tier-${combatMoment.tier} fx-mode-${combatMoment.mode}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-hidden="true">
+              <i className="t-master-fx-ring" /><i className="t-master-fx-core" />
+            </div>;
+          })()}
           {floats.map((f) => {
             const u = units.find((x) => x.id === f.unitId);
             if (!u) return null;
@@ -583,6 +597,9 @@ export function BattleScreen() {
           <div className="t-threat-brief-action">MOVE OFF RED <span>·</span> INTERRUPT <span>·</span> GUARD</div>
         </aside>
       ) : null}
+      {combatMoment ? <div className={`t-master-moment t-master-moment-${combatMoment.affinity} t-master-moment-${combatMoment.tier}`} role="status" aria-live="polite" key={combatMoment.id}>
+        <strong>{combatMoment.title}</strong><small>{combatMoment.consequence}</small>
+      </div> : null}
       {banner ? (
         <div className="t-banner">
           <span>{banner}</span>
