@@ -316,6 +316,7 @@ function WarTable() {
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
+          <>
           <section className="t-player-route" aria-label="Your next tactical goal">
             <span className="t-kicker">{activeMissionRun ? "CONTINUE YOUR RUN" : "YOUR NEXT STEP"}</span>
             <strong>{recommendedMission.name}</strong>
@@ -351,6 +352,7 @@ function WarTable() {
               </button>
             </div>
           </section>
+          </>
           );
         })() : null}
 
