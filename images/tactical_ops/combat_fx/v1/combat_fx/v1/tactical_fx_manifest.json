@@ -1,0 +1,523 @@
+{
+  "pack": "ALPHA HUSKY · TACTICAL COMBAT FX V1",
+  "schemaVersion": 1,
+  "productionStatus": "ASSETS_PREPARED_NOT_WIRED_IN_GAME",
+  "baseUrl": "/images/tactical_ops/combat_fx/v1/",
+  "geometry": {
+    "frameWidth": 256,
+    "frameHeight": 256,
+    "columns": 4,
+    "rows": 3,
+    "frames": 12,
+    "atlasWidth": 1024,
+    "atlasHeight": 768,
+    "firstFrame": 0,
+    "layout": "row-major, left-to-right then top-to-bottom",
+    "background": "transparent RGBA",
+    "pivot": {
+      "x": 0.5,
+      "y": 0.5
+    },
+    "loop": false
+  },
+  "globalRules": [
+    "Play only after a confirmed accepted action and relevant events; never on mere button press.",
+    "Animations are decoration, not independent mechanic; preserve damage/heal/status floats and red hazard telegraphs.",
+    "Use correct target/caster/terminal anchors, do not recolor threat tiles or mask input.",
+    "Rank 1/2 and Mastery 3/8/8/8 change intensity or scale only if source profile validates tier.",
+    "Accessibility: prefers-reduced-motion should replace motion with one static frame and readable text."
+  ],
+  "animations": {
+    "alpha_strike": {
+      "label": "STRIKE",
+      "unit": "ALPHA",
+      "mode": "damage",
+      "anchor": "target",
+      "file": "alpha_strike.webp",
+      "fallbackPng": "alpha_strike.png",
+      "durationMs": 540,
+      "frameDurationMs": 45.0,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#42cdff"
+      },
+      "alpha": true,
+      "sha256": "df184042bd6ac74da2e219c53df7baaa4b40ab2b42b40c10e848ffad0e6daf91"
+    },
+    "alpha_rend": {
+      "label": "REND",
+      "unit": "ALPHA",
+      "mode": "damage_bleed",
+      "anchor": "target",
+      "file": "alpha_rend.webp",
+      "fallbackPng": "alpha_rend.png",
+      "durationMs": 680,
+      "frameDurationMs": 56.667,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#42cdff"
+      },
+      "alpha": true,
+      "sha256": "d8041f9621594197762ec08fdeaf19f12a22b5a346dc02f223aab590dbaf0289"
+    },
+    "alpha_howl": {
+      "label": "HOWL",
+      "unit": "ALPHA",
+      "mode": "buff_aoe",
+      "anchor": "caster",
+      "file": "alpha_howl.webp",
+      "fallbackPng": "alpha_howl.png",
+      "durationMs": 820,
+      "frameDurationMs": 68.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#42cdff"
+      },
+      "alpha": true,
+      "sha256": "c3f6496505e03494d8c324c30565c9f10547c799e9c88ac9f9d19e7b9b07bf3a"
+    },
+    "alpha_guard": {
+      "label": "VANGUARD GUARD",
+      "unit": "ALPHA",
+      "mode": "guard_status",
+      "anchor": "status_recipient",
+      "file": "alpha_guard.webp",
+      "fallbackPng": "alpha_guard.png",
+      "durationMs": 640,
+      "frameDurationMs": 53.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#42cdff"
+      },
+      "alpha": true,
+      "sha256": "266a9af36d9adff7a456b67ac95b0cf9a8eb816ffaaed33b0ec0b4f2e8b2abf9"
+    },
+    "cnc_thrust": {
+      "label": "THRUST",
+      "unit": "CNC",
+      "mode": "damage",
+      "anchor": "target",
+      "file": "cnc_thrust.webp",
+      "fallbackPng": "cnc_thrust.png",
+      "durationMs": 500,
+      "frameDurationMs": 41.667,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#f8a944"
+      },
+      "alpha": true,
+      "sha256": "0d1d7a605079dd1ceb6a69de1f0952495e569bafaf4f6bde5217ea88aa0d7e16"
+    },
+    "cnc_lunge": {
+      "label": "LUNGE",
+      "unit": "CNC",
+      "mode": "damage",
+      "anchor": "target",
+      "file": "cnc_lunge.webp",
+      "fallbackPng": "cnc_lunge.png",
+      "durationMs": 580,
+      "frameDurationMs": 48.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#f8a944"
+      },
+      "alpha": true,
+      "sha256": "2552ac38d613e6e123e0e1b9f645f9683eb3798addde66ac89e6665645931f83"
+    },
+    "cnc_pressure": {
+      "label": "PRESSURE",
+      "unit": "CNC",
+      "mode": "control",
+      "anchor": "target",
+      "file": "cnc_pressure.webp",
+      "fallbackPng": "cnc_pressure.png",
+      "durationMs": 720,
+      "frameDurationMs": 60.0,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#f8a944"
+      },
+      "alpha": true,
+      "sha256": "03e7c8395130407e6d8ca44018ea7f699c16eadf5d900207832d3761665837f9"
+    },
+    "cnc_interrupt": {
+      "label": "SIGNAL INTERRUPTED",
+      "unit": "CNC",
+      "mode": "interrupt",
+      "anchor": "target",
+      "file": "cnc_interrupt.webp",
+      "fallbackPng": "cnc_interrupt.png",
+      "durationMs": 760,
+      "frameDurationMs": 63.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#f8a944"
+      },
+      "alpha": true,
+      "sha256": "5406f941f986d37749e039517ee959255b032ea53d468f1cc67024fa971207ca"
+    },
+    "shadow_sweep": {
+      "label": "SWEEP",
+      "unit": "SHADOW",
+      "mode": "damage",
+      "anchor": "target",
+      "file": "shadow_sweep.webp",
+      "fallbackPng": "shadow_sweep.png",
+      "durationMs": 520,
+      "frameDurationMs": 43.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#4beccd"
+      },
+      "alpha": true,
+      "sha256": "4e8b1cf082d0bdbe0603cd5d5d9ffa3299d56eb3ca486284a9b19958c07b25ff"
+    },
+    "shadow_mend": {
+      "label": "MEND",
+      "unit": "SHADOW",
+      "mode": "heal",
+      "anchor": "heal_recipient",
+      "file": "shadow_mend.webp",
+      "fallbackPng": "shadow_mend.png",
+      "durationMs": 760,
+      "frameDurationMs": 63.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#4beccd"
+      },
+      "alpha": true,
+      "sha256": "76e5057834fff972d04e0cf09a304c308517c17b67eb7486ddf71d52f811ce46"
+    },
+    "shadow_pack_heal_def": {
+      "label": "PACK SUPPORT · HEAL + DEF",
+      "unit": "SHADOW",
+      "mode": "heal_and_def",
+      "anchor": "caster",
+      "file": "shadow_pack_heal_def.webp",
+      "fallbackPng": "shadow_pack_heal_def.png",
+      "durationMs": 820,
+      "frameDurationMs": 68.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#4beccd"
+      },
+      "alpha": true,
+      "sha256": "4e6083582abb00dcf449bfdcc80d40546179d9312746794a168a1d339789aba9"
+    },
+    "shadow_pack_def_only": {
+      "label": "SILENT SHELTER · DEF ONLY",
+      "unit": "SHADOW",
+      "mode": "def_only",
+      "anchor": "caster",
+      "file": "shadow_pack_def_only.webp",
+      "fallbackPng": "shadow_pack_def_only.png",
+      "durationMs": 820,
+      "frameDurationMs": 68.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#4beccd"
+      },
+      "alpha": true,
+      "sha256": "e2fcde0b4c28fa24a9157137a4259bdfccef4ed6cab1a85bf241e473bd7761ed"
+    },
+    "shadow_pack_guard": {
+      "label": "WARDEN · GUARD",
+      "unit": "SHADOW",
+      "mode": "guard_status",
+      "anchor": "caster",
+      "file": "shadow_pack_guard.webp",
+      "fallbackPng": "shadow_pack_guard.png",
+      "durationMs": 820,
+      "frameDurationMs": 68.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#4beccd"
+      },
+      "alpha": true,
+      "sha256": "72d07f58aeae26094ea5aa3dafcaa63be33f191c2cf8729a4ae516bd604cb028"
+    },
+    "pet_bite": {
+      "label": "BITE",
+      "unit": "PET",
+      "mode": "damage",
+      "anchor": "target",
+      "file": "pet_bite.webp",
+      "fallbackPng": "pet_bite.png",
+      "durationMs": 500,
+      "frameDurationMs": 41.667,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#80c1ff"
+      },
+      "alpha": true,
+      "sha256": "34be727229ecda61fbf8995f236cf3e763956b3bbdbe02f3e649bfe911a25689"
+    },
+    "pet_hamstring": {
+      "label": "HAMSTRING",
+      "unit": "PET",
+      "mode": "damage_slow",
+      "anchor": "target",
+      "file": "pet_hamstring.webp",
+      "fallbackPng": "pet_hamstring.png",
+      "durationMs": 740,
+      "frameDurationMs": 61.667,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#80c1ff"
+      },
+      "alpha": true,
+      "sha256": "d4581f5b8c231b8e0308db53ce73f520787dd1a17078fb35493443640ac7ecdc"
+    },
+    "pet_pathfinder": {
+      "label": "PATHFINDER",
+      "unit": "PET",
+      "mode": "movement",
+      "anchor": "arrival",
+      "file": "pet_pathfinder.webp",
+      "fallbackPng": "pet_pathfinder.png",
+      "durationMs": 660,
+      "frameDurationMs": 55.0,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#80c1ff"
+      },
+      "alpha": true,
+      "sha256": "b564082241ef6ec5e617d3434bb23891e0ce638739bfae6052c100ffc3d2cba0"
+    },
+    "objective_recover": {
+      "label": "RECOVER",
+      "unit": "MISSION",
+      "mode": "objective",
+      "anchor": "terminal",
+      "file": "objective_recover.webp",
+      "fallbackPng": "objective_recover.png",
+      "durationMs": 880,
+      "frameDurationMs": 73.333,
+      "frameCount": 12,
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "columns": 4,
+      "rows": 3,
+      "palette": {
+        "main": "#58e9f4"
+      },
+      "alpha": true,
+      "sha256": "8c7f36969776fb0bc8a85e7b1e5bd2998a8112149f7b0260e662b93178b93113"
+    }
+  },
+  "bindings": [
+    {
+      "skillId": "alpha-strike",
+      "animation": "alpha_strike",
+      "require": [
+        "damage"
+      ]
+    },
+    {
+      "skillId": "alpha-rend",
+      "animation": "alpha_rend",
+      "require": [
+        "damage",
+        "BLEED"
+      ],
+      "notes": "Warm amber bleed signature; never enemy-threat red"
+    },
+    {
+      "skillId": "alpha-howl",
+      "animation": "alpha_howl",
+      "require": [
+        "ATK_UP",
+        "SPD_UP"
+      ],
+      "anchor": "caster"
+    },
+    {
+      "skillId": "alpha-howl",
+      "animation": "alpha_guard",
+      "require": [
+        "GUARD"
+      ],
+      "anchor": "status_recipient",
+      "notes": "VANGUARD GUARD only; no guard if HOWLKEEPER lacks it"
+    },
+    {
+      "skillId": "u02-shot",
+      "animation": "cnc_thrust",
+      "require": [
+        "damage"
+      ]
+    },
+    {
+      "skillId": "u02-burst",
+      "animation": "cnc_lunge",
+      "require": [
+        "damage"
+      ],
+      "notes": "LUNGE is a hit, not a teleport or movement ability"
+    },
+    {
+      "skillId": "u02-suppress",
+      "animation": "cnc_pressure",
+      "require": [
+        "ATK_DOWN"
+      ],
+      "notes": "DISRUPTOR also applies SPD_DOWN; damage optional"
+    },
+    {
+      "skillId": "u02-suppress",
+      "animation": "cnc_interrupt",
+      "require": [
+        "scheduler.interrupted=true"
+      ],
+      "notes": "Separate VFX, only when locked enemy intent truly cancelled"
+    },
+    {
+      "skillId": "u03-tap",
+      "animation": "shadow_sweep",
+      "require": [
+        "damage"
+      ]
+    },
+    {
+      "skillId": "u03-mend",
+      "animation": "shadow_mend",
+      "require": [
+        "heal > 0"
+      ],
+      "notes": "RESTORER uses same healing effect for actual recipients"
+    },
+    {
+      "skillId": "u03-pack",
+      "animation": "shadow_pack_heal_def",
+      "require": [
+        "heal > 0",
+        "DEF_UP"
+      ],
+      "anchor": "caster",
+      "notes": "Base PACK SUPPORT: heals + DEF"
+    },
+    {
+      "skillId": "u03-pack",
+      "animation": "shadow_pack_def_only",
+      "require": [
+        "DEF_UP",
+        "no heal event"
+      ],
+      "anchor": "caster",
+      "notes": "SILENT SHELTER: no healing"
+    },
+    {
+      "skillId": "u03-pack",
+      "animation": "shadow_pack_guard",
+      "require": [
+        "GUARD"
+      ],
+      "anchor": "status_recipient",
+      "notes": "WARDEN may be guard only; SENTINEL can guard and heal. GUARD pulse is tied to actual GUARD recipients only"
+    },
+    {
+      "skillId": "pet-bite",
+      "animation": "pet_bite",
+      "require": [
+        "damage"
+      ]
+    },
+    {
+      "skillId": "pet-hamstring",
+      "animation": "pet_hamstring",
+      "require": [
+        "SPD_DOWN"
+      ],
+      "notes": "REACHING SNARE increases range only if saved mastery A is accepted"
+    },
+    {
+      "action": "successfulPetMovement",
+      "animation": "pet_pathfinder",
+      "require": [
+        "stage=3",
+        "selected=B",
+        "move.ok=true",
+        "confirmed BFS path length > base pet move 4"
+      ]
+    },
+    {
+      "action": "RECOVER",
+      "animation": "objective_recover",
+      "require": [
+        "recover.ok=true"
+      ],
+      "anchor": "terminal"
+    }
+  ],
+  "legacyAliases": {
+    "u02-lunge-vanguard": "u02-burst",
+    "u02-pressure-disruptor": "u02-suppress",
+    "u03-mend-restorer": "u03-mend",
+    "u03-pack-warden": "u03-pack"
+  },
+  "masterySuffix": "Strip :mastery:* suffix via existing canonicalGrowthSkillId()"
+}
