@@ -230,12 +230,12 @@ function StatusStrip() {
   return (
     <aside className={`t-status ${unit.team}${isAlpha ? " is-alpha" : ""}`} onPointerDown={(e) => e.stopPropagation()} aria-label="Selected unit">
       <img src={unit.portrait || unit.sprite} alt="" />
-      {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}>{combatIdentityLabel(unit)}</span> : null}
       <div className="t-status-main">
         <div className="t-status-head">
           <div className="t-status-name">{unit.name}</div>
           {isAlpha && equippedPet ? <span className="t-status-pet" title={equippedPet.name}><PawPrint className="t-ico" aria-hidden="true" /></span> : null}
         </div>
+        {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}>{combatIdentityLabel(unit)}</span> : null}
         {kit ? <div className="t-status-kit">{kit}</div> : null}
         <div className="t-status-mods">
           <span>{formatMod("ATK", atk, unit.atk)}</span>
