@@ -6,6 +6,7 @@ import { UNIT_DEFS } from "../data/units";
 import { portraitFallback } from "./PlayerIdentity";
 import { skillChangePreview } from "./combatIdentity";
 import { tacticalEmblemFor } from "./tacticalEmblems";
+import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 
 const NAMES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
 const PATH_COPY: Record<Discipline, string> = {
@@ -84,7 +85,13 @@ export function SkillbookPanel() {
               return <button type="button" key={id} aria-pressed={skillId === id}
                 className={skillId === id ? "is-selected" : ""}
                 onClick={() => { setSkillId(id); setRespecConfirm(false); }}>
-                <span className="t-growth-skill-title">{base.slot} · {base.name}<em>RANK {current}/2</em></span>
+                <span className="t-growth-skill-title">
+                  <span className="t-growth-skill-label">
+                    <img className="t-growth-action-icon" src={tacticalActionImageForSkill(id) || ""} alt="" loading="lazy" onError={e => { e.currentTarget.style.display = "none"; }} />
+                    {base.slot} · {base.name}
+                  </span>
+                  <em>RANK {current}/2</em>
+                </span>
                 <small>{next ? next.description : "Maximum rank reached"}</small>
               </button>;
             })}
