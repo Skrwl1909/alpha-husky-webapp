@@ -8,6 +8,7 @@ import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
+import { tacticalEmblemFor } from "./tacticalEmblems";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { OPERATION } from "../data/units";
@@ -235,7 +236,7 @@ function StatusStrip() {
           <div className="t-status-name">{unit.name}</div>
           {isAlpha && equippedPet ? <span className="t-status-pet" title={equippedPet.name}><PawPrint className="t-ico" aria-hidden="true" /></span> : null}
         </div>
-        {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}>{combatIdentityLabel(unit)}</span> : null}
+        {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}><img className="t-combat-emblem" src={tacticalEmblemFor(unit.defId, unit.growth?.discipline) || ""} alt="" onError={e => { e.currentTarget.style.display = "none"; }} />{combatIdentityLabel(unit)}</span> : null}
         {kit ? <div className="t-status-kit">{kit}</div> : null}
         <div className="t-status-mods">
           <span>{formatMod("ATK", atk, unit.atk)}</span>
