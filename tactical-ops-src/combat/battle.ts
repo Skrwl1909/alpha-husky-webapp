@@ -78,6 +78,7 @@ function spawnUnit(
     attackSprite: def.attackSprite,
     portrait: def.portrait,
     skillIds: [...def.skillIds],
+    combatMastery: def.combatMastery ? { ...def.combatMastery } : undefined,
   };
   if (def.defId === "alpha" && identity) {
     const stamped = applyIdentityToAlpha(base, identity);
