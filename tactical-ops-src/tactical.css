@@ -4544,3 +4544,58 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
     padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* TACTICAL MASTERY V1: event-confirmed four-unit combat identities. */
+#tacticalOpsRoot .t-skill-rank {position:absolute;top:3px;right:4px;z-index:3;font-size:8px;line-height:1;font-weight:900;letter-spacing:.04em;color:#f0d099;background:rgba(17,26,36,.96);border:1px solid rgba(245,202,119,.58);border-radius:3px;padding:3px 4px;pointer-events:none;}
+#tacticalOpsRoot .t-act.t-growth-rank1 {border-color:rgba(111,212,240,.52);}
+#tacticalOpsRoot .t-act.t-growth-rank2 {border-color:rgba(224,174,91,.68);box-shadow:inset 0 0 0 1px rgba(255,208,139,.12),0 0 11px rgba(211,171,105,.17);}
+#tacticalOpsRoot .t-act.t-growth-trained {border-color:rgba(122,204,226,.62);}
+#tacticalOpsRoot .t-act.t-growth-signature {border-color:rgba(242,194,103,.82);box-shadow:inset 0 0 0 1px rgba(255,221,154,.21),0 0 16px rgba(115,212,241,.25);}
+#tacticalOpsRoot .t-status {isolation:isolate;}
+#tacticalOpsRoot .t-combat-identity {display:inline-flex;width:max-content;max-width:100%;margin-top:2px;padding:2px 5px;font-size:8px;line-height:1.2;font-weight:800;letter-spacing:.075em;background:rgba(8,34,46,.91);border-left:2px solid #6edaf5;color:#baebf7;}
+#tacticalOpsRoot .t-combat-identity.t-identity-cnc {border-color:#d5ae66;color:#ead4a4;}
+#tacticalOpsRoot .t-combat-identity.t-identity-shadow {border-color:#6fd9c5;color:#bff5e9;}
+#tacticalOpsRoot .t-combat-identity.t-identity-pet {border-color:#9cc6ff;color:#c4daff;}
+#tacticalOpsRoot .t-master-fx {--fx-c:#6dddf5;position:absolute;width:0;height:0;z-index:12;pointer-events:none;filter:drop-shadow(0 0 8px var(--fx-c));}
+#tacticalOpsRoot .t-master-fx.fx-affinity-alpha {--fx-c:#74dffc;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-cnc {--fx-c:#ecc475;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-shadow {--fx-c:#7bf2da;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-pet {--fx-c:#a9caff;}
+#tacticalOpsRoot .t-master-fx-ring {position:absolute;left:0;top:0;width:66px;height:66px;border:3px solid var(--fx-c);border-radius:50%;transform:translate(-50%,-50%);opacity:0;animation:t-mastery-burst .66s ease-out both;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-cnc .t-master-fx-ring {border-style:dashed;border-radius:8px;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-shadow .t-master-fx-ring {border-width:5px;box-shadow:inset 0 0 15px rgba(112,251,209,.38);}
+#tacticalOpsRoot .t-master-fx.fx-affinity-pet .t-master-fx-ring {border-style:double;border-width:6px;}
+#tacticalOpsRoot .t-master-fx.fx-tier-signature .t-master-fx-ring,#tacticalOpsRoot .t-master-fx.fx-tier-rank2 .t-master-fx-ring {width:86px;height:86px;box-shadow:0 0 17px var(--fx-c);}
+#tacticalOpsRoot .t-master-fx-core {position:absolute;left:0;top:0;width:12px;height:12px;background:var(--fx-c);border-radius:50%;transform:translate(-50%,-50%);animation:t-mastery-core .5s ease-out both;}
+#tacticalOpsRoot .t-master-fx.fx-mode-movement .t-master-fx-ring {border-radius:25%;border-style:dotted;}
+@keyframes t-mastery-burst {0% {opacity:0;scale:.36;} 24% {opacity:.92;} 100% {opacity:0;scale:1.75;}}
+@keyframes t-mastery-core {0% {opacity:.9;scale:1;} 100% {opacity:0;scale:4;}}
+#tacticalOpsRoot .t-master-moment {position:absolute;left:50%;bottom:clamp(86px,15%,136px);transform:translateX(-50%);z-index:32;pointer-events:none;text-align:center;min-width:130px;max-width:min(86%,300px);padding:8px 13px;background:rgba(5,17,28,.94);border:1px solid #74dffc;border-radius:6px;box-shadow:0 7px 25px rgba(0,0,0,.55);animation:t-mastery-moment .95s ease-out both;}
+#tacticalOpsRoot .t-master-moment strong {display:block;color:#e8faff;font-size:11px;letter-spacing:.12em;line-height:1.2;}
+#tacticalOpsRoot .t-master-moment small {display:block;margin-top:4px;color:#b8d8e8;font-size:10px;letter-spacing:.08em;}
+#tacticalOpsRoot .t-master-moment-cnc {border-color:#ecc475;}
+#tacticalOpsRoot .t-master-moment-shadow {border-color:#7bf2da;}
+#tacticalOpsRoot .t-master-moment-pet {border-color:#a9caff;}
+#tacticalOpsRoot .t-master-moment-signature {box-shadow:0 0 15px rgba(223,191,114,.23),0 8px 26px rgba(0,0,0,.6);}
+@keyframes t-mastery-moment {0% {opacity:0;translate:0 6px;} 18% {opacity:1;translate:0 0;} 78% {opacity:1;} 100% {opacity:0;translate:0 -6px;}}
+#tacticalOpsRoot .t-growth-delta {display:flex;gap:5px;flex-wrap:wrap;margin:.5rem 0;}
+#tacticalOpsRoot .t-growth-delta b {padding:5px 7px;border:1px solid rgba(95,204,237,.44);border-radius:4px;background:#0c2737;color:#bfeeff;font-size:10px;letter-spacing:.08em;}
+#tacticalOpsRoot .t-growth-signature {display:inline-block;font-size:10px;color:#efd3a1;letter-spacing:.08em;}
+#tacticalOpsRoot .t-growth-confirmed {padding:10px 12px;margin:8px 0;color:#bcf4de;background:#0d2925;border-left:3px solid #6cebc1;font-size:11px;font-weight:800;letter-spacing:.05em;}
+#tacticalOpsRoot .t-mastery-combat-badge {display:inline-block;margin-bottom:8px;padding:5px 8px;border:1px solid rgba(113,208,227,.45);color:#a9e1f3;font-size:10px;letter-spacing:.09em;background:#0b2535;}
+#tacticalOpsRoot .t-mastery-combat-badge.is-signature {color:#f4daa0;border-color:rgba(241,200,131,.66);}
+#tacticalOpsRoot .t-mastery-reward.is-unlock {border-color:rgba(224,187,112,.7);background:linear-gradient(150deg,rgba(27,41,52,.95),rgba(18,27,36,.96));}
+#tacticalOpsRoot .t-mastery-unlock {margin-top:8px;padding:10px 12px;border-left:3px solid #6edaf5;background:rgba(14,51,69,.67);}
+#tacticalOpsRoot .t-mastery-unlock.is-signature {border-color:#f2c981;}
+#tacticalOpsRoot .t-mastery-unlock strong {font-size:11px;color:#e9f7fb;letter-spacing:.07em;}
+#tacticalOpsRoot .t-mastery-unlock p {margin:5px 0 0;font-size:11px;line-height:1.5;color:#afc9d8;}
+@media (max-width:390px) {#tacticalOpsRoot .t-master-moment {bottom:90px;padding:6px 10px;} #tacticalOpsRoot .t-master-moment strong {font-size:10px;} #tacticalOpsRoot .t-skill-rank {font-size:7px;padding:2px;}}
+@media (prefers-reduced-motion:reduce) {#tacticalOpsRoot .t-master-fx-ring,#tacticalOpsRoot .t-master-fx-core,#tacticalOpsRoot .t-master-moment {animation:none!important;} #tacticalOpsRoot .t-master-fx-ring,#tacticalOpsRoot .t-master-fx-core {display:none;} #tacticalOpsRoot .t-master-moment {opacity:1;}}
+
+/* Nine authored combat identity emblems: scalable, distinct from character portraits. */
+#tacticalOpsRoot .t-growth-core-emblem {width:38px;height:38px;object-fit:contain;flex:none;filter:drop-shadow(0 0 6px rgba(111,207,246,.25));}
+#tacticalOpsRoot .t-growth-copy {display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+#tacticalOpsRoot .t-growth-path-emblem {display:block;width:42px;height:42px;object-fit:contain;margin:0 0 5px;}
+#tacticalOpsRoot .t-combat-identity {align-items:center;gap:4px;}
+#tacticalOpsRoot .t-combat-emblem {height:17px;width:17px;object-fit:contain;flex:none;}
+@media(max-width:390px){#tacticalOpsRoot .t-growth-path-emblem{width:34px;height:34px;}#tacticalOpsRoot .t-combat-emblem{width:13px;height:13px;}}

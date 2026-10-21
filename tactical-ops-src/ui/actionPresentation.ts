@@ -1,4 +1,5 @@
 import type { SkillDef } from "../combat/types";
+import { canonicalGrowthSkillId } from "../data/playerGrowth";
 
 export type ActionArchetype = "strike" | "heavy" | "control" | "heal" | "support" | "objective";
 
@@ -61,7 +62,8 @@ export function getActionPresentation(skill: SkillDef): ActionPresentation {
     targetClass: defaultTargetClass(skill),
     effectClass,
   };
-  return { ...base, ...(OVERRIDES[skill.id] || {}) };
+  const override = OVERRIDES[canonicalGrowthSkillId(skill.id)] || {};
+  return { ...base, ...override, cue: skill.targetType === "ALLY_AOE" ? `AURA · R${Math.max(1, skill.radius)}` : defaultCue(skill, effectClass) };
 }
 
 export const RECOVER_PRESENTATION: ActionPresentation = {
