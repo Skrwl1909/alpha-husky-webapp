@@ -5,6 +5,7 @@ on:
       - "tactical-ops-src/combat/**"
       - "tactical-ops-src/ui/Battle.tsx"
       - "tools/verify_tactical_battlefield_visual_closure.mjs"
+      - "tools/verify_tactical_battlefield_shell_closure.mjs"
       - "tactical-ops-src/ui/combatIdentity.ts"
       - "tactical-ops-src/ui/combatFxAtlas.ts"
       - "tools/verify_tactical_combat_fx.mjs"
@@ -50,6 +51,7 @@ jobs:
       - run: node tools/verify_tactical_combat_identity.mjs
       - run: node tools/verify_tactical_combat_fx.mjs
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
+      - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
