@@ -5,6 +5,9 @@ on:
       - "tactical-ops-src/combat/**"
       - "tactical-ops-src/ui/Battle.tsx"
       - "tactical-ops-src/ui/combatIdentity.ts"
+      - "tactical-ops-src/ui/combatFxAtlas.ts"
+      - "tools/verify_tactical_combat_fx.mjs"
+      - "images/tactical_ops/combat_fx/v1/**"
       - "tactical-ops-src/ui/actionPresentation.ts"
       - "tactical-ops-src/ui/PackMastery.tsx"
       - "tactical-ops-src/data/packMastery.ts"
@@ -44,6 +47,7 @@ jobs:
       - run: node tools/verify_tactical_vnext_step5_squad_matrix.mjs
       - run: node tools/verify_tactical_command_deck.mjs
       - run: node tools/verify_tactical_combat_identity.mjs
+      - run: node tools/verify_tactical_combat_fx.mjs
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
