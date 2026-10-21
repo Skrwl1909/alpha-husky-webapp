@@ -1,6 +1,6 @@
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey } from "../combat/movement";
@@ -238,6 +238,15 @@ function TurnOrderBar() {
   );
 }
 
+function HudPortrait({ unit }: { unit: CombatUnit }) {
+  const [failed, setFailed] = useState(false);
+  const image = unit.portrait || unit.sprite;
+  return <span className="t-status-portrait" aria-hidden="true">
+    {!failed && image ? <img key={image} src={image} alt="" onError={() => setFailed(true)} /> : null}
+    <PawPrint className="t-status-portrait-fallback" />
+  </span>;
+}
+
 function StatusStrip() {
   const inspectId = useBattleStore((s) => s.battle.inspectId);
   const activeId = useBattleStore((s) => s.battle.activeId);
@@ -253,7 +262,7 @@ function StatusStrip() {
   const defn = effectiveDef(unit);
   return (
     <aside className={`t-status ${unit.team}${isAlpha ? " is-alpha" : ""}`} onPointerDown={(e) => e.stopPropagation()} aria-label="Selected unit">
-      <img src={unit.portrait || unit.sprite} alt="" />
+      <HudPortrait key={unit.id} unit={unit} />
       <div className="t-status-main">
         <div className="t-status-head">
           <div className="t-status-name">{unit.name}</div>
@@ -409,7 +418,7 @@ function SkillHud() {
           >
             <ActionArt src={sk ? tacticalActionImageForSkill(sk.id) : null} archetype={presentation?.archetype} />
             <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
-            {rankLabel ? <span className="t-skill-rank" aria-label={`Upgrade ${rankLabel}`}>{rankLabel}</span> : null}
+            {rankLabel ? <span className={`t-skill-rank${rankLabel === "SIGNATURE" ? " is-signature" : ""}`} aria-label={`Upgrade ${rankLabel}`}>{rankLabel}</span> : null}
             <span className="name">{sk?.name ?? "—"}</span>
             {presentation ? <span className="meta">{presentation.cue}</span> : null}
             {cooling ? <span className="cd">{sk!.cd}T</span> : null}

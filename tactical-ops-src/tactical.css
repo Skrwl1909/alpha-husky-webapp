@@ -4665,3 +4665,87 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-sprite-fx-sheet{animation:none!important;transform:translate(-50%,-33.333%);}
   #tacticalOpsRoot .t-sprite-fx-clip{animation:none!important;}
 }
+
+/* BATTLEFIELD VISUAL CLOSURE — 2026-10-21. Existing combat logic untouched. */
+/* Never stamp an ability icon onto every reachable destination. */
+#tacticalOpsRoot .t-cell.move::after {
+  background-image: radial-gradient(circle, rgba(97,214,245,.38) 0 21%, rgba(77,193,224,.12) 40%, transparent 76%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  width: 15px;
+  height: 15px;
+  border: 1px solid rgba(99,215,244,.48);
+  box-shadow: 0 0 7px rgba(61,198,246,.18);
+}
+#tacticalOpsRoot .t-cell.move:hover::after,
+#tacticalOpsRoot .t-cell.move:focus-visible::after {
+  width: 21px;
+  height: 21px;
+  border-color: #92eaff;
+  box-shadow: 0 0 0 4px rgba(58,196,234,.12),0 0 13px rgba(58,196,234,.32);
+}
+/* Preserve every 40–44 px transparent, keyboard-accessible movement hit area. */
+#tacticalOpsRoot .t-status-portrait {
+  width: 32px;
+  height: 32px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(92,194,226,.48);
+  border-radius: 5px;
+  background: linear-gradient(160deg,#123043,#07131f);
+  overflow: hidden;
+  align-self: start;
+}
+#tacticalOpsRoot .t-status-portrait > img {
+  position:relative;
+  z-index:2;
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  object-position:center 18%;
+  border:0;
+}
+#tacticalOpsRoot .t-status-portrait-fallback {
+  position:absolute;
+  z-index:1;
+  width:17px;
+  height:17px;
+  color:#79d8f4;
+  opacity:.8;
+}
+#tacticalOpsRoot .t-status {grid-template-columns: 32px minmax(0,1fr);column-gap:.34rem;}
+#tacticalOpsRoot .t-status-main {min-width:0;}
+#tacticalOpsRoot .t-status-name {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#tacticalOpsRoot .t-combat-identity {max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:7px;letter-spacing:.035em;}
+/* The rank is a compact upper-corner stamp. Icon and skill name keep their own lines. */
+#tacticalOpsRoot .t-act .t-skill-rank {
+  top:3px;
+  right:3px;
+  max-width:calc(100% - 22px);
+  font-size:clamp(6px,1.1vw,8px);
+  line-height:1.1;
+  letter-spacing:.015em;
+  padding:2px 3px;
+  border-radius:3px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:clip;
+}
+#tacticalOpsRoot .t-act .t-skill-rank.is-signature {
+  color:#f2d9a0;
+  border-color:rgba(236,190,102,.63);
+  background:#251e17;
+}
+#tacticalOpsRoot .t-act .name {overflow:visible;text-overflow:clip;}
+/* FX stay subordinate to red danger telegraphs and never absorb input. */
+#tacticalOpsRoot .t-sprite-fx {pointer-events:none;filter:drop-shadow(0 0 5px rgba(91,202,235,.18));}
+#tacticalOpsRoot .t-threat-tile {z-index:16;}
+@media(max-width:620px) {
+  #tacticalOpsRoot .t-field > .t-status .t-status-portrait {width:28px;height:28px;}
+  #tacticalOpsRoot .t-field > .t-status {grid-template-columns:28px minmax(0,1fr);}
+}
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-cell.move::after {box-shadow:none;}
+}
