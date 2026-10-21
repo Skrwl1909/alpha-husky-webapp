@@ -1,3 +1,3 @@
 /** Single canonical Tactical Ops version. Imported by host, store, preview, and the IIFE banner. */
-export const VERSION = "tactical_ops.js v3.4.3-battlefield-shell-closure";
-export const CACHE_KEY = "tops-3.4.3-battlefield-shell-closure";
+export const VERSION = "tactical_ops.js v3.5.0-player-clarity-return-loop";
+export const CACHE_KEY = "tops-3.5.0-player-clarity-return-loop";

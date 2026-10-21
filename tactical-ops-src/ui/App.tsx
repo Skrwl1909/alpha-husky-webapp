@@ -178,6 +178,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
     {result.victory && result.progressEarned === 0 ? <div className="t-mission-strip"><span>CLEAR SECURED · REPLAY</span><span>+0 COMMANDER</span></div> : null}
     {result.victory && result.firstCycleSecure === false && result.progressEarned > 0 ? <div className="t-mission-strip"><span>CLEAR ALREADY SECURED</span><span>CHALLENGE +{result.challengeBonus} COMMANDER</span></div> : null}
     <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? (result.challengeBonus ? `CHALLENGE MET · +${result.challengeBonus} COMMANDER` : "CHALLENGE ✓") : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.firstCycleAdvanced ? " · SECURED TODAY" : result.victory ? " · REPLAY" : " · FAILED"}</span> : null}</div>
+    <p className="t-player-result-meaning">{result.victory ? result.progressEarned > 0 ? "PROGRESS RECORDED · YOUR NEXT COMMANDER MILESTONE IS CLOSER." : "MISSION REPLAY COMPLETE · COMMANDER REWARDS ALREADY SECURED THIS ROTATION." : "NO COMMANDER PROGRESS EARNED · REASSESS YOUR SQUAD AND TRY AGAIN."}</p>
     <div className="t-mission-strip t-field-rewards" aria-label="Character rewards"><span>+{result.xpGranted} EXP</span><span>+{result.bonesGranted} BONES</span></div>
     {result.challengeSuccess && !result.challengeBonus ? <small>Challenge bonus already earned this rotation.</small> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
@@ -234,6 +235,7 @@ function WarTable() {
   const commanderRank = field?.commander?.rank || 1;
   const commanderProgress = field?.commander?.progress || 0;
   const commanderTarget = field?.commander?.nextRankAt || null;
+  const remainingToRank = commanderTarget ? Math.max(0, commanderTarget - commanderProgress) : 0;
   const areaPressure = field?.region ? pressureLabel(field.region.pressure) : "UNKNOWN";
   const pressureCopy = field?.region ? pressureEffect(field.region.pressure) : "Refresh to load current field conditions.";
   const currentDirective = field?.board?.reportVersion === 3 ? directiveSetLabel(field.board.directiveSet) : null;
@@ -314,6 +316,18 @@ function WarTable() {
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
+          <>
+          <section className="t-player-route" aria-label="Your next tactical goal">
+            <span className="t-kicker">{activeMissionRun ? "CONTINUE YOUR RUN" : "YOUR NEXT STEP"}</span>
+            <strong>{recommendedMission.name}</strong>
+            <p>{objectiveHeadline(missionForContext(recommendedMission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
+            <div className="t-player-route-metrics">
+              <span>{rotationProgress?.securedCount || 0}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
+              <span>{commanderTarget ? `${remainingToRank} TO COMMANDER RANK ${commanderRank + 1}` : "COMMANDER CERTIFIED"}</span>
+              <span>{recommendedSecured ? recommendedChallenge ? "CLEAR + CHALLENGE SECURED" : "OPTIONAL CHALLENGE REMAINS" : "FIRST CLEAR AVAILABLE"}</span>
+            </div>
+            <small>{recommendedSecured && recommendedChallenge ? "This mission's Commander rewards are already secured for this rotation. Try another operation." : "First clears and challenges grant Commander progress. Companion Mastery unlocks at 3/8 and 8/8."}</small>
+          </section>
           <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
               <img src={visual.art} alt="" aria-hidden="true" />
@@ -338,6 +352,7 @@ function WarTable() {
               </button>
             </div>
           </section>
+          </>
           );
         })() : null}
 
@@ -404,7 +419,7 @@ function WarTable() {
                 className={(selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0]) === mission.missionId ? "is-selected" : ""}
                 onClick={() => setSelectedFieldOp(mission.missionId)}>
                 <span>{String(index + 1).padStart(2, "0")}</span><strong>{mission.name}</strong>
-                <small>{securedMissionIds.has(mission.missionId) ? "SECURED" : "AVAILABLE"}</small>
+                <small>{securedMissionIds.has(mission.missionId) ? "SECURED" : "FIRST CLEAR"}</small>
               </button>
             ))}
           </nav>
@@ -429,6 +444,7 @@ function WarTable() {
                       </div>
                       <div className="t-wt-mission-state">{securedToday ? "SECURED TODAY" : "AVAILABLE"}</div>
                     </div>
+                    <div className="t-player-mission-counter">OPERATION {activeMissionIds.indexOf(mission.missionId) + 1} / {activeMissionIds.length} · {visual.label} · {securedToday ? "CLEARED" : "UNCLEARED"}</div>
                     <div className="t-wt-mission-meta">
                       <span><b>CLEAR</b> {securedToday ? "SECURED · REPLAY" : "+2 COMMANDER"}</span>
                       <span className={bonusEarned ? "is-earned" : ""}><b>CHALLENGE</b> {bonusEarned ? "✓" : `+1 COMMANDER · ${mission.challenge?.label || "Optional challenge"}`}</span>
@@ -1027,7 +1043,7 @@ function Results() {
             ) : fieldOp ? (
               <>
                 {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>War Table</button>
+                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? "SEE NEXT FIELD OP" : "REGROUP AT WAR TABLE"}</button>
                   <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
                 </>}
               </>

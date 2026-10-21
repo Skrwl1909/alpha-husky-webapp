@@ -9,6 +9,7 @@ import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
 import { FX_ROOT } from "./combatFxAtlas";
+import { playerBattleGuidance } from "./playerGuidance";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
 import { canRecover } from "../combat/battle";
@@ -490,6 +491,7 @@ export function BattleScreen() {
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
   const phaseLabel = actor?.team === "enemy" ? "Enemy act" : "Your act";
   const activityLabel = mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name;
+  const guidance = playerBattleGuidance(useBattleStore.getState().battle, mission);
 
   return (
     <div
@@ -516,6 +518,7 @@ export function BattleScreen() {
       <div className="t-order-wrap">
         <TurnOrderBar />
       </div>
+      {guidance ? <div className="t-player-guidance" role="status"><strong>{guidance.title}</strong><span>{guidance.copy}</span></div> : null}
       {ticker ? <div className="t-ticker">{ticker}</div> : null}
       {reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker t-ticker-warn">ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
       <div className="t-field-wrap">
