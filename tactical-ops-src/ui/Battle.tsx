@@ -268,7 +268,7 @@ function StatusStrip() {
           <div className="t-status-name">{unit.name}</div>
           {isAlpha && equippedPet ? <span className="t-status-pet" title={equippedPet.name}><PawPrint className="t-ico" aria-hidden="true" /></span> : null}
         </div>
-        {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}><img className="t-combat-emblem" src={tacticalEmblemFor(unit.defId, unit.growth?.discipline) || ""} alt="" onError={e => { e.currentTarget.style.display = "none"; }} />{combatIdentityLabel(unit)}</span> : null}
+        {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}>{tacticalEmblemFor(unit.defId, unit.growth?.discipline) ? <img className="t-combat-emblem" src={tacticalEmblemFor(unit.defId, unit.growth?.discipline)!} alt="" onError={e => { e.currentTarget.style.display = "none"; }} /> : null}{combatIdentityLabel(unit)}</span> : null}
         {kit ? <div className="t-status-kit">{kit}</div> : null}
         <div className="t-status-mods">
           <span>{formatMod("ATK", atk, unit.atk)}</span>
