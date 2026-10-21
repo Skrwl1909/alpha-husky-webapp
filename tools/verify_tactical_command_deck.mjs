@@ -25,7 +25,7 @@ for (const asset of ["command_room.webp", "mission_hologram.webp", "frames/03_fr
   assert(css.includes(asset), "Referenced uploaded asset "+asset);
 }
 assert(css.includes(".t-command-nav") && css.includes("position: sticky") && css.includes("prefers-reduced-motion"), "Navigation CSS and accessibility");
-assert(version.includes("tops-3.3.4-command-deck-complete") && boot.includes("tops-3.3.4-command-deck-complete"), "Canonical runtime version");
+assert(version.includes("tops-3.3.5-mobile-deploy-flow") && boot.includes("tops-3.3.5-mobile-deploy-flow"), "Canonical runtime version");
 console.log("PASS Command Deck source invariants: War Table and Brief tabs, saved actions, sticky navigation and deploy, version");
 
 const skillbook = readFileSync("tactical-ops-src/ui/Skillbook.tsx", "utf8");
@@ -45,3 +45,11 @@ assert(brief.includes("t-brief-optional-toggle") && brief.includes("showBriefMas
 assert(currentMastery.includes("pet?.img"),"pet uses server-validated portrait");
 assert(css.includes("padding-bottom:calc(115px + env(safe-area-inset-bottom"),"content cleared from deploy dock");
 console.log("PASS Command Deck completion UX invariants");
+
+const mobileDock = css.split("/* Mobile Mission Brief: action buttons follow content")[1] || "";
+assert(mobileDock.includes("@media (max-width: 768px)"), "Mobile-only dock override");
+assert(mobileDock.includes(".t-deploy-actions.t-deploy-actions-v29.t-command-action-dock"), "Specific Mission Brief dock target");
+assert(mobileDock.includes("position: static !important"), "Override legacy important sticky position");
+assert(mobileDock.includes("padding-bottom: max(20px, env(safe-area-inset-bottom, 0px))"), "Mobile safe-area margin");
+assert(brief.includes("onClick={deploy}") && brief.includes("onClick={backToHub}"), "Deployment callbacks untouched");
+console.log("PASS Mobile Mission Brief action dock in document flow");
