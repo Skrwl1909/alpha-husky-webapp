@@ -71,6 +71,8 @@ export interface SkillDef {
 }
 
 export interface UnitDef {
+  /** Presentation only; frozen when the accepted run is instantiated. */
+  combatMastery?: { progress: number; stage: number; selected: "A" | "B" | null };
   recoverRange?: number;
   defId: string;
   name: string;
@@ -88,6 +90,8 @@ export interface UnitDef {
 }
 
 export interface CombatUnit {
+  /** Authored mastery identity from the accepted run, not the live account. */
+  combatMastery?: { progress: number; stage: number; selected: "A" | "B" | null };
   /** Immutable server-validated run loadout; never read from localStorage. */
   growth?: import("../data/playerGrowth").HeroGrowth;
   archetype?: "BULWARK" | "MARKSMAN" | "DISRUPTOR" | "COURIER" | "SKIRMISHER" | "COMMANDER";
