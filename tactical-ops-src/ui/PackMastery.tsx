@@ -48,7 +48,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
       </div>
 
       <nav className="t-premium-mastery-roster" aria-label="Select companion mastery">
-        {ids.map(id => <button type="button" key={id} className={selectedId === id ? "is-selected" : ""} aria-pressed={selectedId === id} onClick={() => setSelectedId(id)}><img src={id.startsWith("pet:") ? UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /><strong>{companionRole(id,pet?.name).label}</strong></button>)}
+        {ids.map(id => <button type="button" key={id} className={selectedId === id ? "is-selected" : ""} aria-pressed={selectedId === id} onClick={() => setSelectedId(id)}><img src={id.startsWith("pet:") ? pet?.img || UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /><strong>{companionRole(id,pet?.name).label}</strong></button>)}
       </nav>
       <div className="t-pack-list t-premium-mastery-selected">
         {ids.map((id) => {
@@ -68,7 +68,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
 
           return (
             <article key={id} className="t-mastery-row t-mastery-premium-row t-mastery-card-v29" data-mastery-companion={id}>
-              <div className="t-mastery-avatar t-premium-avatar" aria-hidden="true"><img src={id.startsWith("pet:") ? UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /></div>
+              <div className="t-mastery-avatar t-premium-avatar" aria-hidden="true"><img src={id.startsWith("pet:") ? pet?.img || UNIT_DEFS["ally-03"].portrait : UNIT_DEFS[id].portrait} alt="" onError={portraitFallback} /></div>
               <div className="t-mastery-main">
                 <div className="t-mastery-topline">
                   <div>
@@ -93,7 +93,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                   </div>
                   <div>
                     <span className="t-kicker">Next</span>
-                    <strong>{nextAt ? `AT ${nextAt} MASTERY` : "COMPLETE"}</strong>
+                    <strong>{nextAt ? `AT ${nextAt} MASTERY` : "ALL PATHS UNLOCKED"}</strong>
                     <small>{nextCopy}</small>
                   </div>
                 </div>
