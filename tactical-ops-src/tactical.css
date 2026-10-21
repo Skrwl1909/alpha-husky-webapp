@@ -4749,3 +4749,43 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 @media(prefers-reduced-motion:reduce) {
   #tacticalOpsRoot .t-cell.move::after {box-shadow:none;}
 }
+
+/* FINAL BATTLEFIELD SHELL: Telegram full-screen controls + system gesture-safe gameplay. */
+#tacticalOpsRoot {
+  --t-battle-safe-top: max(env(safe-area-inset-top, 0px), var(--ah-chrome-top, 0px));
+  --t-battle-safe-bottom: max(env(safe-area-inset-bottom, 0px), var(--ah-safe-bottom, 0px));
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-top {
+  min-height: calc(46px + var(--t-battle-safe-top));
+  max-height: none;
+  padding-top: calc(var(--t-battle-safe-top) + 5px);
+  padding-left: max(10px, var(--ah-safe-left, 0px));
+  padding-right: max(10px, var(--ah-safe-right, 0px));
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-top .t-brand { min-width: 0; }
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-dock {
+  padding-bottom: calc(10px + var(--t-battle-safe-bottom));
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-field > .t-status,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-field > .t-obj-chip {top:10px;}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-status .t-combat-emblem[src=""] {display:none;}
+body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahCommunityBtn {
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+@media(max-width:620px) {
+ #tacticalOpsRoot .t-shell[data-screen="battle"] .t-top {
+   grid-template-columns:minmax(0,1fr) auto;
+   gap:5px;
+ }
+ #tacticalOpsRoot .t-shell[data-screen="battle"] .t-top .t-obj {
+   display:none;
+ }
+ #tacticalOpsRoot .t-shell[data-screen="battle"] .t-top .t-turn {
+   justify-self:end;
+ }
+ #tacticalOpsRoot .t-shell[data-screen="battle"] .t-field > .t-status,
+ #tacticalOpsRoot .t-shell[data-screen="battle"] .t-field > .t-obj-chip {
+   top:12px;
+ }
+}
