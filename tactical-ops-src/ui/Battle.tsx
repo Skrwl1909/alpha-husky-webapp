@@ -8,6 +8,7 @@ import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
+import { FX_ROOT } from "./combatFxAtlas";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
@@ -423,6 +424,7 @@ export function BattleScreen() {
   const actionSkillId = useBattleStore((s) => s.battle.actionSkillId);
   const lastActionSkillId = useBattleStore((s) => s.lastActionSkillId);
   const combatMoment = useBattleStore((s) => s.combatMoment);
+  const combatFx = useBattleStore((s) => s.combatFx);
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
@@ -562,6 +564,20 @@ export function BattleScreen() {
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
               />
             ))}
+          {combatFx.map(effect=>{
+            const unit=units.find(u=>u.id===effect.targetId);
+            const anchor=effect.terminal||unit;
+            if(!anchor)return null;
+            const pos=fieldPercent(anchor.c,anchor.r);
+            return <div key={effect.id} className="t-sprite-fx" style={{left:pos.x+"%",top:pos.y+"%"}} aria-hidden="true">
+              <div className="t-sprite-fx-clip" style={{animationDuration:effect.durationMs+"ms"}}>
+                <div className="t-sprite-fx-sheet" style={{
+                  backgroundImage:`url("${FX_ROOT}${effect.name}.webp")`,
+                  animationDuration:effect.durationMs+"ms"
+                }}/>
+              </div>
+            </div>;
+          })}
           {combatMoment && (() => {
             const target = units.find(u => u.id === combatMoment.targetId);
             if (!target) return null;
