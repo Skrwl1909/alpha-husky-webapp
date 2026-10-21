@@ -4591,3 +4591,11 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
 #tacticalOpsRoot .t-mastery-unlock p {margin:5px 0 0;font-size:11px;line-height:1.5;color:#afc9d8;}
 @media (max-width:390px) {#tacticalOpsRoot .t-master-moment {bottom:90px;padding:6px 10px;} #tacticalOpsRoot .t-master-moment strong {font-size:10px;} #tacticalOpsRoot .t-skill-rank {font-size:7px;padding:2px;}}
 @media (prefers-reduced-motion:reduce) {#tacticalOpsRoot .t-master-fx-ring,#tacticalOpsRoot .t-master-fx-core,#tacticalOpsRoot .t-master-moment {animation:none!important;} #tacticalOpsRoot .t-master-fx-ring,#tacticalOpsRoot .t-master-fx-core {display:none;} #tacticalOpsRoot .t-master-moment {opacity:1;}}
+
+/* Nine authored combat identity emblems: scalable, distinct from character portraits. */
+#tacticalOpsRoot .t-growth-core-emblem {width:38px;height:38px;object-fit:contain;flex:none;filter:drop-shadow(0 0 6px rgba(111,207,246,.25));}
+#tacticalOpsRoot .t-growth-copy {display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+#tacticalOpsRoot .t-growth-path-emblem {display:block;width:42px;height:42px;object-fit:contain;margin:0 0 5px;}
+#tacticalOpsRoot .t-combat-identity {align-items:center;gap:4px;}
+#tacticalOpsRoot .t-combat-emblem {height:17px;width:17px;object-fit:contain;flex:none;}
+@media(max-width:390px){#tacticalOpsRoot .t-growth-path-emblem{width:34px;height:34px;}#tacticalOpsRoot .t-combat-emblem{width:13px;height:13px;}}
