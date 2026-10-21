@@ -1,0 +1,17 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const battle=readFileSync("tactical-ops-src/ui/Battle.tsx","utf8");
+const css=readFileSync("tactical-ops-src/tactical.css","utf8");
+const shell=readFileSync("js/telegram_shell.js","utf8");
+const boot=readFileSync("tactical-ops-src/host/bootstrap.ts","utf8");
+const marker=css.slice(css.indexOf("/* FINAL BATTLEFIELD SHELL:"));
+assert(marker.includes("var(--ah-chrome-top, 0px)") && marker.includes("var(--ah-safe-bottom, 0px)"),"runtime shell safe areas");
+assert(marker.includes('.t-shell[data-screen="battle"] .t-top'),"battle-only top inset");
+assert(marker.includes("padding-bottom: calc(10px + var(--t-battle-safe-bottom))"),"bottom gesture zone");
+assert(marker.includes("#ahCommunityBtn"),"floating paw hidden only in active battle");
+assert(marker.includes(".t-obj-chip"),"objective card retains visible lane");
+assert(battle.includes("tacticalEmblemFor(unit.defId, unit.growth?.discipline) ? <img"),"PET cannot render a missing emblem URL");
+assert(shell.includes("--ah-chrome-top") && shell.includes("contentSafeAreaChanged"),"host owns chrome changes");
+assert(boot.includes("visualViewport") && boot.includes("applyHostGeometry"),"device viewport retained");
+assert(css.includes(".t-threat-tile {z-index:16;}"),"danger telegraphs preserved");
+console.log("PASS Battlefield shell safe areas, real PET emblem absence, HUD and gesture safety");
