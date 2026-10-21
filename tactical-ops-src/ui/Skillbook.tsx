@@ -4,6 +4,7 @@ import { HERO_PATHS, HERO_SKILLS, UPGRADES, type Discipline, type HeroId } from 
 import { getSkill } from "../data/skills";
 import { UNIT_DEFS } from "../data/units";
 import { portraitFallback } from "./PlayerIdentity";
+import { skillChangePreview } from "./combatIdentity";
 
 const NAMES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
 const PATH_COPY: Record<Discipline, string> = {
@@ -26,6 +27,7 @@ export function SkillbookPanel() {
   const [path, setPath] = useState<Discipline>("vanguard");
   const [skillId, setSkillId] = useState<string | null>(null);
   const [respecConfirm, setRespecConfirm] = useState(false);
+  const [purchaseProof, setPurchaseProof] = useState<{ heroId: HeroId; skillId: string; rank: 1 | 2 } | null>(null);
   const hero = growth?.heroes.find(h => h.heroId === heroId);
   const remaining = growth ? growth.earnedPoints - growth.spentPoints : 0;
 
@@ -42,6 +44,8 @@ export function SkillbookPanel() {
   const locked = pending || !growth || remaining < 1 || (hero?.discipline != null && hero.discipline !== path);
   const canBuy = !!(skillId && upgradeInfo && !locked);
   const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
+  const delta = skillId && upgradeInfo && hero ? skillChangePreview(skillId, hero, nextRank, path) : [];
+  const upgradeConfirmed = !!(purchaseProof && !pending && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
 
   return (
     <section className="t-panel t-growth-panel" aria-label="Character Skillbook">
@@ -88,13 +92,16 @@ export function SkillbookPanel() {
             <div aria-live="polite">
               <strong>{selectedSkill ? selectedSkill.name : "SELECT A SKILL"}</strong>
               <small>{upgradeInfo?.description ?? (selectedSkill ? "All upgrades unlocked." : "Select one of the three skills to see its next upgrade.")}</small>
+              {delta.length ? <div className="t-growth-delta" aria-label="Actual combat upgrade preview">{delta.map(change => <b key={change}>{change}</b>)}</div> : null}
+              {nextRank === 2 && upgradeInfo ? <span className="t-growth-signature">RANK 2 · EVOLVED COMBAT EFFECT</span> : null}
               <small>{hero?.discipline && hero.discipline !== path ? "Other specialization is locked. Use your one free respec to change it." : remaining < 1 ? "Earn a point from a first-time mission clear." : "Each upgrade costs 1 point and changes real combat behavior."}</small>
             </div>
             <button className="t-btn t-btn-primary" type="button" disabled={!canBuy}
-              onClick={() => { if (skillId && canBuy) void upgrade(heroId, path, skillId, nextRank); }}>
+              onClick={() => { if (skillId && canBuy) { setPurchaseProof({ heroId, skillId, rank: nextRank }); void upgrade(heroId, path, skillId, nextRank); } }}>
               {pending ? "SAVING..." : "CONFIRM UPGRADE"}
             </button>
           </div>
+          {upgradeConfirmed ? <p className="t-growth-confirmed" role="status">UPGRADE RECORDED · RANK {purchaseProof?.rank}/2 · READY FOR NEXT BATTLE</p> : null}
           {canRespec ? <div className="t-growth-respec">
             {!respecConfirm ? <button className="t-btn" type="button" disabled={pending} onClick={() => setRespecConfirm(true)}>RESET THIS HERO · ONCE FREE</button> :
               <><span>Refund this hero's skill points and reset their specialization? This is irreversible.</span>
