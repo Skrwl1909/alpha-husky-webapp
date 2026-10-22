@@ -176,9 +176,9 @@ try {
   const grouped={};
   for(const id of Object.keys(ops.MISSION_DEFS)){
     const subset=all.filter(r=>r.missionId===id);
-    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,softlocks:subset.filter(r=>r.error).length,roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="objective"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="assault"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
+    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="objective"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="assault"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
   }
-  const result={schema:"s2-real-combat-matrix.v1",mode:"VNext Lab engine only",benchmark:"scripted objective vs assault policies, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
+  const result={schema:"s2-real-combat-matrix.v1",interpretation:"Policy stalls mean scripted AI refused/failed objective interactions; this is not evidence of an engine softlock. Distinct policy outcomes are not proof of two viable winning routes.",mode:"VNext Lab engine only",benchmark:"scripted objective vs assault policies, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
   mkdirSync("artifacts",{recursive:true});
   writeFileSync("artifacts/tactical-s2-full-combat.json",JSON.stringify(result,null,2));
   console.log(JSON.stringify({schema:result.schema,runs:all.length,byMission:grouped},null,2));
