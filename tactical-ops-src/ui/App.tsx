@@ -1015,15 +1015,15 @@ function Results() {
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
             {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
-          {fieldOp && fieldResult ? <section className="t-player-result-next" aria-label="Next tactical action"><span className="t-kicker">NEXT TACTICAL GOAL</span><strong>{nextSuggestedMission?.name || "CHECK THE WAR TABLE"}</strong><p>{nextSuggested.reason}</p></section> : null}
+          
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
             <strong>{campaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
             <p>{mission?.missionId === "dead-relay-courier"
-              ? progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult?.intelEarned ? "COURIER TRACE ACTIVE · HOUND REINFORCEMENT DELAYED IN HOLD"
-                : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
-              : mission?.missionId === "dead-relay-hold" ? results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
-              : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
+              ? campaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
+                : !campaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
+              : mission?.missionId === "dead-relay-hold" ? !campaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
+              : !campaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
           </div> : null}
           {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={fieldResult?.runId || campaignResult?.runId}>
             <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
