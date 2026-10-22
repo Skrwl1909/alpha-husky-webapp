@@ -22,9 +22,46 @@ function threatScore(t: CombatUnit): number {
   return s;
 }
 
-function pickTarget(caster: CombatUnit, candidates: CombatUnit[], skill: SkillDef): CombatUnit | null {
+/** One objective-aware target policy shared by all six encounter families in VNext.
+ * A tactical threat is meaningful only if its victim could change the mission outcome.
+ * This changes target preference, never skill legality or damage math. */
+export function objectiveTargetScore(state: BattleState, caster: CombatUnit, target: CombatUnit): number {
+  const hpFraction = target.maxHp > 0 ? target.hp / target.maxHp : 1;
+  const vulnerable = (1-hpFraction)*40;
+  const support = target.role === "support" ? 14 : 0;
+  const base = vulnerable + support + effectiveAtk(target)*0.25;
+  const o = state.objective;
+  if (!o) return base + (target.role === "alpha" ? 6 : 0); // ELIMINATE — coordinate on injured allies.
+  if (o.type === "HOLD" && o.terminal) {
+    const dist = Math.abs(target.c-o.terminal.c)+Math.abs(target.r-o.terminal.r);
+    return base + (dist <= (o.radius ?? 0) ? 70 : 0) + Math.max(0, 17-dist*4);
+  }
+  if (o.type === "RECOVER") {
+    const dist = Math.abs(target.c-o.terminal.c)+Math.abs(target.r-o.terminal.r);
+    return base + Math.max(0, 50-dist*9);
+  }
+  if (o.type === "SURVIVE") return base + (1-hpFraction)*70 + support*0.5;
+  if (o.type === "INTERCEPT") {
+    const courier = state.units.find(u=>u.id===o.targetId&&!u.defeated);
+    const dist = courier ? chebyshev(target,courier) : 9;
+    const exitDist = Math.abs(target.c-o.exit.c)+Math.abs(target.r-o.exit.r);
+    return base + Math.max(0, 50-dist*10) + Math.max(0, 12-exitDist*2);
+  }
+  if (o.type === "BOSS") {
+    const leader = state.units.find(u=>u.id===o.targetId&&!u.defeated);
+    const dist = leader ? chebyshev(target,leader) : 9;
+    return base + Math.max(0, 45-dist*8) + (caster.role==="leader" && target.role==="support" ? 14 : 0);
+  }
+  return base;
+}
+function pickTarget(caster: CombatUnit, candidates: CombatUnit[], skill: SkillDef, state?: BattleState): CombatUnit | null {
   if (!candidates.length) return null;
   const sorted = [...candidates].sort((a, b) => {
+    if (BATTLEFIELD_VNEXT_PREVIEW && state) {
+      const aScore = objectiveTargetScore(state,caster,a) + (caster.archetype==="DISRUPTOR" && a.role==="support" ? 35 : 0);
+      const bScore = objectiveTargetScore(state,caster,b) + (caster.archetype==="DISRUPTOR" && b.role==="support" ? 35 : 0);
+      return bScore-aScore || chebyshev(caster,a)-chebyshev(caster,b) || a.id.localeCompare(b.id);
+    }
     if (caster.archetype === "DISRUPTOR") return Number(b.role === "support") - Number(a.role === "support") || threatScore(b) - threatScore(a);
     if (caster.archetype === "MARKSMAN") return threatScore(b) - threatScore(a) || chebyshev(caster, b) - chebyshev(caster, a);
     if (caster.role === "leader") return threatScore(b) - threatScore(a) || a.hp - b.hp;
@@ -105,6 +142,48 @@ export function objectiveAwareEnemyAction(state: BattleState): AiAction | null {
   return dest ? { type:"move", to:dest } : null;
 }
 
+/** Deny RECOVER at the relay without inventing new hazards, statuses or extra enemies.
+ * Fast units may contest the approach; existing combat engine validates movement. */
+export function relayDenialAction(state: BattleState): AiAction | null {
+  const actor = state.units.find(u=>u.id===state.activeId);
+  const o=state.objective;
+  if(!actor||actor.team!=="enemy"||actor.defeated||actor.hasMoved||o?.type!=="RECOVER")return null;
+  if(actor.archetype==="MARKSMAN"||actor.archetype==="COURIER")return null;
+  const md=(p:Cell)=>Math.abs(p.c-o.terminal.c)+Math.abs(p.r-o.terminal.r);
+  const allies=living(state.units,"ally");
+  const nearest=Math.min(...allies.map(md));
+  if(!allies.length||nearest>4)return null;
+  const current=md(actor);
+  if(current<=1||current>5)return null;
+  const moves=reachableCells(actor,state.units).filter(p=>md(p)<current);
+  const best=moves.sort((a,b)=>md(a)-md(b)||a.c-b.c||a.r-b.r)[0];
+  return best?{type:"move",to:best}:null;
+}
+
+/** Context priorities are allowed to change *decisions*, not objective rules.
+ * For SURVIVE/BOSS/INTERCEPT/ELIMINATE, target scores guide normal legal skill use.
+ * HOLD/RECOVER may additionally force a contested route rather than a direct attack. */
+export function encounterPressureAction(state:BattleState):AiAction|null {
+  const actor=state.units.find(u=>u.id===state.activeId);
+  if(!actor||actor.team!=="enemy"||actor.defeated)return null;
+  if(state.objective?.type==="HOLD") {
+    const objective=state.objective;
+    const defending=living(state.units,"ally").some(a=>Math.abs(a.c-objective.terminal.c)+Math.abs(a.r-objective.terminal.r)<=objective.radius);
+    // Attack a reachable holder rather than waste a move into an occupied contested tile.
+    if(defending) {
+      const ready=availableSkills(state,actor).filter(s=>s.ready&&s.targetType==="ENEMY_SINGLE");
+      for(const skill of ready){
+        const holder=living(state.units,"ally").filter(a=>Math.abs(a.c-objective.terminal.c)+Math.abs(a.r-objective.terminal.r)<=objective.radius);
+        const victim=pickTarget(actor,holder,skill,state);
+        if(victim&&inSkillRange(actor,victim,skill))return {type:"skill",skillId:skill.id,targetId:victim.id};
+      }
+    }
+    return objectiveAwareEnemyAction(state);
+  }
+  if(state.objective?.type==="RECOVER")return relayDenialAction(state);
+  return null;
+}
+
 export function chooseAiAction(state: BattleState): AiAction {
   const caster = state.units.find((u) => u.id === state.activeId);
   if (!caster || caster.defeated || caster.team !== "enemy") return { type: "skip" };
@@ -112,8 +191,8 @@ export function chooseAiAction(state: BattleState): AiAction {
   if (objectiveAction) return objectiveAction;
   // Only official VNext battles use the new objective-aware roles.
   if (BATTLEFIELD_VNEXT_PREVIEW) {
-    const contest = objectiveAwareEnemyAction(state);
-    if (contest) return contest;
+    const response = encounterPressureAction(state);
+    if (response) return response;
   }
 
   const skills = availableSkills(state, caster).filter((s) => s.ready);
@@ -152,7 +231,7 @@ export function chooseAiAction(state: BattleState): AiAction {
       return { type: "skill", skillId: skill.id };
     }
 
-    const intended = pickTarget(caster, foes, skill);
+    const intended = pickTarget(caster, foes, skill, state);
     if (!intended) continue;
 
     if (inSkillRange(caster, intended, skill)) {
@@ -177,7 +256,7 @@ export function chooseAiAction(state: BattleState): AiAction {
 
   // Fallback: close on weakest / alpha
   if (!caster.hasMoved) {
-    const focus = [...foes].sort((a, b) => threatScore(b) - threatScore(a))[0];
+    const focus = [...foes].sort((a, b) => BATTLEFIELD_VNEXT_PREVIEW ? objectiveTargetScore(state,caster,b)-objectiveTargetScore(state,caster,a) : threatScore(b)-threatScore(a))[0];
     const cells = reachableCells(caster, state.units);
     let best: Cell | null = null;
     let bestD = chebyshev(caster, focus);
@@ -192,7 +271,7 @@ export function chooseAiAction(state: BattleState): AiAction {
       const after = { ...caster, c: best.c, r: best.r };
       const a1 = skills.find((s) => s.slot === "A1");
       if (a1) {
-        const t = pickTarget(after, foes, a1);
+        const t = pickTarget(after, foes, a1, state);
         if (t && inSkillRange(after, t, a1)) {
           return { type: "move", to: best, then: { type: "skill", skillId: a1.id, targetId: t.id } };
         }
