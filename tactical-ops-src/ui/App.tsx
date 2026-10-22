@@ -1,5 +1,6 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
+import { confirmedConsequence, confirmedReturnAction } from "./s3AfterAction";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useState } from "react";
@@ -975,6 +976,8 @@ function Results() {
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const nextSuggested = nextFieldMission(progression?.fieldOps, selectedMissionId);
   const nextSuggestedMission = getMissionDef(nextSuggested.missionId);
+  const s3Proof = confirmedConsequence(fieldResult, campaignResult, progression);
+  const s3Return = confirmedReturnAction(fieldResult, campaignResult, progression);
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
@@ -1008,6 +1011,11 @@ function Results() {
               : mission?.missionId === "dead-relay-hold" ? results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
               : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
           </div> : null}
+          {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={fieldResult?.runId || campaignResult?.runId}>
+            <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
+            {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
+            <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
+          </section> : null}
           <PlayerIdentityCard />
           <dl className="t-stats">
             <div>
