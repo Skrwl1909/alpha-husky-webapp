@@ -12,7 +12,7 @@ Six mandatory capabilities: (1) Power Proof AFTER saved Skillbook/Pack Mastery/s
 * Separate S4 gate: Android and iOS device QA, blind tester evidence, backend idempotency/recovery.
 
 ## Current implementation status
-The initial S3 after-action view model is a receipt-grounded proof and next-action selector, intentionally not a persistent event log. Further integration is required for live post-battle UI, full Power Proof after saved upgrades, trials and synergy test matrix. Do not mark S3 complete until these pass.
+The initial S3 after-action view model is a receipt-grounded proof and next-action selector, intentionally not a persistent event log. After-action evidence and optional training goals now connect to engine-confirmed skill results and accepted result receipts. Power Proof derives from persisted current loadout; three role trials and two chain-order synergy variants are wired, with no new rewards. A bounded device-session combat journal is intentionally **not** server archival history. Do not mark S3 production VERIFIED before G0 backend acceptance and S4 blind device tests.
 
 ## Required acceptance evidence
 1. A failed or unrecorded upgrade never gets confirmation; reload accurately preserves effect.
@@ -22,3 +22,11 @@ The initial S3 after-action view model is a receipt-grounded proof and next-acti
 5. Empty or transient event log produces no fabricated hero narrative.
 6. Zero additional clear/challenge rewards after claiming; backend idempotency.
 7. All 12 missions, 8×5 regression, CI and live device QA reviewed independently.
+
+## Execution checkpoint — 2026-10-22
+
+- Implemented: Skillbook, Pack Mastery and sidegrade change proofs, receipt-bound after-action and next tactical reason; 3 role goals and 2 synergy routes are evaluated against actual engine effects with runId validation. S3 event proof is session-only and cannot survive refresh; the panel explicitly says so.
+- Accepted run consequence contract: `missionBattleRules()` reads immutable accepted `campaignContext.courierTraceAcquired` and `fieldContext.pressure`, while frontend never modifies those fields to create a result. Existing execution contract tests do not replace live backend verification.
+- Technical CI suite must prove: S2 136 full combat fixtures, S3 receipt truth, Power Proof, S3 combat evidence + whole tactical VNext suite and production build.
+- Blocked on external acceptance: independent VPS backend run context and idempotent reward receipt, S26 Ultra Android, Temux iPhone 13, Kacper blind trial, user recognition of real progression and next goal. Do not silently declare player-fun PASS.
+- No automatic merge; keep Draft until CI and technical review are fully completed. Do not enable VNext globally.
