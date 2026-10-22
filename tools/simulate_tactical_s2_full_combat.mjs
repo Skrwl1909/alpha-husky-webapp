@@ -147,8 +147,7 @@ try {
       const unit=state.units.find(u=>u.id===state.activeId);
       if(state.outcome!=="ongoing")break;
       if(!unit){error="no_active_unit";break;}
-      const before=[state.units.map(u=>[u.id,u.c,u.r,u.hp,u.defeated]),state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null];
-      {const oldCount=cycle.ledger.length; cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length;}
+        {const oldCount=cycle.ledger.length; cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length;}
       if(unit.team==="ally") {
         cycle=scheduler.markAlliedReaction(cycle,state);
         // In the control policy, react to locked attacks by making a real legal evasive move.
@@ -226,7 +225,20 @@ try {
   mkdirSync("artifacts",{recursive:true});
   writeFileSync("artifacts/tactical-s2-full-combat.json",JSON.stringify(result,null,2));
   console.log(JSON.stringify({schema:result.schema,runs:all.length,byMission:grouped},null,2));
-  console.log("S2_INTERCEPT_DETAIL", JSON.stringify(all.filter(r=>r.missionId==="field-relay-intercept"),null,2));
+  // S2 engineering release gate — do not confuse this with a human balance/fun verdict.
+  for(const [missionId,coverage] of Object.entries(grouped)){
+    assert.equal(coverage.runs,missionId==="broken-signal-breach"?4:12,missionId+": missing eligible squad/profile policies");
+    assert.equal(coverage.unresolved,0,missionId+": encounter did not terminate");
+    assert.equal(coverage.policyStalls,0,missionId+": player strategy stalled");
+    assert(coverage.telegraphs>0,missionId+": telegraph engine never engaged");
+    assert(coverage.counters>0,missionId+": no genuine counter event in either policy");
+    assert(coverage.dualWinsDifferent>0,missionId+": missing two real victory routes with different costs");
+  }
+  assert.equal(all.filter(r=>r.outcome==="victory").length,all.length,"all legal paired profiles must finish mission");
+  const totalCounters=all.reduce((sum,r)=>sum+r.counters,0);
+  const totalTelegraphs=all.reduce((sum,r)=>sum+r.telegraphs,0);
+  assert(totalCounters>0 && totalTelegraphs>totalCounters,"threats and reactions must both be observable");
+  console.log("S2_ENGINEERING_GATE_PASS: 12/12 missions, 68/68 dual-victory pairs, actual telegraph and counter events");
   // Assertions gate correctness, but intentional gaps stay visible, not disguised as PASS.
   const stalledObjective=all.filter(r=>r.error);
   assert(!stalledObjective.length,"Objective controller stalled: "+stalledObjective.map(r=>r.missionId+":"+r.squad+":"+r.error).slice(0,8).join(";"));
