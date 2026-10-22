@@ -179,7 +179,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
     {result.victory && result.progressEarned === 0 ? <div className="t-mission-strip"><span>CLEAR SECURED · REPLAY</span><span>+0 COMMANDER</span></div> : null}
     {result.victory && result.firstCycleSecure === false && result.progressEarned > 0 ? <div className="t-mission-strip"><span>CLEAR ALREADY SECURED</span><span>CHALLENGE +{result.challengeBonus} COMMANDER</span></div> : null}
     <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? (result.challengeBonus ? `CHALLENGE MET · +${result.challengeBonus} COMMANDER` : "CHALLENGE ✓") : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.firstCycleAdvanced ? " · SECURED TODAY" : result.victory ? " · REPLAY" : " · FAILED"}</span> : null}</div>
-    <p className="t-player-result-meaning">{result.victory ? result.progressEarned > 0 ? "PROGRESS RECORDED · YOUR NEXT COMMANDER MILESTONE IS CLOSER." : "MISSION REPLAY COMPLETE · COMMANDER REWARDS ALREADY SECURED THIS ROTATION." : "NO COMMANDER PROGRESS EARNED · REASSESS YOUR SQUAD AND TRY AGAIN."}</p>
+    <p className="t-player-result-meaning">{result.victory ? result.rankAfter >= 3 ? "COMMANDER RANK 3 CERTIFIED · PROGRESS RECORDED IN HISTORY. NO HIGHER COMMANDER RANK CURRENTLY EXISTS." : result.progressEarned > 0 ? "PROGRESS RECORDED · YOUR NEXT COMMANDER MILESTONE IS CLOSER." : "MISSION REPLAY COMPLETE · COMMANDER REWARDS ALREADY SECURED THIS ROTATION." : "NO COMMANDER PROGRESS EARNED · REASSESS YOUR SQUAD AND TRY AGAIN."}</p>
     <div className="t-mission-strip t-field-rewards" aria-label="Character rewards"><span>+{result.xpGranted} EXP</span><span>+{result.bonesGranted} BONES</span></div>
     {result.challengeSuccess && !result.challengeBonus ? <small>Challenge bonus already earned this rotation.</small> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
@@ -327,7 +327,7 @@ function WarTable() {
               <span>{commanderTarget ? `${remainingToRank} TO COMMANDER RANK ${commanderRank + 1}` : "COMMANDER CERTIFIED"}</span>
               <span>{recommendedSecured ? recommendedChallenge ? "CLEAR + CHALLENGE SECURED" : "OPTIONAL CHALLENGE REMAINS" : "FIRST CLEAR AVAILABLE"}</span>
             </div>
-            <small>{recommendedSecured && recommendedChallenge ? "This mission's Commander rewards are already secured for this rotation. Try another operation." : "First clears and challenges grant Commander progress. Companion Mastery unlocks at 3/8 and 8/8."}</small>
+            <small>{recommendedSecured && recommendedChallenge ? "This mission's Commander rewards are already secured for this rotation. Try another operation." : "{commanderRank >= 3 ? "Commander Rank 3 complete. Secure the current front, test squad builds and develop available Skillbook upgrades." : "First clears and challenges grant Commander progress. Companion Mastery unlocks at 3/8 and 8/8."}"}</small>
           </section>
           <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
