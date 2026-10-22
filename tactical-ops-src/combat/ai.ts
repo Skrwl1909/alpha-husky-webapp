@@ -1,4 +1,4 @@
-import type { AiAction, BattleState, Cell, CombatUnit, SkillDef } from "./types";
+import { BATTLEFIELD_VNEXT_PREVIEW, type AiAction, type BattleState, type Cell, type CombatUnit, type SkillDef } from "./types";
 import { availableSkills, skillReady } from "./skills";
 import { chebyshev, reachableCells, inBounds } from "./movement";
 import { inSkillRange, living, skillNeedsTargetPick, validTargetIds } from "./targeting";
@@ -111,7 +111,7 @@ export function chooseAiAction(state: BattleState): AiAction {
   const objectiveAction = interceptAction(state, caster);
   if (objectiveAction) return objectiveAction;
   // Only official VNext battles use the new objective-aware roles.
-  if (state.rulesetVersion === "tactical-intent-vnext.0") {
+  if (BATTLEFIELD_VNEXT_PREVIEW) {
     const contest = objectiveAwareEnemyAction(state);
     if (contest) return contest;
   }
