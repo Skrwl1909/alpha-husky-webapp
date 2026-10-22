@@ -48,6 +48,7 @@ jobs:
       - run: node tools/verify_tactical_battlefield_preview.mjs
       - run: node tools/verify_tactical_vnext_combat_intelligence.mjs
       - run: node tools/verify_tactical_vnext_counterplay.mjs
+      - run: node tools/verify_tactical_s2_objective_ai.mjs
       - run: node tools/verify_tactical_vnext_player_growth.mjs
       - run: node tools/verify_tactical_vnext_skillbook_integration.mjs
       - run: node tools/verify_tactical_vnext_step5_squad_codex.mjs
