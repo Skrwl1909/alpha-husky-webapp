@@ -1,14 +1,21 @@
 /** Local, device-scoped Battlefield Lab switch. Never changes canonical player progression. */
 export const BATTLEFIELD_LAB_KEY = "ah_tactical_battlefield_lab_v1";
-export const BATTLEFIELD_VNEXT_PREVIEW = (() => {
+export let BATTLEFIELD_VNEXT_PREVIEW = (() => {
   if (typeof window === "undefined") return false;
   try {
     if (new URLSearchParams(window.location.search).get("tacticalBattlefieldVNext") === "1") return true;
     return window.localStorage.getItem(BATTLEFIELD_LAB_KEY) === "10x7";
   } catch (_) { return false; }
 })();
-export const GRID_COLS = BATTLEFIELD_VNEXT_PREVIEW ? 10 : 8;
-export const GRID_ROWS = BATTLEFIELD_VNEXT_PREVIEW ? 7 : 5;
+export let GRID_COLS = BATTLEFIELD_VNEXT_PREVIEW ? 10 : 8;
+export let GRID_ROWS = BATTLEFIELD_VNEXT_PREVIEW ? 7 : 5;
+/** Sets the exact grid for the accepted server run. Legacy accepted runs stay 8×5.
+ * Only call with an already-validated backend contract, never raw client storage. */
+export function selectAcceptedBattleRules(contract: { rulesetVersion: string } | null | undefined): void {
+  BATTLEFIELD_VNEXT_PREVIEW = contract?.rulesetVersion === "tactical-intent-vnext.0";
+  GRID_COLS = BATTLEFIELD_VNEXT_PREVIEW ? 10 : 8;
+  GRID_ROWS = BATTLEFIELD_VNEXT_PREVIEW ? 7 : 5;
+}
 export const METER_MAX = 100;
 export const DEF_CURVE = 50;
 

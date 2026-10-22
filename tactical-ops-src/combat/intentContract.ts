@@ -7,7 +7,11 @@ import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW, type BattleState, type
 
 export const TACTICAL_VNEXT_RULESET = "tactical-intent-vnext.0" as const;
 /** Experimental only in Battlefield Lab; legacy 8×5 and saved live runs keep previous behavior. */
-export const TACTICAL_VNEXT_ENABLED: boolean = BATTLEFIELD_VNEXT_PREVIEW;
+export let TACTICAL_VNEXT_ENABLED: boolean = BATTLEFIELD_VNEXT_PREVIEW;
+/** Re-evaluate scheduler selection at accepted-run boundaries, never during a battle. */
+export function selectAcceptedIntentRules(contract: RunRulesContract | null): void {
+  TACTICAL_VNEXT_ENABLED = contract?.rulesetVersion === TACTICAL_VNEXT_RULESET;
+}
 
 export type ThreatKind = "ATTACK" | "AREA" | "JAM" | "ESCAPE" | "REINFORCEMENT" | "CHARGE";
 export type IntentPhase = "WINDUP" | "COMMIT";

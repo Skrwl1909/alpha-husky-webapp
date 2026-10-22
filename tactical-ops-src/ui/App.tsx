@@ -1,5 +1,6 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
+import { missionGoal, missionFailure, missionRewardTruth } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useState } from "react";
 import { firstSession, type FirstResultReceipt } from "../host/firstSession";
@@ -632,6 +633,7 @@ function Brief() {
       : mission?.missionId === "dead-relay-hold" ? `COURIER TRACE ${campaignContext.courierTraceAcquired ? "ACTIVE: HOUND ROUND 3" : "NOT ACQUIRED: HOUND ROUND 2"}`
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
+  const rewardTruth = mission ? missionRewardTruth(mission, field) : null;
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
   return (
     <div className="t-fill">
@@ -669,19 +671,19 @@ function Brief() {
         <section className="t-panel t-deploy-overview" aria-label="Mission overview">
           <div className="t-deploy-summary-main">
             <div className="t-kicker">Objective</div>
-            <strong>{primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : mission ? objectiveHeadline(mission) : objective}</strong>
-            <p>{mission ? objective : footnote}</p>
+            <strong>{mission ? missionGoal(mission) : primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective}</strong>
+            <p>{mission ? `FAIL: ${missionFailure(mission)}` : footnote}</p>
           </div>
           {fieldOp ? (
             <>
               <div className="t-deploy-summary-card">
                 <span className="t-kicker">Clear reward</span>
-                <strong>+2 COMMANDER</strong>
-                <small>First clear also grows deployed companions.</small>
+                <strong>{rewardTruth?.commander === "CERTIFIED" ? "COMMANDER CERTIFIED" : rewardTruth?.clear === "SECURED" ? "CLEAR ALREADY SECURED" : rewardTruth?.clear === "UNKNOWN" ? "REWARD STATUS UNKNOWN" : "+2 COMMANDER · IF FIRST CLEAR"}</strong>
+                <small>{rewardTruth?.copy}</small>
               </div>
               <div className="t-deploy-summary-card">
                 <span className="t-kicker">Bonus challenge</span>
-                <strong>+1 COMMANDER</strong>
+                <strong>{rewardTruth?.commander === "CERTIFIED" ? "COMMANDER CERTIFIED" : rewardTruth?.challenge === "SECURED" ? "CHALLENGE ALREADY SECURED" : rewardTruth?.challenge === "UNKNOWN" ? "CHALLENGE STATUS UNKNOWN" : "+1 COMMANDER · IF CHALLENGE MET"}</strong>
                 <small>{mission?.challenge?.label || "Optional challenge"}</small>
               </div>
               <div className={`t-deploy-summary-card t-deploy-pressure is-${pressureLabel(fieldContext.pressure).toLowerCase()}`}>

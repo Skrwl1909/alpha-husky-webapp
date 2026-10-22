@@ -1,4 +1,5 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
+import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import type { CampaignContext } from "../data/operations";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
@@ -23,6 +24,7 @@ export interface FoundationProgressionState {
   packMastery?: PackMastery;
   playerGrowth?: GrowthProgression;
   version: 1;
+  vnextStartAvailable?: boolean;
   foundationStage: FoundationStage;
   completed: boolean;
   revision: number;
@@ -109,6 +111,8 @@ export function parseGrowthProgression(raw: unknown, foundationRevision: number)
 export type MissionProgressionStatus = "locked" | "available" | "cleared";
 
 export interface OperationMissionRun {
+  /** Absent on all legacy accepted runs; immutable backend-issued VNext rules when available. */
+  rulesContract?: RunRulesContract | null;
   tacticalProfile?: TacticalProfile;
   combatProfileV2?: TacticalCombatProfileV2 | null;
   combatProfileV3?: TacticalCombatProfileV3 | null;
@@ -177,6 +181,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   const state: FoundationProgressionState = {
     packMastery: parsePackMastery(value.packMastery),
     version: 1,
+    vnextStartAvailable: value.vnextStartAvailable === true,
     foundationStage: stage as FoundationStage,
     completed: value.completed === true || stage === "completed",
     revision,
@@ -293,7 +298,9 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
       if (activeValue.fieldContext != null && !fieldContext) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
+      const contract = parseRunRulesContract(activeValue.rulesContract);
+      if (contract && contract.missionId !== activeValue.missionId) return null;
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -361,8 +368,9 @@ export async function startOperationMission(
   missionId: string,
   squadIds?: string[],
   fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier },
+  rulesetVersion?: string,
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
-  const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}), ...(fieldOptions ? { fieldOptions } : {}) });
+  const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}), ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}) });
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
@@ -374,7 +382,9 @@ export async function startOperationMission(
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
+  const rulesContract = parseRunRulesContract(value.rulesContract);
+  if (rulesContract && rulesContract.missionId !== value.missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
 }
 
 export async function continueOperationMission(
@@ -384,8 +394,9 @@ export async function continueOperationMission(
   routingTraceAcquired = false,
   fieldReport?: FieldReport,
   campaignReport?: CampaignReport,
+  rulesetVersion?: string,
 ): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null }> {
-  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}) });
+  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}), ...(rulesetVersion ? { rulesetVersion } : {}) });
   return { state: responseState(response), firstClear: response.firstClear === true, fieldResult: parseFieldResult(response.fieldResult), campaignResult: parseCampaignResult(response.campaignResult) };
 }
 

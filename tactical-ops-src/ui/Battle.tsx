@@ -18,6 +18,7 @@ import { OPERATION } from "../data/units";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
+import { missionLiveProgress } from "./missionPurpose";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
@@ -319,6 +320,7 @@ function ObjectiveChip() {
   const battle = useBattleStore((s) => s.battle);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
   const rulesText = missionHud(battle);
+  const liveGoal = mission ? missionLiveProgress(battle) : null;
   const objective = battle.objective;
   if (!rulesText && !mission?.challenge && !objective) return null;
   const jammed = objective?.type === "RECOVER" && !recoverSignalOpen(battle);
@@ -356,12 +358,12 @@ function ObjectiveChip() {
         : null;
   return (
     <div className="t-obj-chip" role="status">
-      <strong>{title}</strong>
+      <strong>{liveGoal ? `${title} · ${liveGoal}` : title}</strong>
       {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
       {mission?.challenge ? <small>OPTIONAL / {mission.challenge.label}</small> : null}
       {roundCap ? (
         <div className="t-obj-rounds">
-          <em>Round {battle.round}/{roundCap}</em>
+          <em>{objective?.type === "HOLD" || objective?.type === "SURVIVE" ? "Objective progress" : `Round ${battle.round}/${roundCap}`}</em>
           <span className="t-obj-dots" aria-hidden="true">
             {Array.from({ length: Math.min(roundCap, 8) }, (_, i) => (
               <i key={i} className={i < battle.round ? "on" : ""} />
