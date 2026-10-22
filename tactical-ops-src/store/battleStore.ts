@@ -36,7 +36,8 @@ import {
 import { missionForContext, missionBattleRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
-import { TACTICAL_VNEXT_ENABLED, type IntentPlan } from "../combat/intentContract";
+import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, type IntentPlan } from "../combat/intentContract";
+import { selectAcceptedBattleRules } from "../combat/types";
 import { emptyThreatCycle, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, interruptLockedThreatAfterControl, type ThreatCycle } from "../combat/intentScheduler";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import { withTeammateSidegrades, type ShadowSidegrade } from "../data/shadowSidegrade";
@@ -148,6 +149,7 @@ interface Store extends UiBattle {
   saveFieldResult: () => Promise<void>;
   saveCampaignResult: () => Promise<void>;
   openOperationBrief: (missionId: string) => void;
+  activeRulesetVersion: string | null;
   backToHub: () => void;
   deploy: () => void;
   inspectUnit: (id: string) => void;
@@ -421,7 +423,8 @@ export const useBattleStore = create<Store>((set, get) => {
     }
   };
 
-  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null, growth?: GrowthSnapshot | null) => {
+  const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null, growth?: GrowthSnapshot | null, rulesContract?: { rulesetVersion: string } | null) => {
+    selectAcceptedBattleRules(rulesContract);
     traceNoticeShown = false;
     threatCycle = emptyThreatCycle();
     const identity = identityCache(resolvePlayerIdentity());
@@ -449,6 +452,7 @@ export const useBattleStore = create<Store>((set, get) => {
       combatMoment: null,
       combatFx: [],
       currentRunKey: runKey,
+      activeRulesetVersion: rulesContract?.rulesetVersion || null,
       currentFieldContext: fieldContext || null,
       fieldResult: null,
       campaignResult: null,
@@ -469,6 +473,7 @@ export const useBattleStore = create<Store>((set, get) => {
 
   return {
     screen: "hub",
+    activeRulesetVersion: null,
     battle: emptyBattle(),
     busy: false,
     banner: null,
@@ -624,7 +629,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
-        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report);
+        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report, undefined, current.activeRulesetVersion || undefined);
         if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         applyCanonicalProgression(committed.state);
@@ -656,7 +661,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
-        const response = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, undefined, report);
+        const response = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, undefined, report, current.activeRulesetVersion || undefined);
         if (!response.campaignResult || response.campaignResult.runId !== current.currentRunKey) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         applyCanonicalProgression(response.state);
@@ -709,6 +714,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({
         screen: get().foundationCompleted && get().progression?.operations?.["broken-signal"] ? "war-table" : "hub",
         battle: emptyBattle(),
+        activeRulesetVersion: null,
         banner: null,
         ticker: null,
         busy: false,
@@ -746,6 +752,7 @@ export const useBattleStore = create<Store>((set, get) => {
                 mission.missionId,
                 squadIds,
                 mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach, ...(persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
+                persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined,
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
@@ -766,6 +773,7 @@ export const useBattleStore = create<Store>((set, get) => {
                 started.run.fieldContext,
                 started.run.campaignContext,
                 started.run.playerGrowth || null,
+                started.run.rulesContract,
               );
             } catch (error) {
               if (g !== runGen) return;
@@ -1052,6 +1060,7 @@ export const useBattleStore = create<Store>((set, get) => {
               s.progression.revision,
               s.currentRunKey as string,
               s.selectedMissionId === "broken-signal-breach" && s.battle.routingTraceAcquired,
+              undefined, undefined, s.activeRulesetVersion || undefined,
             );
             applyCanonicalProgression(committed.state);
             runGen++;
