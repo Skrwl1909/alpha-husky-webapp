@@ -317,17 +317,6 @@ function WarTable() {
           const visual = missionPresentation(recommendedMission);
           return (
           <>
-          <section className="t-player-route" aria-label="Your next tactical goal">
-            <span className="t-kicker">{activeMissionRun ? "CONTINUE YOUR RUN" : "YOUR NEXT STEP"}</span>
-            <strong>{recommendedMission.name}</strong>
-            <p>{recommendedPurpose?.objectiveText}</p>
-            <div className="t-player-route-metrics">
-              <span>{rotationProgress?.securedCount || 0}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
-              <span>{commanderTarget ? `${remainingToRank} TO COMMANDER RANK ${commanderRank + 1}` : "COMMANDER CERTIFIED"}</span>
-              <span>{recommendedSecured ? recommendedChallenge ? "CLEAR + CHALLENGE SECURED" : "OPTIONAL CHALLENGE REMAINS" : "FIRST CLEAR AVAILABLE"}</span>
-            </div>
-            <small>{nextReason.reason} {recommendedPurpose?.rewardEligibility.copy}</small>
-          </section>
           <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
               <img src={visual.art} alt="" aria-hidden="true" />
@@ -336,7 +325,13 @@ function WarTable() {
             <div className="t-wt-feature-copy">
               <div className="t-kicker">{activeMissionRun ? "Resume run" : "Next op"}</div>
               <h2>{recommendedMission.name}</h2>
-              <p className="t-wt-objective">{nextReason.reason}</p>
+              <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
+              <div className="t-player-route-metrics" aria-label="Next step and rotation progress">
+                <span>{rotationProgress?.securedCount || 0}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
+                <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
+                <span>{recommendedPurpose?.rewardEligibility.clear === "SECURED" ? "CLEAR SECURED" : "FIRST CLEAR OPEN"}</span>
+              </div>
+              <p className="t-player-next-reason">{nextReason.reason}</p>
               <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
                 <span>{recommendedPurpose?.rewardClearText}</span>
                 <span className={recommendedChallenge ? "is-earned" : ""}>
@@ -1050,7 +1045,7 @@ function Results() {
             ) : fieldOp ? (
               <>
                 {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `SEE NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
                   <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
                 </>}
               </>
