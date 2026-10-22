@@ -142,15 +142,50 @@ try {
       if(state.outcome!=="ongoing")break;
       if(!unit){error="no_active_unit";break;}
       const before=[state.units.map(u=>[u.id,u.c,u.r,u.hp,u.defeated]),state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null];
+      cycle=scheduler.pruneInvalidThreats(cycle,state);
       if(unit.team==="ally") {
         cycle=scheduler.markAlliedReaction(cycle,state);
-        state=playAlly(state,policy,stats);
+        // In the control policy, react to locked attacks by making a real legal evasive move.
+        const locked=cycle.pending.find(t=>t.plan.targetUnitId===unit.id && t.plan.targetTile);
+        if(policy==="control" && locked && !unit.hasMoved){
+          const cells=move.reachableCells(unit,state.units).filter(p=>p.c!==locked.plan.targetTile.c||p.r!==locked.plan.targetTile.r);
+          const safe=cells.filter(p=>!locked.plan.impactTiles.some(t=>t.c===p.c&&t.r===p.r));
+          if(safe.length){
+            const dest=nearest(safe,p=>move.chebyshev(p,unit)*10+ p.c/100 +p.r/1000);
+            const moved=battle.tryMove(state,dest.c,dest.r);
+            if(moved.ok){state=moved.state;stats.moves++;stats.positions.add(unit.id+":"+dest.c+","+dest.r);cycle=scheduler.pruneInvalidThreats(cycle,state)}
+          }
+        }
+        if(state.outcome==="ongoing")state=playAlly(state,policy,stats);
       } else {
-        const action=ai.chooseAiAction(state);
-        assert(ai.aiUsesLegalRules(state,action),mission.missionId+": illegal enemy action "+JSON.stringify(action));
-        if(action.type==="skill")stats.enemyAttacks++;
-        // Run normal engine action. Separate locked-telegraph proofs use the same scheduler in CI.
-        state=battle.applyAi(state,action).state;
+        if(cycle.interruptedEnemyIds?.includes(unit.id)){
+          cycle={...cycle,interruptedEnemyIds:cycle.interruptedEnemyIds.filter(id=>id!==unit.id)};
+          const skipped=battle.trySkip(state);
+          assert(skipped.ok,"interrupted enemy skip");state=skipped.state;
+        } else {
+          const prior=cycle.pending.find(t=>t.plan.enemyId===unit.id);
+          if(prior){
+            const oldLedger=cycle.ledger.length;
+            const res=scheduler.resolveEnemyThreat(cycle,state);
+            cycle=res.cycle;
+            const updates=cycle.ledger.slice(oldLedger);
+            stats.counters+=updates.filter(e=>e.type==="threat_countered").length;
+            if(res.state!==state)state=res.state;
+            else {const skipped=battle.trySkip(state);assert(skipped.ok,"locked enemy skip");state=skipped.state}
+          } else {
+            const next=scheduler.queueEnemyThreat(cycle,state);
+            if(next.pending.length>cycle.pending.length){
+              stats.telegraphs+=next.pending.length-cycle.pending.length;
+              cycle=next;
+              const skipped=battle.trySkip(state);assert(skipped.ok,"telegraph announcement skip");state=skipped.state;
+            } else {
+              const action=ai.chooseAiAction(state);
+              assert(ai.aiUsesLegalRules(state,action),mission.missionId+": illegal enemy action "+JSON.stringify(action));
+              if(action.type==="skill")stats.enemyAttacks++;
+              state=battle.applyAi(state,action).state;
+            }
+          }
+        }
       }
       if(state.outcome==="ongoing")state=battle.evaluateOutcome(state);
       const after=[state.units.map(u=>[u.id,u.c,u.r,u.hp,u.defeated]),state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null];
@@ -162,7 +197,7 @@ try {
         stats.roundProgress.push({round:state.round,progress:state.objective.progress});
       }
     }
-    return {missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null};
+    return {missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
   }
   const all=[];
   for(const mission of Object.values(ops.MISSION_DEFS)){
@@ -178,7 +213,7 @@ try {
   const grouped={};
   for(const id of Object.keys(ops.MISSION_DEFS)){
     const subset=all.filter(r=>r.missionId===id);
-    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="tempo"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="control"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
+    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,telegraphs:subset.reduce((n,r)=>n+r.telegraphs,0),counters:subset.reduce((n,r)=>n+r.counters,0),roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="tempo"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="control"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
   }
   const result={schema:"s2-real-combat-matrix.v1",interpretation:"Controller stalls are defects in scripted policies until isolated. Only two victories with different observed costs demonstrate viable alternatives.",mode:"VNext Lab engine only",benchmark:"scripted tempo vs control policies, both attempt mission completion, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
   mkdirSync("artifacts",{recursive:true});
