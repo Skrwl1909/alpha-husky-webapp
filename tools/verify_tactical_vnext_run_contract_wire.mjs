@@ -2,11 +2,11 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {createServer} from "vite";
 const foundation=readFileSync("tactical-ops-src/host/foundationProgression.ts","utf8");
-assert(foundation.includes("parseRunRulesContract(value.runRulesContract)"),"mission-start response must parse backend rules");
-assert(foundation.includes("parseRunRulesContract(activeValue.runRulesContract)"),"persisted active run must parse backend rules");
+assert(foundation.includes("parseRunRulesContract(value.rulesContract)"),"mission-start response must parse backend rules");
+assert(foundation.includes("parseRunRulesContract(activeValue.rulesContract)"),"persisted active run must parse backend rules");
 assert(foundation.includes("contract.missionId !== activeValue.missionId"),"persisted run mismatch rejected");
 assert(foundation.includes('rulesContract.missionId !== value.missionId'),"mission start mismatch rejected");
-assert(foundation.includes('...(contract ? { runRulesContract: contract } : {})'),"accepted snapshot frozen");
+assert(foundation.includes('...(contract ? { rulesContract: contract } : {})'),"accepted snapshot frozen");
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 try {
  const intent=await vite.ssrLoadModule("/tactical-ops-src/combat/intentContract.ts");
