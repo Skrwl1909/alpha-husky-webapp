@@ -753,7 +753,7 @@ export const useBattleStore = create<Store>((set, get) => {
                 mission.missionId,
                 squadIds,
                 mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach, ...(persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
-                persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined,
+                (() => { const active = mission.activity === "FIELD_OP" ? persisted.progression.fieldOps?.activeMissionRun : persisted.progression.operations?.[mission.operationId]?.activeMissionRun; return active ? active.rulesContract?.rulesetVersion : persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined; })(),
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
