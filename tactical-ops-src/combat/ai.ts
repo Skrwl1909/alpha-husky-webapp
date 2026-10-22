@@ -80,11 +80,41 @@ function interceptAction(state: BattleState, caster: CombatUnit): AiAction | nul
   return target ? { type: "skill", skillId: attack!.id, targetId: target } : { type: "skip" };
 }
 
+/** Objective-based enemy positioning in VNext. The existing combat engine validates all moves.
+ * Legacy accepted runs retain their original AI; no reward, spawn or objective changes. */
+export function objectiveAwareEnemyAction(state: BattleState): AiAction | null {
+  const caster = state.units.find(u => u.id === state.activeId);
+  if (!caster || caster.team !== "enemy" || caster.defeated || caster.hasMoved) return null;
+  const objective = state.objective;
+  if (objective?.type !== "HOLD") return null;
+  if (caster.archetype === "MARKSMAN" || caster.archetype === "COURIER") return null;
+  const d = (c: Cell) => Math.abs(c.c - objective.terminal.c) + Math.abs(c.r - objective.terminal.r);
+  const current = d(caster);
+  if (current <= objective.radius) return null;
+  const candidates = reachableCells(caster, state.units).filter(cell => d(cell) < current);
+  if (!candidates.length) return null;
+  const allies = living(state.units, "ally");
+  // Contesting the relay only matters when it can be reached, or an ally is already defending it.
+  if (!allies.some(a => d(a) <= objective.radius) && current > caster.move + objective.radius + 1) return null;
+  const ranked = candidates.map(cell => {
+    const distance = d(cell);
+    const exposure = allies.reduce((sum, ally) => sum + (chebyshev(cell, ally) <= 1 ? 1 : 0), 0);
+    return { cell, score: distance * 100 + exposure * 5 + cell.c / 100 + cell.r / 1000 };
+  }).sort((a,b)=>a.score-b.score);
+  const dest = ranked[0]?.cell;
+  return dest ? { type:"move", to:dest } : null;
+}
+
 export function chooseAiAction(state: BattleState): AiAction {
   const caster = state.units.find((u) => u.id === state.activeId);
   if (!caster || caster.defeated || caster.team !== "enemy") return { type: "skip" };
   const objectiveAction = interceptAction(state, caster);
   if (objectiveAction) return objectiveAction;
+  // Only official VNext battles use the new objective-aware roles.
+  if (state.rulesetVersion === "tactical-intent-vnext.0") {
+    const contest = objectiveAwareEnemyAction(state);
+    if (contest) return contest;
+  }
 
   const skills = availableSkills(state, caster).filter((s) => s.ready);
   // A threatened marksman first creates distance instead of firing illegally at adjacency.
