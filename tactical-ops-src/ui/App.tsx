@@ -1,6 +1,7 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
 import { confirmedConsequence, confirmedReturnAction } from "./s3AfterAction";
+import { savedSidegradeProof } from "./s3PowerProof";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useState } from "react";
@@ -806,6 +807,7 @@ function Brief() {
                   <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
                 </div>
                 <small>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
+                {!kodaSavePending && !resuming && savedSidegradeProof("ally-02", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth) ? <div className="t-growth-delta" aria-label="CNC saved sidegrade power proof">{savedSidegradeProof("ally-02", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth)!.changes.map(x => <b key={x}>{x}</b>)}</div> : null}
               </> : <small>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
             </div>
           ) : null}
@@ -819,6 +821,7 @@ function Brief() {
                   <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
                 </div>
                 <small>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
+                {!shadowSavePending && !resuming && savedSidegradeProof("ally-03", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth) ? <div className="t-growth-delta" aria-label="SHADOW saved sidegrade power proof">{savedSidegradeProof("ally-03", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth)!.changes.map(x => <b key={x}>{x}</b>)}</div> : null}
               </> : <small>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
             </div>
           ) : null}
