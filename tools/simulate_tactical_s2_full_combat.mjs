@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * S2 full-combat, deterministic scenario evaluation.
- * 12 authored missions × legal squads × two frozen stat profiles × two opposing
+ * 12 authored missions × legal squads × two frozen stat profiles × two viable
  * player policies. Real engine turns; no fake outcomes, backend writes or rewards.
  * This is a deterministic benchmark of policies, NOT proof of human fun/retention.
  */
@@ -42,9 +42,9 @@ try {
     if(!enemies.length)return null;
     return [...enemies].sort((a,b)=>{
       function priority(t){
-        if(policy==="objective"){
+        if(policy==="tempo" || policy==="control"){
           if(o?.type==="INTERCEPT"&&t.id===o.targetId)return -900;
-          if(o?.type==="BOSS"&&t.id===o.targetId)return -900;
+          if(o?.type==="BOSS"&&t.id===o.targetId)return policy==="tempo"?-900:20;
           if(o?.type==="HOLD"&&o.terminal)return manhattan(t,o.terminal)*20+t.hp/10;
           if(o?.type==="RECOVER"&&o.terminal)return manhattan(t,o.terminal)*15+t.hp/10;
         }
@@ -56,7 +56,7 @@ try {
   function strike(state,actor,preferred,policy,stats){
     const ready=skills.availableSkills(state,actor).filter(s=>s.ready);
     const wounded=state.units.filter(u=>u.team==="ally"&&!u.defeated&&u.hp<u.maxHp*.7);
-    if(policy==="objective"&&wounded.length&&actor.role==="support"){
+    if(policy==="control"&&wounded.length&&actor.role==="support"){
       const heals=ready.filter(s=>s.effects.some(e=>e.kind==="heal"));
       for(const heal of heals){
         let recipient=heal.targetType==="ALLY_SINGLE"?nearest(wounded,u=>u.hp/u.maxHp):null;
@@ -67,7 +67,7 @@ try {
     const attacks=ready.filter(s=>s.effects.some(e=>e.kind==="damage")&&
       (s.targetType==="ENEMY_SINGLE"||s.targetType==="AREA_RADIUS"||s.targetType==="ENEMY_AOE"));
     const attack=[...attacks].sort((a,b)=>
-      policy==="objective"? (b.slot==="A2"?1:0)-(a.slot==="A2"?1:0) || (b.effects.find(e=>e.kind==="damage")?.multiplier||0)-(a.effects.find(e=>e.kind==="damage")?.multiplier||0)
+      policy==="control"? (b.slot==="A2"?1:0)-(a.slot==="A2"?1:0) || (b.effects.find(e=>e.kind==="damage")?.multiplier||0)-(a.effects.find(e=>e.kind==="damage")?.multiplier||0)
         :(b.effects.find(e=>e.kind==="damage")?.multiplier||0)-(a.effects.find(e=>e.kind==="damage")?.multiplier||0));
     for(const s of attack){
       const targets=target.validTargetIds(state.units,actor,s);
@@ -81,17 +81,19 @@ try {
   function playAlly(state,policy,stats){
     const actor=state.units.find(u=>u.id===state.activeId),o=state.objective;
     if(!actor||actor.defeated) return state;
-    if(o?.type==="RECOVER" && battle.canRecover(state) && policy==="objective"){
+    if(o?.type==="RECOVER" && battle.canRecover(state) && (policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)){
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
     let preferred=targetPriority(state,actor,policy);
     const oPoint=o?.type==="HOLD"||o?.type==="RECOVER"?o.terminal:null;
-    const wantsObjective=policy==="objective"&&oPoint&&(
-      o.type==="RECOVER"||
-      o.type==="HOLD"&&(actor.id==="alpha"||actor.defId==="alpha"));
+    const remaining=state.units.filter(u=>u.team==="enemy"&&!u.defeated).length;
+    const nextHolder=state.units.find(u=>u.team==="ally"&&!u.defeated);
+    const wantsObjective=Boolean(oPoint)&&(
+      policy==="tempo" || remaining===0 || (o?.type==="RECOVER"&&state.round>=3) || (o?.type==="HOLD"&&state.round>=4)
+    ) && (o?.type==="RECOVER" || (actor.defId==="alpha" || actor.id===nextHolder?.id));
     const dist=oPoint?manhattan(actor,oPoint):Infinity;
-    const mustHold=o?.type==="HOLD" && dist<=o.radius && policy==="objective";
-    if(!mustHold && (policy==="assault" || !wantsObjective)){
+    const mustHold=o?.type==="HOLD" && dist<=o.radius && wantsObjective;
+    if(!mustHold && (policy==="control" || !wantsObjective)){
       const fired=strike(state,actor,preferred,policy,stats);if(fired)return fired;
     }
     if(!actor.hasMoved){
@@ -100,7 +102,7 @@ try {
       if(aim){
         const current=wantsObjective?manhattan(actor,aim):move.chebyshev(actor,aim);
         const spots=reachable.filter(p=>(wantsObjective?manhattan(p,aim):move.chebyshev(p,aim))<current);
-        // Objective policy holds range when in control; assault always rushes.
+        // Both viable policies pursue the actual win condition, but differ in timing.
         if(spots.length && !mustHold){
           const dest=nearest(spots,p=> (wantsObjective?manhattan(p,aim):move.chebyshev(p,aim))*100+ p.c/10 + p.r/100);
           const moved=battle.tryMove(state,dest.c,dest.r);
@@ -110,7 +112,7 @@ try {
     }
     if(state.outcome!=="ongoing")return state;
     const newActor=state.units.find(u=>u.id===state.activeId);
-    if(o?.type==="RECOVER"&&policy==="objective"&&battle.canRecover(state)){
+    if(o?.type==="RECOVER"&&(policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)&&battle.canRecover(state)){
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
     if(!mustHold){
@@ -166,7 +168,7 @@ try {
   for(const mission of Object.values(ops.MISSION_DEFS)){
     const squadOptions=mission.missionId==="broken-signal-breach"?[variants[0]]:
       mission.missionId==="broken-signal-recover"?variants.map(x=>x.slice(0,2)) : variants;
-    for(const squad of squadOptions)for(const profile of profilesData)for(const policy of ["objective","assault"]){
+    for(const squad of squadOptions)for(const profile of profilesData)for(const policy of ["tempo","control"]){
       const row=fullRun(mission,squad,profile,policy);
       all.push(row);
     }
@@ -176,15 +178,15 @@ try {
   const grouped={};
   for(const id of Object.keys(ops.MISSION_DEFS)){
     const subset=all.filter(r=>r.missionId===id);
-    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="objective"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="assault"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
+    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="tempo"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="control"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
   }
-  const result={schema:"s2-real-combat-matrix.v1",interpretation:"Policy stalls mean scripted AI refused/failed objective interactions; this is not evidence of an engine softlock. Distinct policy outcomes are not proof of two viable winning routes.",mode:"VNext Lab engine only",benchmark:"scripted objective vs assault policies, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
+  const result={schema:"s2-real-combat-matrix.v1",interpretation:"Controller stalls are defects in scripted policies until isolated. Only two victories with different observed costs demonstrate viable alternatives.",mode:"VNext Lab engine only",benchmark:"scripted tempo vs control policies, both attempt mission completion, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
   mkdirSync("artifacts",{recursive:true});
   writeFileSync("artifacts/tactical-s2-full-combat.json",JSON.stringify(result,null,2));
   console.log(JSON.stringify({schema:result.schema,runs:all.length,byMission:grouped},null,2));
   // Assertions gate correctness, but intentional gaps stay visible, not disguised as PASS.
-  const stalledObjective=all.filter(r=>r.policy==="objective"&&r.error);
+  const stalledObjective=all.filter(r=>r.error);
   assert(!stalledObjective.length,"Objective controller stalled: "+stalledObjective.map(r=>r.missionId+":"+r.squad+":"+r.error).slice(0,8).join(";"));
-  // Assault-only deliberately ignores objective interactions: report unresolved, not engine softlocks.
-  console.log("S2_FULL_COMBAT_MATRIX_PASS (controller/legality bounds only; unresolved assault policies reported separately)");
+  // Any scripted policy stall is reported as a policy defect, not a proof of engine softlock.
+  console.log("S2_FULL_COMBAT_MATRIX_PASS (tempo vs control; still requires genuine dual-win evidence)");
 }finally{await vite.close();}
