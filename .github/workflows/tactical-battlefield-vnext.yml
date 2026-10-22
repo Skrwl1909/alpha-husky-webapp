@@ -16,6 +16,8 @@ on:
       - "tools/verify_tactical_combat_identity.mjs"
       - "tactical-ops-src/ui/App.tsx"
       - "tactical-ops-src/ui/playerGuidance.ts"
+      - "tactical-ops-src/ui/missionPurpose.ts"
+      - "tools/verify_tactical_s1_purpose_truth.mjs"
       - "tools/verify_tactical_player_clarity.mjs"
       - "tools/verify_tactical_command_deck.mjs"
       - "tactical-ops-src/ui/Skillbook.tsx"
@@ -56,6 +58,7 @@ jobs:
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
       - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_player_clarity.mjs
+      - run: node tools/verify_tactical_s1_purpose_truth.mjs
       - run: node tools/verify_tactical_vnext_run_contract_wire.mjs
       - run: node tools/verify_tactical_vnext_step0_baseline.mjs
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
