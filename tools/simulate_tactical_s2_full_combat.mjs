@@ -142,7 +142,7 @@ try {
       if(state.outcome!=="ongoing")break;
       if(!unit){error="no_active_unit";break;}
       const before=[state.units.map(u=>[u.id,u.c,u.r,u.hp,u.defeated]),state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null];
-      cycle=scheduler.pruneInvalidThreats(cycle,state);
+      {const oldCount=cycle.ledger.length; cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length;}
       if(unit.team==="ally") {
         cycle=scheduler.markAlliedReaction(cycle,state);
         // In the control policy, react to locked attacks by making a real legal evasive move.
@@ -153,7 +153,7 @@ try {
           if(safe.length){
             const dest=nearest(safe,p=>move.chebyshev(p,unit)*10+ p.c/100 +p.r/1000);
             const moved=battle.tryMove(state,dest.c,dest.r);
-            if(moved.ok){state=moved.state;stats.moves++;stats.positions.add(unit.id+":"+dest.c+","+dest.r);cycle=scheduler.pruneInvalidThreats(cycle,state)}
+            if(moved.ok){state=moved.state;stats.moves++;stats.positions.add(unit.id+":"+dest.c+","+dest.r);const oldCount=cycle.ledger.length;cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length}
           }
         }
         if(state.outcome==="ongoing")state=playAlly(state,policy,stats);
@@ -210,10 +210,11 @@ try {
   }
   assert.equal(all.length,136,"34 legal lineups × two profiles × two policies = 136 actual battles");
   assert(all.every(r=>r.activations<=MAX_ACTIVATIONS));
+  assert(all.some(r=>r.telegraphs>0),"No live threat announcements were recorded");
   const grouped={};
   for(const id of Object.keys(ops.MISSION_DEFS)){
     const subset=all.filter(r=>r.missionId===id);
-    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,telegraphs:subset.reduce((n,r)=>n+r.telegraphs,0),counters:subset.reduce((n,r)=>n+r.counters,0),roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),choicesDifferent:subset.filter(r=>r.policy==="tempo"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="control"&&(v.outcome!==r.outcome||v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
+    grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,telegraphs:subset.reduce((n,r)=>n+r.telegraphs,0),counters:subset.reduce((n,r)=>n+r.counters,0),roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),dualWinsDifferent:subset.filter(r=>r.policy==="tempo"&&r.outcome==="victory"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="control"&&v.outcome==="victory"&&(v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
   }
   const result={schema:"s2-real-combat-matrix.v1",interpretation:"Controller stalls are defects in scripted policies until isolated. Only two victories with different observed costs demonstrate viable alternatives.",mode:"VNext Lab engine only",benchmark:"scripted tempo vs control policies, both attempt mission completion, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
   mkdirSync("artifacts",{recursive:true});
