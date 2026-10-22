@@ -36,7 +36,7 @@ import {
 import { missionForContext, missionBattleRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
-import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, type IntentPlan } from "../combat/intentContract";
+import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
 import { selectAcceptedBattleRules } from "../combat/types";
 import { emptyThreatCycle, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, interruptLockedThreatAfterControl, type ThreatCycle } from "../combat/intentScheduler";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
@@ -425,6 +425,7 @@ export const useBattleStore = create<Store>((set, get) => {
 
   const beginBattle = (g: number, runKey: string, spawnsOverride?: SpawnSpec[], recoverTerminal?: { c: number; r: number }, boss = false, routingTrace = false, signalCarrierId: string | null = null, mission?: MissionDef, fieldContext?: FieldContext, campaignContext?: CampaignContext | null, growth?: GrowthSnapshot | null, rulesContract?: { rulesetVersion: string } | null) => {
     selectAcceptedBattleRules(rulesContract);
+    selectAcceptedIntentRules(rulesContract as import("../combat/intentContract").RunRulesContract | null | undefined || null);
     traceNoticeShown = false;
     threatCycle = emptyThreatCycle();
     const identity = identityCache(resolvePlayerIdentity());
