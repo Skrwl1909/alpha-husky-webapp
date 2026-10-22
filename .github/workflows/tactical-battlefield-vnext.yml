@@ -31,6 +31,8 @@ on:
       - "tactical-ops-src/host/foundationProgression.ts"
       - "tools/verify_tactical_vnext_run_contract_wire.mjs"
       - "tools/verify_tactical_vnext_player_growth.mjs"
+      - "tactical-ops-src/ui/s3AfterAction.ts"
+      - "tools/verify_tactical_s3_after_action.mjs"
       - "tools/verify_tactical_battlefield_preview.mjs"
       - ".github/workflows/tactical-battlefield-vnext.yml"
   workflow_dispatch:
@@ -57,6 +59,7 @@ jobs:
           path: artifacts/tactical-s2-full-combat.json
           if-no-files-found: ignore
       - run: node tools/verify_tactical_vnext_player_growth.mjs
+      - run: node tools/verify_tactical_s3_after_action.mjs
       - run: node tools/verify_tactical_vnext_skillbook_integration.mjs
       - run: node tools/verify_tactical_vnext_step5_squad_codex.mjs
       - run: node tools/verify_tactical_vnext_step5_squad_matrix.mjs
