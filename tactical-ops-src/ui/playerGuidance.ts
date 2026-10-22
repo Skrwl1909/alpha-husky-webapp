@@ -27,6 +27,8 @@ export function playerBattleGuidance(battle: BattleState, mission: MissionDef | 
   if (alphaDown && alive.length > 0) {
     return {title:"THE PACK FIGHTS ON",copy:attackReady ? `${actor.name} can still attack. Select a skill and a highlighted target.` : actor.hasMoved ? `${actor.name} has no enemy in range. Use a support skill or SKIP to pass the turn.` : `${actor.name} is still active. Move into range, use support, or SKIP.`};
   }
+  if (mission?.objectiveType === "HOLD" && battle.objective?.type === "HOLD" && !battle.units.some(u => u.team === "enemy" && !u.defeated)) return {title:"SECURE THE RELAY",copy:"No hostiles remain. Move a living ally into the marked HOLD zone and maintain control through the required round changes."};
+  if (mission?.objectiveType === "SURVIVE" && battle.objective?.type === "SURVIVE" && !battle.units.some(u => u.team === "enemy" && !u.defeated)) return {title:"HOLD FORMATION",copy:"Enemies cleared. Keep every squad member alive until the survival timer completes. Use SKIP to advance turns."};
   if (!attackReady && !actor.hasMoved && reachableCells(actor,battle.units).length > 0) return {title:"POSITION FIRST",copy:"No enemy in attack range. Move into range or use an available support skill."};
   if (!attackReady && actor.hasMoved) return {title:"NO ATTACK IN RANGE",copy:"Use an available support skill or SKIP. Your next turn will come."};
   if (mission?.objectiveType === "HOLD") return {title:"HOLD THE RELAY",copy:"Keep a living ally inside the marked zone. Clear enemies contesting it."};

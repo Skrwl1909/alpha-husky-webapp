@@ -1,6 +1,6 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
-import { missionGoal, missionFailure, missionRewardTruth } from "./missionPurpose";
+import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useState } from "react";
 import { firstSession, type FirstResultReceipt } from "../host/firstSession";
@@ -179,7 +179,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
     {result.victory && result.progressEarned === 0 ? <div className="t-mission-strip"><span>CLEAR SECURED · REPLAY</span><span>+0 COMMANDER</span></div> : null}
     {result.victory && result.firstCycleSecure === false && result.progressEarned > 0 ? <div className="t-mission-strip"><span>CLEAR ALREADY SECURED</span><span>CHALLENGE +{result.challengeBonus} COMMANDER</span></div> : null}
     <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? (result.challengeBonus ? `CHALLENGE MET · +${result.challengeBonus} COMMANDER` : "CHALLENGE ✓") : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.firstCycleAdvanced ? " · SECURED TODAY" : result.victory ? " · REPLAY" : " · FAILED"}</span> : null}</div>
-    <p className="t-player-result-meaning">{result.victory ? result.progressEarned > 0 ? "PROGRESS RECORDED · YOUR NEXT COMMANDER MILESTONE IS CLOSER." : "MISSION REPLAY COMPLETE · COMMANDER REWARDS ALREADY SECURED THIS ROTATION." : "NO COMMANDER PROGRESS EARNED · REASSESS YOUR SQUAD AND TRY AGAIN."}</p>
+    <p className="t-player-result-meaning">{recordedResultMeaning(result)}</p>
     <div className="t-mission-strip t-field-rewards" aria-label="Character rewards"><span>+{result.xpGranted} EXP</span><span>+{result.bonesGranted} BONES</span></div>
     {result.challengeSuccess && !result.challengeBonus ? <small>Challenge bonus already earned this rotation.</small> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
@@ -225,13 +225,12 @@ function WarTable() {
   const activeMissionRun = field?.activeMissionRun && activeMissionIds.includes(field.activeMissionRun.missionId)
     ? getMissionDef(field.activeMissionRun.missionId)
     : null;
-  const recommendedMission = activeMissionRun
-    || activeMissionDefs.find((mission) => field?.records[mission.missionId]?.lastClearCycle !== currentCycleId)
-    || activeMissionDefs[0]
-    || null;
+  const nextReason = nextFieldMission(field);
+  const recommendedMission = activeMissionRun || getMissionDef(nextReason.missionId) || activeMissionDefs[0] || null;
   const recommendedRecord = recommendedMission ? field?.records[recommendedMission.missionId] : null;
   const recommendedSecured = recommendedMission ? recommendedRecord?.lastClearCycle === currentCycleId : false;
   const recommendedChallenge = recommendedMission ? recommendedRecord?.lastChallengeCycle === currentCycleId : false;
+  const recommendedPurpose = recommendedMission ? deriveMissionPresentation(recommendedMission, field, field?.activeMissionRun, field?.lastResult) : null;
   const rotationLabel = field?.board ? rotationTime(field.board.nextRotationAt) : "REFRESH REQUIRED";
   const commanderRank = field?.commander?.rank || 1;
   const commanderProgress = field?.commander?.progress || 0;
@@ -318,17 +317,6 @@ function WarTable() {
           const visual = missionPresentation(recommendedMission);
           return (
           <>
-          <section className="t-player-route" aria-label="Your next tactical goal">
-            <span className="t-kicker">{activeMissionRun ? "CONTINUE YOUR RUN" : "YOUR NEXT STEP"}</span>
-            <strong>{recommendedMission.name}</strong>
-            <p>{objectiveHeadline(missionForContext(recommendedMission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
-            <div className="t-player-route-metrics">
-              <span>{rotationProgress?.securedCount || 0}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
-              <span>{commanderTarget ? `${remainingToRank} TO COMMANDER RANK ${commanderRank + 1}` : "COMMANDER CERTIFIED"}</span>
-              <span>{recommendedSecured ? recommendedChallenge ? "CLEAR + CHALLENGE SECURED" : "OPTIONAL CHALLENGE REMAINS" : "FIRST CLEAR AVAILABLE"}</span>
-            </div>
-            <small>{recommendedSecured && recommendedChallenge ? "This mission's Commander rewards are already secured for this rotation. Try another operation." : "First clears and challenges grant Commander progress. Companion Mastery unlocks at 3/8 and 8/8."}</small>
-          </section>
           <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
               <img src={visual.art} alt="" aria-hidden="true" />
@@ -337,13 +325,19 @@ function WarTable() {
             <div className="t-wt-feature-copy">
               <div className="t-kicker">{activeMissionRun ? "Resume run" : "Next op"}</div>
               <h2>{recommendedMission.name}</h2>
-              <p className="t-wt-objective">{objectiveHeadline(missionForContext(recommendedMission, { reportVersion: field?.board?.reportVersion || 2 }))}</p>
+              <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
+              <div className="t-player-route-metrics" aria-label="Next step and rotation progress">
+                <span>{rotationProgress?.securedCount || 0}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
+                <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
+                <span>{recommendedPurpose?.rewardEligibility.clear === "SECURED" ? "CLEAR SECURED" : "FIRST CLEAR OPEN"}</span>
+              </div>
+              <p className="t-player-next-reason">{nextReason.reason}</p>
               <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
-                <span><b>{recommendedSecured ? "✓" : "+2"}</b> {recommendedSecured ? "Clear secured · replay" : "Commander"}</span>
+                <span>{recommendedPurpose?.rewardClearText}</span>
                 <span className={recommendedChallenge ? "is-earned" : ""}>
-                  <b>{recommendedChallenge ? "✓" : "+1"}</b> {recommendedChallenge ? "Challenge" : "Commander · Challenge"}
+                  {recommendedPurpose?.rewardChallengeText}
                 </span>
-                <span><b>+2</b> Mastery first clear</span>
+                <span>Mastery from eligible first clear / challenge</span>
               </div>
             </div>
             <div className="t-wt-feature-cta">
@@ -633,7 +627,8 @@ function Brief() {
       : mission?.missionId === "dead-relay-hold" ? `COURIER TRACE ${campaignContext.courierTraceAcquired ? "ACTIVE: HOUND ROUND 3" : "NOT ACQUIRED: HOUND ROUND 2"}`
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
-  const rewardTruth = mission ? missionRewardTruth(mission, field) : null;
+  const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult) : null;
+  const rewardTruth = purpose?.rewardEligibility;
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
   return (
     <div className="t-fill">
@@ -671,8 +666,10 @@ function Brief() {
         <section className="t-panel t-deploy-overview" aria-label="Mission overview">
           <div className="t-deploy-summary-main">
             <div className="t-kicker">Objective</div>
-            <strong>{mission ? missionGoal(mission) : primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective}</strong>
-            <p>{mission ? `FAIL: ${missionFailure(mission)}` : footnote}</p>
+            <strong>{purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            <p>{purpose ? `FAIL: ${purpose.failConditionText}` : footnote}</p>
+            {purpose ? <p className="t-brief-purpose-meta"><b>THREAT:</b> {purpose.tacticalThreat}</p> : null}
+            {purpose ? <p className="t-brief-purpose-meta"><b>AFTER:</b> {purpose.nextConsequence}</p> : null}
           </div>
           {fieldOp ? (
             <>
@@ -976,6 +973,8 @@ function Results() {
   const mission = getMissionDef(selectedMissionId);
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
+  const nextSuggested = nextFieldMission(progression?.fieldOps, selectedMissionId);
+  const nextSuggestedMission = getMissionDef(nextSuggested.missionId);
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
@@ -999,6 +998,7 @@ function Results() {
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
             {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
+          {fieldOp && fieldResult ? <section className="t-player-result-next" aria-label="Next tactical action"><span className="t-kicker">NEXT TACTICAL GOAL</span><strong>{nextSuggestedMission?.name || "CHECK THE WAR TABLE"}</strong><p>{nextSuggested.reason}</p></section> : null}
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
             <strong>{campaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
@@ -1045,7 +1045,7 @@ function Results() {
             ) : fieldOp ? (
               <>
                 {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? "SEE NEXT FIELD OP" : "REGROUP AT WAR TABLE"}</button>
+                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `SEE NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
                   <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
                 </>}
               </>
