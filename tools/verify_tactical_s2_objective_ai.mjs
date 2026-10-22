@@ -25,5 +25,25 @@ try {
  const other=ops.MISSION_DEFS["field-squad-survival"];
  const base=battle.createBattle(null,[{id:"alpha",defId:"alpha",c:1,r:2},{id:"h1",defId:"hostile",c:5,r:2}],ops.missionBattleRules(other).objective);
  assert.equal(ai.objectiveAwareEnemyAction({...base,activeId:"h1"}),null);
- console.log("PASS S2 objective-aware AI, legal moves, mission-specific HOLD pressure",checked);
+ // Every authored mission uses a consistent engine action policy with no illegal movement or skill.
+ for(const m of Object.values(ops.MISSION_DEFS)){
+  const rules=ops.missionBattleRules(m);
+  const spawns=(m.spawns||[]).some(x=>x.defId==="alpha") ? m.spawns : [
+   {id:"alpha",defId:"alpha",c:1,r:2},
+   {id:"ally-02",defId:"ally-02",c:1,r:1},
+   ...(m.squadCap===3?[{id:"ally-03",defId:"ally-03",c:1,r:4}]:[]),
+   ...(m.spawns||[])];
+  const snap=battle.createBattle(null,spawns,rules.objective,rules.reinforcement,null,rules.directive);
+  for(const enemy of snap.units.filter(u=>u.team==="enemy")){
+   const probe={...snap,activeId:enemy.id};
+   const action=ai.chooseAiAction(probe);
+   assert(ai.aiUsesLegalRules(probe,action),m.missionId+": illegal AI action "+JSON.stringify(action));
+  }
+ }
+ // A holder must matter more than an equally healthy non-holder.
+ const inZone={id:"alpha",team:"ally",role:"alpha",c:3,r:2,hp:100,maxHp:100,atk:20};
+ const outside={...inZone,id:"ally-02",role:"ranged",c:0,r:0};
+ const holderState={...base,objective:{type:"HOLD",terminal:{c:3,r:2},radius:1,duration:3,progress:0,checkedRound:1}};
+ assert(ai.objectiveTargetScore(holderState,base.units[1],inZone)>ai.objectiveTargetScore(holderState,base.units[1],outside),"objective holder targeted first");
+ console.log("PASS S2 shared 12 mission objective targeting, legal enemy plans, HOLD/RECOVER pressure",checked);
 }finally{await vite.close();}
