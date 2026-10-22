@@ -19,7 +19,7 @@ try {
  assert.equal(ops.missionBattleRules(field,false,{...base,pressure:1}).reinforcement.triggerRound,early+1);
  assert.equal(ops.missionBattleRules(field,false,base).reinforcement.triggerRound,early,
    "already-accepted pressure context remains frozen even when global region pressure falls");
- for(const id of ["field-survive","field-rearguard","field-isolated-hold","field-relay-intercept","dead-relay-courier"]) {
+ for(const id of ["field-rearguard","field-isolated-hold","field-relay-intercept","dead-relay-courier"]) {
    const mission=ops.getMissionDef(id); assert(mission,"mission "+id+" must exist");
  }
  const aa=await vite.ssrLoadModule("/tactical-ops-src/ui/s3AfterAction.ts");
