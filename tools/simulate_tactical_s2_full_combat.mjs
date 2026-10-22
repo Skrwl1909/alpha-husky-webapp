@@ -220,6 +220,7 @@ try {
   mkdirSync("artifacts",{recursive:true});
   writeFileSync("artifacts/tactical-s2-full-combat.json",JSON.stringify(result,null,2));
   console.log(JSON.stringify({schema:result.schema,runs:all.length,byMission:grouped},null,2));
+  console.log("S2_INTERCEPT_DETAIL", JSON.stringify(all.filter(r=>r.missionId==="field-relay-intercept"),null,2));
   // Assertions gate correctness, but intentional gaps stay visible, not disguised as PASS.
   const stalledObjective=all.filter(r=>r.error);
   assert(!stalledObjective.length,"Objective controller stalled: "+stalledObjective.map(r=>r.missionId+":"+r.squad+":"+r.error).slice(0,8).join(";"));
