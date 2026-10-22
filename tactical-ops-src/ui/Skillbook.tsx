@@ -47,6 +47,9 @@ export function SkillbookPanel() {
   const canBuy = !!(skillId && upgradeInfo && !locked);
   const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
   const delta = skillId && upgradeInfo && hero ? skillChangePreview(skillId, hero, nextRank, path) : [];
+  const savedPowerProof = selectedSkill && hero && rank > 0 && skillId
+    ? skillChangePreview(skillId, { ...hero, ranks: { ...hero.ranks, [skillId]: (rank - 1) as 0 | 1 } }, rank as 1 | 2, hero.discipline || path)
+    : [];
   const upgradeConfirmed = !!(purchaseProof && !pending && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
 
   return (
@@ -99,6 +102,10 @@ export function SkillbookPanel() {
           <div className="t-growth-confirm">
             <div aria-live="polite">
               <strong>{selectedSkill ? selectedSkill.name : "SELECT A SKILL"}</strong>
+              {savedPowerProof.length ? <div className="t-growth-delta" aria-label="Saved power proof from server progression">
+                <small>SAVED POWER PROOF · CURRENT RANK {rank}/2</small>
+                {savedPowerProof.map(change => <b key={change}>{change}</b>)}
+              </div> : null}
               <small>{upgradeInfo?.description ?? (selectedSkill ? "All upgrades unlocked." : "Select one of the three skills to see its next upgrade.")}</small>
               {delta.length ? <div className="t-growth-delta" aria-label="Actual combat upgrade preview">{delta.map(change => <b key={change}>{change}</b>)}</div> : null}
               {nextRank === 2 && upgradeInfo ? <span className="t-growth-signature">RANK 2 · EVOLVED COMBAT EFFECT</span> : null}

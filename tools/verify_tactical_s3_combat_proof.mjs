@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import { createServer } from "vite";
+const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
+try {
+const x=await vite.ssrLoadModule("/tactical-ops-src/ui/s3CombatProof.ts");
+const mission=(objectiveType)=>({missionId:"field-test",objectiveType});
+const goals=x.s3TrainingGoals(mission("INTERCEPT"),["alpha","ally-02","ally-03","pet:p1"],true);
+assert.equal(goals.filter(g=>g.id==="synergy").length,1);
+assert(!x.s3TrainingGoals(mission("INTERCEPT"),["alpha","ally-02","ally-03"],false).some(g=>g.id==="cnc"),"legacy cannot promise VNext interrupt");
+const before={outcome:"ongoing",unitTurn:3,objective:{type:"INTERCEPT",targetId:"courier",exit:{c:7,r:4}},units:[{id:"courier",team:"enemy"},{id:"h1",team:"enemy"},{id:"ally-03",team:"ally"}]};
+const actor=(defId)=>({defId,id:defId,team:"ally",defeated:false});
+let p=x.newS3Proof("run-1","field-test");
+assert.equal(x.s3TrainingResults(p,"run-1",true,goals).length,0);
+p=x.recordS3Skill(p,actor("ally-02"),"u02-pressure-disruptor","h1",[{type:"status",unitId:"h1"}],true,before);
+assert(p.moments.some(m=>m.kind==="CNC_INTERRUPT"));
+assert.equal(x.s3TrainingResults(p,"wrong-run",true,goals).length,0,"no proof for unbound receipt");
+assert.equal(x.s3TrainingResults(p,"run-1",false,goals).length,0,"defeat earns no training clear");
+let s=x.recordS3Skill(p,actor("ally-03"),"u03-pack",undefined,[{type:"status",unitId:"ally-03"}],false,{...before,unitTurn:4});
+assert(x.s3TrainingResults(s,"run-1",true,goals).some(t=>t.id==="synergy"),"CNC→SHADOW route");
+const pet=x.recordS3Skill(x.newS3Proof("run-2","field-test"),actor("pet:p1"),"pet-hamstring","courier",[{type:"status",unitId:"courier"}],false,before);
+const pet2=x.recordS3Skill(pet,actor("ally-03"),"u03-pack",undefined,[{type:"status",unitId:"ally-03"}],false,{...before,unitTurn:5});
+assert(x.s3TrainingResults(pet2,"run-2",true,goals).some(t=>t.id==="synergy"),"PET→SHADOW alternate route");
+assert(x.s3TrainingResults(pet2,"run-2",true,goals).some(t=>t.id==="pet"));
+assert.equal(x.recordS3Skill(pet,actor("pet:p1"),"pet-hamstring","courier",[],false,before),pet,"no emitted effect means no proof");
+const hold=x.newS3Proof("run-h","field-isolated-hold");
+const holdMission={...before,objective:{type:"HOLD",progress:0,duration:3,terminal:{c:3,r:2},radius:1}};
+const after={...holdMission,unitTurn:5,objective:{...holdMission.objective,progress:1},units:[{id:"alpha",team:"ally",defeated:false,c:3,r:2,statuses:[{type:"GUARD",source:"ally-03",duration:1}]}]};
+assert(x.recordS3Hold(hold,holdMission,after).moments.some(m=>m.kind==="SHADOW_HOLD"));
+assert.equal(x.recordS3Hold(hold,holdMission,{...after,units:[{...after.units[0],statuses:[]}]}),hold,"no shield means no claim");
+assert.equal(x.s3RunMemory(x.newS3Proof("empty","field"),"empty"),null,"empty log cannot invent heroism");
+console.log("PASS S3: 3 role trials, 2 synergy solutions, run receipt gates, no empty-event fantasy");
+} finally { await vite.close(); }

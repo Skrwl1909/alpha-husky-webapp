@@ -1,5 +1,8 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
+import { confirmedConsequence, confirmedReturnAction } from "./s3AfterAction";
+import { savedSidegradeProof } from "./s3PowerProof";
+import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useState } from "react";
@@ -609,6 +612,7 @@ function Brief() {
   const equippedProtocols = equippedSignalCodex(allies, previewGrowth);
   const activeSlots = activeProtocolSlots(allies, previewGrowth);
   const readyCounters = counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED);
+  const s3Goals = s3TrainingGoals(mission, allies.map(u => u.defId), resuming ? savedRun?.rulesContract?.rulesetVersion === "tactical-intent-vnext.0" : Boolean(useBattleStore.getState().progression?.vnextStartAvailable));
   const selectedTradeoff = squadTradeoff(
     selectedSquadIds.length ? selectedSquadIds : allies.map(u => u.defId),
     equippedPet?.id,
@@ -756,6 +760,7 @@ function Brief() {
             <h2 className="t-title">SIGNAL CODEX</h2>
           </div></div>
           <p className="t-codex-tradeoff">{selectedTradeoff}</p>
+          {s3Goals.length ? <details className="t-detail t-s3-training" aria-label="Optional tactical training goals"><summary>OPTIONAL TRAINING · {s3Goals.length} TACTICAL GOALS</summary>{s3Goals.map(goal => <div className="t-s3-goal" key={goal.id}><strong>{goal.title}</strong><p>{goal.instruction}</p><small>{goal.requirement}</small></div>)}</details> : null}
           <p className="t-codex-note">Current squad's equipped protocols, based on real A1/A2/A3 abilities. No extra skills or battle slots are granted.</p>
           <div className="t-codex-loadout">
             <strong>ACTIVE LOADOUT · EXISTING ABILITY SLOTS</strong>
@@ -805,6 +810,7 @@ function Brief() {
                   <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
                 </div>
                 <small>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
+                {!kodaSavePending && !resuming && savedSidegradeProof("ally-02", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth) ? <div className="t-growth-delta" aria-label="CNC saved sidegrade power proof">{savedSidegradeProof("ally-02", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth)!.changes.map(x => <b key={x}>{x}</b>)}</div> : null}
               </> : <small>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
             </div>
           ) : null}
@@ -818,6 +824,7 @@ function Brief() {
                   <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
                 </div>
                 <small>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
+                {!shadowSavePending && !resuming && savedSidegradeProof("ally-03", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth) ? <div className="t-growth-delta" aria-label="SHADOW saved sidegrade power proof">{savedSidegradeProof("ally-03", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth)!.changes.map(x => <b key={x}>{x}</b>)}</div> : null}
               </> : <small>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
             </div>
           ) : null}
@@ -969,12 +976,22 @@ function Results() {
   const progressionCommitPending = useBattleStore((s) => s.progressionCommitPending);
   const progressionError = useBattleStore((s) => s.progressionError);
   const routingTraceAcquired = useBattleStore((s) => s.battle.routingTraceAcquired);
+  const s3CombatProof = useBattleStore((s) => s.s3CombatProof);
+  const currentRunKey = useBattleStore((s) => s.currentRunKey);
+  const activeRulesetVersion = useBattleStore((s) => s.activeRulesetVersion);
+  const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const mission = getMissionDef(selectedMissionId);
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const nextSuggested = nextFieldMission(progression?.fieldOps, selectedMissionId);
   const nextSuggestedMission = getMissionDef(nextSuggested.missionId);
+  const s3Proof = confirmedConsequence(fieldResult, campaignResult, progression);
+  const s3Return = confirmedReturnAction(fieldResult, campaignResult, progression);
+  const acceptedS3Run = fieldResult?.runId === currentRunKey ? fieldResult.runId : campaignResult?.runId === currentRunKey ? campaignResult.runId : null;
+  const s3Goals = s3TrainingGoals(mission, selectedSquadIds, activeRulesetVersion === "tactical-intent-vnext.0");
+  const s3Trials = s3TrainingResults(s3CombatProof, acceptedS3Run, Boolean(fieldResult?.victory || campaignResult?.victory), s3Goals);
+  const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
@@ -998,16 +1015,23 @@ function Results() {
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
             {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
-          {fieldOp && fieldResult ? <section className="t-player-result-next" aria-label="Next tactical action"><span className="t-kicker">NEXT TACTICAL GOAL</span><strong>{nextSuggestedMission?.name || "CHECK THE WAR TABLE"}</strong><p>{nextSuggested.reason}</p></section> : null}
+          
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
             <strong>{campaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
             <p>{mission?.missionId === "dead-relay-courier"
-              ? progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult?.intelEarned ? "COURIER TRACE ACTIVE · HOUND REINFORCEMENT DELAYED IN HOLD"
-                : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
-              : mission?.missionId === "dead-relay-hold" ? results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
-              : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
+              ? campaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
+                : !campaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
+              : mission?.missionId === "dead-relay-hold" ? !campaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
+              : !campaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
           </div> : null}
+          {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={fieldResult?.runId || campaignResult?.runId}>
+            <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
+            {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
+            <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
+          </section> : null}
+          {acceptedS3Run && s3Moment ? <section className="t-panel" aria-label="This session combat evidence"><span className="t-kicker">THIS RUN · ENGINE-CONFIRMED MOMENT</span><strong>{s3Moment.detail}</strong><p>Observed in the current device session only. Not a persisted combat event log or extra reward.</p></section> : null}
+          {acceptedS3Run && s3Trials.length ? <section className="t-panel" aria-label="Verified optional training"><span className="t-kicker">OPTIONAL TRAINING · CONFIRMED THIS RUN</span>{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
           <PlayerIdentityCard />
           <dl className="t-stats">
             <div>

@@ -3,6 +3,7 @@ import { masteryDef, masteryRecord, type PackMastery, type MasteryChange } from 
 import { UNIT_DEFS } from "../data/units";
 import { portraitFallback } from "./PlayerIdentity";
 import { useState } from "react";
+import { savedMasteryProof } from "./s3PowerProof";
 
 function compactEffect(unlock: NonNullable<ReturnType<typeof masteryDef>>["trained"]) {
   const labels: Record<string, string> = {
@@ -60,6 +61,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
           const role = companionRole(id, pet?.name);
           const activeUnlock = active || (m.stage >= 2 ? def.trained : null);
           const nextAt = m.stage < 2 ? 3 : m.stage < 3 ? 8 : null;
+          const proof = snapshot ? null : savedMasteryProof(id, { packMastery: progression?.packMastery, kodaSidegrade: progression?.kodaSidegrade, shadowSidegrade: progression?.shadowSidegrade }, pet, progression?.playerGrowth);
           const nextCopy = m.stage < 2
             ? compactEffect(def.trained)
             : m.stage < 3
@@ -99,6 +101,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                   </div>
                 </div>
 
+                {proof ? <div className="t-growth-delta" aria-label="Saved Pack Mastery power proof"><small>POWER PROOF · {proof.comparison}</small>{proof.changes.map(change => <b key={change}>{change}</b>)}</div> : null}
                 <details className="t-detail t-mastery-detail">
                   <summary>{m.stage >= 3 ? "Specialization" : "Ability details"}</summary>
                   <p>{m.stage >= 2 ? "TRAINED" : "AT 3 MASTERY"}: {def.trained.name} / {def.trained.copy}</p>

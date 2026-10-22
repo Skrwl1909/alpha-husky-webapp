@@ -27,6 +27,7 @@ import {
 import { VERSION } from "../version";
 import { confirmedPathfinderMove, confirmedSkillMoment, type CombatMoment } from "../ui/combatIdentity";
 import { spriteEvents, pathfinderFx, fx, type CombatFx } from "../ui/combatFxAtlas";
+import { newS3Proof, recordS3Skill, recordS3Hold, type S3CombatProof } from "../ui/s3CombatProof";
 import {
   DEFAULT_ONBOARDING_STAGE,
   getOnboardingEncounter,
@@ -65,6 +66,7 @@ interface UiBattle {
   impactId: string | null;
   impactKey: number;
   combatMoment: CombatMoment | null;
+  s3CombatProof: S3CombatProof | null;
   combatFx: CombatFx[];
   muted: boolean;
   queue: string[];
@@ -271,12 +273,14 @@ export const useBattleStore = create<Store>((set, get) => {
   const continueLoop = async (g: number) => {
     if (g !== runGen) return;
     if (await finishIfNeeded(g)) return;
-    const nxt = advanceToNext(get().battle);
+    const beforeRound = get().battle;
+    const nxt = advanceToNext(beforeRound);
+    const s3Next = recordS3Hold(get().s3CombatProof, beforeRound, nxt.state);
     if (TACTICAL_VNEXT_ENABLED) {
       threatCycle = pruneInvalidThreats(threatCycle, nxt.state);
       set({ threats: threatCycle.pending.map(t => t.plan) });
     }
-    set({ battle: nxt.state, queue: refreshQueue(nxt.state) });
+    set({ battle: nxt.state, queue: refreshQueue(nxt.state), s3CombatProof: s3Next });
     await playEvents(nxt.events, g);
     if (g !== runGen) return;
     if (await finishIfNeeded(g)) return;
@@ -451,6 +455,7 @@ export const useBattleStore = create<Store>((set, get) => {
       attackingId: null,
       impactId: null,
       combatMoment: null,
+      s3CombatProof: mission ? newS3Proof(runKey, mission.missionId) : null,
       combatFx: [],
       currentRunKey: runKey,
       activeRulesetVersion: rulesContract?.rulesetVersion || null,
@@ -486,6 +491,7 @@ export const useBattleStore = create<Store>((set, get) => {
     impactId: null,
     impactKey: 0,
     combatMoment: null,
+    s3CombatProof: null,
     combatFx: [],
     muted: false,
     queue: [],
@@ -906,7 +912,8 @@ export const useBattleStore = create<Store>((set, get) => {
           set({ busy: false, attackingId: null, ticker: `${actor.name}  ·  no target in range` });
           return;
         }
-        set({ battle: res.state, queue: refreshQueue(res.state) });
+        const evidence = recordS3Skill(get().s3CombatProof, actor, skillId, undefined, res.events, false, battle);
+        set({ battle: res.state, queue: refreshQueue(res.state), s3CombatProof: evidence });
         publishMoment(confirmedSkillMoment(actor, skillId, res.events, impactSeq++, false), g);
         publishFx(spriteEvents(actor,skillId,res.events,impactSeq++,false),g);
         void (async () => {
@@ -944,7 +951,8 @@ export const useBattleStore = create<Store>((set, get) => {
         ? interruptLockedThreatAfterControl(threatCycle, battle, res.state, actor.id, id, selectedSkillId, res.events)
         : { cycle: threatCycle, interrupted: false };
       if (interrupt.interrupted) threatCycle = interrupt.cycle;
-      set({ battle: res.state, queue: refreshQueue(res.state),
+      const evidence = recordS3Skill(get().s3CombatProof, actor, selectedSkillId, id, res.events, interrupt.interrupted, battle);
+      set({ s3CombatProof: evidence, battle: res.state, queue: refreshQueue(res.state),
         ...(interrupt.interrupted ? { threats: threatCycle.pending.map(t => t.plan) } : {}) });
       publishMoment(confirmedSkillMoment(actor, selectedSkillId, res.events, impactSeq++, interrupt.interrupted), g);
       publishFx(spriteEvents(actor,selectedSkillId,res.events,impactSeq++,interrupt.interrupted),g);
