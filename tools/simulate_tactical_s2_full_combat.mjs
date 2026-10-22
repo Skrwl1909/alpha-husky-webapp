@@ -91,20 +91,26 @@ try {
     const wantsObjective=Boolean(oPoint)&&(
       policy==="tempo" || remaining===0 || (o?.type==="RECOVER"&&state.round>=3) || (o?.type==="HOLD"&&state.round>=4)
     ) && (o?.type==="RECOVER" || (actor.defId==="alpha" || actor.id===nextHolder?.id));
+    // CONTROL wins interceptions by body-blocking the legal courier exit lane
+    // while the remainder of the squad suppresses its approach.
+    const courier=o?.type==="INTERCEPT"?state.units.find(u=>u.id===o.targetId&&!u.defeated):null;
+    const blocker=policy==="control"&&courier&&actor.id===nextHolder?.id;
+    const blockDestination=blocker?o.exit:null;
+    const alreadyBlocking=Boolean(blockDestination&&actor.c===blockDestination.c&&actor.r===blockDestination.r);
     const dist=oPoint?manhattan(actor,oPoint):Infinity;
     const mustHold=o?.type==="HOLD" && dist<=o.radius && wantsObjective;
-    if(!mustHold && (policy==="control" || !wantsObjective)){
+    if(!mustHold && !blocker && (policy==="control" || !wantsObjective)){
       const fired=strike(state,actor,preferred,policy,stats);if(fired)return fired;
     }
     if(!actor.hasMoved){
       const reachable=move.reachableCells(actor,state.units);
-      const aim=wantsObjective?oPoint:preferred;
+      const aim=blockDestination || (wantsObjective?oPoint:preferred);
       if(aim){
-        const current=wantsObjective?manhattan(actor,aim):move.chebyshev(actor,aim);
-        const spots=reachable.filter(p=>(wantsObjective?manhattan(p,aim):move.chebyshev(p,aim))<current);
+        const current=(blockDestination||wantsObjective)?manhattan(actor,aim):move.chebyshev(actor,aim);
+        const spots=reachable.filter(p=>((blockDestination||wantsObjective)?manhattan(p,aim):move.chebyshev(p,aim))<current);
         // Both viable policies pursue the actual win condition, but differ in timing.
-        if(spots.length && !mustHold){
-          const dest=nearest(spots,p=> (wantsObjective?manhattan(p,aim):move.chebyshev(p,aim))*100+ p.c/10 + p.r/100);
+        if(spots.length && !mustHold && !alreadyBlocking){
+          const dest=nearest(spots,p=> ((blockDestination||wantsObjective)?manhattan(p,aim):move.chebyshev(p,aim))*100+ p.c/10 + p.r/100);
           const moved=battle.tryMove(state,dest.c,dest.r);
           if(moved.ok){state=moved.state;stats.moves++;stats.positions.add(actor.id+":"+dest.c+","+dest.r);}
         }
@@ -147,7 +153,7 @@ try {
         cycle=scheduler.markAlliedReaction(cycle,state);
         // In the control policy, react to locked attacks by making a real legal evasive move.
         const locked=cycle.pending.find(t=>t.plan.targetUnitId===unit.id && t.plan.targetTile);
-        if(policy==="control" && locked && !unit.hasMoved){
+        if(policy==="control" && locked && !unit.hasMoved && state.objective?.type!=="INTERCEPT"){
           const cells=move.reachableCells(unit,state.units).filter(p=>p.c!==locked.plan.targetTile.c||p.r!==locked.plan.targetTile.r);
           const safe=cells.filter(p=>!locked.plan.impactTiles.some(t=>t.c===p.c&&t.r===p.r));
           if(safe.length){
