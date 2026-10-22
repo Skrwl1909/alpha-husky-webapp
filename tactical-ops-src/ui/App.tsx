@@ -2,6 +2,7 @@ import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, dir
 import { missionForContext } from "../data/operations";
 import { confirmedConsequence, confirmedReturnAction } from "./s3AfterAction";
 import { savedSidegradeProof } from "./s3PowerProof";
+import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useState } from "react";
@@ -611,6 +612,7 @@ function Brief() {
   const equippedProtocols = equippedSignalCodex(allies, previewGrowth);
   const activeSlots = activeProtocolSlots(allies, previewGrowth);
   const readyCounters = counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED);
+  const s3Goals = s3TrainingGoals(mission, allies.map(u => u.defId), resuming ? savedRun?.rulesContract?.rulesetVersion === "tactical-intent-vnext.0" : Boolean(useBattleStore.getState().progression?.vnextStartAvailable));
   const selectedTradeoff = squadTradeoff(
     selectedSquadIds.length ? selectedSquadIds : allies.map(u => u.defId),
     equippedPet?.id,
@@ -758,6 +760,7 @@ function Brief() {
             <h2 className="t-title">SIGNAL CODEX</h2>
           </div></div>
           <p className="t-codex-tradeoff">{selectedTradeoff}</p>
+          {s3Goals.length ? <details className="t-detail t-s3-training" aria-label="Optional tactical training goals"><summary>OPTIONAL TRAINING · {s3Goals.length} TACTICAL GOALS</summary>{s3Goals.map(goal => <div className="t-s3-goal" key={goal.id}><strong>{goal.title}</strong><p>{goal.instruction}</p><small>{goal.requirement}</small></div>)}</details> : null}
           <p className="t-codex-note">Current squad's equipped protocols, based on real A1/A2/A3 abilities. No extra skills or battle slots are granted.</p>
           <div className="t-codex-loadout">
             <strong>ACTIVE LOADOUT · EXISTING ABILITY SLOTS</strong>
@@ -973,6 +976,10 @@ function Results() {
   const progressionCommitPending = useBattleStore((s) => s.progressionCommitPending);
   const progressionError = useBattleStore((s) => s.progressionError);
   const routingTraceAcquired = useBattleStore((s) => s.battle.routingTraceAcquired);
+  const s3CombatProof = useBattleStore((s) => s.s3CombatProof);
+  const currentRunKey = useBattleStore((s) => s.currentRunKey);
+  const activeRulesetVersion = useBattleStore((s) => s.activeRulesetVersion);
+  const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const mission = getMissionDef(selectedMissionId);
   const fieldOp = mission?.activity === "FIELD_OP";
@@ -981,6 +988,10 @@ function Results() {
   const nextSuggestedMission = getMissionDef(nextSuggested.missionId);
   const s3Proof = confirmedConsequence(fieldResult, campaignResult, progression);
   const s3Return = confirmedReturnAction(fieldResult, campaignResult, progression);
+  const acceptedS3Run = fieldResult?.runId === currentRunKey ? fieldResult.runId : campaignResult?.runId === currentRunKey ? campaignResult.runId : null;
+  const s3Goals = s3TrainingGoals(mission, selectedSquadIds, activeRulesetVersion === "tactical-intent-vnext.0");
+  const s3Trials = s3TrainingResults(s3CombatProof, acceptedS3Run, Boolean(fieldResult?.victory || campaignResult?.victory), s3Goals);
+  const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
@@ -1019,6 +1030,8 @@ function Results() {
             {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
             <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
           </section> : null}
+          {acceptedS3Run && s3Moment ? <section className="t-panel" aria-label="This session combat evidence"><span className="t-kicker">THIS RUN · ENGINE-CONFIRMED MOMENT</span><strong>{s3Moment.detail}</strong><p>Observed in the current device session only. Not a persisted combat event log or extra reward.</p></section> : null}
+          {acceptedS3Run && s3Trials.length ? <section className="t-panel" aria-label="Verified optional training"><span className="t-kicker">OPTIONAL TRAINING · CONFIRMED THIS RUN</span>{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
           <PlayerIdentityCard />
           <dl className="t-stats">
             <div>
