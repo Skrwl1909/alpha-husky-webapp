@@ -366,7 +366,7 @@ function ObjectiveChip() {
           <em>{objective?.type === "HOLD" || objective?.type === "SURVIVE" ? "Objective progress" : `Round ${battle.round}/${roundCap}`}</em>
           <span className="t-obj-dots" aria-hidden="true">
             {Array.from({ length: Math.min(roundCap, 8) }, (_, i) => (
-              <i key={i} className={i < battle.round ? "on" : ""} />
+              <i key={i} className={i < (objective?.type === "HOLD" || objective?.type === "SURVIVE" ? objective.progress : battle.round) ? "on" : ""} />
             ))}
           </span>
         </div>
