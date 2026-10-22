@@ -327,7 +327,7 @@ function WarTable() {
               <span>{commanderTarget ? `${remainingToRank} TO COMMANDER RANK ${commanderRank + 1}` : "COMMANDER CERTIFIED"}</span>
               <span>{recommendedSecured ? recommendedChallenge ? "CLEAR + CHALLENGE SECURED" : "OPTIONAL CHALLENGE REMAINS" : "FIRST CLEAR AVAILABLE"}</span>
             </div>
-            <small>{recommendedSecured && recommendedChallenge ? "This mission's Commander rewards are already secured for this rotation. Try another operation." : "{commanderRank >= 3 ? "Commander Rank 3 complete. Secure the current front, test squad builds and develop available Skillbook upgrades." : "First clears and challenges grant Commander progress. Companion Mastery unlocks at 3/8 and 8/8."}"}</small>
+            <small>{recommendedSecured && recommendedChallenge ? "This mission's Commander rewards are already secured for this rotation. Try another operation." : commanderRank >= 3 ? "Commander Rank 3 complete. Secure the current front, test squad builds and develop available Skillbook upgrades." : "First clears and challenges grant Commander progress. Companion Mastery unlocks at 3/8 and 8/8."}</small>
           </section>
           <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation">
             <div className="t-wt-feature-art">
