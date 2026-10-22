@@ -41,7 +41,7 @@ try {
   }
  }
  // A holder must matter more than an equally healthy non-holder.
- const inZone={id:"alpha",team:"ally",role:"alpha",c:3,r:2,hp:100,maxHp:100,atk:20};
+ const inZone={id:"alpha",team:"ally",role:"alpha",c:3,r:2,hp:100,maxHp:100,atk:20,statuses:[]};
  const outside={...inZone,id:"ally-02",role:"ranged",c:0,r:0};
  const holderState={...base,objective:{type:"HOLD",terminal:{c:3,r:2},radius:1,duration:3,progress:0,checkedRound:1}};
  assert(ai.objectiveTargetScore(holderState,base.units[1],inZone)>ai.objectiveTargetScore(holderState,base.units[1],outside),"objective holder targeted first");
