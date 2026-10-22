@@ -4825,3 +4825,9 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
  #tacticalOpsRoot .t-wt-next-op .t-wt-feature-copy h2{font-size:clamp(.95rem,3.5vw,1.25rem)}
  #tacticalOpsRoot .t-wt-next-op .t-wt-feature-copy .t-wt-objective{font-size:.72rem}
 }
+
+/* S1: one mission hero on mobile; no duplicate next-step card. */
+#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics{margin:8px 0 4px}
+#tacticalOpsRoot .t-wt-feature-copy .t-player-next-reason{font-size:.73rem;line-height:1.4;color:#b9dfec;margin:7px 0 8px}
+#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics span{font-size:.58rem}
+@media(max-width:620px){#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics{gap:4px}#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics span{padding:4px 6px}}
