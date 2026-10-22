@@ -3,6 +3,8 @@
 
   const KEY = "ah.discovery.postFtue.v1";
   let saved = { introSeen: false };
+  let unspentBuildPoints = null;
+  let buildPointsRequested = false;
   try { saved = { ...saved, ...JSON.parse(global.localStorage.getItem(KEY) || "{}") }; } catch (_) {}
 
   const GROUPS = Object.freeze([
@@ -11,7 +13,7 @@
       title: "YOUR HUSKY",
       line: "Everything tied to your character starts here.",
       items: Object.freeze([
-        Object.freeze({ id: "character", name: "Your Husky", line: "Gear, skins, frames, badges, stats and pets." })
+        Object.freeze({ id: "character", name: "Your Husky", line: "Every level earns 1 stat point. Find Stats → BUILD." })
       ])
     }),
     Object.freeze({
@@ -40,6 +42,23 @@
   function persist() { try { global.localStorage.setItem(KEY, JSON.stringify(saved)); } catch (_) {} }
   function read(key) { try { return global.localStorage.getItem(key) || ""; } catch (_) { return ""; } }
   function inputs() { return global.StoryDelivery?.gatherInputs?.() || {}; }
+
+  // Read-only and graduation-only. Never invent points or mutate a character.
+  async function probeBuildPoints() {
+    if (buildPointsRequested || !completionState().freshGraduate) return;
+    const api = global.S?.apiPost || global.apiPost;
+    if (typeof api !== "function") return;
+    buildPointsRequested = true;
+    try {
+      const response = await api("/webapp/mystats/state", {});
+      const data = response?.ok === true && response.data && typeof response.data === "object" ? response.data : null;
+      const raw = data?.unspentPoints;
+      const count = Number(raw);
+      if (raw == null || !Number.isSafeInteger(count) || count < 0) return;
+      unspentBuildPoints = count;
+      refresh();
+    } catch (_) { /* Unavailable means neutral copy, never a fabricated alert. */ }
+  }
 
   function veteranReady(current) {
     const fs = current?.firstSignal || current?.tutorial?.first_signal || {};
@@ -112,6 +131,9 @@
       + '<div class="ah-discovery-kicker">TRAINING COMPLETE</div>'
       + '<b>EXPLORE ALPHA</b>'
       + '<p>You know the basics. This stays in Hub → All Systems whenever you need to find a system again.</p>'
+      + '<p class="ah-discovery-build-tip"><b>YOUR BUILD:</b> Each level earns 1 stat point. In your Husky, open Stats → BUILD.'
+      + (unspentBuildPoints > 0 ? ' <strong>' + unspentBuildPoints + ' POINT' + (unspentBuildPoints === 1 ? '' : 'S') + ' READY.</strong>' : '') + '</p>'
+      + (unspentBuildPoints > 0 ? '<button type="button" class="ah-discovery-build-go" data-guide-build>FIND YOUR HUSKY</button><p role="status" data-guide-build-status></p>' : '')
       + '<div class="ah-discovery-intro-actions"><button type="button" class="ah-action" data-guide-start>Explore</button><button type="button" class="ah-action" data-guide-later>Later</button></div>'
       + '</div>'
       + '<details class="ah-discovery-shell"><summary><span class="ah-discovery-summary-title">EXPLORE ALPHA</span><small><span class="ah-discovery-count">' + current.discovered + '/' + current.total + ' discovered</span>' + ticks(current.discovered, current.total) + '</small></summary>'
@@ -122,6 +144,17 @@
     const details = root.querySelector(".ah-discovery-shell");
     const later = root.querySelector("[data-guide-later]");
     const start = root.querySelector("[data-guide-start]");
+    const findBuild = root.querySelector("[data-guide-build]");
+    if (findBuild) findBuild.onclick = async () => {
+      findBuild.disabled = true;
+      try {
+        if (!await go("character")) {
+          const status = root.querySelector("[data-guide-build-status]");
+          if (status) status.textContent = "Guide unavailable. Find your Husky, then open Stats → BUILD.";
+          findBuild.disabled = false;
+        }
+      } catch (_) { findBuild.disabled = false; }
+    };
     if (later) later.onclick = dismiss;
     if (start) start.onclick = () => {
       dismiss();
@@ -145,10 +178,13 @@
     render(root);
     const details = root.querySelector(".ah-discovery-shell");
     if (details && wasOpen) details.open = true;
+    if (current.intro) void probeBuildPoints();
   }
 
   function reset() {
     saved = { introSeen: false };
+    unspentBuildPoints = null;
+    buildPointsRequested = false;
     try { global.localStorage.removeItem(KEY); } catch (_) {}
     refresh();
   }
@@ -167,6 +203,10 @@
         ".ah-discovery-kicker{font-size:8px;font-weight:800;letter-spacing:.16em;color:rgba(159,214,255,.62);margin-bottom:2px}",
         ".ah-discovery-intro>b{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;line-height:1.2;color:rgba(243,248,255,.88)}",
         ".ah-discovery-intro p{margin:4px 0 8px;font-size:11px;line-height:1.35;color:rgba(215,228,242,.68)}",
+        ".ah-discovery-build-tip{padding:9px 10px;border:1px solid rgba(159,214,255,.15);border-radius:8px;background:rgba(159,214,255,.045)}",
+        ".ah-discovery-build-tip b,.ah-discovery-build-tip strong{color:#b9e8ff}",
+        ".ah-discovery-build-go{min-height:40px;margin:0 0 8px;padding:0 12px;border:1px solid rgba(159,214,255,.32);border-radius:8px;background:rgba(159,214,255,.10);color:#edf9ff;font:800 11px system-ui;cursor:pointer}",
+        ".ah-discovery-build-go:disabled{opacity:.55}",
         ".ah-discovery-intro-actions{display:flex;gap:8px}",
         ".ah-discovery-intro-actions .ah-action,.ah-discovery-intro-actions [data-guide-start],.ah-discovery-intro-actions [data-guide-later]{height:44px;min-height:44px;flex:1;border-radius:9px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}",
         ".ah-discovery-intro-actions [data-guide-start]{border:1px solid rgba(159,214,255,.28);background:rgba(159,214,255,.08);color:#e8f6ff}",
