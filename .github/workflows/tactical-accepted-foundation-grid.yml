@@ -1,0 +1,27 @@
+name: Tactical accepted Foundation grid
+
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/host/foundationProgression.ts"
+      - "tactical-ops-src/store/battleStore.ts"
+      - "tactical-ops-src/ui/Battle.tsx"
+      - "tactical-ops-src/version.ts"
+      - "js/tactical_ops.js"
+      - "js/boot_loaders.js"
+      - "tools/verify_tactical_accepted_foundation_grid.mjs"
+      - ".github/workflows/tactical-accepted-foundation-grid.yml"
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_accepted_foundation_grid.mjs
+      - run: npm run verify:tactical-ops:foundation
+      - run: npm run verify:tactical-ops:responsive
