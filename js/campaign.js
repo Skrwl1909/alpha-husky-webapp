@@ -1479,7 +1479,7 @@
     }
 
     if (campaign.markLeft) {
-      afterChoiceHtml += "<div class=\"campaign-note\">Your mark reached the Pack. The fracture has begun, but you are still standing.</div>";
+      afterChoiceHtml += "<div class=\"campaign-note\">Your mark reached the Pack. The Pack is still divided, but you are still standing.</div>";
       if (meta) {
         var place = asText(DIRECTIVE_PLACES[selected]) || meta.label;
         afterChoiceHtml += "<div class=\"campaign-directive-line\">You chose: " + esc(meta.label) + "</div>";
@@ -1515,10 +1515,10 @@
       + "    <p class=\"campaign-line\">But don't celebrate yet.</p>"
       + "  </div>"
       + "  <div class=\"campaign-beat\">"
-      + "    <p class=\"campaign-line\">The Meme War was a distraction.</p>"
+      + "    <p class=\"campaign-line\">The Meme War didn't end the struggle.</p>"
       + "    <p class=\"campaign-line\">Alpha reached the Edge.</p>"
       + "    <p class=\"campaign-line\">He found the Oracle.</p>"
-      + "    <p class=\"campaign-line\">Now the Pack is fracturing.</p>"
+      + "    <p class=\"campaign-line\">The Pack is still divided.</p>"
       + "  </div>"
       + "  <div class=\"campaign-question\">Choose your First Mission Focus.</div>"
       + "  <div class=\"campaign-directives\">" + renderDirectiveChoices(campaign) + "</div>"
