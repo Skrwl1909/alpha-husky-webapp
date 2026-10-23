@@ -2005,7 +2005,7 @@ body.ah-perf-lite .map-pin .pin-pressure-chip{
     const hot = Number(counts.hot || 0);
     const fortified = Number(counts.fortified || 0);
 
-    line1El.textContent = "Network fracture";
+    line1El.textContent = "Fractured Network";
 
     const warPath = _viewerWarPathLabel();
     if (contested > 0) {
