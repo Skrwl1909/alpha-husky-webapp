@@ -23,6 +23,7 @@ on:
       - "tactical-ops-src/ui/Skillbook.tsx"
       - "tactical-ops-src/ui/signalAtlas/**"
       - "tools/verify_tactical_signal_atlas_v2.mjs"
+      - "docs/TACTICAL_SIGNAL_ATLAS_V2_ENGINEERING_GATE.md"
       - "tactical-ops-src/tactical.css"
       - "tools/verify_tactical_vnext_skillbook_integration.mjs"
       - "tactical-ops-src/data/playerGrowth.ts"
