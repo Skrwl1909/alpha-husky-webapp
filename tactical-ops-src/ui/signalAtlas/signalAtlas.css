@@ -32,11 +32,11 @@
 #tacticalOpsRoot .tsa-core img { height:43%; width:55%; object-fit:contain; }
 #tacticalOpsRoot .tsa-core b { font-size:clamp(13px,3.7vw,20px);letter-spacing:.07em;color:#fff; }
 #tacticalOpsRoot .tsa-core small { font-size:8px;letter-spacing:.05em;color:#b8e3ee; }
-#tacticalOpsRoot .tsa-sector { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:absolute;top:7%;width:clamp(90px,29%,149px);min-height:89px;background:linear-gradient(145deg,#15445b,#071e31);border:2px solid #68bed7;border-radius:14px;text-align:center;box-shadow:0 0 13px #3cb9d34a;padding:6px; }
-#tacticalOpsRoot .tsa-sector-0 { left:3%; border-color:#dcb678; }
-#tacticalOpsRoot .tsa-sector-1 { right:3%; }
+#tacticalOpsRoot .tsa-sector { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:absolute;transform:translate(-50%,-50%);width:clamp(90px,29%,149px);min-height:89px;background:linear-gradient(145deg,#15445b,#071e31);border:2px solid #68bed7;border-radius:14px;text-align:center;box-shadow:0 0 13px #3cb9d34a;padding:6px; }
+#tacticalOpsRoot .tsa-sector.tsa-tone-amber { border-color:#dcb678; }
+#tacticalOpsRoot .tsa-sector.tsa-tone-cyan { border-color:#69bfe2; }
 #tacticalOpsRoot .tsa-sector .tsa-sector-glyph { font-size:22px;color:#e8ca94;line-height:1; }
-#tacticalOpsRoot .tsa-sector-1 .tsa-sector-glyph { color:#95e2f2; }
+#tacticalOpsRoot .tsa-sector.tsa-tone-cyan .tsa-sector-glyph { color:#95e2f2; }
 #tacticalOpsRoot .tsa-sector b { font-size:12px;color:#effbff;letter-spacing:.06em; }
 #tacticalOpsRoot .tsa-sector small { font-size:9px;color:#c2d5dd;line-height:1.2; }
 #tacticalOpsRoot .tsa-sector em { font-style:normal;color:#80d7e8;font-weight:900;font-size:9px; }
