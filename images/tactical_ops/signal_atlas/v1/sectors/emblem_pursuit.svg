@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+ <linearGradient id="steel" x1=".15" y1=".12" x2=".82" y2=".94" gradientUnits="objectBoundingBox">
+  <stop offset="0" stop-color="#d5e2e5"/><stop offset=".18" stop-color="#7c9aa7"/><stop offset=".37" stop-color="#4a6774"/><stop offset=".61" stop-color="#90a8b4"/><stop offset=".82" stop-color="#365362"/><stop offset="1" stop-color="#a4b7c1"/>
+ </linearGradient>
+ <linearGradient id="blade" x1="0" y1="0" x2="1" y2="1">
+  <stop offset="0" stop-color="#c6d6dd"/><stop offset=".4" stop-color="#5d7b88"/><stop offset="1" stop-color="#142b39"/>
+ </linearGradient>
+ <linearGradient id="void" x1=".15" y1="0" x2=".87" y2="1">
+  <stop stop-color="#19313c"/><stop offset=".7" stop-color="#071621"/><stop offset="1" stop-color="#264252"/>
+ </linearGradient>
+ <linearGradient id="ice" x1="0" y1="0" x2="1" y2=".15"><stop stop-color="#97f3ff"/><stop offset=".55" stop-color="#57cadd"/><stop offset="1" stop-color="#1c637c"/></linearGradient>
+ <filter id="subglow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+</defs>
+<g transform="translate(256 256) scale(1.19) translate(-256 -256)">
+<path d="M106 329 L129 289 L173 295 L170 337 L144 364 L111 354 Z" fill="url(#steel)" stroke="#071620" stroke-width="14" stroke-linejoin="round"/><path d="M106 329 L129 289 L173 295 L170 337 L144 364 L111 354 Z" fill="none" stroke="#a6c4cc" stroke-opacity=".66" stroke-width="3" stroke-linejoin="round"/><path d="M151 241 L177 200 L225 212 L212 256 L184 277 L158 261 Z" fill="url(#steel)" stroke="#071620" stroke-width="14" stroke-linejoin="round"/><path d="M151 241 L177 200 L225 212 L212 256 L184 277 L158 261 Z" fill="none" stroke="#a6c4cc" stroke-opacity=".66" stroke-width="3" stroke-linejoin="round"/><path d="M223 165 L250 138 L296 151 L285 193 L248 204 L221 191 Z" fill="url(#steel)" stroke="#071620" stroke-width="13" stroke-linejoin="round"/><path d="M223 165 L250 138 L296 151 L285 193 L248 204 L221 191 Z" fill="none" stroke="#a6c4cc" stroke-opacity=".66" stroke-width="3" stroke-linejoin="round"/><path d="M321 115 L404 158 L379 235 L365 205 L296 277 L258 245 L341 173 Z" fill="url(#steel)" stroke="#071620" stroke-width="16" stroke-linejoin="round"/><path d="M321 115 L404 158 L379 235 L365 205 L296 277 L258 245 L341 173 Z" fill="none" stroke="#a6c4cc" stroke-opacity=".66" stroke-width="3" stroke-linejoin="round"/><path d="M340 158 L377 165 L364 188 L326 216 L314 205 Z" fill="url(#void)" stroke="#0b1f2b" stroke-width="5" stroke-linejoin="round"/><path d="M338 191 L312 218 L284 240" fill="none" stroke="#75d9ee" stroke-width="20.8" opacity=".13" stroke-linecap="round" filter="url(#subglow)"/><path d="M338 191 L312 218 L284 240" fill="none" stroke="#75d9ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M135 327 L155 312" fill="none" stroke="#c6d9dc" stroke-width="5" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M177 238 L199 231" fill="none" stroke="#c6d9dc" stroke-width="5" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M247 167 L268 169" fill="none" stroke="#c6d9dc" stroke-width="5" opacity="0.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M126 386 Q254 428 363 301" fill="none" stroke="#c6d9dc" stroke-width="10" opacity="0.45" stroke-linecap="round" stroke-linejoin="round"/><path d="M345 317 L364 290" fill="none" stroke="#75d9ee" stroke-width="13.0" opacity=".13" stroke-linecap="round" filter="url(#subglow)"/><path d="M345 317 L364 290" fill="none" stroke="#75d9ee" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
