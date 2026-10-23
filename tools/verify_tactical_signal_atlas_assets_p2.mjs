@@ -29,6 +29,7 @@ const model=readFileSync("tactical-ops-src/ui/signalAtlas/model.ts","utf8");
 const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");
 const classic=readFileSync("tactical-ops-src/ui/Skillbook.tsx","utf8");
 assert(model.includes("emblemSrc: string") && ui.includes("src={s.emblemSrc}"),"Crest runtime mapping");
+for(const key of ["assault","command","pursuit","control","line","support"]) assert(model.includes("SIGNAL_ATLAS_SECTOR_EMBLEMS."+key),"Missing live mapping: "+key);
 assert(css.includes("atlas_relay_chamber.webp") && css.includes("P2 FROZEN RELAY ASSET INTEGRATION"),"Atlas background skin");
 assert(ui.includes("await upgrade(") && ui.includes("await respec("),"Canonical store transactions required");
 assert(classic.includes("isSignalAtlasBetaAllowed"),"Opt-in beta gate preserved");
