@@ -7,7 +7,6 @@ import { tacticalActionImageForSkill } from "../tacticalActionIcons";
 import { tacticalEmblemFor } from "../tacticalEmblems";
 import { portraitFallback } from "../PlayerIdentity";
 import { ATLAS_SECTORS, HERO_TITLES, HERO_SUBTITLES, PATH_EXPLANATIONS, getNodeView, atlasSectorPosition, type AtlasSector, type NodeView } from "./model";
-import "./signalAtlas.css";
 
 type Feedback = { kind: "success" | "error"; text: string } | null;
 type Selection = { skillId: string; rank: 0|1|2 };
