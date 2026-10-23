@@ -45,3 +45,8 @@ export function confirmedReturnAction(field: FieldResult | null, campaign: Campa
   }
   return null;
 }
+
+/** A receipt belongs to a battle only when both stable identifiers match. */
+export function matchingAfterActionReceipt<T extends { runId: string; missionId: string }>(receipt: T | null, runId: string | null, missionId: string | null): T | null {
+  return receipt && runId && missionId && receipt.runId === runId && receipt.missionId === missionId ? receipt : null;
+}
