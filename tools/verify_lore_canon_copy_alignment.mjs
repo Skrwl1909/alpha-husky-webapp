@@ -8,8 +8,11 @@ const files = Object.fromEntries([
   'js/faction_identity.js',
   'js/oath.js',
   'js/campaign.js',
+  'js/cta.js',
   'js/story_delivery.js',
   'js/onboarding.js',
+  'js/bloodmoon.js',
+  'index.html',
   'js/map.js',
 ].map(path => [path, load(path)]));
 const map = JSON.parse(load('map.json'));
@@ -40,6 +43,14 @@ includes('js/map.js', 'line1El.textContent = "Fractured Network"');
 excludes('js/campaign.js', 'Now the Pack is fracturing.');
 excludes('js/campaign.js', 'The fracture has begun');
 excludes('js/story_delivery.js', 'The Pack is fracturing.');
+includes('js/cta.js', 'The Pack is still divided. Answer the signal.');
+excludes('js/cta.js', 'The Pack is fracturing.');
+excludes('js/faction_hq.js', '"Momentum", "Dominance"');
+includes('js/faction_hq.js', '"Momentum", "Revolt"');
+excludes('js/bloodmoon.js', 'return "Inner Howlers";');
+excludes('index.html', "return 'Inner Howlers';");
+includes('js/bloodmoon.js', 'return "Inner Howl";');
+includes('index.html', "return 'Inner Howl';");
 excludes('js/campaign.js', 'return "Inner Howlers";');
 
 includes('js/onboarding.js', 'Check your stats');
