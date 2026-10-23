@@ -31,7 +31,12 @@ try {
   assert.equal(atlas.getNodeView("alpha","alpha-strike",2,{...r1,ranks:{"alpha-strike":2}},"vanguard",0).state,"maxed");
   assert.equal(atlas.getNodeView("ally-03","u03-mend",1,{...empty("ally-03"),discipline:"medic"},"medic",2).state,"no-effect","MEDIC baseline has capped cooldown");
   assert.equal(atlas.getNodeView("ally-03","u03-mend",2,{...empty("ally-03"),discipline:"sentinel",ranks:{"u03-mend":1}},"sentinel",2).state,"no-effect","MEND R2 currently zero delta");
-  for(let n=1;n<=12;n++) {\n    const positions=Array.from({length:n},(_,i)=>atlas.atlasSectorPosition(i,n));\n    for(const p of positions)assert(p.x>=9 && p.x<=91 && p.y>=9 && p.y<=91);\n    assert.equal(new Set(positions.map(p=>p.x+":"+p.y)).size,n,"Released sectors need distinct anchors");\n  }\n  const demo=atlas.demoLayout(50);
+  for(let n=1;n<=12;n++) {
+    const positions=Array.from({length:n},(_,i)=>atlas.atlasSectorPosition(i,n));
+    for(const p of positions)assert(p.x>=9 && p.x<=91 && p.y>=9 && p.y<=91);
+    assert.equal(new Set(positions.map(p=>p.x+":"+p.y)).size,n,"Released sectors need distinct anchors");
+  }
+  const demo=atlas.demoLayout(50);
   assert.equal(demo.length,50);assert.equal(new Set(demo.map(n=>n.id)).size,50);
   for(let i=0;i<demo.length;i++)for(let j=i+1;j<demo.length;j++){
     const d=Math.hypot(demo[i].x-demo[j].x,demo[i].y-demo[j].y);
