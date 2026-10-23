@@ -69,7 +69,7 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
 export function atlasSectorPosition(index: number, total: number): { x: number; y: number } {
   if (!Number.isInteger(total) || total<1 || !Number.isInteger(index) || index<0 || index>=total) throw Error("atlas_invalid_sector_index");
   const angle=total===2 ? (-3*Math.PI/4)+index*Math.PI/2 : (-Math.PI/2)+(index*2*Math.PI/total);
-  return { x:Math.round((50+36*Math.cos(angle))*10)/10, y:Math.round((50+36*Math.sin(angle))*10)/10 };
+  return { x:Math.round((50+28*Math.cos(angle))*10)/10, y:Math.round((50+28*Math.sin(angle))*10)/10 };
 }
 /** Stable, non-overlapping demo positions: content count is independent from viewport. */
 export function demoLayout(count: number) {
