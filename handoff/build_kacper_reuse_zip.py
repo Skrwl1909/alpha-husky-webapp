@@ -90,7 +90,7 @@ with zipfile.ZipFile(OUTPUT, "w", compression=zipfile.ZIP_DEFLATED, compressleve
         if not path.is_file():
             raise FileNotFoundError(f"Expected original asset missing: {relative}")
         content = path.read_bytes()
-        if relative.endswith(".png") and not content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"):
+        if relative.endswith(".png") and not content.startswith(b"\x89PNG\r\n\x1a\n"):
             raise ValueError(f"Corrupt PNG: {relative}")
         if relative.endswith(".webp") and not (content[:4] == b"RIFF" and content[8:12] == b"WEBP"):
             raise ValueError(f"Corrupt WEBP: {relative}")
@@ -103,7 +103,7 @@ with zipfile.ZipFile(OUTPUT, "w", compression=zipfile.ZIP_DEFLATED, compressleve
         })
         zf.write(path, arcname=relative)
     zf.writestr("HANDOFF_README.txt", readme)
-    zf.writestr("ASSET_INVENTORY.json", json.dumps(inventory, indent=2) + "\\n")
+    zf.writestr("ASSET_INVENTORY.json", json.dumps(inventory, indent=2) + "\n")
 
 with zipfile.ZipFile(OUTPUT) as check:
     names = check.namelist()
