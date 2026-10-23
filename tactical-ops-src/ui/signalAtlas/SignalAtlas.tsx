@@ -123,7 +123,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
         </svg>
         <div className="tsa-core"><img className="tsa-core-portrait" src={UNIT_DEFS[heroId].portrait} onError={portraitFallback} alt=""/><img className="tsa-core-emblem" src={tacticalEmblemFor(heroId,null)||""} alt=""/><b>{HERO_TITLES[heroId]}</b><small>COMBAT CORE</small></div>
         {visibleSectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-tone-${s.tone}`} style={{left:`${atlasSectorPosition(i,visibleSectors.length).x}%`,top:`${atlasSectorPosition(i,visibleSectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
-          <span className="tsa-sector-glyph">{s.tone==="amber"?"✦":"◎"}</span><b>{s.title}</b><small>{s.description}</small><em>LIVE · {s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2}</em>
+          <span className="tsa-sector-glyph"><img src={s.emblemSrc} alt="" decoding="async" onError={e=>{ e.currentTarget.style.display="none"; e.currentTarget.parentElement?.setAttribute("data-art-failed","1"); }}/><span className="tsa-sector-glyph-fallback" aria-hidden="true">{s.tone==="amber"?"✦":"◎"}</span></span><b>{s.title}</b><small>{s.description}</small><em>LIVE · {s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2}</em>
         </button>)}
         {sectors.length<=2 && RESERVES.map(s=><div className="tsa-reserve" key={s.id} style={{left:`${s.x}%`,top:`${s.y}%`}} aria-label="Unreleased expansion placeholder">⊕</div>)}
       </div>

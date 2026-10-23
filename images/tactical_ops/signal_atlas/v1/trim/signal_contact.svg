@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+<defs><radialGradient id="steel"><stop stop-color="#1e4558"/><stop offset=".75" stop-color="#0a2535"/><stop offset="1" stop-color="#5e8490"/></radialGradient></defs>
+<path d="M64 5L100 29V99L64 123L28 99V29Z" fill="#061724" stroke="#456b7b" stroke-width="5"/>
+<path d="M64 17L90 37V90L64 109L38 90V37Z" fill="url(#steel)" stroke="#729ba7" stroke-opacity=".6" stroke-width="3"/>
+<circle cx="64" cy="64" r="16" fill="#061827" stroke="#5e96a7" stroke-width="5"/>
+<circle cx="64" cy="64" r="6" fill="#92bac6" opacity=".68"/><path d="M54 65h-20M74 65h20" stroke="#678c99" stroke-width="4"/>
+</svg>
