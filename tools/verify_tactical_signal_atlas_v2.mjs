@@ -65,7 +65,11 @@ try {
   assert(!ui.includes('import "./signalAtlas.css"'),"No external CSS import in IIFE component");
   assert(classic.includes('isSignalAtlasBetaAllowed') && classic.includes('atlasBetaAllowed ? <button'),"Beta entry is opt-in only");
   assert(classic.includes('ah_tactical_battlefield_lab_v1') && classic.includes('signalAtlasBeta'),"Existing lab testers and explicit QA query can enter the beta");
+  assert(ui.includes('className="tsa-rank-stamp"') && ui.includes('tacticalActionImageForSkill(skillId)'),"Premium nodes reuse authored skill art and separate rank state");
+  assert(ui.includes('tsa-detail-toggle') && ui.includes('is-compact'),"Sector density can switch without hiding skill ownership");
   const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");
+  assert(css.includes(".t-command-nav {position:relative;top:auto"),"Atlas avoids overlapping sticky War Table header");
+  assert(css.includes("command_room.webp") && css.includes(".tsa-rank-stamp"),"Premium frame and authentic icon state polish");
   assert(css.includes("@media(max-width:380px)") && css.includes("prefers-reduced-motion"));
   console.log("PASS SIGNAL ATLAS V2 (React SSR): 3 heroes, 6 live UI sectors, 9 canonical skills, 18 ranks, all receipt/availability states, zero-effect gate, 50 demo-node layout, real store wiring");
 }finally{await server.close();}
