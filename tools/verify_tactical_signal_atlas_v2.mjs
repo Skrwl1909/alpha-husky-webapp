@@ -3,6 +3,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createServer } from "vite";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const server=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 try {
@@ -53,7 +55,12 @@ try {
   assert(ui.includes("current.progression.revision>captured.revision") && ui.includes("saved?.ranks[captured.skillId]"),"Upgrade acknowledgment must be canonical");
   assert(ui.includes("SERVER RECORDED") && ui.includes("getNodeView("));
   assert(!ui.includes("localStorage") && !ui.includes("sessionStorage"),"No client-side progress ownership");
-  const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");
+  // Actual React SSR smoke test catches runtime import/render failures beyond string checks.
+  const uiModule=await server.ssrLoadModule("/tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx");
+  const html=renderToStaticMarkup(React.createElement(uiModule.SignalAtlas,{onClose:()=>undefined}));
+  assert(html.includes("THE SIGNAL ATLAS") && html.includes("ASSAULT") && html.includes("COMMAND"),"Atlas must render with its live sectors even before login");
+  assert(html.includes("NOT RELEASED"),"Reservation legend must not mislabel future content as locked rewards");
+    const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");
   assert(css.includes("@media(max-width:380px)") && css.includes("prefers-reduced-motion"));
-  console.log("PASS SIGNAL ATLAS V2: 3 heroes, 6 live UI sectors, 9 canonical skills, 18 ranks, all receipt/availability states, zero-effect gate, 50 demo-node layout, real store wiring");
+  console.log("PASS SIGNAL ATLAS V2 (React SSR): 3 heroes, 6 live UI sectors, 9 canonical skills, 18 ranks, all receipt/availability states, zero-effect gate, 50 demo-node layout, real store wiring");
 }finally{await server.close();}
