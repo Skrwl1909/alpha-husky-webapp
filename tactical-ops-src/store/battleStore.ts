@@ -805,7 +805,7 @@ export const useBattleStore = create<Store>((set, get) => {
               set({ screen: "war-table", battle: emptyBattle(), busy: false, ticker: null });
               return;
             }
-            beginBattle(g, progression.activeRunId);
+            beginBattle(g, progression.activeRunId, undefined, undefined, false, false, null, undefined, undefined, null, null, progression.foundationRunRules?.rulesContract || null);
           } catch (error) {
             if (g !== runGen) return;
             const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
