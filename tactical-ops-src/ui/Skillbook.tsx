@@ -9,6 +9,17 @@ import { skillChangePreview } from "./combatIdentity";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 
+/** Local QA opt-in only; never controls rewards, backend, or gameplay ownership. */
+export function isSignalAtlasBetaAllowed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("signalAtlasBeta") === "1"
+      || window.localStorage.getItem("ah_signal_atlas_beta_v1") === "on"
+      || window.localStorage.getItem("ah_tactical_battlefield_lab_v1") === "10x7";
+  } catch { return false; }
+}
+
 const NAMES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
 const PATH_COPY: Record<Discipline, string> = {
   vanguard: "Protects the front line with a guarded HOWL.",
@@ -28,6 +39,7 @@ export function SkillbookPanel() {
   const respec = useBattleStore(s => s.respecGrowth);
   const [heroId, setHeroId] = useState<HeroId>("alpha");
   const [atlasOpen,setAtlasOpen] = useState(false);
+  const [atlasBetaAllowed] = useState(isSignalAtlasBetaAllowed);
   const [path, setPath] = useState<Discipline>("vanguard");
   const [skillId, setSkillId] = useState<string | null>(null);
   const [respecConfirm, setRespecConfirm] = useState(false);
@@ -55,7 +67,7 @@ export function SkillbookPanel() {
     : [];
   const upgradeConfirmed = !!(purchaseProof && !pending && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
 
-  if (atlasOpen) return <SignalAtlas onClose={() => setAtlasOpen(false)} />;
+  if (atlasOpen && atlasBetaAllowed) return <SignalAtlas onClose={() => setAtlasOpen(false)} />;
   return (
     <section className="t-panel t-growth-panel" aria-label="Character Skillbook">
       <header className="t-growth-heading">
@@ -63,7 +75,7 @@ export function SkillbookPanel() {
           <span className="t-kicker">SQUAD PROGRESSION</span>
           <h2>CHARACTER SKILLBOOK</h2>
           <p>Choose how each squad member fights. Your choices are saved to your Alpha account.</p>
-          <button type="button" className="t-growth-atlas-cta" onClick={()=>setAtlasOpen(true)}>◈ OPEN SIGNAL ATLAS · BETA</button>
+          {atlasBetaAllowed ? <button type="button" className="t-growth-atlas-cta" onClick={()=>setAtlasOpen(true)}>◈ OPEN SIGNAL ATLAS · BETA</button> : null}
         </div>
         <div className="t-growth-points"><strong>{growth ? remaining : "—"}</strong><small>AVAILABLE POINTS</small></div>
       </header>
