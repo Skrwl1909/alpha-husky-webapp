@@ -519,7 +519,7 @@ export function BattleScreen() {
             {actor ? ` · ${actor.name}` : ""}
           </span>
         </div>
-        <div className="t-obj">{activityLabel}{BATTLEFIELD_VNEXT_PREVIEW ? <span className="t-battle-lab-tag"> · LAB 10×7</span> : null}</div>
+        <div className="t-obj">{activityLabel}<span className="t-battle-lab-tag"> · {BATTLEFIELD_VNEXT_PREVIEW ? "10×7" : "8×5"}</span></div>
       </header>
       <div className="t-order-wrap">
         <TurnOrderBar />

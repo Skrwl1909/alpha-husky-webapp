@@ -29,6 +29,8 @@ export interface FoundationProgressionState {
   completed: boolean;
   revision: number;
   activeRunId: string | null;
+  /** Backend-accepted rules for the current Foundation run, never a client lab preference. */
+  foundationRunRules?: { runId: string; rulesContract: RunRulesContract };
   lastCompletedRunId: string | null;
   updatedAt: number;
   fieldOps?: FieldOpsProgression;
@@ -190,6 +192,16 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       typeof value.lastCompletedRunId === "string" && value.lastCompletedRunId ? value.lastCompletedRunId : null,
     updatedAt: Number.isFinite(Number(value.updatedAt)) ? Number(value.updatedAt) : 0,
   };
+  // Optional rollout field: absent on legacy Foundation sessions.
+  // Do not let a detached/stale contract switch another saved run to 10×7.
+  if (value.foundationRunRules != null) {
+    const candidate = value.foundationRunRules as Record<string, unknown>;
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) ||
+        typeof candidate.runId !== "string" || candidate.runId !== state.activeRunId) return null;
+    const rulesContract = parseRunRulesContract(candidate.rulesContract);
+    if (!rulesContract) return null;
+    state.foundationRunRules = { runId: candidate.runId, rulesContract };
+  }
   if (Object.prototype.hasOwnProperty.call(value, "playerGrowth")) {
     const parsedGrowth = parseGrowthProgression(value.playerGrowth, revision);
     if (!parsedGrowth) return null;
