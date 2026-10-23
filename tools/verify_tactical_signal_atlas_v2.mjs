@@ -12,6 +12,9 @@ try {
   const { HERO_PATHS,HERO_SKILLS,UPGRADES }=await server.ssrLoadModule("/tactical-ops-src/data/playerGrowth.ts");
   assert.equal(atlas.assertAtlasManifest(),true,"Every currently authored skill belongs to one sector");
   assert.equal(Object.keys(atlas.ATLAS_SECTORS).length,3);
+  for (const sectors of Object.values(atlas.ATLAS_SECTORS)) for (const sector of sectors)
+    assert.match(sector.emblemSrc,/^\/images\/tactical_ops\/signal_atlas\/v1\/sectors\/emblem_(assault|command|pursuit|control|front_line|support)\.webp$/);
+
   assert.equal(UPGRADES.length,18,"Only existing 18 rank upgrades are allowed");
   for(const [id,sectors] of Object.entries(atlas.ATLAS_SECTORS)){
     assert.equal(sectors.length,2);
@@ -65,6 +68,7 @@ try {
   assert(!ui.includes('import "./signalAtlas.css"'),"No external CSS import in IIFE component");
   assert(classic.includes('isSignalAtlasBetaAllowed') && classic.includes('atlasBetaAllowed ? <button'),"Beta entry is opt-in only");
   assert(classic.includes('ah_tactical_battlefield_lab_v1') && classic.includes('signalAtlasBeta'),"Existing lab testers and explicit QA query can enter the beta");
+  assert(ui.includes('src={s.emblemSrc}') && ui.includes('data-art-failed'),"Atlas must use sector artwork with fallback");
   assert(ui.includes('className="tsa-rank-stamp"') && ui.includes('tacticalActionImageForSkill(skillId)'),"Premium nodes reuse authored skill art and separate rank state");
   assert(ui.includes('tsa-detail-toggle') && ui.includes('is-compact'),"Sector density can switch without hiding skill ownership");
   const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");

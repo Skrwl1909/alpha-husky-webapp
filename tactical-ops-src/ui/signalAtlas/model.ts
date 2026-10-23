@@ -1,20 +1,21 @@
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, resolveGrowthSkill, type Discipline, type HeroGrowth, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
+import { SIGNAL_ATLAS_SECTOR_EMBLEMS } from "./signalAtlasAssets";
 
 /** UI-only sector taxonomy: no additional backend progression or unlock conditions. */
-export type AtlasSector = { id: string; title: string; description: string; skillIds: readonly string[]; tone: "cyan" | "amber" };
+export type AtlasSector = { id: string; title: string; description: string; skillIds: readonly string[]; tone: "cyan" | "amber"; emblemSrc: string };
 export const ATLAS_SECTORS: Record<HeroId, readonly AtlasSector[]> = {
   alpha: [
-    { id: "assault", title: "ASSAULT", description: "Strike · Rend", skillIds: ["alpha-strike", "alpha-rend"], tone: "amber" },
-    { id: "command", title: "COMMAND", description: "Howl", skillIds: ["alpha-howl"], tone: "cyan" },
+    { id: "assault", title: "ASSAULT", description: "Strike · Rend", skillIds: ["alpha-strike", "alpha-rend"], tone: "amber" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.assault },
+    { id: "command", title: "COMMAND", description: "Howl", skillIds: ["alpha-howl"], tone: "cyan" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.command },
   ],
   "ally-02": [
-    { id: "pursuit", title: "PURSUIT", description: "Thrust · Lunge", skillIds: ["u02-shot", "u02-burst"], tone: "amber" },
-    { id: "control", title: "CONTROL", description: "Pressure", skillIds: ["u02-suppress"], tone: "cyan" },
+    { id: "pursuit", title: "PURSUIT", description: "Thrust · Lunge", skillIds: ["u02-shot", "u02-burst"], tone: "amber" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.pursuit },
+    { id: "control", title: "CONTROL", description: "Pressure", skillIds: ["u02-suppress"], tone: "cyan" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.control },
   ],
   "ally-03": [
-    { id: "line", title: "FRONT LINE", description: "Sweep", skillIds: ["u03-tap"], tone: "amber" },
-    { id: "support", title: "SUPPORT", description: "Mend · Pack Support", skillIds: ["u03-mend", "u03-pack"], tone: "cyan" },
+    { id: "line", title: "FRONT LINE", description: "Sweep", skillIds: ["u03-tap"], tone: "amber" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.line },
+    { id: "support", title: "SUPPORT", description: "Mend · Pack Support", skillIds: ["u03-mend", "u03-pack"], tone: "cyan" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.support },
   ],
 };
 export const HERO_TITLES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
