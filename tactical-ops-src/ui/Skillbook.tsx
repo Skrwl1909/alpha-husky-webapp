@@ -62,7 +62,7 @@ export function SkillbookPanel() {
           <span className="t-kicker">SQUAD PROGRESSION</span>
           <h2>CHARACTER SKILLBOOK</h2>
           <p>Choose how each squad member fights. Your choices are saved to your Alpha account.</p>
-          <button type="button" className="t-growth-atlas-cta" onClick={()=>setAtlasOpen(true)}>◈ OPEN SIGNAL ATLAS · PREVIEW</button>
+          <button type="button" className="t-growth-atlas-cta" onClick={()=>setAtlasOpen(true)}>◈ OPEN SIGNAL ATLAS · BETA</button>
         </div>
         <div className="t-growth-points"><strong>{growth ? remaining : "—"}</strong><small>AVAILABLE POINTS</small></div>
       </header>
