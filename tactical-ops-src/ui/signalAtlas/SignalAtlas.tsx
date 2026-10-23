@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useBattleStore } from "../../store/battleStore";
 import { HERO_PATHS, HERO_SKILLS, type Discipline, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
@@ -37,7 +37,8 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const sectors=ATLAS_SECTORS[heroId];
   const sector=sectors.find(s=>s.id===sectorId) || sectors[0];
   const hero=growth?.heroes.find(h=>h.heroId===heroId) || null;
-  const chosenPath=hero?.discipline || pathPreview;
+  const chosenPath=pathPreview;
+  useEffect(()=>{setPathPreview(hero?.discipline || HERO_PATHS[heroId][0]);},[heroId,hero?.discipline]);
   const points=growth ? growth.earnedPoints-growth.spentPoints : 0;
   const unavailable=saving || progressionPending;
   const node=selection && sector.skillIds.includes(selection.skillId)
@@ -45,11 +46,10 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const canBuy=Boolean(node?.state==="available" && !unavailable && growth);
   const canRespec=Boolean(hero?.discipline && !hero.respecUsed && Object.keys(hero.ranks).length>0 && !unavailable);
   const purchased=hero?.ranks || {};
-  const activeSkillIds=HERO_SKILLS[heroId];
 
   function changeHero(id:HeroId){
     if(unavailable)return;
-    setHeroId(id);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(HERO_PATHS[id][0]);
+    setHeroId(id);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
     setView("atlas");setSelection(null);setFeedback(null);setConfirm(null);
   }
   function openSector(s:AtlasSector){
