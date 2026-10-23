@@ -496,6 +496,7 @@ export function BattleScreen() {
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
   const phaseLabel = actor?.team === "enemy" ? "Enemy act" : "Your act";
   const activityLabel = mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name;
+  const directive = objectiveDirective(useBattleStore.getState().battle);
   const guidance = playerBattleGuidance(useBattleStore.getState().battle, mission);
 
   return (
