@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SignalAtlas } from "./signalAtlas/SignalAtlas";
 import { useBattleStore } from "../store/battleStore";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, type Discipline, type HeroId } from "../data/playerGrowth";
 import { getSkill } from "../data/skills";
@@ -26,6 +27,7 @@ export function SkillbookPanel() {
   const upgrade = useBattleStore(s => s.upgradeGrowth);
   const respec = useBattleStore(s => s.respecGrowth);
   const [heroId, setHeroId] = useState<HeroId>("alpha");
+  const [atlasOpen,setAtlasOpen] = useState(false);
   const [path, setPath] = useState<Discipline>("vanguard");
   const [skillId, setSkillId] = useState<string | null>(null);
   const [respecConfirm, setRespecConfirm] = useState(false);
@@ -52,6 +54,7 @@ export function SkillbookPanel() {
     : [];
   const upgradeConfirmed = !!(purchaseProof && !pending && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
 
+  if (atlasOpen) return <SignalAtlas onClose={() => setAtlasOpen(false)} />;
   return (
     <section className="t-panel t-growth-panel" aria-label="Character Skillbook">
       <header className="t-growth-heading">
@@ -59,6 +62,7 @@ export function SkillbookPanel() {
           <span className="t-kicker">SQUAD PROGRESSION</span>
           <h2>CHARACTER SKILLBOOK</h2>
           <p>Choose how each squad member fights. Your choices are saved to your Alpha account.</p>
+          <button type="button" className="t-growth-atlas-cta" onClick={()=>setAtlasOpen(true)}>◈ OPEN SIGNAL ATLAS · PREVIEW</button>
         </div>
         <div className="t-growth-points"><strong>{growth ? remaining : "—"}</strong><small>AVAILABLE POINTS</small></div>
       </header>
