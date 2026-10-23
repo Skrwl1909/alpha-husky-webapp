@@ -28,6 +28,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const [heroId,setHeroId] = useState<HeroId>("alpha");
   const [view,setView] = useState<"atlas"|"sector">("atlas");
   const [sectorId,setSectorId] = useState("assault");
+  const [sectorPage,setSectorPage] = useState(0);
   const [pathPreview,setPathPreview] = useState<Discipline>("vanguard");
   const [selection,setSelection] = useState<Selection | null>(null);
   const [confirm,setConfirm] = useState<"upgrade"|"respec"|null>(null);
@@ -35,6 +36,8 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const [feedback,setFeedback] = useState<Feedback>(null);
   const [showFuture,setShowFuture] = useState(false);
   const sectors=ATLAS_SECTORS[heroId];
+  const sectorPageCount=Math.ceil(sectors.length/4);
+  const visibleSectors=sectors.slice(sectorPage*4,(sectorPage+1)*4);
   const sector=sectors.find(s=>s.id===sectorId) || sectors[0];
   const hero=growth?.heroes.find(h=>h.heroId===heroId) || null;
   const chosenPath=pathPreview;
@@ -49,7 +52,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
 
   function changeHero(id:HeroId){
     if(unavailable)return;
-    setHeroId(id);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
+    setHeroId(id);setSectorPage(0);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
     setView("atlas");setSelection(null);setFeedback(null);setConfirm(null);
   }
   function openSector(s:AtlasSector){
@@ -115,15 +118,16 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
         <svg className="tsa-links" viewBox="0 0 360 370" preserveAspectRatio="none" aria-hidden="true">
           <circle cx="180" cy="185" r="129" fill="none" stroke="#426074" strokeWidth="1" strokeDasharray="4 9"/>
           <circle cx="180" cy="185" r="99" fill="none" stroke="#2F728D" strokeWidth="1"/>
-          {sectors.map((s,i)=>{const p=atlasSectorPosition(i,sectors.length);return <path key={s.id} d={`M180 185 L${p.x*3.6} ${p.y*3.7}`} fill="none" stroke="#6AC4DF" strokeWidth="2.8"/>;})}
+          {visibleSectors.map((s,i)=>{const p=atlasSectorPosition(i,visibleSectors.length);return <path key={s.id} d={`M180 185 L${p.x*3.6} ${p.y*3.7}`} fill="none" stroke="#6AC4DF" strokeWidth="2.8"/>;})}
           <path d="M180 185 L47 126 M180 185 L313 126 M180 185 L47 289 M180 185 L313 289" fill="none" stroke="#466071" strokeWidth="1.5" strokeDasharray="5 7"/>
         </svg>
         <div className="tsa-core"><img src={tacticalEmblemFor(heroId,null)||""} alt=""/><b>{HERO_TITLES[heroId]}</b><small>COMBAT CORE</small></div>
-        {sectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-tone-${s.tone}`} style={{left:`${atlasSectorPosition(i,sectors.length).x}%`,top:`${atlasSectorPosition(i,sectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
+        {visibleSectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-tone-${s.tone}`} style={{left:`${atlasSectorPosition(i,visibleSectors.length).x}%`,top:`${atlasSectorPosition(i,visibleSectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
           <span className="tsa-sector-glyph">{s.tone==="amber"?"✦":"◎"}</span><b>{s.title}</b><small>{s.description}</small><em>LIVE · {s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2}</em>
         </button>)}
         {sectors.length<=2 && RESERVES.map(s=><div className="tsa-reserve" key={s.id} style={{left:`${s.x}%`,top:`${s.y}%`}} aria-label="Unreleased expansion placeholder">⊕</div>)}
       </div>
+      {sectorPageCount>1?<div className="tsa-page-controls" aria-label="Sector pages"><button type="button" disabled={unavailable||sectorPage===0} onClick={()=>setSectorPage(p=>Math.max(0,p-1))}>← PREVIOUS</button><span>SECTORS {sectorPage+1} / {sectorPageCount}</span><button type="button" disabled={unavailable||sectorPage===sectorPageCount-1} onClick={()=>setSectorPage(p=>Math.min(sectorPageCount-1,p+1))}>NEXT →</button></div>:null}
       <div className="tsa-atlas-footer">
         <span><b>●</b> LIVE SECTOR</span><span>◌ DESIGN RESERVE — NOT RELEASED</span>
       </div>
