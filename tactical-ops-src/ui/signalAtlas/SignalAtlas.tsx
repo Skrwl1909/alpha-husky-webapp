@@ -36,8 +36,8 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const [feedback,setFeedback] = useState<Feedback>(null);
   const [showFuture,setShowFuture] = useState(false);
   const sectors=ATLAS_SECTORS[heroId];
-  const sectorPageCount=Math.ceil(sectors.length/4);
-  const visibleSectors=sectors.slice(sectorPage*4,(sectorPage+1)*4);
+  const sectorPageCount=Math.ceil(sectors.length/3);
+  const visibleSectors=sectors.slice(sectorPage*3,(sectorPage+1)*3);
   const sector=sectors.find(s=>s.id===sectorId) || sectors[0];
   const hero=growth?.heroes.find(h=>h.heroId===heroId) || null;
   const chosenPath=pathPreview;
