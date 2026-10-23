@@ -1,3 +1,5 @@
+> **SUPERSEDED FOR UI LAYOUT (2026-10-23):** The fixed-fit three-lane screen in this V1 is retained only as a record of the existing canonical 9 nodes. Use [TACTICAL_SIGNAL_ATLAS_V2_EXPANSION_CONTRACT.md](TACTICAL_SIGNAL_ATLAS_V2_EXPANSION_CONTRACT.md) for the scalable Atlas Overview + Sector Focus architecture. Existing skill identifiers, point rules and backend boundaries below remain binding. No production implementation is implied.
+
 # ALPHA HUSKY — SKILLBOOK SIGNAL TREE V1
 Date: 2026-10-23
 Status: DESIGN CONTRACT / NOT IMPLEMENTED
