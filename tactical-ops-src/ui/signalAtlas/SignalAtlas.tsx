@@ -6,16 +6,16 @@ import { UNIT_DEFS } from "../../data/units";
 import { tacticalActionImageForSkill } from "../tacticalActionIcons";
 import { tacticalEmblemFor } from "../tacticalEmblems";
 import { portraitFallback } from "../PlayerIdentity";
-import { ATLAS_SECTORS, HERO_TITLES, HERO_SUBTITLES, PATH_EXPLANATIONS, getNodeView, type AtlasSector, type NodeView } from "./model";
+import { ATLAS_SECTORS, HERO_TITLES, HERO_SUBTITLES, PATH_EXPLANATIONS, getNodeView, atlasSectorPosition, type AtlasSector, type NodeView } from "./model";
 import "./signalAtlas.css";
 
 type Feedback = { kind: "success" | "error"; text: string } | null;
 type Selection = { skillId: string; rank: 0|1|2 };
 const RESERVES = [
-  {id:"future-a", title:"FUTURE 01",x:13,y:34},
-  {id:"future-b", title:"FUTURE 02",x:87,y:34},
-  {id:"future-c", title:"FUTURE 03",x:13,y:78},
-  {id:"future-d", title:"FUTURE 04",x:87,y:78},
+  {id:"future-a", title:"FUTURE 01",x:14,y:62},
+  {id:"future-b", title:"FUTURE 02",x:86,y:62},
+  {id:"future-c", title:"FUTURE 03",x:14,y:86},
+  {id:"future-d", title:"FUTURE 04",x:86,y:86},
 ];
 
 export function SignalAtlas({ onClose }: { onClose: () => void }) {
@@ -115,14 +115,14 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
         <svg className="tsa-links" viewBox="0 0 360 370" preserveAspectRatio="none" aria-hidden="true">
           <circle cx="180" cy="185" r="129" fill="none" stroke="#426074" strokeWidth="1" strokeDasharray="4 9"/>
           <circle cx="180" cy="185" r="99" fill="none" stroke="#2F728D" strokeWidth="1"/>
-          <path d="M180 185 Q142 100 90 74 M180 185 Q218 100 270 74" fill="none" stroke="#6AC4DF" strokeWidth="2.8"/>
+          {sectors.map((s,i)=>{const p=atlasSectorPosition(i,sectors.length);return <path key={s.id} d={`M180 185 L${p.x*3.6} ${p.y*3.7}`} fill="none" stroke="#6AC4DF" strokeWidth="2.8"/>;})}
           <path d="M180 185 L47 126 M180 185 L313 126 M180 185 L47 289 M180 185 L313 289" fill="none" stroke="#466071" strokeWidth="1.5" strokeDasharray="5 7"/>
         </svg>
         <div className="tsa-core"><img src={tacticalEmblemFor(heroId,null)||""} alt=""/><b>{HERO_TITLES[heroId]}</b><small>COMBAT CORE</small></div>
-        {sectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-sector-${i}`} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
+        {sectors.map((s,i)=><button key={s.id} className="tsa-sector" style={{left:`${atlasSectorPosition(i,sectors.length).x}%`,top:`${atlasSectorPosition(i,sectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
           <span className="tsa-sector-glyph">{s.tone==="amber"?"✦":"◎"}</span><b>{s.title}</b><small>{s.description}</small><em>LIVE · {s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2}</em>
         </button>)}
-        {RESERVES.map(s=><div className="tsa-reserve" key={s.id} style={{left:`${s.x}%`,top:`${s.y}%`}} aria-label="Unreleased expansion placeholder">⊕</div>)}
+        {sectors.length<=2 && RESERVES.map(s=><div className="tsa-reserve" key={s.id} style={{left:`${s.x}%`,top:`${s.y}%`}} aria-label="Unreleased expansion placeholder">⊕</div>)}
       </div>
       <div className="tsa-atlas-footer">
         <span><b>●</b> LIVE SECTOR</span><span>◌ DESIGN RESERVE — NOT RELEASED</span>
