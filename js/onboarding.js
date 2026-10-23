@@ -179,7 +179,7 @@
   const STEP_CONFIG = {
     profile_stats_seen: {
       icon: "📊",
-      h: "See what Alpha recorded",
+      h: "Check your stats",
       p: "Your node has a body. Look once so you know what the Pack can read.",
       label: "Open Stats"
     },

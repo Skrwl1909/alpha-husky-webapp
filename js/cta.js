@@ -320,7 +320,7 @@
     campaign_incoming: {
       context: "Chapter 6",
       now: "RELAY-7 is calling",
-      why: "The Pack is fracturing. Answer the signal.",
+      why: "The Pack is still divided. Answer the signal.",
       reward: "",
       go: "Open Campaign",
       stakes: "",

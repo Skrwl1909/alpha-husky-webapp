@@ -324,22 +324,22 @@ function _contribSummaryLegacy(c) {
       tags: ["Breachcraft", "Sabotage", "Blind Spots", "Denial"],
     },
     echo_wardens: {
-      motto: "Hold the signal. Defend what must survive.",
-      summary: "Echo Wardens guard routes, archives, and ground so the fractured rebellion stays coherent through the Rewrite.",
-      belonging: "For players who anchor lines, reinforce allies, and refuse to lose critical ground through neglect.",
-      tags: ["Signal", "Defense", "Continuity", "Stability"],
+      motto: "Keep the record. What gets forgotten can happen again.",
+      summary: "Echo Wardens preserve the Pack's knowledge, records, and hard-won lessons so the rebellion remembers why it fights.",
+      belonging: "For players who protect knowledge, plan around evidence, and refuse to let hard-won lessons disappear.",
+      tags: ["Memory", "Records", "Strategy", "Legacy"],
     },
     pack_burners: {
       motto: "If the Chain only understands force, answer in fire.",
       summary: "Pack Burners convert grief into momentum and force stalled fronts to move before enemy structure resets.",
       belonging: "For players who push hard, escalate pressure, and refuse the slow death of hesitation.",
-      tags: ["Force", "Pressure", "Momentum", "Dominance"],
+      tags: ["Force", "Pressure", "Momentum", "Revolt"],
     },
     inner_howl: {
-      motto: "Hear what the static is trying to say.",
-      summary: "Inner Howl reads anomalies, echoes, and hidden pressure so the rebellion reacts before fractures spread.",
-      belonging: "For players who trust disciplined intuition and act on insight before others see the breach.",
-      tags: ["Anomalies", "Insight", "Pattern", "Foresight"],
+      motto: "When everything breaks, stay.",
+      summary: "Inner Howl holds the line through loyalty, discipline, and endurance so the rebellion survives what breaks around it.",
+      belonging: "For players who hold their ground, defend the Pack, and keep their word when the pressure rises.",
+      tags: ["Loyalty", "Defense", "Endurance", "Discipline"],
     },
   };
 
