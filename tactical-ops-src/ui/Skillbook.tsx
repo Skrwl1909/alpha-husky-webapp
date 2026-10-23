@@ -46,9 +46,10 @@ export function SkillbookPanel() {
   const nextRank = (rank + 1) as 1 | 2;
   const upgradeInfo = skillId ? UPGRADES.find(u => u.skillId === skillId && u.rank === nextRank) : null;
   const locked = pending || !growth || remaining < 1 || (hero?.discipline != null && hero.discipline !== path);
-  const canBuy = !!(skillId && upgradeInfo && !locked);
-  const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
   const delta = skillId && upgradeInfo && hero ? skillChangePreview(skillId, hero, nextRank, path) : [];
+  // Match the Atlas: never charge for a rank with zero effective combat improvement.
+  const canBuy = !!(skillId && upgradeInfo && !locked && delta.length > 0);
+  const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
   const savedPowerProof = selectedSkill && hero && rank > 0 && skillId
     ? skillChangePreview(skillId, { ...hero, ranks: { ...hero.ranks, [skillId]: (rank - 1) as 0 | 1 } }, rank as 1 | 2, hero.discipline || path)
     : [];
@@ -113,7 +114,7 @@ export function SkillbookPanel() {
               <small>{upgradeInfo?.description ?? (selectedSkill ? "All upgrades unlocked." : "Select one of the three skills to see its next upgrade.")}</small>
               {delta.length ? <div className="t-growth-delta" aria-label="Actual combat upgrade preview">{delta.map(change => <b key={change}>{change}</b>)}</div> : null}
               {nextRank === 2 && upgradeInfo ? <span className="t-growth-signature">RANK 2 · EVOLVED COMBAT EFFECT</span> : null}
-              <small>{hero?.discipline && hero.discipline !== path ? "Other specialization is locked. Use your one free respec to change it." : remaining < 1 ? "Earn a point from a first-time mission clear." : "Each upgrade costs 1 point and changes real combat behavior."}</small>
+              <small>{hero?.discipline && hero.discipline !== path ? "Other specialization is locked. Use your one free respec to change it." : upgradeInfo && !delta.length ? "No effective combat change at this rank. Purchase disabled pending balance review." : remaining < 1 ? "Earn a point from a first-time mission clear." : "Each upgrade costs 1 point and changes real combat behavior."}</small>
             </div>
             <button className="t-btn t-btn-primary" type="button" disabled={!canBuy}
               onClick={() => { if (skillId && canBuy) { setPurchaseProof({ heroId, skillId, rank: nextRank }); void upgrade(heroId, path, skillId, nextRank); } }}>
