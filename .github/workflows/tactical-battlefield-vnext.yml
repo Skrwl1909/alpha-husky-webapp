@@ -21,6 +21,7 @@ on:
       - "tools/verify_tactical_player_clarity.mjs"
       - "tools/verify_tactical_command_deck.mjs"
       - "tactical-ops-src/ui/Skillbook.tsx"
+      - "tactical-ops-src/styles.ts"
       - "tactical-ops-src/ui/signalAtlas/**"
       - "tools/verify_tactical_signal_atlas_v2.mjs"
       - "docs/TACTICAL_SIGNAL_ATLAS_V2_ENGINEERING_GATE.md"
@@ -87,3 +88,11 @@ jobs:
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
       - run: npm run build:tactical-ops
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: tactical-signal-atlas-built-host
+          path: |
+            js/tactical_ops.js
+            js/boot_loaders.js
+          if-no-files-found: error
