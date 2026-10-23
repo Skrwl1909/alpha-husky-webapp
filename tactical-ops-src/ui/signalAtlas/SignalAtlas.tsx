@@ -34,6 +34,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const [saving,setSaving] = useState(false);
   const [feedback,setFeedback] = useState<Feedback>(null);
   const [showFuture,setShowFuture] = useState(false);
+  const [compactFocus,setCompactFocus] = useState(true);
   const sectors=ATLAS_SECTORS[heroId];
   const sectorPageCount=Math.ceil(sectors.length/3);
   const visibleSectors=sectors.slice(sectorPage*3,(sectorPage+1)*3);
@@ -142,7 +143,8 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
           <span>{hero?.discipline===p?"SERVER RECORDED":hero?.discipline?"ALTERNATIVE · UNAVAILABLE":"PREVIEW PATH"}</span></button>)}
       </div>
       <p className="tsa-path-explain">{PATH_EXPLANATIONS[chosenPath]} {hero?.discipline?"Your recorded discipline is fixed until an eligible one-time reset.":"Previewing does not save a discipline. Your first successful skill purchase selects it."}</p>
-      <div className="tsa-lanes">
+      <button type="button" className="tsa-detail-toggle" aria-pressed={!compactFocus} onClick={()=>setCompactFocus(v=>!v)}>{compactFocus?"SHOW FULL SKILL DETAILS +":"COMPACT SKILL NETWORK −"}</button>
+      <div className={`tsa-lanes ${compactFocus?"is-compact":""}`}>
         {sector.skillIds.map(skillId=>{
           const skill=getSkill(skillId);
           return <div className="tsa-lane" key={skillId}>
@@ -156,7 +158,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
                   <button type="button" disabled={unavailable} aria-pressed={focused} onClick={()=>{setSelection({skillId,rank});setFeedback(null);setConfirm(null);}}
                     className={`tsa-node tsa-state-${current.state} ${focused?"is-focused":""}`}
                     aria-label={`${skill.name} rank ${rank}, ${current.state}: ${current.reason}`}>
-                    {rank===0?<img src={tacticalActionImageForSkill(skillId)||""} alt=""/>:<span aria-hidden="true">{current.state==="maxed"||current.state==="recorded"?"✓":current.state==="needs-rank-one"?"▧":rank===2?"Ⅱ":"Ⅰ"}</span>}
+                    <img src={tacticalActionImageForSkill(skillId)||""} alt=""/>{rank>0?<span className="tsa-rank-stamp" aria-hidden="true">{current.state==="maxed"||current.state==="recorded"?"✓":current.state==="needs-rank-one"?"⌁":rank===2?"II":"I"}</span>:null}
                   </button><small>{rank===0?"BASE":`RANK ${rank===1?"I":"II"}`}</small>
                 </div>;
               })}
