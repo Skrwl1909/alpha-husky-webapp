@@ -1015,17 +1015,17 @@ function Results() {
           {fieldOp ? <div>
             
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
-            {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
+            {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
           
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
-            <strong>{campaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
+            <strong>{recordedCampaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
             <p>{mission?.missionId === "dead-relay-courier"
-              ? campaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
-                : !campaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
-              : mission?.missionId === "dead-relay-hold" ? !campaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
-              : !campaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
+              ? recordedCampaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || recordedCampaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
+                : !recordedCampaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
+              : mission?.missionId === "dead-relay-hold" ? !recordedCampaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
+              : !recordedCampaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
           </div> : null}
           {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={acceptedS3Run}>
             <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
@@ -1062,7 +1062,7 @@ function Results() {
           ) : null}
           <div className="t-brief-actions t-result-actions">
             {campaignMission ? (
-              campaignResult ? <>
+              recordedCampaignResult ? <>
                 <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>BACK TO CAMPAIGN</button>
                 <button type="button" className="t-btn" onClick={replay}>REPLAY / SQUAD</button>
               </> : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
@@ -1070,8 +1070,8 @@ function Results() {
               </button>
             ) : fieldOp ? (
               <>
-                {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `SEE NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+                {!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{recordedFieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `SEE NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
                   <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
                 </>}
               </>
