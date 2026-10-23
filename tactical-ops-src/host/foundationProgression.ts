@@ -199,7 +199,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) ||
         typeof candidate.runId !== "string" || candidate.runId !== state.activeRunId) return null;
     const rulesContract = parseRunRulesContract(candidate.rulesContract);
-    if (!rulesContract || !rulesContract.missionId.startsWith("foundation-")) return null;
+    if (!rulesContract) return null;
     state.foundationRunRules = { runId: candidate.runId, rulesContract };
   }
   if (Object.prototype.hasOwnProperty.call(value, "playerGrowth")) {
