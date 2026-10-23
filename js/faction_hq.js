@@ -333,7 +333,7 @@ function _contribSummaryLegacy(c) {
       motto: "If the Chain only understands force, answer in fire.",
       summary: "Pack Burners convert grief into momentum and force stalled fronts to move before enemy structure resets.",
       belonging: "For players who push hard, escalate pressure, and refuse the slow death of hesitation.",
-      tags: ["Force", "Pressure", "Momentum", "Dominance"],
+      tags: ["Force", "Pressure", "Momentum", "Revolt"],
     },
     inner_howl: {
       motto: "When everything breaks, stay.",
