@@ -23,5 +23,7 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: node tools/verify_tactical_accepted_foundation_grid.mjs
-      - run: npm run verify:tactical-ops:foundation
-      - run: npm run verify:tactical-ops:responsive
+      - run: node tools/verify_tactical_vnext_run_contract_wire.mjs
+      - run: node tools/benchmark_tactical_vnext_grids.mjs
+      - run: npm run build:tactical-ops
+      - run: node --check js/tactical_ops.js
