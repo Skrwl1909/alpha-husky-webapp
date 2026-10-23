@@ -1,0 +1,52 @@
+name: Build Kacper Tactical Reuse ZIP
+
+on:
+  push:
+    branches:
+      - handoff/kacper-tactical-reuse-20261023
+    paths:
+      - '.github/workflows/kacper-asset-handoff.yml'
+      - 'handoff/build_kacper_reuse_zip.py'
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Produce original Tactical Ops assets ZIP
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout isolated handoff branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Package and validate 37 original assets
+        run: python handoff/build_kacper_reuse_zip.py
+
+      - name: Upload ZIP for direct download
+        uses: actions/upload-artifact@v4
+        with:
+          name: ALPHA_HUSKY_TACTICAL_EXISTING_ASSETS_KACPER_20261023
+          path: handoff/ALPHA_HUSKY_TACTICAL_EXISTING_ASSETS_KACPER_20261023.zip
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Commit ZIP to handoff branch only
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f handoff/ALPHA_HUSKY_TACTICAL_EXISTING_ASSETS_KACPER_20261023.zip
+          if git diff --cached --quiet; then
+            echo "ZIP already committed"
+          else
+            git commit -m "build(handoff): package 37 existing Tactical Ops assets for Kacper"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
