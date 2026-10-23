@@ -48,6 +48,7 @@ try {
   const ui=readFileSync("tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx","utf8");
   const classic=readFileSync("tactical-ops-src/ui/Skillbook.tsx","utf8");
   assert(classic.includes("SignalAtlas") && classic.includes("atlasOpen"));
+  assert(classic.includes("delta.length > 0") && classic.includes("Purchase disabled pending balance review"),"Classic Skillbook must also block zero-effect rank purchases");
   assert(ui.includes("useBattleStore") && ui.includes("await upgrade(") && ui.includes("await respec("),"Real authenticated store actions");
   assert(ui.includes("current.progression.revision>captured.revision") && ui.includes("saved?.ranks[captured.skillId]"),"Upgrade acknowledgment must be canonical");
   assert(ui.includes("SERVER RECORDED") && ui.includes("getNodeView("));
