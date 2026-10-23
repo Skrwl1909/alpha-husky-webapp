@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SignalAtlas } from "./signalAtlas/SignalAtlas";
 import { useBattleStore } from "../store/battleStore";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, type Discipline, type HeroId } from "../data/playerGrowth";
 import { getSkill } from "../data/skills";
@@ -7,6 +8,17 @@ import { portraitFallback } from "./PlayerIdentity";
 import { skillChangePreview } from "./combatIdentity";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill } from "./tacticalActionIcons";
+
+/** Local QA opt-in only; never controls rewards, backend, or gameplay ownership. */
+export function isSignalAtlasBetaAllowed(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("signalAtlasBeta") === "1"
+      || window.localStorage.getItem("ah_signal_atlas_beta_v1") === "on"
+      || window.localStorage.getItem("ah_tactical_battlefield_lab_v1") === "10x7";
+  } catch { return false; }
+}
 
 const NAMES: Record<HeroId, string> = { alpha: "ALPHA", "ally-02": "CNC", "ally-03": "SHADOW" };
 const PATH_COPY: Record<Discipline, string> = {
@@ -26,6 +38,8 @@ export function SkillbookPanel() {
   const upgrade = useBattleStore(s => s.upgradeGrowth);
   const respec = useBattleStore(s => s.respecGrowth);
   const [heroId, setHeroId] = useState<HeroId>("alpha");
+  const [atlasOpen,setAtlasOpen] = useState(false);
+  const [atlasBetaAllowed] = useState(isSignalAtlasBetaAllowed);
   const [path, setPath] = useState<Discipline>("vanguard");
   const [skillId, setSkillId] = useState<string | null>(null);
   const [respecConfirm, setRespecConfirm] = useState(false);
@@ -44,14 +58,16 @@ export function SkillbookPanel() {
   const nextRank = (rank + 1) as 1 | 2;
   const upgradeInfo = skillId ? UPGRADES.find(u => u.skillId === skillId && u.rank === nextRank) : null;
   const locked = pending || !growth || remaining < 1 || (hero?.discipline != null && hero.discipline !== path);
-  const canBuy = !!(skillId && upgradeInfo && !locked);
-  const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
   const delta = skillId && upgradeInfo && hero ? skillChangePreview(skillId, hero, nextRank, path) : [];
+  // Match the Atlas: never charge for a rank with zero effective combat improvement.
+  const canBuy = !!(skillId && upgradeInfo && !locked && delta.length > 0);
+  const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
   const savedPowerProof = selectedSkill && hero && rank > 0 && skillId
     ? skillChangePreview(skillId, { ...hero, ranks: { ...hero.ranks, [skillId]: (rank - 1) as 0 | 1 } }, rank as 1 | 2, hero.discipline || path)
     : [];
   const upgradeConfirmed = !!(purchaseProof && !pending && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
 
+  if (atlasOpen && atlasBetaAllowed) return <SignalAtlas onClose={() => setAtlasOpen(false)} />;
   return (
     <section className="t-panel t-growth-panel" aria-label="Character Skillbook">
       <header className="t-growth-heading">
@@ -59,6 +75,7 @@ export function SkillbookPanel() {
           <span className="t-kicker">SQUAD PROGRESSION</span>
           <h2>CHARACTER SKILLBOOK</h2>
           <p>Choose how each squad member fights. Your choices are saved to your Alpha account.</p>
+          {atlasBetaAllowed ? <button type="button" className="t-growth-atlas-cta" onClick={()=>setAtlasOpen(true)}>◈ OPEN SIGNAL ATLAS · BETA</button> : null}
         </div>
         <div className="t-growth-points"><strong>{growth ? remaining : "—"}</strong><small>AVAILABLE POINTS</small></div>
       </header>
@@ -109,7 +126,7 @@ export function SkillbookPanel() {
               <small>{upgradeInfo?.description ?? (selectedSkill ? "All upgrades unlocked." : "Select one of the three skills to see its next upgrade.")}</small>
               {delta.length ? <div className="t-growth-delta" aria-label="Actual combat upgrade preview">{delta.map(change => <b key={change}>{change}</b>)}</div> : null}
               {nextRank === 2 && upgradeInfo ? <span className="t-growth-signature">RANK 2 · EVOLVED COMBAT EFFECT</span> : null}
-              <small>{hero?.discipline && hero.discipline !== path ? "Other specialization is locked. Use your one free respec to change it." : remaining < 1 ? "Earn a point from a first-time mission clear." : "Each upgrade costs 1 point and changes real combat behavior."}</small>
+              <small>{hero?.discipline && hero.discipline !== path ? "Other specialization is locked. Use your one free respec to change it." : upgradeInfo && !delta.length ? "No effective combat change at this rank. Purchase disabled pending balance review." : remaining < 1 ? "Earn a point from a first-time mission clear." : "Each upgrade costs 1 point and changes real combat behavior."}</small>
             </div>
             <button className="t-btn t-btn-primary" type="button" disabled={!canBuy}
               onClick={() => { if (skillId && canBuy) { setPurchaseProof({ heroId, skillId, rank: nextRank }); void upgrade(heroId, path, skillId, nextRank); } }}>
