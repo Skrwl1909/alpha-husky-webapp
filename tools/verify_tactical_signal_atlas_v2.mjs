@@ -60,7 +60,12 @@ try {
   const html=renderToStaticMarkup(React.createElement(uiModule.SignalAtlas,{onClose:()=>undefined}));
   assert(html.includes("THE SIGNAL ATLAS") && html.includes("ASSAULT") && html.includes("COMMAND"),"Atlas must render with its live sectors even before login");
   assert(html.includes("NOT RELEASED"),"Reservation legend must not mislabel future content as locked rewards");
-    const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");
+    const hostStyles=readFileSync("tactical-ops-src/styles.ts","utf8");
+  assert(hostStyles.includes("signalAtlas.css?raw"),"Atlas CSS must be injected by Tactical host, not extracted into unused standalone stylesheet");
+  assert(!ui.includes('import "./signalAtlas.css"'),"No external CSS import in IIFE component");
+  assert(classic.includes('isSignalAtlasBetaAllowed') && classic.includes('atlasBetaAllowed ? <button'),"Beta entry is opt-in only");
+  assert(classic.includes('ah_tactical_battlefield_lab_v1') && classic.includes('signalAtlasBeta'),"Existing lab testers and explicit QA query can enter the beta");
+  const css=readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlas.css","utf8");
   assert(css.includes("@media(max-width:380px)") && css.includes("prefers-reduced-motion"));
   console.log("PASS SIGNAL ATLAS V2 (React SSR): 3 heroes, 6 live UI sectors, 9 canonical skills, 18 ranks, all receipt/availability states, zero-effect gate, 50 demo-node layout, real store wiring");
 }finally{await server.close();}
