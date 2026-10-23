@@ -497,7 +497,6 @@ export function BattleScreen() {
   const phaseLabel = actor?.team === "enemy" ? "Enemy act" : "Your act";
   const activityLabel = mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name;
   const directive = objectiveDirective(useBattleStore.getState().battle);
-  const activeRulesetVersion = useBattleStore((s) => s.activeRulesetVersion);
   const guidance = playerBattleGuidance(useBattleStore.getState().battle, mission);
 
   return (
@@ -520,7 +519,7 @@ export function BattleScreen() {
             {actor ? ` · ${actor.name}` : ""}
           </span>
         </div>
-        <div className="t-obj">{activityLabel}<span className="t-battle-lab-tag"> · {activeRulesetVersion === "tactical-intent-vnext.0" ? "10×7" : "8×5"}</span></div>
+        <div className="t-obj">{activityLabel}<span className="t-battle-lab-tag"> · {BATTLEFIELD_VNEXT_PREVIEW ? "10×7" : "8×5"}</span></div>
       </header>
       <div className="t-order-wrap">
         <TurnOrderBar />
