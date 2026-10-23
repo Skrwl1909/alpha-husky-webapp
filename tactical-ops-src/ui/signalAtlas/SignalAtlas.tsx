@@ -121,7 +121,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
           {visibleSectors.map((s,i)=>{const p=atlasSectorPosition(i,visibleSectors.length);return <path key={s.id} d={`M180 185 L${p.x*3.6} ${p.y*3.7}`} fill="none" stroke="#6AC4DF" strokeWidth="2.8"/>;})}
           <path d="M180 185 L47 126 M180 185 L313 126 M180 185 L47 289 M180 185 L313 289" fill="none" stroke="#466071" strokeWidth="1.5" strokeDasharray="5 7"/>
         </svg>
-        <div className="tsa-core"><img src={tacticalEmblemFor(heroId,null)||""} alt=""/><b>{HERO_TITLES[heroId]}</b><small>COMBAT CORE</small></div>
+        <div className="tsa-core"><img className="tsa-core-portrait" src={UNIT_DEFS[heroId].portrait} onError={portraitFallback} alt=""/><img className="tsa-core-emblem" src={tacticalEmblemFor(heroId,null)||""} alt=""/><b>{HERO_TITLES[heroId]}</b><small>COMBAT CORE</small></div>
         {visibleSectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-tone-${s.tone}`} style={{left:`${atlasSectorPosition(i,visibleSectors.length).x}%`,top:`${atlasSectorPosition(i,visibleSectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
           <span className="tsa-sector-glyph">{s.tone==="amber"?"✦":"◎"}</span><b>{s.title}</b><small>{s.description}</small><em>LIVE · {s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2}</em>
         </button>)}
