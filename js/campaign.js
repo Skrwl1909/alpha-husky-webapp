@@ -254,7 +254,7 @@
     if (!f || f.toLowerCase() === "unbound") return "UNBOUND";
     if (f === "rb" || f === "rogue_byte") return "Rogue Byte";
     if (f === "ew" || f === "echo_wardens") return "Echo Wardens";
-    if (f === "ih" || f === "inner_howl" || f === "inner_howlers") return "Inner Howlers";
+    if (f === "ih" || f === "inner_howl" || f === "inner_howlers") return "Inner Howl";
     if (f === "pb" || f === "pack_burners") return "Pack Burners";
     return f || "UNBOUND";
   }
@@ -493,7 +493,7 @@
     if (!key || key === "unbound") return "UNBOUND";
     if (key === "rb" || key === "rogue_byte") return "Rogue Byte";
     if (key === "ew" || key === "echo_wardens") return "Echo Wardens";
-    if (key === "ih" || key === "inner_howl" || key === "inner_howlers") return "Inner Howlers";
+    if (key === "ih" || key === "inner_howl" || key === "inner_howlers") return "Inner Howl";
     if (key === "pb" || key === "pack_burners") return "Pack Burners";
     return asText(raw) || "UNBOUND";
   }
