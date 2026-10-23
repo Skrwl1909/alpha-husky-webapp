@@ -137,15 +137,15 @@
       "x": 48,
       "y": 37,
       "icon": "images/map/building/phantom_nodes.png",
-      "desc": "Critical comms hubs pulsing with ghost traffic. Control means power.",
+      "desc": "Critical comms hubs pulsing with ghost traffic. The Pack holds the line against the Static Maw.",
       "lore": {
         "identity": "This was once the shared relay spine of the old Alpha Network.",
         "stakes": "Who owns these channels shapes warnings, patrol routes, and response time.",
         "factionAngles": {
           "rogue_byte": "Rogue Byte turns the traffic into breach lanes and blind spots.",
-          "echo_wardens": "Echo Wardens lock routes here to keep continuity intact.",
-          "inner_howl": "Inner Howl listens for hidden pulses under the public signal.",
-          "pack_burners": "Pack Burners push volume and speed until rivals break."
+          "echo_wardens": "Echo Wardens preserve signal records and warnings so the front can respond.",
+          "inner_howl": "Inner Howl holds vital relay positions when pressure rises.",
+          "pack_burners": "Pack Burners push the counterattack when the Static Maw surges."
         }
       },
       "action": "coming_soon",
@@ -174,9 +174,9 @@
         "stakes": "When it surges, nearby fronts destabilize and raid pressure escalates.",
         "factionAngles": {
           "rogue_byte": "Rogue Byte treats each surge as cover for deep intrusions.",
-          "echo_wardens": "Echo Wardens hold perimeter links to contain spillover.",
-          "inner_howl": "Inner Howl tracks omen patterns hidden in the spike noise.",
-          "pack_burners": "Pack Burners force the tower window before rivals regroup."
+          "echo_wardens": "Echo Wardens study each surge and preserve what the Tower reveals.",
+          "inner_howl": "Inner Howl holds perimeter links to contain spillover.",
+          "pack_burners": "Pack Burners press the raid while the hostile surge is exposed."
         }
       },
       "action": "coming_soon",
@@ -206,8 +206,8 @@
         "stakes": "If this line falls, siege lanes open deeper into rebel territory.",
         "factionAngles": {
           "rogue_byte": "Rogue Byte uses the fractures to slip behind hostile lines.",
-          "echo_wardens": "Echo Wardens anchor defenses here to protect inner routes.",
-          "inner_howl": "Inner Howl reads pattern drift before assaults fully form.",
+          "echo_wardens": "Echo Wardens preserve route records and map the changing frontier.",
+          "inner_howl": "Inner Howl anchors defenses to protect routes into Pack territory.",
           "pack_burners": "Pack Burners strike early to keep momentum on this frontier."
         }
       },
@@ -257,8 +257,8 @@
         "stakes": "HQ strength sets how far each war-path can project support.",
         "factionAngles": {
           "rogue_byte": "Rogue Byte sees HQ as launch cover for covert operations.",
-          "echo_wardens": "Echo Wardens treat HQ as continuity infrastructure to defend.",
-          "inner_howl": "Inner Howl uses HQ archives to decode hidden fault lines.",
+          "echo_wardens": "Echo Wardens keep HQ archives and safeguard what the rebellion has learned.",
+          "inner_howl": "Inner Howl holds HQ as a refuge and a last defensive line.",
           "pack_burners": "Pack Burners drive HQ output into direct frontline pressure."
         }
       },
@@ -337,8 +337,8 @@
         "stakes": "Stabilizing it limits Rewrite leaks into nearby lanes.",
         "factionAngles": {
           "rogue_byte": "Rogue Byte harvests exploit windows before they close.",
-          "echo_wardens": "Echo Wardens patch critical routes to prevent cascade failures.",
-          "inner_howl": "Inner Howl maps hidden rules buried inside corrupted clauses.",
+          "echo_wardens": "Echo Wardens recover damaged contracts and document the failure.",
+          "inner_howl": "Inner Howl secures critical routes to prevent cascade failures.",
           "pack_burners": "Pack Burners purge the zone fast and hold what remains."
         }
       },
@@ -398,7 +398,7 @@
       "wallet": "CNowyAyXYPYeMLHQxLfcWMVowF52f9HmABueSQnmGX6R",
       "desc": "Official public treasury and support vault. A place the Pack can recognize before live support flows open.",
       "lore": {
-        "identity": "A sealed treasury vault wired to keep Alpha online while the world grows.",
+        "identity": "A support vault maintained for the Pack's world and community events.",
         "stakes": "Verified support signals will later leave a mark in the Treasury feed, mailbox, and world memory."
       },
       "action": "open_howl_treasury",
