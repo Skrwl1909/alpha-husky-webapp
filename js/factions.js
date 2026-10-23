@@ -31,8 +31,8 @@
       color: "#ffd600",
       icon40: "/images/factions/echo_wardens_40.webp",
       icon80: "/images/factions/echo_wardens_80.webp",
-      desc: "Line-holding war-path of the fractured Alpha Network. Defend signal routes and keep continuity alive.",
-      vibe: "Defense | Signal | Continuity",
+      desc: "Memory-and-strategy war-path of the fractured Alpha Network. Preserve records, protect knowledge, and learn from what the Pack nearly lost.",
+      vibe: "Memory | Strategy | Legacy",
     },
     {
       key: "pb",
@@ -41,8 +41,8 @@
       color: "#ff7a1a",
       icon40: "/images/factions/pack_burners_40.webp",
       icon80: "/images/factions/pack_burners_80.webp",
-      desc: "Force doctrine of the fractured Alpha Network. Stack pressure, break resistance, and keep fronts moving.",
-      vibe: "Pressure | Tempo | Dominance",
+      desc: "Uprising war-path of the fractured Alpha Network. Challenge oppression openly and turn shared anger into sustained pressure.",
+      vibe: "Revolt | Pressure | Momentum",
     },
     {
       key: "ih",
@@ -51,8 +51,8 @@
       color: "#40c4ff",
       icon40: "/images/factions/inner_howl_40.webp",
       icon80: "/images/factions/inner_howl_80.webp",
-      desc: "Insight doctrine of the fractured Alpha Network. Read hidden fractures early and strike before noise turns fatal.",
-      vibe: "Intuition | Pattern | Precision",
+      desc: "Line-holding war-path of the fractured Alpha Network. Stay loyal, protect the Pack, and endure when others break.",
+      vibe: "Loyalty | Defense | Endurance",
     },
   ];
 
