@@ -128,6 +128,7 @@ function Token({
   inspecting,
   signalCarrier,
   interceptTarget = false,
+  hitReacting = false,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -137,6 +138,7 @@ function Token({
   inspecting: boolean;
   signalCarrier: boolean;
   interceptTarget?: boolean;
+  hitReacting?: boolean;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
@@ -152,6 +154,7 @@ function Token({
     targeting && !validTarget && !selected ? "subdued" : "",
     targeting && validTarget ? "targetable" : "",
     attacking ? "attacking" : "",
+    hitReacting ? "hit-reacting" : "",
     signalCarrier ? "trace-carrier" : "",
     unit.role === "leader" ? "boss-target" : "",
     `depth-${Math.max(0, Math.min(4, Math.floor(unit.r * 4 / (GRID_ROWS - 1))))}`,
@@ -494,7 +497,7 @@ export function BattleScreen() {
   const impactSkill = lastActionSkillId ? getSkill(lastActionSkillId) : null;
   const impactPresentation = impactSkill ? getActionPresentation(impactSkill) : null;
   const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy);
-  const impact = units.find((u) => u.id === impactId && !u.defeated);
+  const impact = units.find((u) => u.id === impactId);
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
   const directive = objectiveDirective(useBattleStore.getState().battle);
   const guidance = playerBattleGuidance(useBattleStore.getState().battle, mission);
@@ -586,6 +589,7 @@ export function BattleScreen() {
                 validTarget={targets.has(u.id)}
                 targeting={mode === "targeting"}
                 attacking={u.id === attackingId}
+                hitReacting={u.id === impactId && impactKey > 0}
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
