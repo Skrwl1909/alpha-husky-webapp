@@ -1,55 +1,52 @@
-# Blood Moon V4 · Last Stand P0
+# Blood Moon V4 · Last Stand P1
 
-An isolated, local-only boss fight. No production scripts, network APIs or assets are loaded. Uses browser Canvas, Pointer Events and native Node tooling; no install or build step.
+Isolated real-time encounter using the original Alpha Husky Blood Moon artwork. Built on the accepted P0; no production V3 scripts, routes, combat APIs, rewards or account state are loaded. No install/build step or additional dependencies. Keep the P0 and P1 PRs unmerged until human review.
 
-From the repository root, with Node 22+:
+## Run from the repository checkout
+
+Node 22+:
 
 ```sh
 node prototypes/bloodmoon-v4/serve.mjs
 ```
 
-Open http://127.0.0.1:4173/ . Tap **Start encounter**. Drag anywhere in the arena as a floating thumbstick. Release to attack after 250 ms when inside the dotted range ring. All three hazards lock their aim during the warning. Sidestep LINE, leave CIRCLE, cross an edge of CONE. The Husk's recovery ring marks a safe opportunity to stop. Three hits or 75 seconds ends the run. Restart immediately or replay the finished run's recorded inputs. Export log includes the seed, tuning, input trace and actual events. Hidden tabs pause simulation; cancellation, blur and resize clear movement.
+Open http://127.0.0.1:4173/ . If that port is busy, set `PORT=4174` and open http://127.0.0.1:4174/ instead. The original files listed in `assets.js` must be present in the checkout; copying only the prototype folder is insufficient. The local server serves the prototype and an allowlist of those ten assets, never production APIs.
 
-Tuning lives in `simulation.js`: 96 boss HP, 3 player HP, 230 units/sec movement, 480 ms autoattack cooldown. Boss warning stays 1.10–1.18 s and impact stays 200 ms throughout. Recovery is 650 ms before 30 s, 550 ms at 30–50 s, and 480 ms at 50–75 s. Thresholds do not shorten an already active phase. After 30 s, seeded shuffled groups contain each existing hazard once, with no consecutive repeats or identical consecutive groups. Attack-order randomness is separate from warning-duration randomness. A nonblocking two-second notice announces each escalation. Reduced motion removes attack beams; geometry and warnings remain intact.
+Drag anywhere in the arena as a floating thumbstick. Release to strike after 250 ms inside the dotted range ring. The cyan disk at the Howler's feet is the exact collision hitbox; the sprite extends above it. LINE: sidestep. CIRCLE: leave the ring. CONE: cross an edge. Aim locks during the warning. Stop in a safe position to counterattack. Three hits or 75 seconds ends the standard encounter. Restart or replay recorded inputs immediately.
 
-## Focused verification
+Standard mechanics are unchanged: 96 boss HP, 3 player HP, 230 units/sec movement, 480 ms attack cooldown, 1.10–1.18 s warning, 200 ms impact. Recovery progresses 650 → 550 → 480 ms at 30/50 seconds without cutting active phases short. Seeded mixed attack order starts after 30 seconds. Reduced motion stops walk animation and removes beams/VFX, retaining all warning geometry.
+
+## Original art and parameter interface
+
+V4 references the V2 arena/atmosphere/full moon, all four V3 Tower Husk states, existing slash/impact VFX and the existing directional Howler sprite sheet. Background layers are cached once; the original character anchors and fixed virtual arena coordinates keep art separate from collision. No asset file was edited or generated. Optional state failures fall back to the original idle; missing arena, idle or player art blocks play with a reload message.
+
+Expand **Local test controls & combat log** for two strength fixtures. Standard damage is 1; Stronger damage is 1.2. Both use the same 96 boss HP and 3 player HP. These are **local fixtures, not real account data**. Selection is locked during a run; recordings carry the resolved combat parameters. `combat-parameters.js` validates and freezes resolved HP/damage inputs; it implements no level/equipment damage formula. See `COMBAT_CONTRACT.md` for the verified V3 frontend field contract and what remains blocked before real-account adaptation.
+
+## Tests and evidence
 
 ```sh
 node prototypes/bloodmoon-v4/simulation.test.mjs
+node prototypes/bloodmoon-v4/presentation.test.mjs
 ```
 
-PASS: 10 tests covering movement bounds, no attacks during movement, stationary delay, range/cooldown, all three hitboxes including player radius, locked aim, impact timing, single damage per attack, safe positions, idle loss, timeout, reset and deterministic replay. Escalation tests check exact 30/50 s thresholds, no active-phase truncation, all recovery durations, unchanged warning durations, attack variety and one real counterattack from a fresh stop during every tier's recovery. The immediate-response driver wins in **56.18 s** with 3 HP and 96 genuine boss hits.
+P0 suite: **10/10 PASS**, including movement/autofire, hitboxes, damage timing, escalation, safe positions, survival, victory timing and deterministic replay. The original immediate driver still wins in 56.18 s. New presentation/parameter suite: **5/5 PASS**, covering original file paths, loading/fallback/timeout behavior, state/directional frames, parameter validation/immutability/incoming damage, and progression against fixed boss HP using the same real input trace. Final paired results: **Standard 60.30 s / 96 hits; Stronger 50.20 s / 80 hits**, both with 96 boss HP and identical input traces.
 
-The balance driver waits 250 ms before reacting and uses a wider 34-unit collision margin. Across seeds 1909, 1, 42 and 2026 it wins in **58.27–59.93 s** without damage. With two deliberate early hits it wins in **57.78–58.60 s**, retaining 1 HP. Each run survives both escalations and its JSON-serialized recording replays identically. Compared with the same no-mistake driver without escalation, the worst slowdown is **1.27 s**. These are controlled drivers with correct safe-point selection, not human performance measurements.
-
-Browser verification uses a separate Chrome/Chromium process and native CDP touch events. Start the server above and launch Chrome with a disposable profile and debugging port, for example:
+Browser verification requires the demo server and a dedicated Chrome/Chromium instance with `--headless=new --remote-debugging-port=9224 --user-data-dir=<disposable-profile>`:
 
 ```sh
-chrome --headless=new --remote-debugging-port=9224 --user-data-dir=/tmp/last-stand-chrome about:blank
 node prototypes/bloodmoon-v4/browser.test.mjs
 ```
 
-Set `CDP_URL` if using another debugging endpoint. Close that disposable browser after testing. Chrome must be accessible as `chrome` or launched with its installed absolute executable path. The harness connects to the first page in that dedicated instance.
+Set `CDP_URL` for another debug endpoint and `DEMO_URL` for another demo port. Example PowerShell override: `$env:DEMO_URL='http://127.0.0.1:4174/'`. The harness issues native touch input, reads snapshots, checks original asset decoding, portrait layout at 320×568 / 390×844 / 360×740, all Husk states, actual hazard damage, victory/loss/restart, escalation, full deterministic browser replay, local profile selection and intentionally failed optional/essential assets. It records a short real-time Canvas gameplay WebM (including actual HP counters), verifies Chrome can decode it, and rejects normal broken paths or external/API requests. Rerunning overwrites evidence.
 
-PASS: native touch movement, viewport mapping, touchCancel, resize reset, actual LINE/CIRCLE/CONE damage and idle defeat, restart, touch-controlled victory, replay UI, complete browser replay, reopen reset and zero browser exceptions. Both notices appeared then expired; escalation events and recovery durations matched. The browser driver won in **60.23 s** with 3 HP, waiting 250 ms before reacting and using the wider 34-unit margin. Actual results are saved in `evidence/browser-result.json`. Test viewports are 390×844 and 360×740. Screenshots and the real touch victory input trace are in `evidence/`; rerunning browser tests overwrites that evidence. The harness reads snapshots and dispatches native touch input; it does not mutate gameplay state or damage.
+Final browser run: **PASS**, victory in **60.30 s** with 3 HP; full replay identical, all ten assets decoded, all four Husk states observed, lower boundary reached with native touch and the Howler above the HUD, intentional fallback cases passed, zero external/API requests and zero runtime exceptions. The short WebM decoded in Chrome at 360×540. `evidence/browser-result.json` records these results; `evidence/touch-victory.json` contains the real seed, resolved parameters, input trace and combat events. `evidence/gameplay.webm` is the gameplay recording. Screenshots show live hazards, escalation, idle defeat, victory, ready state, lower boundary and intentional optional-art fallback.
 
-## Files
+## Verification boundaries
 
-- `index.html`: isolated entry, HP HUD, controls and outcome overlay.
-- `last-stand.css`: responsive portrait layout.
-- `last-stand.js`: rendering, fixed-step accumulator, UI and replay playback.
-- `input.js`: floating thumbstick, scaled pointer capture and cancellation.
-- `simulation.js`: tuning, geometry, deterministic encounter, event log and replay.
-- `simulation.test.mjs`: focused simulation assertions and dodge/counter driver.
-- `browser.test.mjs`: actual browser touch verification and evidence capture.
-- `serve.mjs`: loopback-only static demo server.
-- `README.md`: run instructions, verification and limitations.
-- `evidence/*.png`: captured running prototype screenshots.
-- `evidence/touch-victory.json`: real browser input recording and combat events.
-- `evidence/browser-result.json`: browser verification result and device-test status.
+**VERIFIED:** original asset paths/state references; local mechanics and deterministic parameterized replay; local fixture progression at fixed 96 HP; Chrome touch emulation, mobile viewport layouts, asset fallback and real browser evidence. Standard P0 human feedback supplied by the owner: victory at 67.5 s with 2/3 HP, boss 0/96 HP; the new art presentation has not yet had human review.
 
-## Limits
+**NOT VERIFIED:** physical Android/iPhone, Safari, broader comprehension/voluntary replay, subjective readability of the new art on real phones, sustained low-end device performance, production runtime integration, unrelated Tactical Ops suites.
 
-Reported human Chrome playtest of the previous build confirmed movement, dodging, automatic attacks, HP and defeat: attempt 1 lost at 16 s with 78/96 boss HP; attempt 2 lost at 70 s with 13/96 boss HP. Repetition motivated this escalation pass. Those results do not validate the updated balance. At 70 s, 13 remaining HP already exceeds the hits available in the last five seconds even before dodging; escalation may further punish missed counterattacks. Another human playtest must assess the late-fight pressure and practical win rate.
+**BLOCKED for future integration:** authoritative backend Blood Moon damage/stat/equipment formula and representative account combat payloads are not established by the inspected frontend. No production adapter or guessed formula is implemented. Player level/equipment/combat stats and authoritative enemy HP integration remain required before production rollout. This does not block local P1 review.
 
-Physical Android/iPhone and human playtesting of this escalation build: **NOT TESTED**. Four-person comprehension and voluntary replay thresholds remain unverified. Schematic silhouettes, no audio, no production progression/rewards or backend integration. New recordings use version 2; version 1 recordings retain their original pacing and rotation. No production runtime or routing changed; unrelated Tactical Ops suites were not run. Existing player level, equipment, combat stats and enemy HP integration is mandatory before production rollout and remains out of scope here. Keep PR #179 Draft for another human playtest; no merge or deployment.
+No merge, deployment, new bosses, rewards, economy, auth/wallet, attempts or cooldown-system changes. Version-1/2 recordings retain original tuning; version 3 includes the resolved parameter snapshot.
