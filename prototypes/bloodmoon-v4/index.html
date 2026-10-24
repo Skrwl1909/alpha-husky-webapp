@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Blood Moon · Last Stand P0</title><link rel="stylesheet" href="last-stand.css"></head>
+<body><main><header><small>ALPHA HUSKY · ISOLATED P0</small><h1>BLOOD MOON <span>LAST STAND</span></h1></header>
+<section class="hud"><label>HOWLER <meter id="player-hp" min="0" max="3" value="3"></meter><b id="player-value">3 / 3</b></label><label>TOWER HUSK <meter id="boss-hp" min="0" max="96" value="96"></meter><b id="boss-value">96 / 96</b></label></section>
+<p id="status" role="status">Drag to move. Release to strike within the ring.</p>
+<div id="stage"><canvas id="arena" width="360" height="540" aria-label="Boss fight arena. Drag with one finger to move; release to attack."></canvas><div id="overlay"><h2 id="result">Read. Dodge. Counter.</h2><p id="summary">Move out of marked shapes. Stop near the Husk to strike. Three hits end your run.</p><button id="start">Start encounter</button></div></div>
+<p class="hint">Drag anywhere in the arena · Release to attack<br>LINE: sidestep · CIRCLE: leave the ring · CONE: cross an edge</p>
+<footer><button id="restart">Restart</button><button id="replay" disabled>Replay inputs</button><button id="export">Export log</button><label><input id="lite" type="checkbox"> Reduced motion</label></footer><details><summary>Combat events</summary><pre id="events"></pre></details>
+</main><script type="module" src="last-stand.js"></script></body></html>
