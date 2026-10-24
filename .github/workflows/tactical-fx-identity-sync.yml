@@ -1,0 +1,33 @@
+name: Tactical FX Identity P2 — isolated build sync
+on:
+  push:
+    branches:
+      - polish/tactical-action-fx-identity-p2-20261024
+permissions:
+  contents: write
+jobs:
+  fx-bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_combat_fx_readability.mjs
+      - run: node tools/verify_tactical_combat_fx_identity.mjs
+      - run: node tools/verify_tactical_combat_fx.mjs
+      - run: npm run build:tactical-ops
+      - name: Commit built frontend bundle to the isolated branch
+        run: |
+          if git diff --quiet -- js/tactical_ops.js js/boot_loaders.js; then
+            echo "Bundle already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tactical_ops.js js/boot_loaders.js
+          git commit -m "build(tactical): sync 3.5.9 FX identity production bundle"
+          git push origin HEAD:polish/tactical-action-fx-identity-p2-20261024
