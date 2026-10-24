@@ -1,0 +1,516 @@
+{
+  "source": "owner-designated working backend, not verified deployed VPS",
+  "files": {
+    "stats.py": {
+      "workingFileSha256": "57f3ec525117728b1c4ddd983cdb87fe52ac7aa46c6ca9629f2a325a920986b5",
+      "excerpts": [
+        {
+          "name": "STAT_KEYS",
+          "lines": [
+            13,
+            13
+          ],
+          "sha256": "db9db8677f03c1c5d5e6d9660bad6e5f2931e272dc91899a741b3c5e30d79517"
+        },
+        {
+          "name": "SHORT_OF",
+          "lines": [
+            14,
+            17
+          ],
+          "sha256": "bda5835c0a706acc7034704acf2888c62c347c80837d6afab8cd17e95cb5e03c"
+        },
+        {
+          "name": "LONG_OF",
+          "lines": [
+            18,
+            18
+          ],
+          "sha256": "daff6f162eedd6f03772f8234b39be114fb7a99002e8aa46e7f15189281e4612"
+        },
+        {
+          "name": "norm_stats",
+          "lines": [
+            20,
+            26
+          ],
+          "sha256": "d8c29746ad8a592fe956b204c3442a355a544f45782b6e4da8d451b960abed58"
+        },
+        {
+          "name": "add_stats",
+          "lines": [
+            28,
+            29
+          ],
+          "sha256": "4fa27b9b9db970d930225fad05a2194996651d18cab55c8840dca6cac0403ed7"
+        },
+        {
+          "name": "get_active_pet",
+          "lines": [
+            31,
+            40
+          ],
+          "sha256": "365178cb406d0c6d52a4b7cc0937bc8d58476972e5f710f74f01699987ec6920"
+        },
+        {
+          "name": "get_equipment_bonus_long",
+          "lines": [
+            42,
+            45
+          ],
+          "sha256": "46133beb44e3b8aef84bd62540d83ca65616cae9c8e7a96c323a6a999ab3d956"
+        },
+        {
+          "name": "get_set_bonuses_long",
+          "lines": [
+            47,
+            55
+          ],
+          "sha256": "cfc4ba81efed45bc160850695f0b9af205b30f287d176218d2e5e43d95d19890"
+        },
+        {
+          "name": "compute_full_stats",
+          "lines": [
+            57,
+            76
+          ],
+          "sha256": "374d25fbd0f18a71a815e2c94b3facd0f8ec4d660686a4fc833bbbb1fd81f689"
+        }
+      ],
+      "exportSha256": "5b44dd809fe382cdc4c3664b0d8798cba013dd1ca8705a25a859647a195a1cd3",
+      "snapshot": "ALPHA_BACKEND_AI.zip",
+      "snapshotSameBytes": true
+    },
+    "stats_core.py": {
+      "workingFileSha256": "9aaddbe391a235067bb707b158cac83deaa84021f41b63b86e55334437d933df",
+      "excerpts": [
+        {
+          "name": "STAT_KEYS",
+          "lines": [
+            18,
+            18
+          ],
+          "sha256": "127328e0fa1c6f40b68e2a745ae044092f956e9b6aa0a2e9868f9dc122497451"
+        },
+        {
+          "name": "FRESH_PLAYER_DEFAULT_STATS",
+          "lines": [
+            24,
+            31
+          ],
+          "sha256": "825eeb6b9a31765ec228cbf8ab28677fad840c249db2ecd55462026ab499b646"
+        },
+        {
+          "name": "SHORT_OF",
+          "lines": [
+            42,
+            49
+          ],
+          "sha256": "614eff144ad1ffe05ac22c2699896e05987758bdb1731047f51bfea7b8805e30"
+        },
+        {
+          "name": "LONG_OF",
+          "lines": [
+            50,
+            50
+          ],
+          "sha256": "5eedcbeaf002b54f45cd3146446c494b82823f4162b469f5a9ce80fd619e4716"
+        },
+        {
+          "name": "norm_stats",
+          "lines": [
+            53,
+            67
+          ],
+          "sha256": "463ee502d2f441774a957051b1091efb80c6bf7ac84b0ca67457d292eeae6c55"
+        },
+        {
+          "name": "_safe_int",
+          "lines": [
+            70,
+            74
+          ],
+          "sha256": "8fdac35e304ae3dbea51c843b250858dfc2d9331f85cd0f61da4d8282e7b117d"
+        },
+        {
+          "name": "add_stats",
+          "lines": [
+            149,
+            152
+          ],
+          "sha256": "8215d1f8cce908fb241ae5ab1dd3d4b127cf488d568cb0fe6e96814839741cf5"
+        },
+        {
+          "name": "get_active_pet_id",
+          "lines": [
+            155,
+            163
+          ],
+          "sha256": "cdd4225c6d76756747864e3f059332f4cd9240ec8fbf69924ac851ea79ea0170"
+        },
+        {
+          "name": "get_active_pet",
+          "lines": [
+            166,
+            174
+          ],
+          "sha256": "1d8cafc9c0c07efb214148bebe57d9de2f6dd65803d42746599fc463c4b53a89"
+        },
+        {
+          "name": "get_equipment_bonus_long",
+          "lines": [
+            177,
+            179
+          ],
+          "sha256": "a1aded8e334e20158c934a088365551714db1deb76531649f8c348597562d2b9"
+        },
+        {
+          "name": "get_set_bonuses_long",
+          "lines": [
+            182,
+            192
+          ],
+          "sha256": "b53cedef70d30243e2e61d6c754d1bf9eb53ab950c46e2e6778cab527ab839cb"
+        },
+        {
+          "name": "compute_full_stats",
+          "lines": [
+            195,
+            216
+          ],
+          "sha256": "1041f9758e05955a078c4a9232704c6fe6a1fd2d94abf541e211e209eb24d3ee"
+        }
+      ],
+      "exportSha256": "fa8a0503524d1d410c54fe5df804a86887fec36047ac714c6da41a110afff9ae",
+      "snapshot": "ALPHA_BACKEND_AI.zip",
+      "snapshotSameBytes": true
+    },
+    "equipment.py": {
+      "workingFileSha256": "68bb86675e70be2d2792186cde90b69aeff49f86f0293eb317a24935fd8d6d96",
+      "excerpts": [
+        {
+          "name": "SET_BONUSES",
+          "lines": [
+            37,
+            136
+          ],
+          "sha256": "080519b3c2de3f27b45f8c7994490681e251748c23ba918d744f75df793bcc4f"
+        },
+        {
+          "name": "EQUIPMENT_SLOTS",
+          "lines": [
+            140,
+            151
+          ],
+          "sha256": "04ece7bf62597e44d770f9fd5a56318eb50ecdf049aa542a6ded0bc219dfe8ab"
+        },
+        {
+          "name": "ensure_equipment_data",
+          "lines": [
+            677,
+            689
+          ],
+          "sha256": "b18d4ec8bbc587aab3140506fd26d954215fc38999e728932347b40982b2f839"
+        },
+        {
+          "name": "get_item_effective_bonus",
+          "lines": [
+            691,
+            701
+          ],
+          "sha256": "dd88b3815e37120a132083ec466dba16cc386d9467e243247b989b1d32349046"
+        },
+        {
+          "name": "ALIASES_EQ",
+          "lines": [
+            808,
+            811
+          ],
+          "sha256": "bb7a0d0eb4f754374f635a45f8c9c5559bb7103b686dda7141ca968bbcfb28e7"
+        },
+        {
+          "name": "_mirror_keys_eq",
+          "lines": [
+            848,
+            855
+          ],
+          "sha256": "0f859fd13e8c7bd4fbcadafa9b012699fe3e9078480237ecfe76c000d73cb2f0"
+        },
+        {
+          "name": "get_total_equipment_bonus",
+          "lines": [
+            981,
+            1030
+          ],
+          "sha256": "4551c77811adb6178aabff840acec30de3c2026431f7c6c42dba6ffdfad2579f"
+        },
+        {
+          "name": "get_active_set_bonuses",
+          "lines": [
+            1032,
+            1060
+          ],
+          "sha256": "30783791eee80ecd7d66064b49b27d43fd7e72dcff1c8fbe20847429d22d2d57"
+        }
+      ],
+      "exportSha256": "e8fb40e66b07a709d4b2ec18d7c071756b29e72c21c17f778c2473a5658dabae",
+      "snapshot": "ALPHA_BACKEND_AI.zip",
+      "snapshotSameBytes": true
+    },
+    "pets.py": {
+      "workingFileSha256": "434d9523681344155a1d71230d26f583051d7e227b8a80555ca1cd595cee44a1",
+      "excerpts": [
+        {
+          "name": "PET_STAT_KEYS_LONG",
+          "lines": [
+            1199,
+            1199
+          ],
+          "sha256": "6171022f092a7c076a8e4a36aa7e9854dfab9cd235701b92083a6abf17bbffcb"
+        },
+        {
+          "name": "compute_pet_effective_stats",
+          "lines": [
+            1315,
+            1383
+          ],
+          "sha256": "2fd6ccf5e037b38446df7fa9c71108e2a4e07c1608f8a0124a2e4d6d50c9a858"
+        }
+      ],
+      "exportSha256": "daf409edf207a064eca1ebff9b1bb7a7c02050819334cca88275eb0aa7d19b6f",
+      "snapshot": "ALPHA_BACKEND_AI.zip",
+      "snapshotSameBytes": true
+    },
+    "bloodmoon_core.py": {
+      "workingFileSha256": "5ab3ccf64765fdb9962107002160b89e0da47e9fc4e5bffdbf6dbe73c1ca0b82",
+      "excerpts": [
+        {
+          "name": "_safe_int",
+          "lines": [
+            142,
+            146
+          ],
+          "sha256": "6e22d35277cb7707f3c8a2572dde26d22f7e600475108a19cc74fe58374b56d5"
+        },
+        {
+          "name": "_default_wave_hp",
+          "lines": [
+            417,
+            420
+          ],
+          "sha256": "715fd6514de8cd171e5ad5e3487b88360be8b06cf3e00224d7624fc6882f2fe0"
+        },
+        {
+          "name": "_default_wave",
+          "lines": [
+            423,
+            431
+          ],
+          "sha256": "dbd7dbcc7f2d7bef0382bf684f8bb4e047d9b14028738ab2083fdc48cf004ed7"
+        },
+        {
+          "name": "_extract_totals_from_user",
+          "lines": [
+            1781,
+            1822
+          ],
+          "sha256": "04fa16834e82bd0ba924580d63d0cc1454651e88290f95d0532db603a1bacf85"
+        },
+        {
+          "name": "_bloodmoon_player_hp_max",
+          "lines": [
+            1874,
+            1877
+          ],
+          "sha256": "e489ebbee382de24e2273ec3d6ca1f7a0643442a4dfdde5109d3d0a7b273e4cb"
+        },
+        {
+          "name": "bloodmoon_roll_damage",
+          "lines": [
+            2093,
+            2120
+          ],
+          "sha256": "d5f69f200e28de8314b3f527216c40c19ec3f1b8dc5876d920fd8e17ae342811"
+        }
+      ],
+      "exportSha256": "0388c4e3e1620c430934d68325daa72de6e3ba988b9f301c60a998e9e2c10081",
+      "snapshot": "ALPHA_BACKEND_AI.zip",
+      "snapshotSameBytes": true
+    },
+    "combat.py": {
+      "workingFileSha256": "eea922e1f3e17ec4dc264d192e09160335fcb325cac8d16f22d6e1d1f7721889",
+      "excerpts": [
+        {
+          "name": "CFG",
+          "lines": [
+            10,
+            19
+          ],
+          "sha256": "605886b620599d705c1acca5dd1b7cf4b0e0f838935b4dcea6a321f102ae25eb"
+        },
+        {
+          "name": "_clamp",
+          "lines": [
+            21,
+            21
+          ],
+          "sha256": "aae9b5221c680b5cfbcfcfe9917d3d78ebb0fa021faa6197bcbe5dd4dd44da85"
+        },
+        {
+          "name": "_pick",
+          "lines": [
+            23,
+            27
+          ],
+          "sha256": "824df78c58da222c8c7ca7369f65d2828a04444fe61327ed8c93a243a27f0136"
+        },
+        {
+          "name": "compute_player_max_hp",
+          "lines": [
+            29,
+            32
+          ],
+          "sha256": "5800a68fd75cf6406e4d9d8480e594245ea6a845a44ad15e32adb4129da80d52"
+        },
+        {
+          "name": "player_from_totals",
+          "lines": [
+            34,
+            71
+          ],
+          "sha256": "68e25fbdc607f16eb59445d6c23782355518a59e4ad57aba10ad9d4c3a510cdd"
+        }
+      ],
+      "exportSha256": "db7e157c19478e0ac27a35e22b0ddf03b6dc7dc82cdefdfd0d24a479850c7773",
+      "snapshot": "ALPHA_BACKEND_AI.zip",
+      "snapshotSameBytes": true
+    }
+  },
+  "unsupported": [
+    "active pets",
+    "prepared attempts",
+    "production rewards/attempt mutations"
+  ],
+  "catalog": {
+    "keys": [
+      "rustfang_blade",
+      "rustfang_armor",
+      "frostborn_armor"
+    ],
+    "source": "all_items.json, game definitions only",
+    "sha256": "bd7dd3cd1d646bbe33dee155445551ee361baeb863a899bf29bb6528b39caa12"
+  },
+  "auditOnly": {
+    "webapp_bloodmoon.py": {
+      "workingFileSha256": "bf481347dd3e82ef3851a177adc6b36633e269514154476f2eb96ec34d02113c",
+      "functions": [
+        {
+          "name": "_auth_uid",
+          "lines": [
+            80,
+            95
+          ]
+        },
+        {
+          "name": "_require_uid",
+          "lines": [
+            98,
+            111
+          ]
+        },
+        {
+          "name": "bloodmoon_state_handler",
+          "lines": [
+            114,
+            163
+          ]
+        },
+        {
+          "name": "bloodmoon_attack_handler",
+          "lines": [
+            166,
+            202
+          ]
+        }
+      ]
+    },
+    "bloodmoon_transactions.py": {
+      "workingFileSha256": "2eee04856b8fc36ca9fe7dea9323c7c805aa62eaf8803a1536f76a2215adfff4",
+      "functions": [
+        {
+          "name": "production",
+          "lines": [
+            153,
+            155
+          ]
+        },
+        {
+          "name": "production",
+          "lines": [
+            175,
+            176
+          ]
+        },
+        {
+          "name": "_command_key",
+          "lines": [
+            183,
+            185
+          ]
+        },
+        {
+          "name": "_locks",
+          "lines": [
+            194,
+            201
+          ]
+        },
+        {
+          "name": "_recover_locked",
+          "lines": [
+            228,
+            264
+          ]
+        },
+        {
+          "name": "execute",
+          "lines": [
+            291,
+            389
+          ]
+        }
+      ]
+    },
+    "alpha_den.py": {
+      "workingFileSha256": "955b8eba3d20001d409dc2dda0a07e1433e671f09c79829252f4f0d0a9b7d621",
+      "functions": [
+        {
+          "name": "apply_war_room_prepared_attempt_damage_bonus",
+          "lines": [
+            1785,
+            1798
+          ]
+        },
+        {
+          "name": "consume_war_room_prepared_attempt",
+          "lines": [
+            1801,
+            1825
+          ]
+        }
+      ]
+    },
+    "data_store.py": {
+      "workingFileSha256": "86c82351d6ba45c0211bc057425e47a361686352cf4344b3c7cf22fd80be11a0",
+      "functions": [
+        {
+          "name": "strict_user_state_path",
+          "lines": [
+            1082,
+            1089
+          ]
+        }
+      ]
+    }
+  }
+}

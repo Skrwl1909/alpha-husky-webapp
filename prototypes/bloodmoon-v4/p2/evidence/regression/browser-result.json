@@ -1,0 +1,71 @@
+{
+  "viewport": {
+    "width": 360,
+    "height": 740
+  },
+  "status": "PASS",
+  "victoryTime": 60.766666666666666,
+  "playerHP": 3,
+  "bossHP": 0,
+  "reactionDelay": 0.25,
+  "dodgeMargin": 34,
+  "escalationEvents": [
+    {
+      "tick": 1800,
+      "type": "escalation",
+      "pressure": 1,
+      "recovery": 0.55
+    },
+    {
+      "tick": 3000,
+      "type": "escalation",
+      "pressure": 2,
+      "recovery": 0.48
+    }
+  ],
+  "notices": [
+    1,
+    2
+  ],
+  "expiredNotices": [
+    1,
+    2
+  ],
+  "shapes": [
+    "CONE",
+    "LINE",
+    "CIRCLE"
+  ],
+  "bossStates": [
+    "idle",
+    "hit",
+    "attack",
+    "defeat"
+  ],
+  "productionAssetsLoaded": 10,
+  "layoutViewports": [
+    [
+      320,
+      568
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      360,
+      740
+    ]
+  ],
+  "optionalFallback": "PASS",
+  "essentialFailure": "PASS",
+  "externalApiRequests": 0,
+  "gameplayRecording": "gameplay.webm",
+  "recordedVideo": {
+    "width": 360,
+    "height": 540,
+    "readyState": 4
+  },
+  "exceptions": [],
+  "physicalDeviceTested": false
+}

@@ -1,0 +1,181 @@
+test_invalid_unreachable_and_unsupported_inputs_fail_closed (__main__.SourceResolverTests.test_invalid_unreachable_and_unsupported_inputs_fail_closed) ... ok
+test_level_hp_and_unsupported_defense_are_separated (__main__.SourceResolverTests.test_level_hp_and_unsupported_defense_are_separated) ... ok
+test_observed_v3_casing_fault_is_not_hidden (__main__.SourceResolverTests.test_observed_v3_casing_fault_is_not_hidden) ... ok
+test_real_resolver_totals_and_equipment_upgrades_without_caller_mutation (__main__.SourceResolverTests.test_real_resolver_totals_and_equipment_upgrades_without_caller_mutation) ... ok
+test_source_integrity_and_no_module_side_effects (__main__.SourceResolverTests.test_source_integrity_and_no_module_side_effects) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.070s
+
+OK
+TAP version 13
+baseline: won, 59.65s, 96 hits, 170 HP, idle lost at 5.90s
+progressed: won, 37.37s, 60 hits, 278 HP, idle lost at 9.92s
+# Subtest: actual Python source resolver -> server snapshots -> both deterministic playable encounters, no credit
+ok 1 - actual Python source resolver -> server snapshots -> both deterministic playable encounters, no credit
+  ---
+  duration_ms: 1386.3735
+  ...
+# Subtest: tampered public snapshots/claims cannot change server parameters, seed or result
+ok 2 - tampered public snapshots/claims cannot change server parameters, seed or result
+  ---
+  duration_ms: 65.1981
+  ...
+# Subtest: invalid trace, impossible timing, incomplete and padded results fail without any awards
+ok 3 - invalid trace, impossible timing, incomplete and padded results fail without any awards
+  ---
+  duration_ms: 37.9955
+  ...
+# Subtest: simultaneous identical submissions commit one validation receipt; conflicting duplicate is rejected
+ok 4 - simultaneous identical submissions commit one validation receipt; conflicting duplicate is rejected
+  ---
+  duration_ms: 85.6259
+  ...
+# Subtest: disconnect expiry, concurrent issuance, stale raid and partial shared HP are handled without consuming attempts
+ok 5 - disconnect expiry, concurrent issuance, stale raid and partial shared HP are handled without consuming attempts
+  ---
+  duration_ms: 38.5247
+  ...
+# Subtest: two concurrent participants and mid-run profile changes cannot mutate shared raid HP or frozen snapshots
+ok 6 - two concurrent participants and mid-run profile changes cannot mutate shared raid HP or frozen snapshots
+  ---
+  duration_ms: 47.2978
+  ...
+# Subtest: valid defeat is recorded as defeat, never promoted to victory or rewarded
+ok 7 - valid defeat is recorded as defeat, never promoted to victory or rewarded
+  ---
+  duration_ms: 2.6116
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1723.7327
+TAP version 13
+V1: 58.52s, 3 HP, 184 events preserved
+V2: 60.23s, 3 HP, 192 events preserved
+V3: 60.30s, 3 HP, 192 events preserved
+# Subtest: historical real V1/V2/V3 recordings retain exact timing, damage, movement and outcome
+ok 1 - historical real V1/V2/V3 recordings retain exact timing, damage, movement and outcome
+  ---
+  duration_ms: 74.1358
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 90.3574
+Dodge/counter: 56.18s, 3 HP, 29 attacks, 3371 ticks; replay identical
+250ms reaction, margin 34, seed 1909, mistakes 0: 59.65s, 3 HP; baseline 59.78s
+250ms reaction, margin 34, seed 1909, mistakes 2: 57.98s, 1 HP; baseline 59.78s
+250ms reaction, margin 34, seed 1, mistakes 0: 59.93s, 3 HP; baseline 60.40s
+250ms reaction, margin 34, seed 1, mistakes 2: 58.60s, 1 HP; baseline 60.40s
+250ms reaction, margin 34, seed 42, mistakes 0: 58.27s, 3 HP; baseline 57.00s
+250ms reaction, margin 34, seed 42, mistakes 2: 57.78s, 1 HP; baseline 57.00s
+250ms reaction, margin 34, seed 2026, mistakes 0: 58.45s, 3 HP; baseline 57.72s
+250ms reaction, margin 34, seed 2026, mistakes 2: 57.97s, 1 HP; baseline 57.72s
+TAP version 13
+# Subtest: movement clamps bounds and input intent prevents attacks; release respects delay, range and cooldown
+ok 1 - movement clamps bounds and input intent prevents attacks; release respects delay, range and cooldown
+  ---
+  duration_ms: 4.3278
+  ...
+# Subtest: line, circle and cone include player radius and exclude safe positions
+ok 2 - line, circle and cone include player radius and exclude safe positions
+  ---
+  duration_ms: 0.7622
+  ...
+# Subtest: all hazards lock at telegraph; damage occurs only during impact, once per attack
+ok 3 - all hazards lock at telegraph; damage occurs only during impact, once per attack
+  ---
+  duration_ms: 6.7184
+  ...
+# Subtest: stationary loses, timeout loses, fresh restart resets all state
+ok 4 - stationary loses, timeout loses, fresh restart resets all state
+  ---
+  duration_ms: 1.6057
+  ...
+# Subtest: each telegraph has a reachable safe point; dodge-and-counter wins in 45–75s; trace replays identically
+ok 5 - each telegraph has a reachable safe point; dodge-and-counter wins in 45–75s; trace replays identically
+  ---
+  duration_ms: 52.6824
+  ...
+# Subtest: escalates exactly at 30/50s without truncating active phases; recovery is 650/550/480ms
+ok 6 - escalates exactly at 30/50s without truncating active phases; recovery is 650/550/480ms
+  ---
+  duration_ms: 0.7881
+  ...
+# Subtest: opening rotation and warning durations stay intact; seeded bags vary order without repeats or missing hazards
+ok 7 - opening rotation and warning durations stay intact; seeded bags vary order without repeats or missing hazards
+  ---
+  duration_ms: 2.0172
+  ...
+# Subtest: all three hazards retain reachable safe zones, locked hitboxes and single impact damage at every pressure tier
+ok 8 - all three hazards retain reachable safe zones, locked hitboxes and single impact damage at every pressure tier
+  ---
+  duration_ms: 7.6719
+  ...
+# Subtest: delayed reaction and wider dodges retain survival and enough damage; two early mistakes remain recoverable
+ok 9 - delayed reaction and wider dodges retain survival and enough damage; two early mistakes remain recoverable
+  ---
+  duration_ms: 187.1761
+  ...
+# Subtest: version 1 recordings retain their original pacing and serialized replays remain deterministic
+ok 10 - version 1 recordings retain their original pacing and serialized replays remain deterministic
+  ---
+  duration_ms: 19.5656
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 327.5733
+TAP version 13
+# Subtest: every referenced art file exists in the original repository; all four Husk states are included
+ok 1 - every referenced art file exists in the original repository; all four Husk states are included
+  ---
+  duration_ms: 12.7813
+  ...
+# Subtest: asset loader succeeds, optional state falls back to original idle, essential failure blocks play and timeout terminates
+ok 2 - asset loader succeeds, optional state falls back to original idle, essential failure blocks play and timeout terminates
+  ---
+  duration_ms: 10.0122
+  ...
+# Subtest: actual combat states drive boss art; directional frame selection follows the existing sprite metadata
+ok 3 - actual combat states drive boss art; directional frame selection follows the existing sprite metadata
+  ---
+  duration_ms: 4.3787
+  ...
+# Subtest: resolved combat contract validates finite positive values, isolates fixtures, and fixes enemy HP independently of damage
+ok 4 - resolved combat contract validates finite positive values, isolates fixtures, and fixes enemy HP independently of damage
+  ---
+  duration_ms: 3.2348
+  ...
+standard: 60.30s, 96 hits, damage 1, fixed boss 96 HP
+stronger: 50.20s, 80 hits, damage 1.2, fixed boss 96 HP
+# Subtest: same real input trace gives meaningful damage progression, fixed 96 HP, and deterministic parameterized replay
+ok 5 - same real input trace gives meaningful damage progression, fixed 96 HP, and deterministic parameterized replay
+  ---
+  duration_ms: 46.408
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 98.3095

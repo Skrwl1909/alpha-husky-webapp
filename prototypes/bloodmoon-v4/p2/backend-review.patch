@@ -1,0 +1,1433 @@
+--- /dev/null
++++ b/bloodmoon_v4_p2/resolver.py
+@@ -0,0 +1,99 @@
++"""Isolated execution of audited source excerpts, never production imports/I/O.
++
++The casing bridge, strike divisor and incoming hazard damage are PROPOSED P2
++choices. The observed V3 path is reported separately and retained unchanged.
++"""
++import builtins
++from copy import deepcopy
++import json
++from pathlib import Path
++import random
++from types import SimpleNamespace
++
++HERE=Path(__file__).resolve().parent
++SOURCE=HERE/'verified_source'
++PROPOSED={'id':'p2-proposal-1','statBridge':'long keys to the uppercase Blood Moon interface','strikeDivisor':8,'hazardDamage':60,'defenseMitigation':'not applied: no Blood Moon retaliation rule verified'}
++
++def _load(filename,dependencies=None):
++    namespace={'__name__':'isolated_'+filename.replace('.py',''),**(dependencies or {})}
++    exec(compile((SOURCE/filename).read_text(encoding='utf-8'),str(SOURCE/filename),'exec'),namespace)
++    return namespace
++
++CATALOG=json.loads((SOURCE/'catalog.json').read_text(encoding='utf-8'))
++equipment=_load('equipment.py',{'ALL_ITEMS':deepcopy(CATALOG)})
++pets=_load('pets.py')
++dependencies={name:equipment[name] for name in ['get_total_equipment_bonus','get_active_set_bonuses']}
++dependencies['compute_pet_effective_stats']=pets['compute_pet_effective_stats']
++legacy=_load('stats.py',dependencies)
++canonical=_load('stats_core.py',dependencies)
++shared=_load('combat.py')
++
++def validate_user(user):
++    if not isinstance(user,dict) or type(user.get('level')) is not int or not 1<=user['level']<=1000: raise ValueError('Invalid synthetic character level')
++    for key,value in (user.get('stats') or {}).items():
++        if key not in canonical['STAT_KEYS'] or type(value) is not int or not 0<=value<=1_000_000: raise ValueError('Invalid allocated stat')
++    if user.get('active_pet_id') or user.get('active_pet') or (user.get('equipment') or {}).get('pet') or (user.get('equipped') or {}).get('pet'):
++        raise ValueError('Active-pet integration is not supported by this deliberately bounded source slice')
++    if user.get('alpha_den'):
++        raise ValueError('Prepared-attempt and other War Room modifiers are outside this bounded preview')
++    slots={row['slot']:row['level_req'] for row in equipment['EQUIPMENT_SLOTS']}
++    for slot,key in (user.get('equipment') or user.get('equipped') or {}).items():
++        if key not in CATALOG or CATALOG[key]['slot']!=slot or user['level']<slots.get(slot,1001): raise ValueError('Invalid or locked equipment slot')
++        data=(user.get('equipment_data') or {}).get(key)
++        if data:
++            level=data.get('level'); bonus=data.get('stat_bonus')
++            if type(level) is not int or not 1<=level<=5 or not isinstance(bonus,dict): raise ValueError('Invalid equipment snapshot')
++            base=CATALOG[key]['stat_bonus']
++            # Synthetic saved upgrades must be reachable through the inspected
++            # forge branch: each level adds one or two points to existing stats.
++            if set(bonus)!=set(base) or any(type(v) is not int or v<base[k] for k,v in bonus.items()): raise ValueError('Invalid equipment bonuses')
++            gain=sum(bonus.values())-sum(base.values())
++            if not level-1<=gain<=2*(level-1): raise ValueError('Unreachable synthetic upgrade')
++
++def resolve_user(user,seed=1909):
++    validate_user(user); untouched=deepcopy(user)
++    effective=canonical['compute_full_stats'](deepcopy(user))
++    legacy_effective=legacy['compute_full_stats'](deepcopy(user))
++    if effective['totals']!=legacy_effective['totals']: raise ValueError('Resolver paths disagree for supported fixture')
++    def roll(bridge):
++        def stats_resolution(value):
++            full=legacy['compute_full_stats'](deepcopy(value))
++            if bridge:
++                aliases={'strength':'STR','agility':'AGI','intelligence':'INT','vitality':'VIT','luck':'LUCK'}
++                full={**full,'totals':{out:full['totals'][key] for key,out in aliases.items()}}
++            return full
++        def isolated_import(name,globals=None,locals=None,fromlist=(),level=0):
++            if name=='stats': return SimpleNamespace(compute_full_stats=stats_resolution)
++            if name in ('typing','__future__'): return builtins.__import__(name,globals,locals,fromlist,level)
++            raise ImportError('Production imports prohibited: '+name)
++        bm=_load('bloodmoon_core.py',{'random':random.Random(seed),'__builtins__':{**vars(builtins),'__import__':isolated_import}})
++        result=bm['bloodmoon_roll_damage'](deepcopy(user))
++        return result,bm['_bloodmoon_player_hp_max'](result['totals']),bm['_default_wave'](1,True)
++    observed,observed_hp,wave=roll(False)
++    proposed,player_hp,_=roll(True)
++    if user!=untouched: raise AssertionError('Source resolver mutated caller input')
++    return {'input':untouched,'effective':effective,'sharedCombatInformationalOnly':shared['player_from_totals'](effective['totals']),
++            'observedV3':{**observed,'playerHP':observed_hp},'bridgedRoll':proposed,'proposal':deepcopy(PROPOSED),'wave':wave,
++            'parameters':{'version':1,'provenance':'resolved-input','player':{'maxHP':player_hp,'damagePerHit':proposed['damage']/PROPOSED['strikeDivisor']},'enemy':{'id':'tower_husk','maxHP':wave['hpMax'],'damagePerHit':PROPOSED['hazardDamage']}}}
++
++def fixture_users():
++    baseline={'level':10,'stats':{'strength':10,'agility':5,'defense':4,'vitality':10,'luck':2,'intelligence':2},'stat_points':0,'equipment':{'weapon':'rustfang_blade','armor':'rustfang_armor'},'pets':{}}
++    progressed={'level':20,'stats':{'strength':20,'agility':10,'defense':8,'vitality':16,'luck':5,'intelligence':5},'stat_points':0,'equipment':{'weapon':'rustfang_blade','armor':'frostborn_armor'},'pets':{},
++                'equipment_data':{'rustfang_blade':{'level':3,'stat_bonus':{'strength':4}},'frostborn_armor':{'level':3,'stat_bonus':{**CATALOG['frostborn_armor']['stat_bonus'],'vitality':3}}}}
++    return {'baseline':baseline,'progressed':progressed}
++
++def export_scenarios():
++    output={key:resolve_user(user) for key,user in fixture_users().items()}
++    for key,scenario in output.items():
++        scenario['label']='Backend-resolved synthetic '+key+' (P2 proposal)'
++        print(key,json.dumps({'totals':scenario['effective']['totals'],'observedV3':scenario['observedV3'],'bridgedRoll':scenario['bridgedRoll'],'parameters':scenario['parameters']},sort_keys=True))
++    (HERE/'scenarios.js').write_text('// Generated by resolver.py from audited source and synthetic inputs. Not account data.\nexport const P2_SCENARIOS = '+json.dumps(output,indent=2)+';\n',encoding='utf-8')
++    return output
++
++if __name__=='__main__':
++    import sys
++    if len(sys.argv)==3 and sys.argv[1]=='--json':
++        key=sys.argv[2]
++        if key not in fixture_users(): raise SystemExit('Unknown synthetic profile')
++        print(json.dumps(resolve_user(fixture_users()[key]),sort_keys=True))
++    else: export_scenarios()
+--- /dev/null
++++ b/bloodmoon_v4_p2/resolver_test.py
+@@ -0,0 +1,59 @@
++import ast
++from copy import deepcopy
++import hashlib
++import json
++from pathlib import Path
++import unittest
++from resolver import HERE, SOURCE, CATALOG, fixture_users, resolve_user, equipment
++
++class SourceResolverTests(unittest.TestCase):
++    def test_source_integrity_and_no_module_side_effects(self):
++        manifest=json.loads((HERE/'source-manifest.json').read_text(encoding='utf-8'))
++        for filename,entry in manifest['files'].items():
++            data=(SOURCE/filename).read_bytes();self.assertEqual(hashlib.sha256(data).hexdigest(),entry['exportSha256'])
++            tree=ast.parse(data.decode());self.assertTrue(all(isinstance(n,(ast.ImportFrom,ast.Assign,ast.FunctionDef)) for n in tree.body))
++            self.assertTrue(entry['snapshotSameBytes'])
++        self.assertEqual(set(CATALOG),{'rustfang_blade','rustfang_armor','frostborn_armor'})
++
++    def test_real_resolver_totals_and_equipment_upgrades_without_caller_mutation(self):
++        users=fixture_users(); original=deepcopy(users)
++        a,b=(resolve_user(users[k]) for k in ('baseline','progressed'))
++        self.assertEqual(users,original)
++        self.assertEqual(a['effective']['gear']['strength'],2)
++        self.assertEqual(a['effective']['totals']['strength'],12)
++        self.assertEqual(b['effective']['gear']['strength'],7)
++        self.assertEqual(b['effective']['totals']['vitality'],19)
++        isolated=deepcopy(users['baseline']);isolated['equipment_data']={'rustfang_blade':{'level':3,'stat_bonus':{'strength':4}}}
++        upgraded=resolve_user(isolated)
++        self.assertGreater(upgraded['parameters']['player']['damagePerHit'],a['parameters']['player']['damagePerHit'])
++        self.assertEqual(upgraded['wave'],a['wave'])
++
++    def test_observed_v3_casing_fault_is_not_hidden(self):
++        user=fixture_users()['baseline'];a=resolve_user(user);user['stats']['strength']+=100;b=resolve_user(user)
++        self.assertEqual(a['observedV3']['totals']['STR'],0)
++        self.assertEqual(a['observedV3']['damage'],b['observedV3']['damage'])
++        self.assertGreater(b['bridgedRoll']['damage'],a['bridgedRoll']['damage'])
++        self.assertEqual(a['observedV3']['playerHP'],50)
++
++    def test_level_hp_and_unsupported_defense_are_separated(self):
++        user=fixture_users()['baseline'];a=resolve_user(user)
++        higher=deepcopy(user);higher['level']+=5
++        self.assertGreater(resolve_user(higher)['bridgedRoll']['damage'],a['bridgedRoll']['damage'])
++        tank=deepcopy(user);tank['stats']['vitality']+=5
++        self.assertEqual(resolve_user(tank)['parameters']['player']['maxHP']-a['parameters']['player']['maxHP'],60)
++        defense=deepcopy(user);defense['stats']['defense']+=100
++        self.assertEqual(resolve_user(defense)['parameters'],a['parameters'])
++        self.assertEqual(a['parameters']['enemy']['maxHP'],1000)
++        self.assertEqual(resolve_user(higher)['parameters']['enemy']['maxHP'],1000)
++
++    def test_invalid_unreachable_and_unsupported_inputs_fail_closed(self):
++        user=fixture_users()['baseline']
++        for value in (-1,float('nan'),True,'10'):
++            bad=deepcopy(user);bad['stats']['strength']=value
++            with self.assertRaises(ValueError):resolve_user(bad)
++        bad=deepcopy(user);bad['equipment_data']={'rustfang_blade':{'level':2,'stat_bonus':{'strength':999}}}
++        with self.assertRaises(ValueError):resolve_user(bad)
++        bad=deepcopy(user);bad['active_pet_id']='unsupported'
++        with self.assertRaises(ValueError):resolve_user(bad)
++
++if __name__=='__main__':unittest.main(verbosity=2)
+--- /dev/null
++++ b/bloodmoon_v4_p2/source-manifest.json
+@@ -0,0 +1,516 @@
++{
++  "source": "owner-designated working backend, not verified deployed VPS",
++  "files": {
++    "stats.py": {
++      "workingFileSha256": "57f3ec525117728b1c4ddd983cdb87fe52ac7aa46c6ca9629f2a325a920986b5",
++      "excerpts": [
++        {
++          "name": "STAT_KEYS",
++          "lines": [
++            13,
++            13
++          ],
++          "sha256": "db9db8677f03c1c5d5e6d9660bad6e5f2931e272dc91899a741b3c5e30d79517"
++        },
++        {
++          "name": "SHORT_OF",
++          "lines": [
++            14,
++            17
++          ],
++          "sha256": "bda5835c0a706acc7034704acf2888c62c347c80837d6afab8cd17e95cb5e03c"
++        },
++        {
++          "name": "LONG_OF",
++          "lines": [
++            18,
++            18
++          ],
++          "sha256": "daff6f162eedd6f03772f8234b39be114fb7a99002e8aa46e7f15189281e4612"
++        },
++        {
++          "name": "norm_stats",
++          "lines": [
++            20,
++            26
++          ],
++          "sha256": "d8c29746ad8a592fe956b204c3442a355a544f45782b6e4da8d451b960abed58"
++        },
++        {
++          "name": "add_stats",
++          "lines": [
++            28,
++            29
++          ],
++          "sha256": "4fa27b9b9db970d930225fad05a2194996651d18cab55c8840dca6cac0403ed7"
++        },
++        {
++          "name": "get_active_pet",
++          "lines": [
++            31,
++            40
++          ],
++          "sha256": "365178cb406d0c6d52a4b7cc0937bc8d58476972e5f710f74f01699987ec6920"
++        },
++        {
++          "name": "get_equipment_bonus_long",
++          "lines": [
++            42,
++            45
++          ],
++          "sha256": "46133beb44e3b8aef84bd62540d83ca65616cae9c8e7a96c323a6a999ab3d956"
++        },
++        {
++          "name": "get_set_bonuses_long",
++          "lines": [
++            47,
++            55
++          ],
++          "sha256": "cfc4ba81efed45bc160850695f0b9af205b30f287d176218d2e5e43d95d19890"
++        },
++        {
++          "name": "compute_full_stats",
++          "lines": [
++            57,
++            76
++          ],
++          "sha256": "374d25fbd0f18a71a815e2c94b3facd0f8ec4d660686a4fc833bbbb1fd81f689"
++        }
++      ],
++      "exportSha256": "5b44dd809fe382cdc4c3664b0d8798cba013dd1ca8705a25a859647a195a1cd3",
++      "snapshot": "ALPHA_BACKEND_AI.zip",
++      "snapshotSameBytes": true
++    },
++    "stats_core.py": {
++      "workingFileSha256": "9aaddbe391a235067bb707b158cac83deaa84021f41b63b86e55334437d933df",
++      "excerpts": [
++        {
++          "name": "STAT_KEYS",
++          "lines": [
++            18,
++            18
++          ],
++          "sha256": "127328e0fa1c6f40b68e2a745ae044092f956e9b6aa0a2e9868f9dc122497451"
++        },
++        {
++          "name": "FRESH_PLAYER_DEFAULT_STATS",
++          "lines": [
++            24,
++            31
++          ],
++          "sha256": "825eeb6b9a31765ec228cbf8ab28677fad840c249db2ecd55462026ab499b646"
++        },
++        {
++          "name": "SHORT_OF",
++          "lines": [
++            42,
++            49
++          ],
++          "sha256": "614eff144ad1ffe05ac22c2699896e05987758bdb1731047f51bfea7b8805e30"
++        },
++        {
++          "name": "LONG_OF",
++          "lines": [
++            50,
++            50
++          ],
++          "sha256": "5eedcbeaf002b54f45cd3146446c494b82823f4162b469f5a9ce80fd619e4716"
++        },
++        {
++          "name": "norm_stats",
++          "lines": [
++            53,
++            67
++          ],
++          "sha256": "463ee502d2f441774a957051b1091efb80c6bf7ac84b0ca67457d292eeae6c55"
++        },
++        {
++          "name": "_safe_int",
++          "lines": [
++            70,
++            74
++          ],
++          "sha256": "8fdac35e304ae3dbea51c843b250858dfc2d9331f85cd0f61da4d8282e7b117d"
++        },
++        {
++          "name": "add_stats",
++          "lines": [
++            149,
++            152
++          ],
++          "sha256": "8215d1f8cce908fb241ae5ab1dd3d4b127cf488d568cb0fe6e96814839741cf5"
++        },
++        {
++          "name": "get_active_pet_id",
++          "lines": [
++            155,
++            163
++          ],
++          "sha256": "cdd4225c6d76756747864e3f059332f4cd9240ec8fbf69924ac851ea79ea0170"
++        },
++        {
++          "name": "get_active_pet",
++          "lines": [
++            166,
++            174
++          ],
++          "sha256": "1d8cafc9c0c07efb214148bebe57d9de2f6dd65803d42746599fc463c4b53a89"
++        },
++        {
++          "name": "get_equipment_bonus_long",
++          "lines": [
++            177,
++            179
++          ],
++          "sha256": "a1aded8e334e20158c934a088365551714db1deb76531649f8c348597562d2b9"
++        },
++        {
++          "name": "get_set_bonuses_long",
++          "lines": [
++            182,
++            192
++          ],
++          "sha256": "b53cedef70d30243e2e61d6c754d1bf9eb53ab950c46e2e6778cab527ab839cb"
++        },
++        {
++          "name": "compute_full_stats",
++          "lines": [
++            195,
++            216
++          ],
++          "sha256": "1041f9758e05955a078c4a9232704c6fe6a1fd2d94abf541e211e209eb24d3ee"
++        }
++      ],
++      "exportSha256": "fa8a0503524d1d410c54fe5df804a86887fec36047ac714c6da41a110afff9ae",
++      "snapshot": "ALPHA_BACKEND_AI.zip",
++      "snapshotSameBytes": true
++    },
++    "equipment.py": {
++      "workingFileSha256": "68bb86675e70be2d2792186cde90b69aeff49f86f0293eb317a24935fd8d6d96",
++      "excerpts": [
++        {
++          "name": "SET_BONUSES",
++          "lines": [
++            37,
++            136
++          ],
++          "sha256": "080519b3c2de3f27b45f8c7994490681e251748c23ba918d744f75df793bcc4f"
++        },
++        {
++          "name": "EQUIPMENT_SLOTS",
++          "lines": [
++            140,
++            151
++          ],
++          "sha256": "04ece7bf62597e44d770f9fd5a56318eb50ecdf049aa542a6ded0bc219dfe8ab"
++        },
++        {
++          "name": "ensure_equipment_data",
++          "lines": [
++            677,
++            689
++          ],
++          "sha256": "b18d4ec8bbc587aab3140506fd26d954215fc38999e728932347b40982b2f839"
++        },
++        {
++          "name": "get_item_effective_bonus",
++          "lines": [
++            691,
++            701
++          ],
++          "sha256": "dd88b3815e37120a132083ec466dba16cc386d9467e243247b989b1d32349046"
++        },
++        {
++          "name": "ALIASES_EQ",
++          "lines": [
++            808,
++            811
++          ],
++          "sha256": "bb7a0d0eb4f754374f635a45f8c9c5559bb7103b686dda7141ca968bbcfb28e7"
++        },
++        {
++          "name": "_mirror_keys_eq",
++          "lines": [
++            848,
++            855
++          ],
++          "sha256": "0f859fd13e8c7bd4fbcadafa9b012699fe3e9078480237ecfe76c000d73cb2f0"
++        },
++        {
++          "name": "get_total_equipment_bonus",
++          "lines": [
++            981,
++            1030
++          ],
++          "sha256": "4551c77811adb6178aabff840acec30de3c2026431f7c6c42dba6ffdfad2579f"
++        },
++        {
++          "name": "get_active_set_bonuses",
++          "lines": [
++            1032,
++            1060
++          ],
++          "sha256": "30783791eee80ecd7d66064b49b27d43fd7e72dcff1c8fbe20847429d22d2d57"
++        }
++      ],
++      "exportSha256": "e8fb40e66b07a709d4b2ec18d7c071756b29e72c21c17f778c2473a5658dabae",
++      "snapshot": "ALPHA_BACKEND_AI.zip",
++      "snapshotSameBytes": true
++    },
++    "pets.py": {
++      "workingFileSha256": "434d9523681344155a1d71230d26f583051d7e227b8a80555ca1cd595cee44a1",
++      "excerpts": [
++        {
++          "name": "PET_STAT_KEYS_LONG",
++          "lines": [
++            1199,
++            1199
++          ],
++          "sha256": "6171022f092a7c076a8e4a36aa7e9854dfab9cd235701b92083a6abf17bbffcb"
++        },
++        {
++          "name": "compute_pet_effective_stats",
++          "lines": [
++            1315,
++            1383
++          ],
++          "sha256": "2fd6ccf5e037b38446df7fa9c71108e2a4e07c1608f8a0124a2e4d6d50c9a858"
++        }
++      ],
++      "exportSha256": "daf409edf207a064eca1ebff9b1bb7a7c02050819334cca88275eb0aa7d19b6f",
++      "snapshot": "ALPHA_BACKEND_AI.zip",
++      "snapshotSameBytes": true
++    },
++    "bloodmoon_core.py": {
++      "workingFileSha256": "5ab3ccf64765fdb9962107002160b89e0da47e9fc4e5bffdbf6dbe73c1ca0b82",
++      "excerpts": [
++        {
++          "name": "_safe_int",
++          "lines": [
++            142,
++            146
++          ],
++          "sha256": "6e22d35277cb7707f3c8a2572dde26d22f7e600475108a19cc74fe58374b56d5"
++        },
++        {
++          "name": "_default_wave_hp",
++          "lines": [
++            417,
++            420
++          ],
++          "sha256": "715fd6514de8cd171e5ad5e3487b88360be8b06cf3e00224d7624fc6882f2fe0"
++        },
++        {
++          "name": "_default_wave",
++          "lines": [
++            423,
++            431
++          ],
++          "sha256": "dbd7dbcc7f2d7bef0382bf684f8bb4e047d9b14028738ab2083fdc48cf004ed7"
++        },
++        {
++          "name": "_extract_totals_from_user",
++          "lines": [
++            1781,
++            1822
++          ],
++          "sha256": "04fa16834e82bd0ba924580d63d0cc1454651e88290f95d0532db603a1bacf85"
++        },
++        {
++          "name": "_bloodmoon_player_hp_max",
++          "lines": [
++            1874,
++            1877
++          ],
++          "sha256": "e489ebbee382de24e2273ec3d6ca1f7a0643442a4dfdde5109d3d0a7b273e4cb"
++        },
++        {
++          "name": "bloodmoon_roll_damage",
++          "lines": [
++            2093,
++            2120
++          ],
++          "sha256": "d5f69f200e28de8314b3f527216c40c19ec3f1b8dc5876d920fd8e17ae342811"
++        }
++      ],
++      "exportSha256": "0388c4e3e1620c430934d68325daa72de6e3ba988b9f301c60a998e9e2c10081",
++      "snapshot": "ALPHA_BACKEND_AI.zip",
++      "snapshotSameBytes": true
++    },
++    "combat.py": {
++      "workingFileSha256": "eea922e1f3e17ec4dc264d192e09160335fcb325cac8d16f22d6e1d1f7721889",
++      "excerpts": [
++        {
++          "name": "CFG",
++          "lines": [
++            10,
++            19
++          ],
++          "sha256": "605886b620599d705c1acca5dd1b7cf4b0e0f838935b4dcea6a321f102ae25eb"
++        },
++        {
++          "name": "_clamp",
++          "lines": [
++            21,
++            21
++          ],
++          "sha256": "aae9b5221c680b5cfbcfcfe9917d3d78ebb0fa021faa6197bcbe5dd4dd44da85"
++        },
++        {
++          "name": "_pick",
++          "lines": [
++            23,
++            27
++          ],
++          "sha256": "824df78c58da222c8c7ca7369f65d2828a04444fe61327ed8c93a243a27f0136"
++        },
++        {
++          "name": "compute_player_max_hp",
++          "lines": [
++            29,
++            32
++          ],
++          "sha256": "5800a68fd75cf6406e4d9d8480e594245ea6a845a44ad15e32adb4129da80d52"
++        },
++        {
++          "name": "player_from_totals",
++          "lines": [
++            34,
++            71
++          ],
++          "sha256": "68e25fbdc607f16eb59445d6c23782355518a59e4ad57aba10ad9d4c3a510cdd"
++        }
++      ],
++      "exportSha256": "db7e157c19478e0ac27a35e22b0ddf03b6dc7dc82cdefdfd0d24a479850c7773",
++      "snapshot": "ALPHA_BACKEND_AI.zip",
++      "snapshotSameBytes": true
++    }
++  },
++  "unsupported": [
++    "active pets",
++    "prepared attempts",
++    "production rewards/attempt mutations"
++  ],
++  "catalog": {
++    "keys": [
++      "rustfang_blade",
++      "rustfang_armor",
++      "frostborn_armor"
++    ],
++    "source": "all_items.json, game definitions only",
++    "sha256": "bd7dd3cd1d646bbe33dee155445551ee361baeb863a899bf29bb6528b39caa12"
++  },
++  "auditOnly": {
++    "webapp_bloodmoon.py": {
++      "workingFileSha256": "bf481347dd3e82ef3851a177adc6b36633e269514154476f2eb96ec34d02113c",
++      "functions": [
++        {
++          "name": "_auth_uid",
++          "lines": [
++            80,
++            95
++          ]
++        },
++        {
++          "name": "_require_uid",
++          "lines": [
++            98,
++            111
++          ]
++        },
++        {
++          "name": "bloodmoon_state_handler",
++          "lines": [
++            114,
++            163
++          ]
++        },
++        {
++          "name": "bloodmoon_attack_handler",
++          "lines": [
++            166,
++            202
++          ]
++        }
++      ]
++    },
++    "bloodmoon_transactions.py": {
++      "workingFileSha256": "2eee04856b8fc36ca9fe7dea9323c7c805aa62eaf8803a1536f76a2215adfff4",
++      "functions": [
++        {
++          "name": "production",
++          "lines": [
++            153,
++            155
++          ]
++        },
++        {
++          "name": "production",
++          "lines": [
++            175,
++            176
++          ]
++        },
++        {
++          "name": "_command_key",
++          "lines": [
++            183,
++            185
++          ]
++        },
++        {
++          "name": "_locks",
++          "lines": [
++            194,
++            201
++          ]
++        },
++        {
++          "name": "_recover_locked",
++          "lines": [
++            228,
++            264
++          ]
++        },
++        {
++          "name": "execute",
++          "lines": [
++            291,
++            389
++          ]
++        }
++      ]
++    },
++    "alpha_den.py": {
++      "workingFileSha256": "955b8eba3d20001d409dc2dda0a07e1433e671f09c79829252f4f0d0a9b7d621",
++      "functions": [
++        {
++          "name": "apply_war_room_prepared_attempt_damage_bonus",
++          "lines": [
++            1785,
++            1798
++          ]
++        },
++        {
++          "name": "consume_war_room_prepared_attempt",
++          "lines": [
++            1801,
++            1825
++          ]
++        }
++      ]
++    },
++    "data_store.py": {
++      "workingFileSha256": "86c82351d6ba45c0211bc057425e47a361686352cf4344b3c7cf22fd80be11a0",
++      "functions": [
++        {
++          "name": "strict_user_state_path",
++          "lines": [
++            1082,
++            1089
++          ]
++        }
++      ]
++    }
++  }
++}
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/bloodmoon_core.py
+@@ -0,0 +1,107 @@
++# Isolated reviewed excerpts. See ../source-manifest.json.
++from __future__ import annotations
++from typing import Any, Dict, List, Tuple, Optional
++
++# Original bloodmoon_core.py:142-146
++def _safe_int(v: Any, default: int = 0) -> int:
++    try:
++        return int(v)
++    except Exception:
++        return default
++
++# Original bloodmoon_core.py:417-420
++def _default_wave_hp(wave_no: int) -> int:
++    # prosta, czytelna krzywa na MVP
++    # 1 => 1000, 2 => 1550, 3 => 2260 ...
++    return int(1000 + (wave_no - 1) * 450 + ((wave_no - 1) ** 2) * 100)
++
++# Original bloodmoon_core.py:423-431
++def _default_wave(wave_no: int, is_active: bool = False) -> Dict[str, Any]:
++    hp_max = _default_wave_hp(wave_no)
++    return {
++        "wave": wave_no,
++        "hp": hp_max,
++        "hpMax": hp_max,
++        "status": "ACTIVE" if is_active else "LOCKED",
++        "clearedAt": 0,
++    }
++
++# Original bloodmoon_core.py:1781-1822
++def _extract_totals_from_user(user: Dict[str, Any]) -> Dict[str, int]:
++    # lekki fallback â€” pĂłĹşniej moĹĽna dopasowaÄ‡ dokĹ‚adniej do twojego compute_full_stats
++    totals = {}
++
++    try:
++        from stats import compute_full_stats  # type: ignore
++
++        full = compute_full_stats(user) or {}
++        raw_totals = full.get("totals") or {}
++        if isinstance(raw_totals, dict):
++            totals = {
++                "STR": _safe_int(raw_totals.get("STR"), 0),
++                "AGI": _safe_int(raw_totals.get("AGI"), 0),
++                "INT": _safe_int(raw_totals.get("INT"), 0),
++                "VIT": _safe_int(raw_totals.get("VIT"), 0),
++                "LUCK": _safe_int(raw_totals.get("LUCK"), 0),
++                "level": _safe_int(
++                    user.get("level")
++                    or (user.get("profile") or {}).get("level")
++                    or 1,
++                    1,
++                ),
++            }
++            return totals
++    except Exception:
++        pass
++
++    base = user.get("stats") or {}
++    totals = {
++        "STR": _safe_int(base.get("STR"), 0),
++        "AGI": _safe_int(base.get("AGI"), 0),
++        "INT": _safe_int(base.get("INT"), 0),
++        "VIT": _safe_int(base.get("VIT"), 0),
++        "LUCK": _safe_int(base.get("LUCK"), 0),
++        "level": _safe_int(
++            user.get("level")
++            or (user.get("profile") or {}).get("level")
++            or 1,
++            1,
++        ),
++    }
++    return totals
++
++# Original bloodmoon_core.py:1874-1877
++def _bloodmoon_player_hp_max(totals: Optional[Dict[str, Any]] = None) -> int:
++    totals = totals if isinstance(totals, dict) else {}
++    vit = _safe_int(totals.get("VIT"), 0)
++    return max(1, 50 + vit * 12)
++
++# Original bloodmoon_core.py:2093-2120
++def bloodmoon_roll_damage(user: Dict[str, Any]) -> Dict[str, Any]:
++    totals = _extract_totals_from_user(user)
++
++    lvl = _safe_int(totals.get("level"), 1)
++    STR = _safe_int(totals.get("STR"), 0)
++    AGI = _safe_int(totals.get("AGI"), 0)
++    INT_ = _safe_int(totals.get("INT"), 0)
++    LUCK = _safe_int(totals.get("LUCK"), 0)
++
++    base = 40 + lvl * 3
++    power = int(STR * 1.2 + AGI * 0.7 + INT_ * 0.7)
++
++    roll_mult = random.uniform(0.90, 1.10)
++    crit_chance = min(0.25, 0.05 + (LUCK / 500.0))
++    crit = random.random() < crit_chance
++
++    dmg = int((base + power) * roll_mult)
++    if crit:
++        dmg = int(dmg * 1.5)
++
++    if dmg < 1:
++        dmg = 1
++
++    return {
++        "damage": dmg,
++        "crit": crit,
++        "totals": totals,
++    }
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/catalog.json
+@@ -0,0 +1,26 @@
++{
++  "rustfang_blade": {
++    "slot": "weapon",
++    "stat_bonus": {
++      "strength": 2
++    }
++  },
++  "rustfang_armor": {
++    "slot": "armor",
++    "stat_bonus": {
++      "defense": 2
++    }
++  },
++  "frostborn_armor": {
++    "slot": "armor",
++    "stat_bonus": {
++      "defense": 4,
++      "strength": 3,
++      "luck": 0,
++      "agility": 0,
++      "vitality": 1,
++      "intelligence": 0
++    },
++    "set": "Frostborn"
++  }
++}
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/combat.py
+@@ -0,0 +1,71 @@
++# Isolated reviewed excerpts. See ../source-manifest.json.
++from __future__ import annotations
++from typing import Any, Dict, List, Tuple, Optional
++
++# Original combat.py:10-19
++CFG = {
++    "MAX_ROUNDS": 12,
++    "CRIT_BASE": 0.08, "CRIT_PER_LUCK": 0.0025, "CRIT_CAP": 0.35, "CRIT_MULT": 1.6,
++    "DODGE_BASE": 0.08, "DODGE_PER_AGI": 0.0020, "DODGE_CAP": 0.35,
++    "DMG_VARIANCE": 0.12, "DEF_MITIGATION": 0.55, "MIN_DMG": 1,
++    "PEN_PER_INT": 0.010, "PEN_CAP": 0.50,
++    "DODGE_REDUCTION_PER_INT": 0.0015,
++    "DMG_REDUCTION_K": 350,      # wyższe K = słabsza redukcja (mniej tanky)
++    "MIN_DMG_PCT": 0.08,         # min % ATK, który zawsze przechodzi (anti-0dmg)
++}
++
++# Original combat.py:21-21
++def _clamp(x, lo, hi): return max(lo, min(hi, x))
++
++# Original combat.py:23-27
++def _pick(d: dict, *keys, default=0):
++    for k in keys:
++        if k in d and d[k] is not None:
++            return d[k]
++    return default
++
++# Original combat.py:29-32
++def compute_player_max_hp(totals: Dict) -> int:
++    # HP = 50 + VIT * 12 (1:1 ze stats.py), ale VIT może mieć różne nazwy:
++    vit = int(_pick(totals, "vitality", "vit", "vit_total", default=0))
++    return max(1, 50 + vit * 12)
++
++# Original combat.py:34-71
++def player_from_totals(totals: Dict) -> Dict:
++    STR = int(_pick(totals, "strength", "str", "str_total", default=0))
++    AGI = int(_pick(totals, "agility", "agi", "agi_total", default=0))
++    DEF = int(_pick(totals, "defense", "def", "def_total", default=0))
++    LCK = int(_pick(totals, "luck", "lck", "luck_total", default=0))
++    INT = int(_pick(totals, "intelligence", "int", "int_total", default=0))
++
++    # policz HP z funkcji powyżej
++    hp = compute_player_max_hp(totals)
++
++    # zabezpieczenie: jeśli cokolwiek wyszło podejrzanie nisko, podnieś ostrzeżenie (dev)
++    if hp <= 1:
++        # wymuś co najmniej bazę 50 (żeby nie było 1 HP w boju)
++        hp = 50
++
++    # stałe jak wcześniej
++    CRIT_BASE, CRIT_PER_LUCK, CRIT_CAP = 0.08, 0.0025, 0.35
++    DODGE_BASE, DODGE_PER_AGI, DODGE_CAP = 0.08, 0.0020, 0.35
++    PEN_PER_INT, PEN_CAP = 0.010, 0.50
++    DODGE_REDUCTION_PER_INT = 0.0015
++    CRIT_MULT = 1.6
++
++    crit = max(0.0, min(CRIT_CAP, CRIT_BASE + LCK * CRIT_PER_LUCK))
++    dodge = max(0.0, min(DODGE_CAP, DODGE_BASE + AGI * DODGE_PER_AGI))
++    pen = max(0.0, min(PEN_CAP, INT * PEN_PER_INT))
++    anti_dodge = max(0.0, INT * DODGE_REDUCTION_PER_INT)
++
++    return {
++        "atk": float(max(1, STR)),
++        "def": float(max(0, DEF)),
++        "critChance": float(crit),
++        "critMult": float(CRIT_MULT),
++        "hpMax": int(hp),
++        "dodgeBase": float(dodge),
++        "pen": float(pen),
++        "antiDodge": float(anti_dodge),
++        "resistPct": 0.0,
++    }
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/equipment.py
+@@ -0,0 +1,246 @@
++# Isolated reviewed excerpts. See ../source-manifest.json.
++from __future__ import annotations
++from typing import Any, Dict, List, Tuple, Optional
++
++# Original equipment.py:37-136
++SET_BONUSES = {
++    "Lunar Howl": {
++        2: {"agility": 1},
++        4: {"agility": 2, "luck": 2},
++        6: {"strength": 3, "vitality": 2},
++        9: {"strength": 5, "defense": 3, "luck": 3},
++    },
++    "Ash Founder": {
++        2: {"strength": 1, "defense": 1},
++        4: {"strength": 2, "defense": 2},
++        6: {"strength": 4, "vitality": 2},
++        9: {"strength": 6, "defense": 5, "luck": 2},
++    },
++    "Stormhowl": {
++        2: {"agility": 1, "intelligence": 1},
++        4: {"agility": 2, "luck": 1},
++        6: {"intelligence": 2, "vitality": 3},
++        9: {"agility": 4, "intelligence": 3, "strength": 2, "luck": 2},
++    },
++    "Frostborn": {
++        2: {"defense": 2},
++        4: {"defense": 3, "vitality": 1},
++        6: {"vitality": 3, "strength": 2},
++        9: {"defense": 5, "vitality": 4, "strength": 3},
++    },
++    "Obsidian Pulse": {
++        2: {"intelligence": 1, "agility": 1},
++        4: {"agility": 2, "intelligence": 2},
++        6: {"defense": 2, "vitality": 2, "intelligence": 1},
++        9: {"intelligence": 4, "agility": 3, "luck": 2, "defense": 2},
++    },
++    "Glitchborne": {
++        2: {"luck": 2, "agility": 1},
++        4: {"agility": 3, "luck": 2},
++        6: {"intelligence": 3, "strength": 2, "agility": 1},
++        9: {"luck": 5, "agility": 4, "defense": 3, "intelligence": 2},
++    },
++    "Obsidian Nomad": {
++        2: {"agility": 1, "luck": 1},
++        4: {"agility": 2, "defense": 1},
++        6: {"strength": 2, "luck": 2},
++        9: {"agility": 4, "luck": 3, "vitality": 2, "strength": 2},
++    },
++    "Scrap Nomad": {
++        2: {"strength": 1, "defense": 1},
++        4: {"strength": 2, "defense": 2},
++        6: {"strength": 3, "vitality": 2},
++        9: {"strength": 5, "defense": 4, "agility": 2},
++    },
++    "Rustfire Seraph": {  # Najmocniejszy set â€“ bonusy najwyĹĽsze, fokus na strength/defense/agility/vitality
++        2: {"strength": 2, "defense": 1},
++        4: {"strength": 3, "defense": 2, "agility": 2},
++        6: {"strength": 4, "defense": 3, "vitality": 3, "agility": 2},
++        9: {"strength": 7, "defense": 6, "agility": 5, "vitality": 4, "luck": 2},
++    },
++    # === NAJNOWSZE SETY â€“ Astral Voidfang NAJMOCNIEJSZY ===
++    "Astral Voidfang": {
++        2: {"intelligence": 2, "agility": 2},
++        4: {"strength": 4, "agility": 3, "luck": 2},
++        6: {"defense": 5, "vitality": 4, "strength": 4},
++        9: {"strength": 9, "agility": 7, "defense": 6, "vitality": 5, "intelligence": 4, "luck": 3},
++    },
++    "Rusted Omen": {
++        2: {"strength": 2, "defense": 1},
++        4: {"strength": 3, "defense": 3, "vitality": 2},
++        6: {"strength": 5, "defense": 4, "vitality": 4},
++        9: {"strength": 10, "defense": 9, "vitality": 7},
++    },
++    "Umbral Singularity": {
++        2: {"strength": 2, "intelligence": 2},
++        4: {"strength": 4, "intelligence": 3, "agility": 2},
++        6: {"defense": 5, "vitality": 4, "strength": 4},
++        9: {"strength": 9, "agility": 7, "defense": 6, "vitality": 5, "intelligence": 4, "luck": 3},
++    },
++    "Rad-Core Overdrive": {
++        2: {"agility": 2, "intelligence": 2},
++        4: {"agility": 4, "intelligence": 3, "vitality": 2},
++        6: {"agility": 6, "intelligence": 4, "vitality": 3},
++        9: {"agility": 10, "intelligence": 8, "vitality": 7, "defense": 5, "strength": 3, "luck": 2},
++    },
++
++    "Eclipse Raider": {
++        2: {"agility": 2, "strength": 1},
++        4: {"agility": 4, "luck": 2},
++        6: {"strength": 5, "agility": 4, "defense": 3},
++        9: {"strength": 8, "agility": 7, "defense": 5, "luck": 4, "vitality": 3, "intelligence": 3},
++    },
++    "Fracture Sentinel": {
++        2: {"defense": 2, "intelligence": 1},
++        4: {"defense": 3, "vitality": 2, "intelligence": 2},
++        6: {"strength": 4, "defense": 3, "vitality": 3, "intelligence": 2},
++        9: {"defense": 9, "intelligence": 6, "vitality": 5, "strength": 5, "agility": 4, "luck": 2},
++    },
++    "Kintsugi Overlord": {
++        2: {"agility": 4, "strength": 2},
++        4: {"agility": 6, "strength": 5, "defense": 4},
++        6: {"agility": 8, "strength": 7, "defense": 6, "vitality": 5},
++        9: {"agility": 15, "strength": 11, "defense": 10, "vitality": 8, "intelligence": 4, "luck": 2},
++    },
++}
++
++# Original equipment.py:140-151
++EQUIPMENT_SLOTS = [
++    {"slot": "weapon",   "label": "Weapon",      "level_req": 1,  "desc": "Main offensive item."},
++    {"slot": "armor",    "label": "Armor",       "level_req": 1,  "desc": "Body protection."},
++    {"slot": "cloak",    "label": "Cloak",       "level_req": 1,  "desc": "Agility/magic item."},
++    {"slot": "collar",   "label": "Collar",      "level_req": 1,  "desc": "Special talisman."},
++    {"slot": "fangs",    "label": "Fangs",       "level_req": 1,  "desc": "Precision bite augment."},
++    {"slot": "pet",      "label": "Pet",         "level_req": 1, "desc": "Companion bonus."},
++    {"slot": "helmet",   "label": "Helmet",      "level_req": 1, "desc": "Head protection."},
++    {"slot": "ring",     "label": "Ring",        "level_req": 1, "desc": "Stat booster."},
++    {"slot": "offhand",  "label": "Offhand",     "level_req": 1, "desc": "Secondary item."},
++    {"slot": "gloves",     "label": "gloves",        "level_req": 1, "desc": "Magical enhancer."}
++]
++
++# Original equipment.py:677-689
++def ensure_equipment_data(user: dict):
++    """
++    Upewnia siÄ™, ĹĽe kaĹĽdy zaĹ‚oĹĽony item ma wpis w equipment_data
++    (z kopiami bazowych statĂłw), ĹĽeby upgrade miaĹ‚ na czym pracowaÄ‡.
++    """
++    eq = user.get("equipment", {}) or {}
++    eqd = user.setdefault("equipment_data", {})
++    for slot, item_key in eq.items():
++        if not item_key:
++            continue
++        if item_key not in eqd:
++            base_bonus = ALL_ITEMS.get(item_key, {}).get("stat_bonus", {}).copy()
++            eqd[item_key] = {"level": 1, "stat_bonus": base_bonus}
++
++# Original equipment.py:691-701
++def get_item_effective_bonus(user: dict, item_key: str) -> dict:
++    """
++    Zwraca efektywny bonus itemu:
++    - jeĹ›li istnieje wpis w equipment_data[item_key]['stat_bonus'], zwrĂłÄ‡ to (juĹĽ zawiera bazÄ™ + upgrady)
++    - inaczej zwrĂłÄ‡ bazowe staty z ALL_ITEMS
++    """
++    eqd = user.get("equipment_data", {})
++    upgraded = (eqd.get(item_key) or {}).get("stat_bonus")
++    if upgraded:
++        return upgraded
++    return ALL_ITEMS.get(item_key, {}).get("stat_bonus", {})
++
++# Original equipment.py:808-811
++ALIASES_EQ = {
++    "strength": "str", "agility": "agi", "defense": "def",
++    "vitality": "vit", "intelligence": "int", "luck": "luck",
++}
++
++# Original equipment.py:848-855
++def _mirror_keys_eq(d: dict) -> dict:
++    out = {k: int(v) for k, v in (d or {}).items()}
++    for long_, short in ALIASES_EQ.items():
++        if long_ in out and short not in out:
++            out[short] = out[long_]
++        if short in out and long_ not in out:
++            out[long_] = out[short]
++    return out
++
++# Original equipment.py:981-1030
++def get_total_equipment_bonus(user):
++    """
++    Sumuje bonusy z gearu z UWZGLÄDNIENIEM upgrade'Ăłw (equipment_data),
++    wspiera obie struktury: user['equipment'] i user['equipped'],
++    oraz dolicza bonusy setowe (progi mogÄ… byÄ‡ int/str).
++    """
++    ensure_equipment_data(user)  # gwarantuje wpisy w equipment_data dla zaĹ‚oĹĽonych itemĂłw
++
++    # akceptuj obie struktury
++    equipment = user.get("equipment") or user.get("equipped") or {}
++    total_bonus = {}
++    set_counts = {}
++
++    # 1) bonusy z itemĂłw (z upgradeâ€™ami)
++    for slot, item_key in (equipment or {}).items():
++        if not item_key:
++            continue
++
++        # efektywny bonus (preferuj equipment_data -> stat_bonus; fallback: ALL_ITEMS)
++        eff = get_item_effective_bonus(user, item_key) or {}
++        eff = _mirror_keys_eq(eff) if callable(globals().get("_mirror_keys_eq")) else eff
++
++        for stat, value in eff.items():
++            try:
++                v = int(value)
++            except (TypeError, ValueError):
++                v = 0
++            total_bonus[stat] = total_bonus.get(stat, 0) + v
++
++        # policz element setu
++        base_item = ALL_ITEMS.get(item_key) or {}
++        set_name = base_item.get("set")
++        if set_name and str(slot or "").lower() != "pet":
++            set_counts[set_name] = set_counts.get(set_name, 0) + 1
++
++    # 2) bonusy setowe (obsĹ‚uga progĂłw int/str)
++    for set_name, count in set_counts.items():
++        thresholds = SET_BONUSES.get(set_name, {}) or {}
++        for need, bonus in thresholds.items():
++            need_i = int(need) if not isinstance(need, int) else need
++            if count >= need_i:
++                bonus_m = _mirror_keys_eq(bonus) if callable(globals().get("_mirror_keys_eq")) else bonus
++                for stat, plus in (bonus_m or {}).items():
++                    try:
++                        p = int(plus)
++                    except (TypeError, ValueError):
++                        p = 0
++                    total_bonus[stat] = total_bonus.get(stat, 0) + p
++
++    return total_bonus
++
++# Original equipment.py:1032-1060
++def get_active_set_bonuses(user):
++    """
++    Zwraca listÄ™ bonusĂłw setowych, np.:
++    [("Lunar Howl", 4, { "agility": 2, "luck": 2 })]
++    """
++    equipment = user.get("equipment", {})
++    equipment_items = ALL_ITEMS
++    set_counts = {}
++
++    # policz sztuki setu
++    for slot, item_key in equipment.items():
++        item = equipment_items.get(item_key)
++        if item and "set" in item and str(slot or "").lower() != "pet":
++            set_name = item["set"]
++            set_counts[set_name] = set_counts.get(set_name, 0) + 1
++
++    active_bonuses = []
++    for set_name, count in set_counts.items():
++        if set_name in SET_BONUSES:
++            # sprawdzamy najwyĹĽszy aktywny prĂłg
++            applied = {}
++            for threshold, bonus in sorted(SET_BONUSES[set_name].items()):
++                if count >= threshold:
++                    for stat, val in bonus.items():
++                        applied[stat] = applied.get(stat, 0) + val
++            if applied:
++                active_bonuses.append((set_name, count, applied))
++
++    return active_bonuses
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/pets.py
+@@ -0,0 +1,77 @@
++# Isolated reviewed excerpts. See ../source-manifest.json.
++from __future__ import annotations
++from typing import Any, Dict, List, Tuple, Optional
++
++# Original pets.py:1199-1199
++PET_STAT_KEYS_LONG = ["strength", "agility", "defense", "vitality", "luck", "intelligence"]
++
++# Original pets.py:1315-1383
++def compute_pet_effective_stats(pet: dict | None) -> dict:
++    """
++    Canonical pet stats:
++      seed(BASE_STATS[type]) + capped(training_delta_from_saved_base) + level_bonus + damped_legacy_bonus_stats
++    Returns ONLY long keys.
++    """
++    if not isinstance(pet, dict) or not pet:
++        return {k: 0 for k in PET_STAT_KEYS_LONG}
++
++    pet_type = str(pet.get("type") or "husky").lower()
++    seed_raw = BASE_STATS.get(pet_type) or BASE_STATS.get("husky") or {}
++    seed = norm_pet_stats(seed_raw)
++
++    saved_base = norm_pet_stats(pet.get("base_stats") or pet.get("stats") or {})
++    allocated = norm_pet_stats(pet.get("allocated_stats") or {})
++    lvl = max(1, _to_int(pet.get("level", 1), 1))
++    steps = _pet_growth_steps(lvl)
++
++    # training delta = (saved_base - seed), but capped (prevents runaway from old RNG systems)
++    # cap grows slowly with level
++    cap_off_max = _to_int(os.environ.get("PET_TRAINING_CAP_OFF_MAX", "10"), 10)
++    cap_vit_max = _to_int(os.environ.get("PET_TRAINING_CAP_VIT_MAX", "6"), 6)
++
++    cap_off = min(cap_off_max, 2 + steps // 10)   # lvl50 -> ~6
++    cap_vit = min(cap_vit_max, 1 + steps // 15)   # lvl50 -> ~3-4
++
++    training = {}
++    for k in PET_STAT_KEYS_LONG:
++        delta = max(0, _to_int(saved_base.get(k, 0), 0) - _to_int(seed.get(k, 0), 0))
++        delta = max(0, delta - max(0, _to_int(allocated.get(k, 0), 0)))
++        if k == "vitality":
++            training[k] = min(delta, cap_vit)
++        else:
++            training[k] = min(delta, cap_off)
++
++    # legacy bonus_stats damping (old system): keep a LITTLE, but never insane VIT
++    legacy_scale_off = float(os.environ.get("PET_LEGACY_BONUS_SCALE_OFF", "0.15") or 0.15)
++    legacy_scale_vit = float(os.environ.get("PET_LEGACY_BONUS_SCALE_VIT", "0.05") or 0.05)
++    legacy_cap_off   = _to_int(os.environ.get("PET_LEGACY_BONUS_CAP_OFF", "8"), 8)
++    legacy_cap_vit   = _to_int(os.environ.get("PET_LEGACY_BONUS_CAP_VIT", "4"), 4)
++
++    legacy_raw = norm_pet_stats(pet.get("bonus_stats") or {})
++    legacy = {k: 0 for k in PET_STAT_KEYS_LONG}
++    for k in PET_STAT_KEYS_LONG:
++        b = _to_int(legacy_raw.get(k, 0), 0)
++        if not b:
++            continue
++        s = legacy_scale_vit if k == "vitality" else legacy_scale_off
++        add = int(round(b * s))
++        if k == "vitality":
++            legacy[k] = min(add, legacy_cap_vit)
++        else:
++            legacy[k] = min(add, legacy_cap_off)
++
++    # level growth by archetype
++    arena_type = get_pet_arena_type(pet).lower()
++    level_bonus = _pet_level_bonus(lvl, arena_type)
++
++    out = {k: 0 for k in PET_STAT_KEYS_LONG}
++    for k in PET_STAT_KEYS_LONG:
++        out[k] = max(0,
++            _to_int(seed.get(k, 0), 0)
++            + _to_int(training.get(k, 0), 0)
++            + _to_int(allocated.get(k, 0), 0)
++            + _to_int(level_bonus.get(k, 0), 0)
++            + _to_int(legacy.get(k, 0), 0)
++        )
++
++    return out
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/stats.py
+@@ -0,0 +1,79 @@
++# Isolated reviewed excerpts. See ../source-manifest.json.
++from __future__ import annotations
++from typing import Any, Dict, List, Tuple, Optional
++
++# Original stats.py:13-13
++STAT_KEYS = ["strength","agility","defense","luck","vitality","intelligence"]
++
++# Original stats.py:14-17
++SHORT_OF = {
++    "strength":"str", "agility":"agi", "defense":"def",
++    "vitality":"vit", "intelligence":"int", "luck":"luck",
++}
++
++# Original stats.py:18-18
++LONG_OF = {v:k for k,v in SHORT_OF.items()}
++
++# Original stats.py:20-26
++def norm_stats(d: dict | None) -> dict:
++    """Zwraca słownik TYLKO z long keys (strength/agility/...), brakujące=0."""
++    d = d or {}
++    out = {}
++    for k in STAT_KEYS:
++        out[k] = int(d.get(k, d.get(SHORT_OF[k], 0)) or 0)
++    return out
++
++# Original stats.py:28-29
++def add_stats(a: dict, b: dict) -> dict:
++    return {k: int(a.get(k,0)) + int(b.get(k,0)) for k in STAT_KEYS}
++
++# Original stats.py:31-40
++def get_active_pet(user: dict):
++    """Zwraca (pet_dict, pet_stats_long). Staty zawsze long keys i uwzględniają level."""
++    pets = user.get("pets", {}) or {}
++    pet_id = (
++        (user.get("equipped") or {}).get("pet")
++        or (user.get("equipment") or {}).get("pet")
++        or user.get("active_pet_id")
++    )
++    pet = pets.get(pet_id) or {}
++    return pet, compute_pet_effective_stats(pet)
++
++# Original stats.py:42-45
++def get_equipment_bonus_long(user: dict) -> dict:
++    """Wrapper na get_total_equipment_bonus – normalizuje do long keys."""
++    raw = get_total_equipment_bonus(user) or {}
++    return norm_stats(raw)
++
++# Original stats.py:47-55
++def get_set_bonuses_long(user: dict) -> list[tuple[str,int,dict]]:
++    """Wrapper na get_active_set_bonuses – normalizuje bonus dict do long keys."""
++    sets = get_active_set_bonuses(user) or []
++    fixed = []
++    for tup in sets:
++        if len(tup) == 3:
++            name, count, bonus = tup
++            fixed.append((name, count, norm_stats(bonus)))
++    return fixed
++
++# Original stats.py:57-76
++def compute_full_stats(user: dict) -> dict:
++    """
++    Jedyny licznik:
++    totals = base + pet + gear
++    (sety pokazujemy w UI, NIE dodajemy drugi raz jeśli już są w gear)
++    """
++    base   = norm_stats(user.get("stats"))
++    pet_o, pet = get_active_pet(user)
++    gear   = get_equipment_bonus_long(user)
++    sets_l = get_set_bonuses_long(user)
++
++    totals = add_stats(add_stats(base, pet), gear)
++    return {
++        "base": base,
++        "pet": pet,
++        "gear": gear,
++        "totals": totals,
++        "pet_obj": pet_o,
++        "sets": sets_l,
++    }
+--- /dev/null
++++ b/bloodmoon_v4_p2/verified_source/stats_core.py
+@@ -0,0 +1,123 @@
++# Isolated reviewed excerpts. See ../source-manifest.json.
++from __future__ import annotations
++from typing import Any, Dict, List, Tuple, Optional
++
++# Original stats_core.py:18-18
++STAT_KEYS = ["strength", "agility", "defense", "luck", "vitality", "intelligence"]
++
++# Original stats_core.py:24-31
++FRESH_PLAYER_DEFAULT_STATS = {
++    "strength": 0,
++    "agility": 0,
++    "defense": 0,
++    "luck": 0,
++    "vitality": 0,
++    "intelligence": 0,
++}
++
++# Original stats_core.py:42-49
++SHORT_OF = {
++    "strength": "str",
++    "agility": "agi",
++    "defense": "def",
++    "vitality": "vit",
++    "intelligence": "int",
++    "luck": "luck",
++}
++
++# Original stats_core.py:50-50
++LONG_OF = {v: k for k, v in SHORT_OF.items()}
++
++# Original stats_core.py:53-67
++def norm_stats(d: Dict[str, Any] | None) -> Dict[str, int]:
++    """
++    Zwraca sĹ‚ownik TYLKO z long keys (strength/agility/...), brakujÄ…ce=0.
++    Akceptuje teĹĽ short keys (str/agi/def/vit/int/luck).
++    """
++    d = d if isinstance(d, dict) else {}
++    out: Dict[str, int] = {}
++    for k in STAT_KEYS:
++        out[k] = _safe_int(d.get(k, d.get(SHORT_OF[k], FRESH_PLAYER_DEFAULT_STATS[k])))
++    # Historical production snapshots used ``endurance`` as the HP stat.
++    # Current ``vitality``/``vit`` always wins when either is actually stored;
++    # otherwise map endurance once at the canonical normalization boundary.
++    if d.get("vitality") is None and d.get("vit") is None and d.get("endurance") is not None:
++        out["vitality"] = _safe_int(d.get("endurance"), FRESH_PLAYER_DEFAULT_STATS["vitality"])
++    return out
++
++# Original stats_core.py:70-74
++def _safe_int(value: Any, default: int = 0) -> int:
++    try:
++        return int(value or 0)
++    except Exception:
++        return int(default)
++
++# Original stats_core.py:149-152
++def add_stats(a: Dict[str, Any] | None, b: Dict[str, Any] | None) -> Dict[str, int]:
++    a = a or {}
++    b = b or {}
++    return {k: int(a.get(k, 0) or 0) + int(b.get(k, 0) or 0) for k in STAT_KEYS}
++
++# Original stats_core.py:155-163
++def get_active_pet_id(user: Dict[str, Any]) -> str | None:
++    eq = user.get("equipped") or {}
++    eq2 = user.get("equipment") or {}
++    return (
++        eq.get("pet")
++        or eq2.get("pet")
++        or user.get("active_pet_id")
++        or user.get("active_pet")
++    )
++
++# Original stats_core.py:166-174
++def get_active_pet(user: Dict[str, Any]):
++    """
++    Zwraca (pet_dict, pet_stats_long) â€” staty peta uwzglÄ™dniajÄ… level.
++    """
++    pets = user.get("pets", {}) or {}
++    pet_id = get_active_pet_id(user)
++    pet = (pets.get(pet_id) if pet_id else None) or {}
++    pet_stats = compute_pet_effective_stats(pet) or {}
++    return pet, norm_stats(pet_stats)
++
++# Original stats_core.py:177-179
++def get_equipment_bonus_long(user: Dict[str, Any]) -> Dict[str, int]:
++    raw = get_total_equipment_bonus(user) or {}
++    return norm_stats(raw)
++
++# Original stats_core.py:182-192
++def get_set_bonuses_long(user: Dict[str, Any]) -> List[Tuple[str, int, Dict[str, int]]]:
++    """
++    Sety pokazujemy jako INFO; totals liczymy base+pet+gear.
++    """
++    sets = get_active_set_bonuses(user) or []
++    fixed: List[Tuple[str, int, Dict[str, int]]] = []
++    for tup in sets:
++        if isinstance(tup, (list, tuple)) and len(tup) == 3:
++            name, count, bonus = tup
++            fixed.append((str(name), int(count or 0), norm_stats(bonus)))
++    return fixed
++
++# Original stats_core.py:195-216
++def compute_full_stats(user: Dict[str, Any]) -> Dict[str, Any]:
++    if not isinstance(user, dict):
++        user = {}
++    """
++    Jedyny licznik:
++    totals = base + pet + gear
++    (sety pokazujemy w UI; nie dodajemy drugi raz)
++    """
++    base = norm_stats(user.get("stats"))
++    pet_o, pet = get_active_pet(user)
++    gear = get_equipment_bonus_long(user)
++    sets_l = get_set_bonuses_long(user)
++
++    totals = add_stats(add_stats(base, pet), gear)
++    return {
++        "base": base,
++        "pet": pet,
++        "gear": gear,
++        "totals": totals,
++        "pet_obj": pet_o,
++        "sets": sets_l,
++    }

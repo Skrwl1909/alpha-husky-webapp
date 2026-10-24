@@ -1,0 +1,26 @@
+{
+  "rustfang_blade": {
+    "slot": "weapon",
+    "stat_bonus": {
+      "strength": 2
+    }
+  },
+  "rustfang_armor": {
+    "slot": "armor",
+    "stat_bonus": {
+      "defense": 2
+    }
+  },
+  "frostborn_armor": {
+    "slot": "armor",
+    "stat_bonus": {
+      "defense": 4,
+      "strength": 3,
+      "luck": 0,
+      "agility": 0,
+      "vitality": 1,
+      "intelligence": 0
+    },
+    "set": "Frostborn"
+  }
+}

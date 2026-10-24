@@ -1,4 +1,8 @@
-# Blood Moon V4 · Last Stand P1
+# Blood Moon V4 · Last Stand P2 local progression preview
+
+The default encounter now uses a **source-resolved synthetic Baseline Howler** against the verified fresh wave-1 **1000 HP**. Choose Progressed Howler in local progression controls to compare equipment/level benefits. No account or raid credit is integrated. The casing bridge, strike-to-autoattack divisor and incoming damage are **proposed P2 tuning**, not existing production rules. See [P2 engineering handoff](p2/HANDOFF.md) for source evidence, confirmed incompatibilities, exact test commands and the safe validation-only boundary. The P1 contract document below is retained as the historical GitHub-only inspection; the P2 handoff supersedes its local-source availability blocker.
+
+P2 source tests: `python -B prototypes/bloodmoon-v4/p2/resolver_test.py`; lifecycle/security tests: `node prototypes/bloodmoon-v4/p2/authority.test.mjs`; historical replay compatibility: `node prototypes/bloodmoon-v4/p2/compatibility.test.mjs`. The separately reviewable `p2/backend-review.patch` applies only to an empty isolated folder. Never apply it to the original backend. P0/P1 PRs remain untouched and unmerged.
 
 Isolated real-time encounter using the original Alpha Husky Blood Moon artwork. Built on the accepted P0; no production V3 scripts, routes, combat APIs, rewards or account state are loaded. No install/build step or additional dependencies. Keep the P0 and P1 PRs unmerged until human review.
 
@@ -20,7 +24,7 @@ Standard mechanics are unchanged: 96 boss HP, 3 player HP, 230 units/sec movemen
 
 V4 references the V2 arena/atmosphere/full moon, all four V3 Tower Husk states, existing slash/impact VFX and the existing directional Howler sprite sheet. Background layers are cached once; the original character anchors and fixed virtual arena coordinates keep art separate from collision. No asset file was edited or generated. Optional state failures fall back to the original idle; missing arena, idle or player art blocks play with a reload message.
 
-Expand **Local test controls & combat log** for two strength fixtures. Standard damage is 1; Stronger damage is 1.2. Both use the same 96 boss HP and 3 player HP. These are **local fixtures, not real account data**. Selection is locked during a run; recordings carry the resolved combat parameters. `combat-parameters.js` validates and freezes resolved HP/damage inputs; it implements no level/equipment damage formula. See `COMBAT_CONTRACT.md` for the verified V3 frontend field contract and what remains blocked before real-account adaptation.
+Expand **Local progression scenarios & combat log**. P2 Baseline/Progressed use source-resolved synthetic state and proposed conversion. The retained P1 Standard/Stronger fixtures use damage 1/1.2, the same 96 boss HP and 3 player HP. None are real account data. Selection is locked during a run; recordings carry the resolved combat parameters. `combat-parameters.js` validates and freezes resolved HP/damage inputs; it implements no level/equipment damage formula. See `p2/HANDOFF.md` for the current source-backed path and `COMBAT_CONTRACT.md` for the historical V3 frontend consumer contract.
 
 ## Tests and evidence
 

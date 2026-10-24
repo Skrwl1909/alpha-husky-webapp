@@ -1,0 +1,25 @@
+{
+  "mode": "SOURCE_RESOLVED_SYNTHETIC_PROPOSED_P2",
+  "physicalDeviceTested": false,
+  "scenarios": {
+    "baseline": {
+      "time": 59.75,
+      "outcome": "won",
+      "remainingHP": 170,
+      "hits": 96
+    },
+    "progressed": {
+      "time": 37.5,
+      "outcome": "won",
+      "remainingHP": 278,
+      "hits": 60
+    }
+  },
+  "exceptions": [],
+  "video": {
+    "width": 360,
+    "height": 540
+  },
+  "externalApiRequests": 0,
+  "status": "PASS"
+}

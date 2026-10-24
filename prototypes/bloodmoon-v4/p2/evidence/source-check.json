@@ -1,0 +1,20 @@
+{
+  "workingBackendSourceUnchanged": true,
+  "sourceFilesChecked": {
+    "stats.py": true,
+    "stats_core.py": true,
+    "equipment.py": true,
+    "pets.py": true,
+    "bloodmoon_core.py": true,
+    "combat.py": true,
+    "webapp_bloodmoon.py": true,
+    "bloodmoon_transactions.py": true,
+    "alpha_den.py": true,
+    "data_store.py": true
+  },
+  "liveVPSAccessed": false,
+  "productionDataCopied": false,
+  "backendPRCreated": false,
+  "backendReason": "Current Blood Moon files are untracked in the older alphagame checkout; reviewed standalone patch supplied",
+  "standalonePatchTests": "5/5 PASS after LF normalization"
+}
