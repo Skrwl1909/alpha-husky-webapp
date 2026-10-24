@@ -1,6 +1,6 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
-import { confirmedConsequence, confirmedReturnAction } from "./s3AfterAction";
+import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
 import { savedSidegradeProof } from "./s3PowerProof";
 import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
@@ -986,11 +986,13 @@ function Results() {
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const nextSuggested = nextFieldMission(progression?.fieldOps, selectedMissionId);
   const nextSuggestedMission = getMissionDef(nextSuggested.missionId);
-  const s3Proof = confirmedConsequence(fieldResult, campaignResult, progression);
-  const s3Return = confirmedReturnAction(fieldResult, campaignResult, progression);
-  const acceptedS3Run = fieldResult?.runId === currentRunKey ? fieldResult.runId : campaignResult?.runId === currentRunKey ? campaignResult.runId : null;
+  const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
+  const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
+  const s3Proof = confirmedConsequence(recordedFieldResult, recordedCampaignResult, progression);
+  const s3Return = confirmedReturnAction(recordedFieldResult, recordedCampaignResult, progression);
+  const acceptedS3Run = recordedFieldResult?.runId || recordedCampaignResult?.runId || null;
   const s3Goals = s3TrainingGoals(mission, selectedSquadIds, activeRulesetVersion === "tactical-intent-vnext.0");
-  const s3Trials = s3TrainingResults(s3CombatProof, acceptedS3Run, Boolean(fieldResult?.victory || campaignResult?.victory), s3Goals);
+  const s3Trials = s3TrainingResults(s3CombatProof, acceptedS3Run, Boolean(recordedFieldResult?.victory || recordedCampaignResult?.victory), s3Goals);
   const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
@@ -1013,19 +1015,19 @@ function Results() {
           {fieldOp ? <div>
             
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
-            {fieldResult ? <FieldResultFeedback result={fieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
+            {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
           
           {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
-            <strong>{campaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
+            <strong>{recordedCampaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
             <p>{mission?.missionId === "dead-relay-courier"
-              ? campaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || campaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
-                : !campaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
-              : mission?.missionId === "dead-relay-hold" ? !campaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
-              : !campaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
+              ? recordedCampaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || recordedCampaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
+                : !recordedCampaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
+              : mission?.missionId === "dead-relay-hold" ? !recordedCampaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
+              : !recordedCampaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
           </div> : null}
-          {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={fieldResult?.runId || campaignResult?.runId}>
+          {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={acceptedS3Run}>
             <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
             {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
             <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
@@ -1051,7 +1053,7 @@ function Results() {
               <dd>{results.damageTaken}</dd>
             </div>
           </dl>
-          {progression?.playerGrowth && results.victory && ((fieldOp && fieldResult) || (campaignMission && campaignResult)) ? (
+          {progression?.playerGrowth && results.victory && ((fieldOp && recordedFieldResult) || (campaignMission && recordedCampaignResult)) && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? (
             <section className="t-growth-result" aria-label="Server confirmed Skillbook progression">
               <span className="t-kicker">SERVER-CONFIRMED PROGRESSION</span>
               <strong>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE</strong>
@@ -1060,7 +1062,7 @@ function Results() {
           ) : null}
           <div className="t-brief-actions t-result-actions">
             {campaignMission ? (
-              campaignResult ? <>
+              recordedCampaignResult ? <>
                 <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>BACK TO CAMPAIGN</button>
                 <button type="button" className="t-btn" onClick={replay}>REPLAY / SQUAD</button>
               </> : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
@@ -1068,8 +1070,8 @@ function Results() {
               </button>
             ) : fieldOp ? (
               <>
-                {!fieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{fieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `SEE NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+                {!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+                  <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>{recordedFieldResult.victory ? nextSuggestedMission && nextSuggestedMission.missionId !== selectedMissionId ? `SEE NEXT: ${nextSuggestedMission.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
                   <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
                 </>}
               </>

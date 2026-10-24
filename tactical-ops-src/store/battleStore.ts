@@ -680,9 +680,9 @@ export const useBattleStore = create<Store>((set, get) => {
           applyCanonicalProgression(canonical);
           const op = canonical.operations?.[DEAD_RELAY.operationId];
           if (op?.lastCompletedMissionRunId === current.currentRunKey) {
-            // The response was lost after server commit. Record is authoritative.
-            set({ campaignResult: { ...report, runId: current.currentRunKey, missionId: mission.missionId, intelEarned: false },
-              progressionCommitPending: false, progressionError: null });
+            // A completed-run marker confirms persistence, but does not reconstruct
+            // the campaign receipt (including Intel). Never invent intelEarned=false.
+            set({ progressionCommitPending: false, progressionError: "Campaign save detected, but its receipt could not be verified. Refresh Tactical Ops to load the canonical state." });
             return;
           }
         }
