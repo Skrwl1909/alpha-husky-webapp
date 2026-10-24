@@ -4932,3 +4932,20 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
   #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card {padding:3px 4px}
   #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-name {font-size:.55rem}
 }
+
+/* Combat FX readability P1 — confirmed effects only; no targeting or gameplay changes. */
+#tacticalOpsRoot .t-sprite-fx { width:clamp(72px,18vw,132px);height:clamp(72px,18vw,132px);filter:drop-shadow(0 0 8px rgba(73,206,248,.26)); }
+#tacticalOpsRoot .t-sprite-fx.fx-area {width:clamp(115px,29vw,205px);height:clamp(115px,29vw,205px);z-index:13;}
+#tacticalOpsRoot .t-sprite-fx.fx-area::before {content:"";position:absolute;inset:25%;border-radius:50%;background:radial-gradient(circle,rgba(93,231,244,.19),rgba(54,172,216,.07) 48%,transparent 72%);animation:t-fx-soft-wave .72s ease-out both;pointer-events:none;}
+#tacticalOpsRoot .t-sprite-fx.fx-area.fx-support::before {background:radial-gradient(circle,rgba(88,239,199,.22),rgba(60,192,159,.07) 52%,transparent 74%);}
+#tacticalOpsRoot .t-master-fx-ring {width:48px;height:48px;border:0;border-radius:50%;background:radial-gradient(circle,transparent 35%,var(--fx-c) 72%,transparent 77%);opacity:0;animation:t-fx-soft-wave .48s ease-out both;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-cnc .t-master-fx-ring,#tacticalOpsRoot .t-master-fx.fx-affinity-pet .t-master-fx-ring {border:0;border-radius:50%;}
+#tacticalOpsRoot .t-master-fx.fx-affinity-shadow .t-master-fx-ring {border:0;box-shadow:none;}
+#tacticalOpsRoot .t-master-fx.fx-tier-signature .t-master-fx-ring,#tacticalOpsRoot .t-master-fx.fx-tier-rank2 .t-master-fx-ring {width:66px;height:66px;box-shadow:none;}
+#tacticalOpsRoot .t-master-fx-core {width:9px;height:9px;box-shadow:0 0 11px var(--fx-c);}
+#tacticalOpsRoot .t-impact {width:30px;height:30px;border:0;border-radius:50%;background:radial-gradient(circle,rgba(246,250,255,.83),rgba(136,219,245,.33) 30%,transparent 72%);box-shadow:none;animation:.27s ease-out forwards t-fx-contact;}
+#tacticalOpsRoot .t-impact-control {background:radial-gradient(circle,rgba(255,227,158,.82),rgba(234,166,68,.3) 32%,transparent 72%);box-shadow:none;animation:.3s ease-out forwards t-fx-contact;}
+#tacticalOpsRoot .t-impact-heal,#tacticalOpsRoot .t-impact-buff {background:radial-gradient(circle,rgba(174,255,221,.72),rgba(86,211,176,.23) 34%,transparent 73%);box-shadow:none;animation:.34s ease-out forwards t-fx-contact;}
+@keyframes t-fx-contact {0%{opacity:0;transform:translate(-50%,-50%) scale(.35);}30%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(1.85);}}
+@keyframes t-fx-soft-wave {0%{opacity:0;transform:scale(.35);}25%{opacity:.85;}100%{opacity:0;transform:scale(2.5);}}
+@media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-sprite-fx.fx-area::before{animation:none;opacity:.3;transform:none;}#tacticalOpsRoot .t-impact{animation:none;opacity:.35;}}

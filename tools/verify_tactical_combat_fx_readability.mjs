@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const css=readFileSync("tactical-ops-src/tactical.css","utf8");
+const battle=readFileSync("tactical-ops-src/ui/Battle.tsx","utf8");
+const store=readFileSync("tactical-ops-src/store/battleStore.ts","utf8");
+assert(battle.includes("fx-area fx-support"),"AoE support FX must have its own footprint");
+assert(battle.includes('["alpha_howl","shadow_pack_heal_def","shadow_pack_def_only","shadow_pack_guard"]'),"Only confirmed support atlas events get AoE footprint");
+assert(css.includes("@keyframes t-fx-contact")&&css.includes("@keyframes t-fx-soft-wave"),"Contact and AoE visuals exist");
+assert(css.includes("prefers-reduced-motion:reduce"),"Reduced-motion fallback retained");
+assert(css.includes(".t-threat-tile {z-index:16;}"),"Enemy hazard telegraphs remain above FX");
+assert(store.includes("publishFx(spriteEvents(actor,selectedSkillId,res.events"),"Skill FX remain event-confirmed");
+assert(battle.includes('className="t-cell move"'),"Movement tap targets retained");
+console.log("PASS Combat FX readability P1: separate AoE/contact, event truth, hazard and accessibility");
