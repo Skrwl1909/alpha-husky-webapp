@@ -17,7 +17,9 @@
     "verify:tactical-ops:pack-mastery": "node tools/verify_tactical_ops_pack_mastery.mjs",
     "verify:tactical-ops:evergreen": "node tools/verify_tactical_ops_evergreen.mjs",
     "verify:tactical-ops:action-icons": "node tools/verify_tactical_ops_action_icons.mjs",
-    "verify:tactical-ops": "npm run verify:tactical-ops:combat && npm run verify:tactical-ops:foundation && npm run verify:tactical-ops:persistence && npm run verify:tactical-ops:operation && npm run verify:tactical-ops:recover && npm run verify:tactical-ops:commander && npm run verify:tactical-ops:squad && npm run verify:tactical-ops:evergreen && npm run verify:tactical-ops:responsive && npm run verify:tactical-ops:action-icons"
+    "verify:tactical-ops": "npm run verify:tactical-ops:combat && npm run verify:tactical-ops:foundation && npm run verify:tactical-ops:persistence && npm run verify:tactical-ops:operation && npm run verify:tactical-ops:recover && npm run verify:tactical-ops:commander && npm run verify:tactical-ops:squad && npm run verify:tactical-ops:evergreen && npm run verify:tactical-ops:responsive && npm run verify:tactical-ops:action-icons && npm run verify:tactical-ops:fx-readability && npm run verify:tactical-ops:fx-identity",
+    "verify:tactical-ops:fx-identity": "node tools/verify_tactical_combat_fx_identity.mjs",
+    "verify:tactical-ops:fx-readability": "node tools/verify_tactical_combat_fx_readability.mjs"
   },
   "dependencies": {
     "lucide-react": "0.510.0",
