@@ -360,17 +360,19 @@ export async function loadFoundationProgression(): Promise<FoundationProgression
 export async function startFoundationRun(
   requestId: string,
   expectedRevision: number,
+  rulesetVersion?: string,
 ): Promise<FoundationProgressionState> {
-  return responseState(await request("/webapp/tactical-foundation/start", { requestId, expectedRevision }));
+  return responseState(await request("/webapp/tactical-foundation/start", { requestId, expectedRevision, ...(rulesetVersion ? { rulesetVersion } : {}) }));
 }
 
 export async function continueFoundationRun(
   requestId: string,
   expectedRevision: number,
   runId: string,
+  rulesetVersion?: string,
 ): Promise<FoundationProgressionState> {
   return responseState(
-    await request("/webapp/tactical-foundation/continue", { requestId, expectedRevision, runId }),
+    await request("/webapp/tactical-foundation/continue", { requestId, expectedRevision, runId, ...(rulesetVersion ? { rulesetVersion } : {}) }),
   );
 }
 

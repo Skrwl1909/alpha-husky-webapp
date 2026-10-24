@@ -798,6 +798,9 @@ export const useBattleStore = create<Store>((set, get) => {
             const progression = await startFoundationRun(
               createFoundationRequestId("start"),
               persisted.progression.revision,
+              persisted.progression.activeRunId
+                ? persisted.progression.foundationRunRules?.rulesContract.rulesetVersion
+                : persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined,
             );
             if (g !== runGen) return;
             applyCanonicalProgression(progression);
@@ -1116,6 +1119,7 @@ export const useBattleStore = create<Store>((set, get) => {
               requestId,
               s.progression.revision,
               s.currentRunKey as string,
+              s.progression.foundationRunRules?.rulesContract.rulesetVersion,
             );
             applyCanonicalProgression(progression);
             runGen++;
