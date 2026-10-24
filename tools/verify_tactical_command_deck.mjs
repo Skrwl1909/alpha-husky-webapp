@@ -25,7 +25,8 @@ for (const asset of ["command_room.webp", "mission_hologram.webp", "frames/03_fr
   assert(css.includes(asset), "Referenced uploaded asset "+asset);
 }
 assert(css.includes(".t-command-nav") && css.includes("position: sticky") && css.includes("prefers-reduced-motion"), "Navigation CSS and accessibility");
-assert(version.includes("tops-3.5.0-player-clarity-return-loop") && boot.includes("tops-3.5.0-player-clarity-return-loop"), "Canonical runtime version");
+const cacheKey = version.match(/CACHE_KEY.*?"([^"]+)"/)?.[1];
+assert(cacheKey && boot.includes('global.WEBAPP_VER = "'+cacheKey+'";'), "Canonical runtime version");
 console.log("PASS Command Deck source invariants: War Table and Brief tabs, saved actions, sticky navigation and deploy, version");
 
 const skillbook = readFileSync("tactical-ops-src/ui/Skillbook.tsx", "utf8");

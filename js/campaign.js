@@ -254,7 +254,7 @@
     if (!f || f.toLowerCase() === "unbound") return "UNBOUND";
     if (f === "rb" || f === "rogue_byte") return "Rogue Byte";
     if (f === "ew" || f === "echo_wardens") return "Echo Wardens";
-    if (f === "ih" || f === "inner_howl" || f === "inner_howlers") return "Inner Howlers";
+    if (f === "ih" || f === "inner_howl" || f === "inner_howlers") return "Inner Howl";
     if (f === "pb" || f === "pack_burners") return "Pack Burners";
     return f || "UNBOUND";
   }
@@ -493,7 +493,7 @@
     if (!key || key === "unbound") return "UNBOUND";
     if (key === "rb" || key === "rogue_byte") return "Rogue Byte";
     if (key === "ew" || key === "echo_wardens") return "Echo Wardens";
-    if (key === "ih" || key === "inner_howl" || key === "inner_howlers") return "Inner Howlers";
+    if (key === "ih" || key === "inner_howl" || key === "inner_howlers") return "Inner Howl";
     if (key === "pb" || key === "pack_burners") return "Pack Burners";
     return asText(raw) || "UNBOUND";
   }
@@ -1479,7 +1479,7 @@
     }
 
     if (campaign.markLeft) {
-      afterChoiceHtml += "<div class=\"campaign-note\">Your mark reached the Pack. The fracture has begun, but you are still standing.</div>";
+      afterChoiceHtml += "<div class=\"campaign-note\">Your mark reached the Pack. The Pack is still divided, but you are still standing.</div>";
       if (meta) {
         var place = asText(DIRECTIVE_PLACES[selected]) || meta.label;
         afterChoiceHtml += "<div class=\"campaign-directive-line\">You chose: " + esc(meta.label) + "</div>";
@@ -1515,10 +1515,10 @@
       + "    <p class=\"campaign-line\">But don't celebrate yet.</p>"
       + "  </div>"
       + "  <div class=\"campaign-beat\">"
-      + "    <p class=\"campaign-line\">The Meme War was a distraction.</p>"
+      + "    <p class=\"campaign-line\">The Meme War didn't end the struggle.</p>"
       + "    <p class=\"campaign-line\">Alpha reached the Edge.</p>"
       + "    <p class=\"campaign-line\">He found the Oracle.</p>"
-      + "    <p class=\"campaign-line\">Now the Pack is fracturing.</p>"
+      + "    <p class=\"campaign-line\">The Pack is still divided.</p>"
       + "  </div>"
       + "  <div class=\"campaign-question\">Choose your First Mission Focus.</div>"
       + "  <div class=\"campaign-directives\">" + renderDirectiveChoices(campaign) + "</div>"

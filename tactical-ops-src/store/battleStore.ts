@@ -630,14 +630,14 @@ export const useBattleStore = create<Store>((set, get) => {
     saveFieldResult: async () => {
       const current = get();
       if (current.screen !== "results" || current.progressionCommitPending || !current.currentRunKey || !current.progression || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
-      if (current.fieldResult?.runId === current.currentRunKey) return;
+      if (current.fieldResult?.runId === current.currentRunKey && current.fieldResult.missionId === current.selectedMissionId) return;
       const report = fieldReport(current.battle);
       if (!report) return;
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
         const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report, undefined, current.activeRulesetVersion || undefined);
-        if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey) throw new FoundationProgressionError("invalid_progression_response");
+        if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey || committed.fieldResult.missionId !== current.selectedMissionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         applyCanonicalProgression(committed.state);
         set({ fieldResult: committed.fieldResult, progressionCommitPending: false });
@@ -646,7 +646,7 @@ export const useBattleStore = create<Store>((set, get) => {
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
         if (canonical) applyCanonicalProgression(canonical);
         const recovered = canonical?.fieldOps?.lastResult;
-        if (recovered?.runId === current.currentRunKey) set({ fieldResult: recovered, progressionError: null, progressionCommitPending: false });
+        if (recovered?.runId === current.currentRunKey && recovered.missionId === current.selectedMissionId) set({ fieldResult: recovered, progressionError: null, progressionCommitPending: false });
         else set({ progressionCommitPending: false, progressionError: "Result could not be recorded. Retry saving before returning or replaying." });
       }
     },
@@ -656,7 +656,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (mission?.operationId !== DEAD_RELAY.operationId || current.screen !== "results" ||
           current.progressionCommitPending || !current.currentRunKey || !current.progression ||
           !current.battle.results || current.battle.outcome === "ongoing") return;
-      if (current.campaignResult?.runId === current.currentRunKey) return;
+      if (current.campaignResult?.runId === current.currentRunKey && current.campaignResult.missionId === mission.missionId) return;
       const results = current.battle.results;
       const report: CampaignReport = {
         victory: current.battle.outcome === "victory", turns: results.turns,
@@ -669,7 +669,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
         const response = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, undefined, report, current.activeRulesetVersion || undefined);
-        if (!response.campaignResult || response.campaignResult.runId !== current.currentRunKey) throw new FoundationProgressionError("invalid_progression_response");
+        if (!response.campaignResult || response.campaignResult.runId !== current.currentRunKey || response.campaignResult.missionId !== mission.missionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         applyCanonicalProgression(response.state);
         set({ campaignResult: response.campaignResult, progressionCommitPending: false });
@@ -798,6 +798,9 @@ export const useBattleStore = create<Store>((set, get) => {
             const progression = await startFoundationRun(
               createFoundationRequestId("start"),
               persisted.progression.revision,
+              persisted.progression.activeRunId
+                ? persisted.progression.foundationRunRules?.rulesContract.rulesetVersion
+                : persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined,
             );
             if (g !== runGen) return;
             applyCanonicalProgression(progression);
@@ -805,7 +808,7 @@ export const useBattleStore = create<Store>((set, get) => {
               set({ screen: "war-table", battle: emptyBattle(), busy: false, ticker: null });
               return;
             }
-            beginBattle(g, progression.activeRunId);
+            beginBattle(g, progression.activeRunId, undefined, undefined, false, false, null, undefined, undefined, null, null, progression.foundationRunRules?.rulesContract || null);
           } catch (error) {
             if (g !== runGen) return;
             const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
@@ -1024,7 +1027,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const current = get();
       if (current.progressionCommitPending) return;
       if (getMissionDef(current.selectedMissionId)?.operationId === DEAD_RELAY.operationId && current.screen === "results") {
-        if (!current.campaignResult) { void current.saveCampaignResult(); return; }
+        if (!current.campaignResult || current.campaignResult.runId !== current.currentRunKey || current.campaignResult.missionId !== current.selectedMissionId) { void current.saveCampaignResult(); return; }
         current.continueOnboarding(true);
         return;
       }
@@ -1039,7 +1042,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const s = get();
       if (s.screen !== "results") return;
       if (getMissionDef(s.selectedMissionId)?.activity === "FIELD_OP") {
-        if (!s.fieldResult) { void get().saveFieldResult(); return; }
+        if (!s.fieldResult || s.fieldResult.runId !== s.currentRunKey || s.fieldResult.missionId !== s.selectedMissionId) { void get().saveFieldResult(); return; }
         if (s.progressionCommitPending) return;
         get().backToHub();
         if (replayAfter && s.selectedMissionId) {
@@ -1051,7 +1054,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       if (getMissionDef(s.selectedMissionId)?.operationId === DEAD_RELAY.operationId) {
         if (s.progressionCommitPending) return;
-        if (!s.campaignResult) { void s.saveCampaignResult(); return; }
+        if (!s.campaignResult || s.campaignResult.runId !== s.currentRunKey || s.campaignResult.missionId !== s.selectedMissionId) { void s.saveCampaignResult(); return; }
         const rememberedMission = s.selectedMissionId;
         get().backToHub();
         if (replayAfter && rememberedMission) get().openOperationBrief(rememberedMission);
@@ -1116,6 +1119,7 @@ export const useBattleStore = create<Store>((set, get) => {
               requestId,
               s.progression.revision,
               s.currentRunKey as string,
+              s.progression.foundationRunRules?.rulesContract.rulesetVersion,
             );
             applyCanonicalProgression(progression);
             runGen++;

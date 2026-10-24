@@ -1,0 +1,33 @@
+name: Lore canon copy alignment
+
+on:
+  pull_request:
+    paths:
+      - 'js/factions.js'
+      - 'js/faction_hq.js'
+      - 'js/faction_identity.js'
+      - 'js/oath.js'
+      - 'js/campaign.js'
+      - 'js/cta.js'
+      - 'js/story_delivery.js'
+      - 'js/onboarding.js'
+      - 'js/bloodmoon.js'
+      - 'index.html'
+      - 'js/map.js'
+      - 'map.json'
+      - 'tools/verify_lore_canon_copy_alignment.mjs'
+      - '.github/workflows/lore-canon-copy-alignment.yml'
+  workflow_dispatch:
+
+jobs:
+  verify-lore-canon-copy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify canon copy consistency
+        run: node tools/verify_lore_canon_copy_alignment.mjs

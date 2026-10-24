@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><defs>
+<linearGradient id="steel" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5c7681"/><stop offset=".17" stop-color="#1e3949"/><stop offset=".55" stop-color="#071725"/><stop offset="1" stop-color="#385565"/></linearGradient></defs>
+<circle cx="128" cy="128" r="116" fill="none" stroke="#06121b" stroke-width="16"/>
+<circle cx="128" cy="128" r="110" fill="none" stroke="url(#steel)" stroke-width="12"/>
+<circle cx="128" cy="128" r="98" fill="none" stroke="#112e40" stroke-width="8"/>
+<circle cx="128" cy="128" r="88" fill="none" stroke="#6b8c99" stroke-opacity=".8" stroke-width="3"/>
+<circle cx="128" cy="128" r="80" fill="none" stroke="#66a8b9" stroke-opacity=".26" stroke-width="2"/>
+<g stroke="#4c6c7a" stroke-width="5"><path d="M127 8v21M127 227v21M8 128h21M227 128h21"/><path d="M45 45l18 18M193 193l18 18M211 45l-18 18M63 193l-18 18"/></g>
+<g fill="#071420" stroke="#839ca5" stroke-width="2"><circle cx="128" cy="16" r="5"/><circle cx="16" cy="128" r="5"/><circle cx="240" cy="128" r="5"/><circle cx="128" cy="240" r="5"/></g>
+</svg>

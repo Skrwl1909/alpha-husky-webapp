@@ -556,7 +556,7 @@
     const x = String(f || "").trim().toLowerCase();
     if (x === "rb") return "Rogue Byte";
     if (x === "ew") return "Echo Wardens";
-    if (x === "ih") return "Inner Howlers";
+    if (x === "ih") return "Inner Howl";
     if (x === "pb") return "Pack Burners";
     return x ? x.toUpperCase() : "Unaligned";
   }

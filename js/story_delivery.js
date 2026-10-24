@@ -581,7 +581,7 @@
       return frame({
         id: "S-CAMPAIGN-INCOMING",
         situation: "RELAY-7 reached your node.",
-        why: "The Meme War was a distraction. The Pack is fracturing.",
+        why: "The Meme War didn't end the struggle. The Pack is still divided.",
         changed: fs.eligible && fs.state === "COMPLETED"
           ? "Rustfang is equipped. Strength rose."
           : "No mark on the map yet.",
