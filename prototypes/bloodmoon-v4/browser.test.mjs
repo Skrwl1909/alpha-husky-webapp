@@ -12,7 +12,8 @@ ws.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.id){const p=pe
 function call(method,params={}){return new Promise((resolve,reject)=>{const id=++seq;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}));});}
 async function evaluate(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;}
 const snapshot=()=>evaluate('window.lastStand.snapshot()');
-const out=new URL('./evidence/',import.meta.url);await mkdir(out,{recursive:true});
+const evidencePath=process.env.EVIDENCE_DIR||'./p2/evidence-local/p1-browser/';
+const out=new URL(evidencePath,import.meta.url);await mkdir(out,{recursive:true});
 async function capture(name){const {data}=await call('Page.captureScreenshot',{format:'png'});await writeFile(new URL(`${name}.png`,out),Buffer.from(data,'base64'));}
 await call('Runtime.enable');await call('Page.enable');await call('Network.enable');
 await call('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
@@ -21,6 +22,7 @@ const demo=process.env.DEMO_URL||'http://127.0.0.1:4173/';
 await call('Page.navigate',{url:demo});
 async function loaded(){for(let i=0;i<250;i++){if(await evaluate('!!window.lastStand?.visuals().ready'))return;await pause(40);}throw Error('Artwork did not become ready');}
 await loaded();
+await evaluate(`document.getElementById('profile').value='standard';document.getElementById('profile').dispatchEvent(new Event('change'));`);
 let visuals=await evaluate('window.lastStand.visuals()');assert.equal(visuals.loaded.length,10);assert.deepEqual(visuals.failures,[]);
 console.log('PASS all 10 original production assets decoded');
 const box=async selector=>evaluate(`(()=>{const r=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};})()`);
@@ -120,7 +122,7 @@ for(let i=0;i<250;i++){if(await evaluate('window.lastStand?.visuals().failures.i
 assert(!(await evaluate('window.lastStand.visuals().ready')));assert(await evaluate('document.getElementById("start").disabled'));assert((await evaluate('document.getElementById("result").textContent')).includes('unavailable'));
 await call('Fetch.disable');await call('Page.reload');await loaded();
 console.log('PASS optional asset fallback, essential asset failure blocks play safely, restored load succeeds');
-const recordedVideo=await evaluate(`new Promise((resolve,reject)=>{const v=document.createElement('video');v.preload='auto';v.onloadeddata=()=>resolve({width:v.videoWidth,height:v.videoHeight,readyState:v.readyState});v.onerror=()=>reject(Error('Recorded gameplay failed to decode'));v.src=${JSON.stringify(new URL('evidence/gameplay.webm',demo).href)};v.load();})`);
+const recordedVideo=await evaluate(`new Promise((resolve,reject)=>{const v=document.createElement('video');v.preload='auto';v.onloadeddata=()=>resolve({width:v.videoWidth,height:v.videoHeight,readyState:v.readyState});v.onerror=()=>reject(Error('Recorded gameplay failed to decode'));v.src=${JSON.stringify(new URL(evidencePath+'gameplay.webm',demo).href)};v.load();})`);
 assert(recordedVideo.width>=360&&recordedVideo.height>=540&&recordedVideo.readyState>=2);
 console.log('PASS recorded gameplay WebM decodes in Chrome');
 assert.equal(errors.length,0,JSON.stringify(errors));

@@ -39,7 +39,7 @@ export class Presentation {
     c.fillStyle='#302329';c.fillRect(b.x-38,172,76,3);c.fillStyle='#da7774';c.fillRect(b.x-38,172,76*b.hp/g.t.bossHP,3);
     if(g.status==='playing'&&g.time-g.shotAt<.14){
       if(!lite){c.strokeStyle='#c5f4edcc';c.lineWidth=2;c.beginPath();c.moveTo(p.x,p.y-12);c.lineTo(b.x,b.y);c.stroke();if(this.images.slash)c.drawImage(this.images.slash,b.x-38,b.y-10,76,25);}
-      this.text(`−${g.t.damage}`,b.x+47,b.y-12,'#caffd2',13);
+      this.text(`−${Number(g.t.damage.toFixed(2))}`,b.x+47,b.y-12,'#caffd2',13);
     }
     // Draw the HUD before the Howler so it never covers the player at the lower bound.
     this.text(`${g.time.toFixed(1)} / ${g.t.limit}s  ·  HOWLER ${p.hp}/${g.t.playerHP}  ·  HUSK ${Number(b.hp.toFixed(1))}/${g.t.bossHP}`,180,511,'#d9dfd5',10);

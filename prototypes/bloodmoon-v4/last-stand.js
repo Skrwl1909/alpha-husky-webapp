@@ -3,19 +3,26 @@ import {bindInput} from './input.js';
 import {loadAssets,bossImage} from './assets.js';
 import {Presentation} from './presentation.js';
 import {LOCAL_PROFILES} from './combat-parameters.js';
+import {DEMO_SCENARIOS} from './p2/demo-profiles.js';
 const $=id=>document.getElementById(id),canvas=$('arena');
-let game=new Encounter(),running=false,playback=null,replayIndex=0,saved=null;
+let game=new Encounter(1909,{},DEMO_SCENARIOS[$('profile').value]?.parameters??LOCAL_PROFILES[$('profile').value]),running=false,playback=null,replayIndex=0,saved=null;
 let accumulator=0,previous=0,presentation=null,assetResult=null,renderedState='loading';
 const input=bindInput(canvas,(x,y)=>{if(running&&!playback)game.setInput(x,y);});
 $('lite').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function start(record=null){
   if(!assetResult?.ready)return;
   input.reset();playback=record;replayIndex=0;presentation.reset();
-  game=record?fromRecording(record):new Encounter(1909,{},LOCAL_PROFILES[$('profile').value]);
+  const scenario=DEMO_SCENARIOS[$('profile').value];
+  game=record?fromRecording(record):new Encounter(1909,{},scenario?.parameters??LOCAL_PROFILES[$('profile').value]);
   $('player-hp').max=game.t.playerHP;$('boss-hp').max=game.t.bossHP;
   accumulator=0;previous=0;running=true;$('overlay').hidden=true;$('profile').disabled=true;
 }
 $('start').onclick=()=>start();$('restart').onclick=()=>start();
+function showResolution(){
+  const scenario=DEMO_SCENARIOS[$('profile').value];
+  $('resolution-status').textContent=scenario?`${scenario.label}: ${scenario.parameters.player.maxHP} HP, ${scenario.parameters.player.damagePerHit} damage/hit against fixed 1000 HP. Proposed demo tuning; no backend formula or account integration is included. No attempts, contribution or rewards.`:'P1 local strength fixture; not account data.';
+}
+$('profile').onchange=showResolution;showResolution();
 $('replay').onclick=()=>{if(saved)start(saved);};
 $('export').onclick=()=>{
   const blob=new Blob([JSON.stringify({recording:game.recording(),events:game.events},null,2)],{type:'application/json'});
