@@ -1,6 +1,7 @@
+import {combatParameters,combatTuning} from './combat-parameters.js';
 export const TUNING = Object.freeze({ width: 360, height: 540, step: 1 / 60,
   speed: 230, playerRadius: 11, bossRadius: 29, playerHP: 3, bossHP: 96,
-  range: 270, stationaryDelay: .25, cooldown: .48, damage: 1,
+  range: 270, stationaryDelay: .25, cooldown: .48, damage: 1, incomingDamage: 1,
   telegraph: 1.1, impact: .2, recovery: .65, opening: .75,
   escalationAt: 30, finalEscalationAt: 50, pressuredRecovery: .55, finalRecovery: .48,
   lineWidth: 58, circleRadius: 68, coneRadius: 310, coneHalfAngle: .34,
@@ -27,8 +28,9 @@ export function hits(p, a, radius = TUNING.playerRadius) {
     y:a.origin.y+Math.sin(a.angle+sign*a.halfAngle)*a.radius }) <= radius);
 }
 export class Encounter {
-  constructor(seed = 1909, tuning = {}) {
-    this.t = {...TUNING, ...tuning}; this.seed = seed >>> 0; this.rng = this.seed || 1;
+  constructor(seed = 1909, tuning = {}, parameters = null) {
+    this.parameters = parameters ? combatParameters(parameters) : null;
+    this.t = {...TUNING, ...tuning, ...(this.parameters ? combatTuning(this.parameters) : {})}; this.seed = seed >>> 0; this.rng = this.seed || 1;
     this.orderRng = (this.seed ^ 0x9e3779b9) >>> 0 || 1;
     this.pressure = 0; this.attackQueue = []; this.lastOrder = '';
     this.tick = 0; this.time = 0; this.status = 'playing';
@@ -103,25 +105,26 @@ export class Encounter {
     }
     if (this.phase === 'impact' && !this.attack.hit &&
         this.time-this.hurtAt >= t.invulnerability && hits(this.player,this.attack,t.playerRadius)) {
-      this.attack.hit = true; this.player.hp = Math.max(0,this.player.hp-1); this.hurtAt = this.time;
-      this.log('player-hit',{kind:this.attack.kind,hp:this.player.hp});
+      this.attack.hit = true; const damage = Math.min(this.player.hp,t.incomingDamage); this.player.hp = Math.max(0,this.player.hp-damage); this.hurtAt = this.time;
+      this.log('player-hit',{kind:this.attack.kind,hp:this.player.hp,damage});
     }
     if (this.player.hp <= 0) return this.finish('lost');
     if (!this.moving && this.still >= t.stationaryDelay &&
         this.time-this.shotAt >= t.cooldown && distance(this.player,this.boss) <= t.range) {
-      this.shotAt = this.time; this.boss.hp = Math.max(0,this.boss.hp-t.damage);
-      this.log('boss-hit',{hp:this.boss.hp});
+      this.shotAt = this.time; const damage = Math.min(this.boss.hp,t.damage);
+      this.boss.hp = Math.max(0,Math.round((this.boss.hp-damage)*1e9)/1e9);
+      this.log('boss-hit',{hp:this.boss.hp,damage});
       if (!this.boss.hp) return this.finish('won');
     }
     if (this.time >= t.limit) this.finish('timeout');
   }
   finish(status) { this.status = status; this.setInput(); this.log(status); }
-  recording() { return {version:2,seed:this.seed,tuning:this.t,ticks:this.tick,trace:structuredClone(this.trace)}; }
+  recording() { return {version:3,seed:this.seed,tuning:this.t,parameters:this.parameters,ticks:this.tick,trace:structuredClone(this.trace)}; }
 }
 export function fromRecording(record) {
   // Version 1 predates escalation. Preserve its original pacing and attack order.
   const tuning = record.version === 1 ? {...record.tuning,escalationAt:null,finalEscalationAt:null} : record.tuning;
-  return new Encounter(record.seed,tuning);
+  return new Encounter(record.seed,tuning,record.parameters ?? null);
 }
 export function replay(record) {
   const game = fromRecording(record); let i = 0;

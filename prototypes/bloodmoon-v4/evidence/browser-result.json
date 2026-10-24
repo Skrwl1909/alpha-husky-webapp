@@ -4,7 +4,7 @@
     "height": 740
   },
   "status": "PASS",
-  "victoryTime": 60.233333333333334,
+  "victoryTime": 60.3,
   "playerHP": 3,
   "bossHP": 0,
   "reactionDelay": 0.25,
@@ -36,6 +36,36 @@
     "LINE",
     "CIRCLE"
   ],
+  "bossStates": [
+    "idle",
+    "hit",
+    "attack",
+    "defeat"
+  ],
+  "productionAssetsLoaded": 10,
+  "layoutViewports": [
+    [
+      320,
+      568
+    ],
+    [
+      390,
+      844
+    ],
+    [
+      360,
+      740
+    ]
+  ],
+  "optionalFallback": "PASS",
+  "essentialFailure": "PASS",
+  "externalApiRequests": 0,
+  "gameplayRecording": "gameplay.webm",
+  "recordedVideo": {
+    "width": 360,
+    "height": 540,
+    "readyState": 4
+  },
   "exceptions": [],
   "physicalDeviceTested": false
 }
