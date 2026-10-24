@@ -4949,3 +4949,38 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 @keyframes t-fx-contact {0%{opacity:0;transform:translate(-50%,-50%) scale(.35);}30%{opacity:1;transform:translate(-50%,-50%) scale(1);}100%{opacity:0;transform:translate(-50%,-50%) scale(1.85);}}
 @keyframes t-fx-soft-wave {0%{opacity:0;transform:scale(.35);}25%{opacity:.85;}100%{opacity:0;transform:scale(2.5);}}
 @media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-sprite-fx.fx-area::before{animation:none;opacity:.3;transform:none;}#tacticalOpsRoot .t-impact{animation:none;opacity:.35;}}
+
+
+/* Combat FX Identity P2 — purely decorative layers on already-confirmed atlases.
+   Maintain red telegraph priority, tap freedom, and reduced-motion fallback. */
+#tacticalOpsRoot .t-sprite-fx.fx-alpha {--t-fx-ink:rgba(116,223,252,.82);filter:drop-shadow(0 0 7px rgba(74,196,246,.25));}
+#tacticalOpsRoot .t-sprite-fx.fx-cnc {--t-fx-ink:rgba(245,189,100,.82);filter:drop-shadow(0 0 7px rgba(239,178,86,.26));}
+#tacticalOpsRoot .t-sprite-fx.fx-shadow {--t-fx-ink:rgba(114,246,212,.82);filter:drop-shadow(0 0 7px rgba(93,222,186,.26));}
+#tacticalOpsRoot .t-sprite-fx.fx-pet {--t-fx-ink:rgba(181,208,255,.85);filter:drop-shadow(0 0 6px rgba(153,190,245,.24));}
+#tacticalOpsRoot .t-sprite-fx.fx-objective {--t-fx-ink:rgba(135,233,255,.8);filter:drop-shadow(0 0 9px rgba(87,206,249,.24));}
+#tacticalOpsRoot .t-sprite-fx.fx-hit::before {content:"";position:absolute;inset:27% 43%;z-index:1;pointer-events:none;border-radius:40%;background:linear-gradient(180deg,transparent 3%,var(--t-fx-ink) 48%,transparent 98%);transform:rotate(-42deg);animation:t-fx-identity-hit .30s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-rend::before {inset:18% 45%;transform:rotate(-35deg);animation-duration:.39s;}
+#tacticalOpsRoot .t-sprite-fx.fx-rend::after {content:"";position:absolute;inset:25% 39%;z-index:1;pointer-events:none;background:linear-gradient(180deg,transparent,var(--t-fx-ink),transparent);transform:rotate(-51deg);animation:t-fx-identity-hit .43s .06s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-thrust::before {inset:42% 16%;height:12%;border-radius:0;transform:rotate(-10deg);animation-duration:.26s;}
+#tacticalOpsRoot .t-sprite-fx.fx-lunge::before {inset:36% 16%;height:22%;border-radius:0;transform:rotate(-17deg);animation-duration:.38s;}
+#tacticalOpsRoot .t-sprite-fx.fx-sweep::before {inset:34% 19%;border-radius:50%;background:linear-gradient(120deg,transparent 10%,var(--t-fx-ink) 48%,transparent 78%);transform:rotate(18deg);}
+#tacticalOpsRoot .t-sprite-fx.fx-control::before,#tacticalOpsRoot .t-sprite-fx.fx-interrupt::before {content:"";position:absolute;inset:27%;z-index:1;pointer-events:none;border:2px dashed var(--t-fx-ink);border-radius:9px;box-shadow:inset 0 0 13px rgba(255,192,99,.11);animation:t-fx-identity-lock .55s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-interrupt::before {border-style:solid;clip-path:polygon(0 0,100% 0,100% 37%,70% 37%,70% 63%,100% 63%,100% 100%,0 100%);animation-duration:.70s;}
+#tacticalOpsRoot .t-sprite-fx.fx-mend::before {content:"";position:absolute;inset:16% 33%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(121,255,211,.26),transparent);clip-path:polygon(40% 0,60% 0,60% 40%,100% 40%,100% 60%,60% 60%,60% 100%,40% 100%,40% 60%,0 60%,0 40%,40% 40%);animation:t-fx-identity-support .66s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-guard:not(.fx-area)::before {content:"";position:absolute;inset:20% 26%;z-index:1;pointer-events:none;border:2px solid var(--t-fx-ink);border-radius:42% 42% 58% 58%;box-shadow:inset 0 0 14px rgba(116,223,252,.15);animation:t-fx-identity-support .53s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-bite::before {clip-path:polygon(0 0,50% 28%,100% 0,67% 100%,30% 100%);transform:rotate(-25deg);}
+#tacticalOpsRoot .t-sprite-fx.fx-hamstring::before {inset:37% 20%;transform:rotate(55deg);}
+#tacticalOpsRoot .t-sprite-fx.fx-pathfinder::before {content:"";position:absolute;inset:39% 17%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,var(--t-fx-ink),transparent);clip-path:polygon(0 44%,72% 44%,72% 0,100% 50%,72% 100%,72% 56%,0 56%);animation:t-fx-identity-support .55s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-recover::before {content:"";position:absolute;inset:22%;z-index:1;pointer-events:none;border:2px solid var(--t-fx-ink);clip-path:polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%);background:radial-gradient(circle,rgba(96,206,242,.17),transparent 62%);animation:t-fx-identity-support .68s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-howl::after {content:"";position:absolute;inset:43% 12%;z-index:1;pointer-events:none;background:linear-gradient(90deg,transparent,var(--t-fx-ink),transparent);clip-path:polygon(0 45%,22% 45%,30% 20%,40% 75%,52% 0,64% 80%,72% 44%,100% 44%,100% 55%,74% 55%,64% 100%,52% 28%,40% 100%,28% 45%,20% 55%,0 55%);animation:t-fx-identity-support .72s ease-out both;}
+#tacticalOpsRoot .t-sprite-fx.fx-pack::after {content:"";position:absolute;inset:28%;z-index:1;pointer-events:none;border:1px solid var(--t-fx-ink);border-radius:16%;transform:rotate(45deg);animation:t-fx-identity-support .67s ease-out both;}
+@keyframes t-fx-identity-hit {0%{opacity:0;scale:.3;}28%{opacity:.76;}100%{opacity:0;scale:1.5;}}
+@keyframes t-fx-identity-lock {0%{opacity:0;scale:.6;}34%{opacity:.75;}100%{opacity:0;scale:1.3;}}
+@keyframes t-fx-identity-support {0%{opacity:0;scale:.65;}35%{opacity:.55;}100%{opacity:0;scale:1.45;}}
+@media(prefers-reduced-motion:reduce){
+  #tacticalOpsRoot .t-sprite-fx.fx-hit::before,#tacticalOpsRoot .t-sprite-fx.fx-rend::after,
+  #tacticalOpsRoot .t-sprite-fx.fx-control::before,#tacticalOpsRoot .t-sprite-fx.fx-interrupt::before,
+  #tacticalOpsRoot .t-sprite-fx.fx-mend::before,#tacticalOpsRoot .t-sprite-fx.fx-guard::before,
+  #tacticalOpsRoot .t-sprite-fx.fx-pathfinder::before,#tacticalOpsRoot .t-sprite-fx.fx-recover::before,
+  #tacticalOpsRoot .t-sprite-fx.fx-howl::after,#tacticalOpsRoot .t-sprite-fx.fx-pack::after {animation:none!important;opacity:0!important;}
+}

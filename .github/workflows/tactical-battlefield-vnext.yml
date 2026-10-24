@@ -80,6 +80,8 @@ jobs:
       - run: node tools/verify_tactical_command_deck.mjs
       - run: node tools/verify_tactical_combat_identity.mjs
       - run: node tools/verify_tactical_combat_fx.mjs
+      - run: node tools/verify_tactical_combat_fx_readability.mjs
+      - run: node tools/verify_tactical_combat_fx_identity.mjs
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
       - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_player_clarity.mjs
@@ -89,6 +91,8 @@ jobs:
       - run: node tools/simulate_tactical_vnext_step0_legacy.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
       - run: npm run build:tactical-ops
+      - name: Check committed Tactical production bundle and Telegram cache key
+        run: git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
       - uses: actions/upload-artifact@v4
         if: success()
         with:

@@ -8,7 +8,7 @@ import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
-import { FX_ROOT } from "./combatFxAtlas";
+import { FX_ROOT, combatFxVisualClasses } from "./combatFxAtlas";
 import { playerBattleGuidance } from "./playerGuidance";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
@@ -596,7 +596,7 @@ export function BattleScreen() {
             const anchor=effect.terminal||unit;
             if(!anchor)return null;
             const pos=fieldPercent(anchor.c,anchor.r);
-            return <div key={effect.id} className={`t-sprite-fx ${["alpha_howl","shadow_pack_heal_def","shadow_pack_def_only","shadow_pack_guard"].includes(effect.name) ? "fx-area fx-support" : ""}`} style={{left:pos.x+"%",top:pos.y+"%"}} aria-hidden="true">
+            return <div key={effect.id} className={`t-sprite-fx ${["alpha_howl","shadow_pack_heal_def","shadow_pack_def_only","shadow_pack_guard"].includes(effect.name) ? "fx-area fx-support" : ""} ${combatFxVisualClasses(effect.name)}`} style={{left:pos.x+"%",top:pos.y+"%"}} aria-hidden="true">
               <div className="t-sprite-fx-clip" style={{animationDuration:effect.durationMs+"ms"}}>
                 <div className="t-sprite-fx-sheet" style={{
                   backgroundImage:`url("${FX_ROOT}${effect.name}.webp")`,
