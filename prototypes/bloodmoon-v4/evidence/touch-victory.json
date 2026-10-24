@@ -1,0 +1,1616 @@
+{
+  "recording": {
+    "version": 2,
+    "seed": 1909,
+    "tuning": {
+      "width": 360,
+      "height": 540,
+      "step": 0.016666666666666666,
+      "speed": 230,
+      "playerRadius": 11,
+      "bossRadius": 29,
+      "playerHP": 3,
+      "bossHP": 96,
+      "range": 270,
+      "stationaryDelay": 0.25,
+      "cooldown": 0.48,
+      "damage": 1,
+      "telegraph": 1.1,
+      "impact": 0.2,
+      "recovery": 0.65,
+      "opening": 0.75,
+      "escalationAt": 30,
+      "finalEscalationAt": 50,
+      "pressuredRecovery": 0.55,
+      "finalRecovery": 0.48,
+      "lineWidth": 58,
+      "circleRadius": 68,
+      "coneRadius": 310,
+      "coneHalfAngle": 0.34,
+      "invulnerability": 0.6,
+      "limit": 75
+    },
+    "ticks": 3614,
+    "trace": [
+      {
+        "tick": 62,
+        "x": -0.9999997992264597,
+        "y": 0
+      },
+      {
+        "tick": 79,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 181,
+        "x": 0.19768679052367213,
+        "y": -0.9802647179799964
+      },
+      {
+        "tick": 190,
+        "x": 0.19768653600344777,
+        "y": -0.980265287298779
+      },
+      {
+        "tick": 199,
+        "x": 0.19768679052367213,
+        "y": -0.9802647179799964
+      },
+      {
+        "tick": 202,
+        "x": 0.19768653600344777,
+        "y": -0.980265287298779
+      },
+      {
+        "tick": 205,
+        "x": 0.19768612258824805,
+        "y": -0.9802653706706282
+      },
+      {
+        "tick": 208,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 303,
+        "x": 0.9997814949093964,
+        "y": 0.020903646493678808
+      },
+      {
+        "tick": 322,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 423,
+        "x": -0.9878350738295932,
+        "y": 0.15550455056521173
+      },
+      {
+        "tick": 439,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 544,
+        "x": 0.9546579633440293,
+        "y": 0.29770394791105864
+      },
+      {
+        "tick": 551,
+        "x": 0.9546576969878791,
+        "y": 0.29770569625353027
+      },
+      {
+        "tick": 558,
+        "x": 0.9546579633440293,
+        "y": 0.29770394791105864
+      },
+      {
+        "tick": 561,
+        "x": 0.9546576969878791,
+        "y": 0.29770569625353027
+      },
+      {
+        "tick": 569,
+        "x": 0.9546579633440293,
+        "y": 0.29770394791105864
+      },
+      {
+        "tick": 572,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 663,
+        "x": -0.9951012116625794,
+        "y": 0.09886104279897118
+      },
+      {
+        "tick": 678,
+        "x": -0.995101067697292,
+        "y": 0.0988628599005178
+      },
+      {
+        "tick": 687,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 786,
+        "x": -0.9861963315117627,
+        "y": -0.1655791063614584
+      },
+      {
+        "tick": 802,
+        "x": -0.9861965184799258,
+        "y": -0.1655790655187828
+      },
+      {
+        "tick": 805,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 907,
+        "x": 0.8644200088386251,
+        "y": 0.5027699652928501
+      },
+      {
+        "tick": 915,
+        "x": 0.8644195786096096,
+        "y": 0.5027699652928501
+      },
+      {
+        "tick": 924,
+        "x": 0.8644192814924024,
+        "y": 0.5027716238851979
+      },
+      {
+        "tick": 929,
+        "x": 0.8644195786096096,
+        "y": 0.5027699652928501
+      },
+      {
+        "tick": 931,
+        "x": 0.8644192814924024,
+        "y": 0.5027716238851979
+      },
+      {
+        "tick": 934,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1028,
+        "x": -0.9478418064898948,
+        "y": -0.3187411330060386
+      },
+      {
+        "tick": 1035,
+        "x": -0.9478422752896644,
+        "y": -0.31873945925003144
+      },
+      {
+        "tick": 1042,
+        "x": -0.9478418064898948,
+        "y": -0.3187411330060386
+      },
+      {
+        "tick": 1045,
+        "x": -0.9478422752896644,
+        "y": -0.31873945925003144
+      },
+      {
+        "tick": 1052,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1150,
+        "x": 0.6876509530203685,
+        "y": 0.7260401427572964
+      },
+      {
+        "tick": 1154,
+        "x": 0.6876506843434413,
+        "y": 0.7260416904847797
+      },
+      {
+        "tick": 1161,
+        "x": 0.6876509530203685,
+        "y": 0.7260401427572964
+      },
+      {
+        "tick": 1164,
+        "x": 0.6876506843434413,
+        "y": 0.7260416904847797
+      },
+      {
+        "tick": 1167,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1268,
+        "x": 0.5010610594785305,
+        "y": -0.8654118516556994
+      },
+      {
+        "tick": 1292,
+        "x": 0.5010606292495151,
+        "y": -0.8654118516556994
+      },
+      {
+        "tick": 1295,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1389,
+        "x": -0.9654311359237941,
+        "y": -0.26065824711467006
+      },
+      {
+        "tick": 1393,
+        "x": -0.9654313281066434,
+        "y": -0.26065646759797956
+      },
+      {
+        "tick": 1403,
+        "x": -0.9654311359237941,
+        "y": -0.26065824711467006
+      },
+      {
+        "tick": 1406,
+        "x": -0.9654316260214588,
+        "y": -0.26065643187453097
+      },
+      {
+        "tick": 1409,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1509,
+        "x": 0.9496638649388364,
+        "y": 0.3132690542030586
+      },
+      {
+        "tick": 1513,
+        "x": 0.9496638154899034,
+        "y": 0.3132708692955004
+      },
+      {
+        "tick": 1519,
+        "x": 0.9496638649388364,
+        "y": 0.3132690542030586
+      },
+      {
+        "tick": 1522,
+        "x": 0.9496638154899034,
+        "y": 0.3132708692955004
+      },
+      {
+        "tick": 1525,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1629,
+        "x": -0.43872818910985995,
+        "y": 0.8986188768688461
+      },
+      {
+        "tick": 1640,
+        "x": -0.4387277588808445,
+        "y": 0.8986188768688461
+      },
+      {
+        "tick": 1651,
+        "x": -0.43872714301686316,
+        "y": 0.8986203280475357
+      },
+      {
+        "tick": 1657,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1749,
+        "x": -0.8045476182062826,
+        "y": -0.5938878301411735
+      },
+      {
+        "tick": 1765,
+        "x": -0.8045467423498572,
+        "y": -0.5938893325984502
+      },
+      {
+        "tick": 1768,
+        "x": -0.8045476182062826,
+        "y": -0.5938878301411735
+      },
+      {
+        "tick": 1774,
+        "x": -0.8045468940934211,
+        "y": -0.5938891270301465
+      },
+      {
+        "tick": 1777,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1863,
+        "x": 0.866888127553482,
+        "y": -0.4985027324968418
+      },
+      {
+        "tick": 1872,
+        "x": 0.8668882344674594,
+        "y": -0.4985025465751312
+      },
+      {
+        "tick": 1885,
+        "x": 0.8668890931552511,
+        "y": -0.4985009615551594
+      },
+      {
+        "tick": 1890,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 1976,
+        "x": 0.9581066791276287,
+        "y": 0.2864115081656205
+      },
+      {
+        "tick": 1984,
+        "x": 0.9581071093566434,
+        "y": 0.28640967676118645
+      },
+      {
+        "tick": 1987,
+        "x": 0.9581066791276287,
+        "y": 0.2864115081656205
+      },
+      {
+        "tick": 1994,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2092,
+        "x": 0.9895542689732142,
+        "y": -0.14416083149559936
+      },
+      {
+        "tick": 2107,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2203,
+        "x": -0.23592076411282417,
+        "y": 0.9717722948615182
+      },
+      {
+        "tick": 2210,
+        "x": -0.23592117039574545,
+        "y": 0.9717721962266165
+      },
+      {
+        "tick": 2217,
+        "x": -0.23592076411282417,
+        "y": 0.9717722948615182
+      },
+      {
+        "tick": 2220,
+        "x": -0.23592117039574545,
+        "y": 0.9717721962266165
+      },
+      {
+        "tick": 2227,
+        "x": -0.23592076411282417,
+        "y": 0.9717722948615182
+      },
+      {
+        "tick": 2230,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2318,
+        "x": 0.9422895729521534,
+        "y": -0.33479898552063836
+      },
+      {
+        "tick": 2331,
+        "x": 0.9422893093940911,
+        "y": -0.3347990447394469
+      },
+      {
+        "tick": 2335,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2430,
+        "x": -0.9286260963382579,
+        "y": 0.3710168988435289
+      },
+      {
+        "tick": 2457,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2547,
+        "x": -0.9995379961775629,
+        "y": 0.030393982913432874
+      },
+      {
+        "tick": 2560,
+        "x": -0.9995377332644354,
+        "y": 0.030395819405615192
+      },
+      {
+        "tick": 2565,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2661,
+        "x": -0.8474491834592414,
+        "y": -0.5308765218525536
+      },
+      {
+        "tick": 2671,
+        "x": -0.847449304710566,
+        "y": -0.5308763282965049
+      },
+      {
+        "tick": 2689,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2775,
+        "x": 0.8311383527024345,
+        "y": 0.5560656657521397
+      },
+      {
+        "tick": 2792,
+        "x": 0.8311384915671168,
+        "y": 0.5560654708175449
+      },
+      {
+        "tick": 2800,
+        "x": 0.8311387829314499,
+        "y": 0.5560638343477041
+      },
+      {
+        "tick": 2803,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 2890,
+        "x": -0.832009371395953,
+        "y": -0.5547615757325943
+      },
+      {
+        "tick": 2917,
+        "x": -0.8320095038033072,
+        "y": -0.5547613771532537
+      },
+      {
+        "tick": 2923,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 3001,
+        "x": 0.791103821948059,
+        "y": -0.6116817556304164
+      },
+      {
+        "tick": 3027,
+        "x": 0.7911040512430957,
+        "y": -0.6116816002682779
+      },
+      {
+        "tick": 3031,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 3115,
+        "x": 0.9080734377981247,
+        "y": 0.41881097354951874
+      },
+      {
+        "tick": 3121,
+        "x": 0.9080736260665091,
+        "y": 0.41880922897601935
+      },
+      {
+        "tick": 3126,
+        "x": 0.9080734377981247,
+        "y": 0.41881097354951874
+      },
+      {
+        "tick": 3131,
+        "x": 0.9080731958374944,
+        "y": 0.4188110603804534
+      },
+      {
+        "tick": 3135,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 3224,
+        "x": 0.944841858139612,
+        "y": -0.32752653772855994
+      },
+      {
+        "tick": 3242,
+        "x": 0.9448414001374754,
+        "y": -0.3275282103670692
+      },
+      {
+        "tick": 3247,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 3339,
+        "x": -0.9319456831016361,
+        "y": 0.3625979091889873
+      },
+      {
+        "tick": 3348,
+        "x": -0.931945743417381,
+        "y": 0.3625961012519742
+      },
+      {
+        "tick": 3355,
+        "x": -0.9319456831016361,
+        "y": 0.3625979091889873
+      },
+      {
+        "tick": 3359,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 3444,
+        "x": 0.9653093848071458,
+        "y": 0.26110877350876194
+      },
+      {
+        "tick": 3467,
+        "x": 0.965309573295421,
+        "y": 0.26110699308895696
+      },
+      {
+        "tick": 3471,
+        "x": 0,
+        "y": 0
+      },
+      {
+        "tick": 3553,
+        "x": 0.7697240212806183,
+        "y": -0.6383763066731496
+      },
+      {
+        "tick": 3565,
+        "x": 0.7697233608152267,
+        "y": -0.6383775903141591
+      },
+      {
+        "tick": 3569,
+        "x": 0,
+        "y": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "tick": 16,
+      "type": "boss-hit",
+      "hp": 95
+    },
+    {
+      "tick": 45,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 0
+    },
+    {
+      "tick": 45,
+      "type": "boss-hit",
+      "hp": 94
+    },
+    {
+      "tick": 95,
+      "type": "boss-hit",
+      "hp": 93
+    },
+    {
+      "tick": 112,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 124,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 124,
+      "type": "boss-hit",
+      "hp": 92
+    },
+    {
+      "tick": 153,
+      "type": "boss-hit",
+      "hp": 91
+    },
+    {
+      "tick": 163,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 0
+    },
+    {
+      "tick": 224,
+      "type": "boss-hit",
+      "hp": 90
+    },
+    {
+      "tick": 234,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 246,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 253,
+      "type": "boss-hit",
+      "hp": 89
+    },
+    {
+      "tick": 282,
+      "type": "boss-hit",
+      "hp": 88
+    },
+    {
+      "tick": 285,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 0
+    },
+    {
+      "tick": 338,
+      "type": "boss-hit",
+      "hp": 87
+    },
+    {
+      "tick": 354,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 366,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 367,
+      "type": "boss-hit",
+      "hp": 86
+    },
+    {
+      "tick": 396,
+      "type": "boss-hit",
+      "hp": 85
+    },
+    {
+      "tick": 405,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 0
+    },
+    {
+      "tick": 455,
+      "type": "boss-hit",
+      "hp": 84
+    },
+    {
+      "tick": 475,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 484,
+      "type": "boss-hit",
+      "hp": 83
+    },
+    {
+      "tick": 487,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 513,
+      "type": "boss-hit",
+      "hp": 82
+    },
+    {
+      "tick": 526,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 0
+    },
+    {
+      "tick": 542,
+      "type": "boss-hit",
+      "hp": 81
+    },
+    {
+      "tick": 588,
+      "type": "boss-hit",
+      "hp": 80
+    },
+    {
+      "tick": 595,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 607,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 617,
+      "type": "boss-hit",
+      "hp": 79
+    },
+    {
+      "tick": 646,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 0
+    },
+    {
+      "tick": 646,
+      "type": "boss-hit",
+      "hp": 78
+    },
+    {
+      "tick": 703,
+      "type": "boss-hit",
+      "hp": 77
+    },
+    {
+      "tick": 717,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 729,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 732,
+      "type": "boss-hit",
+      "hp": 76
+    },
+    {
+      "tick": 761,
+      "type": "boss-hit",
+      "hp": 75
+    },
+    {
+      "tick": 768,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 0
+    },
+    {
+      "tick": 821,
+      "type": "boss-hit",
+      "hp": 74
+    },
+    {
+      "tick": 839,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 850,
+      "type": "boss-hit",
+      "hp": 73
+    },
+    {
+      "tick": 851,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 879,
+      "type": "boss-hit",
+      "hp": 72
+    },
+    {
+      "tick": 890,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 0
+    },
+    {
+      "tick": 950,
+      "type": "boss-hit",
+      "hp": 71
+    },
+    {
+      "tick": 959,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 971,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 979,
+      "type": "boss-hit",
+      "hp": 70
+    },
+    {
+      "tick": 1008,
+      "type": "boss-hit",
+      "hp": 69
+    },
+    {
+      "tick": 1010,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 0
+    },
+    {
+      "tick": 1068,
+      "type": "boss-hit",
+      "hp": 68
+    },
+    {
+      "tick": 1080,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 1092,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 1097,
+      "type": "boss-hit",
+      "hp": 67
+    },
+    {
+      "tick": 1126,
+      "type": "boss-hit",
+      "hp": 66
+    },
+    {
+      "tick": 1131,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 0
+    },
+    {
+      "tick": 1183,
+      "type": "boss-hit",
+      "hp": 65
+    },
+    {
+      "tick": 1199,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 1211,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 1212,
+      "type": "boss-hit",
+      "hp": 64
+    },
+    {
+      "tick": 1241,
+      "type": "boss-hit",
+      "hp": 63
+    },
+    {
+      "tick": 1250,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 0
+    },
+    {
+      "tick": 1311,
+      "type": "boss-hit",
+      "hp": 62
+    },
+    {
+      "tick": 1320,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 1332,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 1340,
+      "type": "boss-hit",
+      "hp": 61
+    },
+    {
+      "tick": 1369,
+      "type": "boss-hit",
+      "hp": 60
+    },
+    {
+      "tick": 1371,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 0
+    },
+    {
+      "tick": 1425,
+      "type": "boss-hit",
+      "hp": 59
+    },
+    {
+      "tick": 1440,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 1452,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 1454,
+      "type": "boss-hit",
+      "hp": 58
+    },
+    {
+      "tick": 1483,
+      "type": "boss-hit",
+      "hp": 57
+    },
+    {
+      "tick": 1491,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 0
+    },
+    {
+      "tick": 1541,
+      "type": "boss-hit",
+      "hp": 56
+    },
+    {
+      "tick": 1559,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 1570,
+      "type": "boss-hit",
+      "hp": 55
+    },
+    {
+      "tick": 1571,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 1599,
+      "type": "boss-hit",
+      "hp": 54
+    },
+    {
+      "tick": 1610,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 0
+    },
+    {
+      "tick": 1628,
+      "type": "boss-hit",
+      "hp": 53
+    },
+    {
+      "tick": 1673,
+      "type": "boss-hit",
+      "hp": 52
+    },
+    {
+      "tick": 1679,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 1691,
+      "type": "opening",
+      "recovery": 0.65
+    },
+    {
+      "tick": 1702,
+      "type": "boss-hit",
+      "hp": 51
+    },
+    {
+      "tick": 1730,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 0
+    },
+    {
+      "tick": 1731,
+      "type": "boss-hit",
+      "hp": 50
+    },
+    {
+      "tick": 1793,
+      "type": "boss-hit",
+      "hp": 49
+    },
+    {
+      "tick": 1800,
+      "type": "escalation",
+      "pressure": 1,
+      "recovery": 0.55
+    },
+    {
+      "tick": 1801,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 1813,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 1822,
+      "type": "boss-hit",
+      "hp": 48
+    },
+    {
+      "tick": 1846,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 1
+    },
+    {
+      "tick": 1851,
+      "type": "boss-hit",
+      "hp": 47
+    },
+    {
+      "tick": 1906,
+      "type": "boss-hit",
+      "hp": 46
+    },
+    {
+      "tick": 1914,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 1926,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 1935,
+      "type": "boss-hit",
+      "hp": 45
+    },
+    {
+      "tick": 1959,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 1
+    },
+    {
+      "tick": 1964,
+      "type": "boss-hit",
+      "hp": 44
+    },
+    {
+      "tick": 2010,
+      "type": "boss-hit",
+      "hp": 43
+    },
+    {
+      "tick": 2026,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 2038,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2039,
+      "type": "boss-hit",
+      "hp": 42
+    },
+    {
+      "tick": 2068,
+      "type": "boss-hit",
+      "hp": 41
+    },
+    {
+      "tick": 2071,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 1
+    },
+    {
+      "tick": 2123,
+      "type": "boss-hit",
+      "hp": 40
+    },
+    {
+      "tick": 2140,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 2152,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2152,
+      "type": "boss-hit",
+      "hp": 39
+    },
+    {
+      "tick": 2181,
+      "type": "boss-hit",
+      "hp": 38
+    },
+    {
+      "tick": 2185,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 1
+    },
+    {
+      "tick": 2246,
+      "type": "boss-hit",
+      "hp": 37
+    },
+    {
+      "tick": 2255,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 2267,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2275,
+      "type": "boss-hit",
+      "hp": 36
+    },
+    {
+      "tick": 2300,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 1
+    },
+    {
+      "tick": 2304,
+      "type": "boss-hit",
+      "hp": 35
+    },
+    {
+      "tick": 2351,
+      "type": "boss-hit",
+      "hp": 34
+    },
+    {
+      "tick": 2368,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 2380,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2380,
+      "type": "boss-hit",
+      "hp": 33
+    },
+    {
+      "tick": 2409,
+      "type": "boss-hit",
+      "hp": 32
+    },
+    {
+      "tick": 2413,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 1
+    },
+    {
+      "tick": 2473,
+      "type": "boss-hit",
+      "hp": 31
+    },
+    {
+      "tick": 2484,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 2496,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2502,
+      "type": "boss-hit",
+      "hp": 30
+    },
+    {
+      "tick": 2529,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 1
+    },
+    {
+      "tick": 2531,
+      "type": "boss-hit",
+      "hp": 29
+    },
+    {
+      "tick": 2581,
+      "type": "boss-hit",
+      "hp": 28
+    },
+    {
+      "tick": 2597,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 2609,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2610,
+      "type": "boss-hit",
+      "hp": 27
+    },
+    {
+      "tick": 2639,
+      "type": "boss-hit",
+      "hp": 26
+    },
+    {
+      "tick": 2642,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 1
+    },
+    {
+      "tick": 2705,
+      "type": "boss-hit",
+      "hp": 25
+    },
+    {
+      "tick": 2710,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 2722,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2734,
+      "type": "boss-hit",
+      "hp": 24
+    },
+    {
+      "tick": 2755,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 1
+    },
+    {
+      "tick": 2763,
+      "type": "boss-hit",
+      "hp": 23
+    },
+    {
+      "tick": 2819,
+      "type": "boss-hit",
+      "hp": 22
+    },
+    {
+      "tick": 2824,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 2836,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2848,
+      "type": "boss-hit",
+      "hp": 21
+    },
+    {
+      "tick": 2869,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 1
+    },
+    {
+      "tick": 2877,
+      "type": "boss-hit",
+      "hp": 20
+    },
+    {
+      "tick": 2937,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 2939,
+      "type": "boss-hit",
+      "hp": 19
+    },
+    {
+      "tick": 2949,
+      "type": "opening",
+      "recovery": 0.55
+    },
+    {
+      "tick": 2968,
+      "type": "boss-hit",
+      "hp": 18
+    },
+    {
+      "tick": 2982,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 1
+    },
+    {
+      "tick": 2997,
+      "type": "boss-hit",
+      "hp": 17
+    },
+    {
+      "tick": 3000,
+      "type": "escalation",
+      "pressure": 2,
+      "recovery": 0.48
+    },
+    {
+      "tick": 3047,
+      "type": "boss-hit",
+      "hp": 16
+    },
+    {
+      "tick": 3053,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 3065,
+      "type": "opening",
+      "recovery": 0.48
+    },
+    {
+      "tick": 3076,
+      "type": "boss-hit",
+      "hp": 15
+    },
+    {
+      "tick": 3094,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 2
+    },
+    {
+      "tick": 3105,
+      "type": "boss-hit",
+      "hp": 14
+    },
+    {
+      "tick": 3151,
+      "type": "boss-hit",
+      "hp": 13
+    },
+    {
+      "tick": 3163,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 3175,
+      "type": "opening",
+      "recovery": 0.48
+    },
+    {
+      "tick": 3180,
+      "type": "boss-hit",
+      "hp": 12
+    },
+    {
+      "tick": 3204,
+      "type": "telegraph",
+      "kind": "CONE",
+      "pressure": 2
+    },
+    {
+      "tick": 3209,
+      "type": "boss-hit",
+      "hp": 11
+    },
+    {
+      "tick": 3263,
+      "type": "boss-hit",
+      "hp": 10
+    },
+    {
+      "tick": 3271,
+      "type": "impact",
+      "kind": "CONE"
+    },
+    {
+      "tick": 3283,
+      "type": "opening",
+      "recovery": 0.48
+    },
+    {
+      "tick": 3292,
+      "type": "boss-hit",
+      "hp": 9
+    },
+    {
+      "tick": 3312,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 2
+    },
+    {
+      "tick": 3321,
+      "type": "boss-hit",
+      "hp": 8
+    },
+    {
+      "tick": 3375,
+      "type": "boss-hit",
+      "hp": 7
+    },
+    {
+      "tick": 3381,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 3393,
+      "type": "opening",
+      "recovery": 0.48
+    },
+    {
+      "tick": 3404,
+      "type": "boss-hit",
+      "hp": 6
+    },
+    {
+      "tick": 3422,
+      "type": "telegraph",
+      "kind": "CIRCLE",
+      "pressure": 2
+    },
+    {
+      "tick": 3433,
+      "type": "boss-hit",
+      "hp": 5
+    },
+    {
+      "tick": 3487,
+      "type": "boss-hit",
+      "hp": 4
+    },
+    {
+      "tick": 3491,
+      "type": "impact",
+      "kind": "CIRCLE"
+    },
+    {
+      "tick": 3503,
+      "type": "opening",
+      "recovery": 0.48
+    },
+    {
+      "tick": 3516,
+      "type": "boss-hit",
+      "hp": 3
+    },
+    {
+      "tick": 3532,
+      "type": "telegraph",
+      "kind": "LINE",
+      "pressure": 2
+    },
+    {
+      "tick": 3545,
+      "type": "boss-hit",
+      "hp": 2
+    },
+    {
+      "tick": 3585,
+      "type": "boss-hit",
+      "hp": 1
+    },
+    {
+      "tick": 3600,
+      "type": "impact",
+      "kind": "LINE"
+    },
+    {
+      "tick": 3612,
+      "type": "opening",
+      "recovery": 0.48
+    },
+    {
+      "tick": 3614,
+      "type": "boss-hit",
+      "hp": 0
+    },
+    {
+      "tick": 3614,
+      "type": "won"
+    }
+  ]
+}
