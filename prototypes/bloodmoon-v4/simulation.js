@@ -2,6 +2,7 @@ export const TUNING = Object.freeze({ width: 360, height: 540, step: 1 / 60,
   speed: 230, playerRadius: 11, bossRadius: 29, playerHP: 3, bossHP: 96,
   range: 270, stationaryDelay: .25, cooldown: .48, damage: 1,
   telegraph: 1.1, impact: .2, recovery: .65, opening: .75,
+  escalationAt: 30, finalEscalationAt: 50, pressuredRecovery: .55, finalRecovery: .48,
   lineWidth: 58, circleRadius: 68, coneRadius: 310, coneHalfAngle: .34,
   invulnerability: .6, limit: 75 });
 const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
@@ -28,6 +29,8 @@ export function hits(p, a, radius = TUNING.playerRadius) {
 export class Encounter {
   constructor(seed = 1909, tuning = {}) {
     this.t = {...TUNING, ...tuning}; this.seed = seed >>> 0; this.rng = this.seed || 1;
+    this.orderRng = (this.seed ^ 0x9e3779b9) >>> 0 || 1;
+    this.pressure = 0; this.attackQueue = []; this.lastOrder = '';
     this.tick = 0; this.time = 0; this.status = 'playing';
     this.player = {x:180,y:300,hp:this.t.playerHP};
     this.boss = {x:180,y:105,hp:this.t.bossHP};
@@ -36,7 +39,25 @@ export class Encounter {
     this.phaseTime = this.t.opening; this.attackNumber = 0;
     this.events = []; this.trace = []; this.attack = null;
   }
-  random() { this.rng ^= this.rng << 13; this.rng ^= this.rng >>> 17; this.rng ^= this.rng << 5; return (this.rng >>> 0)/4294967296; }
+  random(key = 'rng') { this[key] ^= this[key] << 13; this[key] ^= this[key] >>> 17; this[key] ^= this[key] << 5; return (this[key] >>> 0)/4294967296; }
+  recoveryDuration() { return this.pressure === 2 ? this.t.finalRecovery : this.pressure === 1 ? this.t.pressuredRecovery : this.t.recovery; }
+  nextAttack() {
+    const kinds = ['LINE','CIRCLE','CONE'];
+    if (!this.pressure) return kinds[this.attackNumber % 3];
+    if (!this.attackQueue.length) {
+      const order = [...kinds];
+      for (let i = order.length-1; i > 0; i--) {
+        const j = Math.floor(this.random('orderRng')*(i+1));
+        [order[i],order[j]] = [order[j],order[i]];
+      }
+      if (order[0] === this.attack?.kind) [order[0],order[1]] = [order[1],order[0]];
+      // Avoid both a repeated bag and simply continuing the opening rotation.
+      const previous = this.lastOrder || kinds.map((_,i)=>kinds[(this.attackNumber+i)%3]).join(',');
+      if (order.join(',') === previous) [order[1],order[2]] = [order[2],order[1]];
+      this.lastOrder = order.join(','); this.attackQueue = order;
+    }
+    return this.attackQueue.shift();
+  }
   log(type, data = {}) { this.events.push({tick:this.tick,type,...data}); }
   setInput(x = 0,y = 0) {
     const d = Math.max(1, Math.hypot(x,y)); const next = {x:x/d,y:y/d};
@@ -45,7 +66,7 @@ export class Encounter {
     }
   }
   beginAttack() {
-    const kind = ['LINE','CIRCLE','CONE'][this.attackNumber++ % 3];
+    const kind = this.nextAttack(); this.attackNumber++;
     const origin = {x:this.boss.x,y:this.boss.y};
     const angle = Math.atan2(this.player.y-origin.y,this.player.x-origin.x);
     this.attack = {kind,origin,angle,center:{x:this.player.x,y:this.player.y},
@@ -54,11 +75,17 @@ export class Encounter {
       halfAngle:this.t.coneHalfAngle, hit:false};
     this.phase = 'telegraph';
     this.phaseTime = this.t.telegraph + this.random() * .08;
-    this.log('telegraph',{kind});
+    this.log('telegraph',{kind,pressure:this.pressure});
   }
   step() {
     if (this.status !== 'playing') return;
     const t = this.t, dt = t.step; this.tick++; this.time = this.tick*dt;
+    const pressure = t.finalEscalationAt != null && this.time >= t.finalEscalationAt ? 2 : t.escalationAt != null && this.time >= t.escalationAt ? 1 : 0;
+    if (pressure !== this.pressure) {
+      this.pressure = pressure;
+      this.log('escalation',{pressure,recovery:this.recoveryDuration()});
+      // Do not truncate an active warning, impact or recovery at a threshold.
+    }
     // Input intent suppresses attacks even while pushing an arena boundary.
     this.moving = Math.hypot(this.input.x,this.input.y) > .04;
     if (this.moving) {
@@ -72,7 +99,7 @@ export class Encounter {
       else if (this.phase === 'telegraph') {
         this.phase = 'impact'; this.phaseTime = t.impact;
         this.log('impact',{kind:this.attack.kind});
-      } else { this.phase = 'recovery'; this.phaseTime = t.recovery; this.log('opening'); }
+      } else { this.phase = 'recovery'; this.phaseTime = this.recoveryDuration(); this.log('opening',{recovery:this.phaseTime}); }
     }
     if (this.phase === 'impact' && !this.attack.hit &&
         this.time-this.hurtAt >= t.invulnerability && hits(this.player,this.attack,t.playerRadius)) {
@@ -89,10 +116,15 @@ export class Encounter {
     if (this.time >= t.limit) this.finish('timeout');
   }
   finish(status) { this.status = status; this.setInput(); this.log(status); }
-  recording() { return {version:1,seed:this.seed,tuning:this.t,ticks:this.tick,trace:structuredClone(this.trace)}; }
+  recording() { return {version:2,seed:this.seed,tuning:this.t,ticks:this.tick,trace:structuredClone(this.trace)}; }
+}
+export function fromRecording(record) {
+  // Version 1 predates escalation. Preserve its original pacing and attack order.
+  const tuning = record.version === 1 ? {...record.tuning,escalationAt:null,finalEscalationAt:null} : record.tuning;
+  return new Encounter(record.seed,tuning);
 }
 export function replay(record) {
-  const game = new Encounter(record.seed,record.tuning); let i = 0;
+  const game = fromRecording(record); let i = 0;
   while (game.tick < record.ticks && game.status === 'playing') {
     while (record.trace[i]?.tick === game.tick) { const p = record.trace[i++]; game.setInput(p.x,p.y); }
     game.step();

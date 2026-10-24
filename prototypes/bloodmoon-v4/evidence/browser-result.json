@@ -4,13 +4,37 @@
     "height": 740
   },
   "status": "PASS",
-  "victoryTime": 58.516666666666666,
+  "victoryTime": 60.233333333333334,
   "playerHP": 3,
   "bossHP": 0,
+  "reactionDelay": 0.25,
+  "dodgeMargin": 34,
+  "escalationEvents": [
+    {
+      "tick": 1800,
+      "type": "escalation",
+      "pressure": 1,
+      "recovery": 0.55
+    },
+    {
+      "tick": 3000,
+      "type": "escalation",
+      "pressure": 2,
+      "recovery": 0.48
+    }
+  ],
+  "notices": [
+    1,
+    2
+  ],
+  "expiredNotices": [
+    1,
+    2
+  ],
   "shapes": [
-    "CIRCLE",
     "CONE",
-    "LINE"
+    "LINE",
+    "CIRCLE"
   ],
   "exceptions": [],
   "physicalDeviceTested": false

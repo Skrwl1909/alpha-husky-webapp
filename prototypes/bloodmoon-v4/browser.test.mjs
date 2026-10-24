@@ -43,13 +43,23 @@ while((state=await snapshot()).status==='playing'){
 assert.equal(state.status,'lost');assert.equal(state.player.hp,0);assert.equal(state.events.filter(e=>e.type==='player-hit').length,3);
 await capture('idle-loss');console.log('PASS idle loses with LINE, CIRCLE, CONE damage');
 await tap('#restart');await pause(60);state=await snapshot();assert.equal(state.player.hp,3);assert.equal(state.events.filter(e=>e.type==='player-hit').length,0);
-let lastAttackTick=-1,target=null,held=false;const winShapes=new Set();
-function choose(s){let best=null;for(let x=25;x<=335;x+=10)for(let y=190;y<=340;y+=10){if(hits({x,y},s.attack,26)||Math.hypot(x-s.boss.x,y-s.boss.y)>250)continue;const d=Math.hypot(x-s.player.x,y-s.player.y);if(!best||d<best.d)best={x,y,d};}return best;}
+let lastAttackTick=-1,target=null,held=false,reactAt=0;const winShapes=new Set(),notices=new Set(),expiredNotices=new Set();
+function choose(s){let best=null;for(let x=25;x<=335;x+=10)for(let y=190;y<=340;y+=10){if(hits({x,y},s.attack,34)||Math.hypot(x-s.boss.x,y-s.boss.y)>250)continue;const d=Math.hypot(x-s.player.x,y-s.player.y);if(!best||d<best.d)best={x,y,d};}return best;}
 while((state=await snapshot()).status==='playing'){
+  const escalation=state.events.findLast(e=>e.type==='escalation');
+  if(escalation&&!notices.has(escalation.pressure)){
+    assert.equal(await evaluate('document.getElementById("escalation").hidden'),false);
+    const message=await evaluate('document.getElementById("escalation").textContent');
+    assert(message.includes(escalation.pressure===2?'ENRAGED':'STIRS'));
+    await capture(`escalation-${escalation.pressure}`);notices.add(escalation.pressure);
+  }
+  if(escalation&&state.time-escalation.tick/60>2.1&&!expiredNotices.has(escalation.pressure)){
+    assert.equal(await evaluate('document.getElementById("escalation").hidden'),true);expiredNotices.add(escalation.pressure);
+  }
   const telegraph=state.events.findLast(e=>e.type==='telegraph');
-  if(telegraph&&telegraph.tick!==lastAttackTick){lastAttackTick=telegraph.tick;target=choose(state);assert(target);}
+  if(telegraph&&telegraph.tick!==lastAttackTick){lastAttackTick=telegraph.tick;target=choose(state);reactAt=state.time+.25;assert(target);}
   r=await box('#arena');ax=r.x+r.width*.5;ay=r.y+r.height*.83;
-  if(target){const dx=target.x-state.player.x,dy=target.y-state.player.y,d=Math.hypot(dx,dy);
+  if(target&&state.time>=reactAt){const dx=target.x-state.player.x,dy=target.y-state.player.y,d=Math.hypot(dx,dy);
     if(d>10){if(!held){await touch('touchStart',ax,ay);held=true;}await touch('touchMove',ax+dx/d*38*r.width/360,ay+dy/d*38*r.height/540);}
     else{if(held)await touch('touchEnd');held=false;target=null;}
   }
@@ -58,6 +68,11 @@ while((state=await snapshot()).status==='playing'){
 }
 if(held)await touch('touchEnd');
 assert.equal(state.status,'won');assert(state.time>=45&&state.time<=75);assert(state.player.hp>0);assert.equal(state.boss.hp,0);
+const escalationEvents=state.events.filter(e=>e.type==='escalation');
+assert.deepEqual(escalationEvents.map(e=>[e.tick,e.pressure,e.recovery]),[[1800,1,.55],[3000,2,.48]]);
+assert.deepEqual([...notices],[1,2]);assert.deepEqual([...expiredNotices],[1,2]);
+for(const e of state.events.filter(e=>e.type==='opening'))assert.equal(e.recovery,e.tick/60>=50?.48:e.tick/60>=30?.55:.65);
+console.log('PASS 30/50s escalation, 650/550/480ms recovery, visible then expired notices; 250ms reaction and wider dodges');
 await capture('victory');
 const record=await evaluate('window.lastStand.recording()'),copy=replay(record);
 assert.deepEqual(copy.events,state.events);assert.deepEqual(copy.player,state.player);
@@ -72,5 +87,5 @@ await tap('#restart');await pause(100);assert(!(await snapshot()).playback);
 await call('Page.reload');await pause(300);assert.equal((await snapshot()).tick,0);assert(!(await snapshot()).moving);
 assert.equal(errors.length,0,JSON.stringify(errors));
 console.log('PASS reopen/reset, zero browser exceptions');
-await writeFile(new URL('browser-result.json',out),JSON.stringify({viewport:{width:360,height:740},status:'PASS',victoryTime:state.time,playerHP:state.player.hp,bossHP:state.boss.hp,shapes:[...winShapes],exceptions:errors,physicalDeviceTested:false},null,2));
+await writeFile(new URL('browser-result.json',out),JSON.stringify({viewport:{width:360,height:740},status:'PASS',victoryTime:state.time,playerHP:state.player.hp,bossHP:state.boss.hp,reactionDelay:.25,dodgeMargin:34,escalationEvents,notices:[...notices],expiredNotices:[...expiredNotices],shapes:[...winShapes],exceptions:errors,physicalDeviceTested:false},null,2));
 ws.close();

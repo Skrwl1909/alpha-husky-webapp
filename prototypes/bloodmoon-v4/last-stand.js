@@ -1,4 +1,4 @@
-import {Encounter} from './simulation.js';
+import {Encounter,fromRecording} from './simulation.js';
 import {bindInput} from './input.js';
 const $ = id => document.getElementById(id), canvas = $('arena'), ctx = canvas.getContext('2d');
 let game = new Encounter(), running = false, playback = null, replayIndex = 0, saved = null;
@@ -7,7 +7,7 @@ const input = bindInput(canvas,(x,y) => { if (running && !playback) game.setInpu
 $('lite').checked = matchMedia('(prefers-reduced-motion: reduce)').matches;
 function start(record = null) {
   input.reset(); playback = record; replayIndex = 0;
-  game = new Encounter(record?.seed ?? 1909,record?.tuning ?? {});
+  game = record ? fromRecording(record) : new Encounter();
   accumulator = 0; previous = 0; running = true; $('overlay').hidden = true;
 }
 $('start').onclick = () => start(); $('restart').onclick = () => start();
@@ -56,8 +56,12 @@ function render() {
   $('player-hp').value=p.hp;$('boss-hp').value=b.hp;
   $('player-value').textContent=`${p.hp} / ${g.t.playerHP}`;$('boss-value').textContent=`${b.hp} / ${g.t.bossHP}`;
   const recentHit=g.events.findLast(e=>e.type==='player-hit');
+  const escalation = g.events.findLast(e=>e.type==='escalation');
+  const notice = $('escalation');
+  notice.hidden = !running || !escalation || g.time-escalation.tick*g.t.step >= 2;
+  notice.textContent = escalation?.pressure === 2 ? 'HUSK ENRAGED · Keep dodging, then counter' : 'HUSK STIRS · Faster recovery, mixed attacks';
   $('status').textContent=playback?'REPLAY · recorded inputs':recentHit && g.tick-recentHit.tick<85?`Hit by ${recentHit.kind} — leave the marked shape before impact.`:g.moving?'MOVING · attacks paused':Math.hypot(p.x-b.x,p.y-b.y)>g.t.range?'OUT OF RANGE · move inside the dotted ring':'STATIONARY · automatic strikes active';
-  $('events').textContent=g.events.slice(-12).map(e=>`${(e.tick*g.t.step).toFixed(2)} ${e.type} ${e.kind??''} ${e.hp??''}`).join('\n');
+  $('events').textContent=g.events.slice(-12).map(e=>`${(e.tick*g.t.step).toFixed(2)} ${e.type} ${e.kind??''} ${e.hp??''}${e.type==='escalation'?` stage ${e.pressure} · ${e.recovery*1000}ms recovery`:''}`).join('\n');
 }
 function frame(ms) {
   if(!previous) previous=ms;
@@ -81,4 +85,4 @@ function frame(ms) {
 }
 requestAnimationFrame(frame);
 // Read-only browser QA observability. No damage overrides or simulated pointer actions.
-window.lastStand = {snapshot:()=>structuredClone({tick:game.tick,time:game.time,status:game.status,player:game.player,boss:game.boss,phase:game.phase,phaseTime:game.phaseTime,attack:game.attack,input:game.input,moving:game.moving,events:game.events,playback:!!playback}),recording:()=>game.recording()};
+window.lastStand = {snapshot:()=>structuredClone({tick:game.tick,time:game.time,status:game.status,player:game.player,boss:game.boss,phase:game.phase,phaseTime:game.phaseTime,pressure:game.pressure,attack:game.attack,input:game.input,moving:game.moving,events:game.events,playback:!!playback}),recording:()=>game.recording()};
