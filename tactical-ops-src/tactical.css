@@ -4831,3 +4831,104 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-wt-feature-copy .t-player-next-reason{font-size:.73rem;line-height:1.4;color:#b9dfec;margin:7px 0 8px}
 #tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics span{font-size:.58rem}
 @media(max-width:620px){#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics{gap:4px}#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics span{padding:4px 6px}}
+
+/* Battlefield HUD declutter P1: compact summary rail OUTSIDE of the playable field.
+   Details expand only on explicit tap. Never change board geometry or hit areas. */
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:6px;
+  align-items:stretch;
+  min-height:calc(52px + var(--t-battle-safe-top));
+  padding:calc(var(--t-battle-safe-top) + 4px) max(7px,var(--ah-safe-right,0px)) 5px max(7px,var(--ah-safe-left,0px));
+  overflow:visible;
+  background:linear-gradient(180deg,rgba(2,12,23,.99),rgba(4,20,32,.96));
+  pointer-events:auto;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card {
+  box-sizing:border-box;
+  position:relative;
+  inset:auto;
+  grid-area:auto;
+  display:grid;
+  margin:0;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  min-height:42px;
+  max-height:none;
+  height:auto;
+  overflow:hidden;
+  padding:4px 7px;
+  border:1px solid rgba(94,204,232,.46);
+  border-radius:6px;
+  background:rgba(6,31,46,.82);
+  box-shadow:none;
+  color:#d9f5fa;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+  pointer-events:auto;
+  touch-action:manipulation;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card:focus-visible {outline:2px solid #8be5fa;outline-offset:1px}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status {
+  grid-template-columns:27px minmax(0,1fr);
+  column-gap:6px;
+  align-items:center;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-portrait {width:27px;height:27px}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-portrait > img {width:100%;height:100%}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-name {font-size:.63rem;line-height:1.1;letter-spacing:.025em}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status .t-hp {margin-top:3px;gap:4px}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hp-num {font-size:.52rem}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip {align-content:center}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip strong {
+  font-size:.60rem;line-height:1.2;letter-spacing:.02em;display:-webkit-box;-webkit-line-clamp:2;
+  line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-kit,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-mods,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-combat-identity,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-chips,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-stats,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-objective-directive,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-objective-action,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip > span:not(.t-objective-directive),
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip > small,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-rounds {display:none}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded {
+  overflow:visible;
+  z-index:50;
+  border-color:#78dcf4;
+  background:#061827;
+  box-shadow:0 9px 22px rgba(0,0,0,.65);
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-kit,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-mods,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-combat-identity,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-chips,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-objective-directive,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-objective-action,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-obj-chip > span,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded > span,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded > small,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-obj-rounds {display:block}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-main::after {content:"Tap to close";display:block;font-size:9px;color:#81b8c8;margin-top:5px}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-stats {display:none}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail > * {pointer-events:auto}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-order-wrap {display:none}
+@media(max-width:620px) {
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+    min-height:calc(52px + var(--t-battle-safe-top));
+    padding:calc(var(--t-battle-safe-top) + 4px) max(7px,var(--ah-safe-right,0px)) 5px max(7px,var(--ah-safe-left,0px));
+  }
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip {width:100%;max-width:none}
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded {max-height:none}
+}
+@media(max-width:350px) {
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {gap:4px;padding-left:4px;padding-right:4px}
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card {padding:3px 4px}
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-name {font-size:.55rem}
+}
