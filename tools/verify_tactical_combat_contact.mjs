@@ -1,0 +1,16 @@
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const battle=readFileSync("tactical-ops-src/ui/Battle.tsx","utf8");
+const store=readFileSync("tactical-ops-src/store/battleStore.ts","utf8");
+const css=readFileSync("tactical-ops-src/tactical.css","utf8");
+assert(battle.includes("hitReacting={u.id === impactId && impactKey > 0}"));
+assert(battle.includes('const impact = units.find((u) => u.id === impactId);'));
+assert(store.includes('if (ev.type === "damage" && ev.unitId && ev.text)'));
+assert(store.includes('set({ impactId: ev.unitId, impactKey: impactSeq++ })'));
+assert(store.includes('current.impactId === ev.unitId ? { impactId: null } : {}'));
+assert(css.includes(".t-token.hit-reacting:not(.defeated) img.body"));
+assert(css.includes(".t-token.hit-reacting.defeated"));
+assert(css.includes("@keyframes t-contact-collapse"));
+assert(css.includes("prefers-reduced-motion:reduce"));
+assert(css.includes(".t-threat-tile {z-index:16;}"));
+console.log("PASS: confirmed-hit reaction, defeated feedback, reduced motion and danger overlay");
