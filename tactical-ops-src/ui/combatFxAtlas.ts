@@ -8,6 +8,29 @@ const DURATIONS: Record<string, number> = {
  pet_bite:500,pet_hamstring:740,pet_pathfinder:660,objective_recover:880,
 };
 export type CombatFxName = keyof typeof DURATIONS;
+export const COMBAT_FX_VISUAL_CLASSES: Readonly<Record<string,string>> = {
+    "alpha_strike": "fx-alpha fx-hit fx-strike",
+    "alpha_rend": "fx-alpha fx-hit fx-rend",
+    "alpha_howl": "fx-alpha fx-howl",
+    "alpha_guard": "fx-alpha fx-guard",
+    "cnc_thrust": "fx-cnc fx-hit fx-thrust",
+    "cnc_lunge": "fx-cnc fx-hit fx-lunge",
+    "cnc_pressure": "fx-cnc fx-control",
+    "cnc_interrupt": "fx-cnc fx-interrupt",
+    "shadow_sweep": "fx-shadow fx-hit fx-sweep",
+    "shadow_mend": "fx-shadow fx-mend",
+    "shadow_pack_heal_def": "fx-shadow fx-pack",
+    "shadow_pack_def_only": "fx-shadow fx-pack",
+    "shadow_pack_guard": "fx-shadow fx-pack",
+    "pet_bite": "fx-pet fx-hit fx-bite",
+    "pet_hamstring": "fx-pet fx-hit fx-hamstring",
+    "pet_pathfinder": "fx-pet fx-pathfinder",
+    "objective_recover": "fx-objective fx-recover"
+};
+
+/** Rendering identity only. Never schedules a combat effect or changes its gameplay outcome. */
+export function combatFxVisualClasses(name: string): string { return COMBAT_FX_VISUAL_CLASSES[name] ?? ""; }
+
 export interface CombatFx { id:number; name:string; targetId?:string; terminal?:{c:number;r:number}; durationMs:number; }
 export function fx(name:string,id:number,targetId?:string,terminal?:{c:number;r:number}): CombatFx {
  if (!(name in DURATIONS)) throw Error("Unknown combat FX "+name);
