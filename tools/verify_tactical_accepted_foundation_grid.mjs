@@ -10,7 +10,8 @@ assert(foundation.includes("candidate.runId !== state.activeRunId"), "reject det
 assert(foundation.includes("parseRunRulesContract(candidate.rulesContract)"), "strictly validate backend contract");
 assert(store.includes("progression.foundationRunRules?.rulesContract || null"), "Foundation start passes accepted backend rules");
 assert(store.includes("selectAcceptedBattleRules(rulesContract)"), "all operation starts use accepted ruleset");
-assert(ui.includes('BATTLEFIELD_VNEXT_PREVIEW ? "10×7" : "8×5"'), "render actual battle grid label");
+assert(ui.includes('className="t-top t-battle-hud-rail"'), "accepted battle HUD must sit outside board");
+assert(!ui.includes('className="t-battle-lab-tag"'), "avoid duplicate grid label obstructing battlefield");
 const vite = await createServer({ configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom" });
 try {
  const [types, intents] = await Promise.all([

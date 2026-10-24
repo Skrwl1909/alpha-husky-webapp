@@ -255,6 +255,7 @@ function StatusStrip() {
   const units = useBattleStore((s) => s.battle.units);
   const identity = useBattleStore((s) => s.identity);
   const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
+  const [expanded, setExpanded] = useState(false);
   const unit = units.find((u) => u.id === inspectId) || units.find((u) => u.id === activeId) || units.find((u) => u.role === "alpha" && u.team === "ally" && !u.defeated);
   if (!unit) return null;
   const isAlpha = unit.role === "alpha" || unit.defId === "alpha" || unit.id === "alpha";
@@ -263,7 +264,7 @@ function StatusStrip() {
   const atk = effectiveAtk(unit);
   const defn = effectiveDef(unit);
   return (
-    <aside className={`t-status ${unit.team}${isAlpha ? " is-alpha" : ""}`} onPointerDown={(e) => e.stopPropagation()} aria-label="Selected unit">
+    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Selected unit: ${unit.name}, ${unit.hp} of ${unit.maxHp} HP. Toggle combat details`}>
       <HudPortrait key={unit.id} unit={unit} />
       <div className="t-status-main">
         <div className="t-status-head">
@@ -312,12 +313,13 @@ function StatusStrip() {
           <dd>{unit.move}</dd>
         </div>
       </dl>
-    </aside>
+    </button>
   );
 }
 
 function ObjectiveChip() {
   const battle = useBattleStore((s) => s.battle);
+  const [expanded, setExpanded] = useState(false);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
   const rulesText = missionHud(battle);
   const liveGoal = mission ? missionLiveProgress(battle) : null;
@@ -358,7 +360,7 @@ function ObjectiveChip() {
         ? mission.challenge.limit
         : null;
   return (
-    <div className="t-obj-chip" role="status">
+    <button type="button" className={`t-obj-chip t-hud-card ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. Toggle mission details`}>
       <strong>{liveGoal || title}</strong>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
@@ -374,7 +376,7 @@ function ObjectiveChip() {
           </span>
         </div>
       ) : null}
-    </div>
+    </button>
   );
 }
 
@@ -494,8 +496,6 @@ export function BattleScreen() {
   const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy);
   const impact = units.find((u) => u.id === impactId && !u.defeated);
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
-  const phaseLabel = actor?.team === "enemy" ? "Enemy act" : "Your act";
-  const activityLabel = mission?.activity === "FIELD_OP" ? `FIELD OP / ${mission.name}` : OPERATION.name;
   const directive = objectiveDirective(useBattleStore.getState().battle);
   const guidance = playerBattleGuidance(useBattleStore.getState().battle, mission);
 
@@ -504,22 +504,9 @@ export function BattleScreen() {
       className={`t-battle${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-impact-kind={impactPresentation?.effectClass || "damage"}
     >
-      <header className="t-top">
-        <div className="t-brand">
-          <div>
-            <h1 className="t-title">
-              Alpha Husky <span className="t-brand-sep">//</span> Tactical Ops
-            </h1>
-          </div>
-        </div>
-        <div className="t-turn">
-          <strong>TURN {String(round).padStart(2, "0")}</strong>
-          <span className="t-turn-sub">
-            {phaseLabel}
-            {actor ? ` · ${actor.name}` : ""}
-          </span>
-        </div>
-        <div className="t-obj">{activityLabel}<span className="t-battle-lab-tag"> · {BATTLEFIELD_VNEXT_PREVIEW ? "10×7" : "8×5"}</span></div>
+      <header className="t-top t-battle-hud-rail" aria-label="Battle status and mission">
+        <StatusStrip />
+        <ObjectiveChip />
       </header>
       <div className="t-order-wrap">
         <TurnOrderBar />
@@ -643,8 +630,6 @@ export function BattleScreen() {
               style={{ left: `${impactPos.x}%`, top: `${impactPos.y - 4}%` }}
             />
           ) : null}
-          <StatusStrip />
-          <ObjectiveChip />
         </div>
       </div>
       {threats.length > 0 ? (
