@@ -30,6 +30,16 @@ export interface MissionDef {
 }
 
 export interface CampaignContext { version: 1; courierTraceAcquired: boolean }
+export type ChapterIntel={version:1;effect:"DELAY_REINFORCEMENT";sourceChapterId:"edge-relay";
+  missionId:string;baselineRound:number;effectiveRound:number};
+/** Frozen modifier from an accepted run; never accept a local progress claim. */
+export function applyChapterIntelToRules<T extends {reinforcement: {triggerRound:number}|null}>(rules:T,missionId:string,intel?:ChapterIntel):T {
+  if(!intel)return rules;
+  if(intel.version!==1||intel.effect!=="DELAY_REINFORCEMENT"||intel.sourceChapterId!=="edge-relay"||
+     intel.missionId!==missionId||!rules.reinforcement||rules.reinforcement.triggerRound!==intel.baselineRound||
+     intel.effectiveRound!==intel.baselineRound+1)throw Error("chapter_intel_rules_mismatch");
+  return {...rules,reinforcement:{...rules.reinforcement,triggerRound:intel.effectiveRound}};
+}
 
 export interface TacticalOperationDef {
   operationId: string;
