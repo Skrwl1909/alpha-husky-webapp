@@ -658,7 +658,7 @@ export function BattleScreen() {
             if(!u)return null;
             const pos=fieldPercent(u.c,u.r);
             return <div key={item.id} className={`t-consequence t-consequence-${item.kind}`}
-              style={{left:pos.x+"%",top:(pos.y-12)+"%"}} aria-hidden="true">{item.label}</div>;
+              style={{left:`clamp(82px, ${pos.x}%, calc(100% - 82px))`,top:`clamp(24px, ${pos.y-14}%, calc(100% - 32px))`}} aria-hidden="true">{item.label}</div>;
           })}
           {floats.map((f) => {
             const u = units.find((x) => x.id === f.unitId);
