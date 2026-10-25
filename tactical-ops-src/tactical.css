@@ -5014,3 +5014,22 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
   #tacticalOpsRoot .t-token.hit-reacting img.body {animation:none!important;transform:none!important;}
   #tacticalOpsRoot .t-token.hit-reacting.defeated {opacity:.6;}
 }
+
+/* Event-confirmed choreography: one actor-to-target travel per accepted combat atlas. */
+#tacticalOpsRoot .t-choreo-travel{position:absolute;inset:0;z-index:15;pointer-events:none;overflow:visible;--travel-ms:580ms;}
+#tacticalOpsRoot .t-choreo-travel .t-choreo-actor{
+  position:absolute;left:var(--from-x);top:var(--from-y);width:clamp(42px,12%,110px);height:auto;
+  filter:drop-shadow(0 5px 10px #0009);transform:translate(-50%,-88%);
+  animation:t-choreo-dash var(--travel-ms) ease-in-out both;
+}
+@keyframes t-choreo-dash{
+  0%{left:var(--from-x);top:var(--from-y);opacity:0;scale:.92;}
+  12%{opacity:.95;}
+  37%{left:var(--to-x);top:var(--to-y);opacity:1;scale:1.08;}
+  64%{left:var(--to-x);top:var(--to-y);opacity:.9;}
+  100%{left:var(--from-x);top:var(--from-y);opacity:0;scale:1;}
+}
+#tacticalOpsRoot .t-choreo-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
+#tacticalOpsRoot .t-choreo-line line{stroke:#f5bf79;stroke-width:1.5;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:8 100;animation:t-choreo-shot var(--travel-ms) ease-out both;filter:drop-shadow(0 0 4px #eab865);}
+@keyframes t-choreo-shot{0%{opacity:0;stroke-dashoffset:100;}15%{opacity:1;}46%{stroke-dashoffset:0;opacity:1;}100%{stroke-dashoffset:-20;opacity:0;}}
+@media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-choreo-travel{display:none!important;}}

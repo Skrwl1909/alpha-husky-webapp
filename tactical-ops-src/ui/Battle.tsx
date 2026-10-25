@@ -1,6 +1,6 @@
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey } from "../combat/movement";
@@ -595,6 +595,18 @@ export function BattleScreen() {
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
               />
             ))}
+          {combatFx.map(effect=>{
+            const performer=effect.actorId ? units.find(u=>u.id===effect.actorId) : null;
+            const receiver=effect.terminal || units.find(u=>u.id===effect.targetId);
+            if(!performer || !effect.from || !receiver || (effect.from.c===receiver.c && effect.from.r===receiver.r))return null;
+            const from=fieldPercent(effect.from.c,effect.from.r),to=fieldPercent(receiver.c,receiver.r);
+            const ranged=effect.name.startsWith("cnc_");
+            return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
+              style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
+              {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:
+                <img className="t-choreo-actor" src={performer.attackSprite||performer.sprite} alt="" />}
+            </div>;
+          })}
           {combatFx.map(effect=>{
             const unit=units.find(u=>u.id===effect.targetId);
             const anchor=effect.terminal||unit;
