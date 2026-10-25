@@ -37,6 +37,13 @@ export function combatFxTravelKind(name:string): "dash"|"beam"|"none" {
   if (["cnc_thrust","cnc_lunge","cnc_pressure","cnc_interrupt"].includes(name))return "beam";
   return "none";
 }
+/** Contact timing is presentation-only and derived from existing atlas duration.
+ * Support, healing and objectives remain immediate; only physical travel is delayed. */
+export function combatFxContactMs(effects: readonly CombatFx[]): number {
+  const traveling=effects.find(e=>combatFxTravelKind(e.name)!=="none");
+  if(!traveling)return 0;
+  return Math.max(80,Math.round(traveling.durationMs*(combatFxTravelKind(traveling.name)==="beam"?.46:.37)));
+}
 export interface CombatFx { id:number; name:string; targetId?:string; terminal?:{c:number;r:number}; durationMs:number; actorId?:string; from?:{c:number;r:number}; }
 export function fx(name:string,id:number,targetId?:string,terminal?:{c:number;r:number}): CombatFx {
  if (!(name in DURATIONS)) throw Error("Unknown combat FX "+name);
