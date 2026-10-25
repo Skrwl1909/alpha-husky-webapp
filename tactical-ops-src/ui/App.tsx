@@ -1,5 +1,6 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
+import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCampaignOrders,tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
 import { savedSidegradeProof } from "./s3PowerProof";
@@ -205,6 +206,8 @@ function WarTable() {
   const field = progression?.fieldOps;
   const campaignOrders = tacticalCampaignOrders(progression);
   const campaignCareer = tacticalCareerTruth(progression);
+  const acceptedChapter = progression?.tacticalChapter;
+  const chapterView = acceptedChapter ? chapterDisplay(acceptedChapter) : null;
   const refresh = useBattleStore((s) => s.loadFoundationProgression);
   const loading = useBattleStore((s) => s.progressionStatus === "loading");
 
@@ -319,6 +322,16 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
+        {acceptedChapter && chapterView ? <section className="t-panel t-chapter-readout" aria-label="Server accepted doctrine chapter">
+          <div className="t-kicker">CAMPAIGN CHAPTER · SERVER RECORDED</div>
+          <h2 className="t-title">{chapterView.title}</h2>
+          <div className="t-chapter-steps">{acceptedChapter.status === "AVAILABLE" ? (Object.entries(DOCTRINES).map(([id,def]) =>
+            <div key={id}><strong>{id} · {def.title}</strong><p>{def.copy}</p></div>)) :
+            <><strong>{chapterView.stage} / {chapterView.total} OPERATIONS VERIFIED</strong>
+            <p>{chapterView.nextMissionName ? `NEXT · ${chapterView.nextMissionName}` : "CHAPTER COMPLETE"}</p></>}</div>
+          <p>{chapterView.consequence}</p>
+          <small>{acceptedChapter.status === "AVAILABLE" ? "Doctrine selection becomes playable only after the server exposes a verified choice action. No client-only selection." : "Mission progress advances only on the next accepted server receipt. Existing Field Ops can still be played normally."}</small>
+        </section> : null}
         <section className="t-campaign-orders" aria-label="Tactical campaign orders">
           <div className="t-campaign-orders-head"><div><span className="t-kicker">TACTICAL CAMPAIGN · ACTIVE ORDERS</span><h2>YOUR NEXT DECISIONS</h2></div><small>SERVER-RECORDED GOALS<br/>NO UNCONFIRMED REWARDS</small></div>
           <div className="t-campaign-orders-grid">
