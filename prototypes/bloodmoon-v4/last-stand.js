@@ -1,7 +1,7 @@
 import {Encounter,fromRecording} from './simulation.js';
 import {bindInput} from './input.js';
 import {loadAssets,bossImage} from './assets.js';
-import {Presentation} from './presentation.js';
+import {Presentation,combatCue,combatVisuals,PLAYER_VISUAL} from './presentation.js';
 import {LOCAL_PROFILES} from './combat-parameters.js';
 import {DEMO_SCENARIOS} from './p2/demo-profiles.js';
 import {P3_PROFILES} from './p3/balance.js';
@@ -18,6 +18,7 @@ function start(record=null){
   game=record?fromRecording(record):new Encounter(1909,{},scenario?.parameters??LOCAL_PROFILES[$('profile').value]);
   $('player-hp').max=game.t.playerHP;$('boss-hp').max=game.t.bossHP;
   accumulator=0;previous=0;running=true;$('overlay').hidden=true;$('profile').disabled=true;
+  $('developer').open=false;window.scrollTo(0,0);document.body.classList.add('combat-active');
 }
 $('start').onclick=()=>start();$('restart').onclick=()=>start();
 function showResolution(){
@@ -32,14 +33,20 @@ $('export').onclick=()=>{
 };
 function render(){
   const g=game,p=g.player,b=g.boss;
+  document.body.classList.toggle('reduced-motion',$('lite').checked);
   renderedState=presentation?.draw(g,input.anchor,$('lite').checked)??'loading';
+  $('player-hp').max=g.t.playerHP;$('boss-hp').max=g.t.bossHP;
   $('player-hp').value=p.hp;$('boss-hp').value=b.hp;
   $('player-value').textContent=`${Number(p.hp.toFixed(1))} / ${g.t.playerHP}`;$('boss-value').textContent=`${Number(b.hp.toFixed(1))} / ${g.t.bossHP}`;
   $('player-hp').classList.toggle('damaged',g.time-g.hurtAt<.25);$('boss-hp').classList.toggle('damaged',g.time-g.shotAt<.12);
-  const recentHit=g.events.findLast(e=>e.type==='player-hit'),escalation=g.events.findLast(e=>e.type==='escalation'),notice=$('escalation');
+  const escalation=g.events.findLast(e=>e.type==='escalation'),notice=$('escalation');
   notice.hidden=!running||!escalation||g.time-escalation.tick*g.t.step>=2;
   notice.textContent=escalation?.pressure===2?'HUSK ENRAGED · Keep dodging, then counter':'HUSK STIRS · Faster recovery, mixed attacks';
-  $('status').textContent=!assetResult?'Loading encounter art…':!assetResult.ready?'Essential art unavailable · reload to retry':!running&&g.tick===0?'Drag to move. Release inside the ring to strike.':g.status!=='playing'?g.status==='won'?'VICTORY · Tower Husk defeated':'RUN ENDED · Ready to fight again':playback?'REPLAY · recorded inputs':recentHit&&g.tick-recentHit.tick<85?`Hit by ${recentHit.kind} — leave the marked shape before impact.`:g.moving?'MOVING · attacks paused':Math.hypot(p.x-b.x,p.y-b.y)>g.t.range?'OUT OF RANGE · move inside the dotted ring':'STATIONARY · automatic strikes active';
+  const cue=combatCue(g),ready=!running&&g.tick===0;
+  $('clock').textContent=`${g.time.toFixed(1)} / ${g.t.limit}s`;
+  $('phase-label').textContent=ready?'STAND BY':`${playback?'REPLAY · ':''}${cue.label}`;
+  $('status').parentElement.dataset.phase=ready?'ready':cue.phase;
+  $('status').textContent=!assetResult?'Loading encounter art…':!assetResult.ready?'Essential art unavailable · reload to retry':ready?'Tower Husk · 75-second encounter.':cue.message;
   $('events').textContent=g.events.slice(-12).map(e=>`${(e.tick*g.t.step).toFixed(2)} ${e.type} ${e.kind??''} ${e.hp??''}${e.type==='escalation'?` stage ${e.pressure} · ${e.recovery*1000}ms recovery`:''}`).join('\n');
 }
 function frame(ms){
@@ -50,7 +57,7 @@ function frame(ms){
       if(playback)while(playback.trace[replayIndex]?.tick===game.tick){const p=playback.trace[replayIndex++];game.setInput(p.x,p.y);}
       game.step();accumulator-=game.t.step;
       if(game.status!=='playing'){
-        running=false;input.reset();$('profile').disabled=false;
+        running=false;input.reset();$('profile').disabled=false;document.body.classList.remove('combat-active');
         if(!playback)saved=game.recording();
         $('replay').disabled=!saved;$('overlay').hidden=false;$('overlay').dataset.outcome=game.status;
         $('result').textContent=game.status==='won'?'Tower Husk defeated':game.status==='timeout'?'The moon has faded':'Howler fallen';
@@ -64,7 +71,7 @@ function frame(ms){
   previous=ms;render();requestAnimationFrame(frame);
 }
 window.lastStand={snapshot:()=>structuredClone({tick:game.tick,time:game.time,status:game.status,player:game.player,boss:game.boss,phase:game.phase,phaseTime:game.phaseTime,pressure:game.pressure,attack:game.attack,input:game.input,moving:game.moving,events:game.events,playback:!!playback}),recording:()=>game.recording(),
-  visuals:()=>({ready:assetResult?.ready??false,failures:assetResult?.failures??[],loaded:Object.keys(assetResult?.images??{}),bossState:renderedState,bossSource:bossImage(assetResult?.images??{},renderedState)?.src??null,playerFrameDirection:presentation?.direction})};
+  visuals:()=>structuredClone({ready:assetResult?.ready??false,failures:assetResult?.failures??[],loaded:Object.keys(assetResult?.images??{}),bossState:renderedState,bossSource:bossImage(assetResult?.images??{},renderedState)?.src??null,playerFrameDirection:presentation?.direction,playerSize:PLAYER_VISUAL.size,hitboxRadius:game.t.playerRadius,feedback:combatVisuals(game,$('lite').checked)})};
 assetResult=await loadAssets();
 $('start').disabled=!assetResult.ready;$('restart').disabled=!assetResult.ready;
 if(assetResult.ready){presentation=new Presentation(canvas,assetResult.images);$('asset-status').textContent=assetResult.failures.length?`Optional art unavailable: ${assetResult.failures.join(', ')}. Boss states fall back to idle.`:'Original Alpha Husky art loaded';}
