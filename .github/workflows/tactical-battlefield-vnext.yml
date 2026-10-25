@@ -4,6 +4,9 @@ on:
     paths:
       - "tactical-ops-src/combat/**"
       - "tactical-ops-src/ui/Battle.tsx"
+      - "tactical-ops-src/ui/tacticalCampaignOrders.ts"
+      - "tactical-ops-src/ui/tacticalCampaignOrders.css"
+      - "tools/verify_tactical_s9_campaign_orders.mjs"
       - "tools/verify_tactical_battlefield_visual_closure.mjs"
       - "tools/verify_tactical_battlefield_shell_closure.mjs"
       - "tactical-ops-src/ui/combatIdentity.ts"
@@ -90,6 +93,7 @@ jobs:
       - run: node tools/verify_tactical_enemy_presentation.mjs
       - run: node tools/verify_tactical_combat_consequences.mjs
       - run: node tools/verify_tactical_visual_cohesion.mjs
+      - run: node tools/verify_tactical_s9_campaign_orders.mjs
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
       - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_player_clarity.mjs

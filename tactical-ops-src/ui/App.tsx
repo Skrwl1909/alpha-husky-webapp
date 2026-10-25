@@ -1,5 +1,6 @@
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
+import {tacticalCampaignOrders,tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
 import { savedSidegradeProof } from "./s3PowerProof";
 import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
@@ -202,6 +203,8 @@ function WarTable() {
   const deadRelay = progression?.operations?.[DEAD_RELAY.operationId];
   const courierIntel = progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true;
   const field = progression?.fieldOps;
+  const campaignOrders = tacticalCampaignOrders(progression);
+  const campaignCareer = tacticalCareerTruth(progression);
   const refresh = useBattleStore((s) => s.loadFoundationProgression);
   const loading = useBattleStore((s) => s.progressionStatus === "loading");
 
@@ -316,6 +319,18 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
+        <section className="t-campaign-orders" aria-label="Tactical campaign orders">
+          <div className="t-campaign-orders-head"><div><span className="t-kicker">TACTICAL CAMPAIGN · ACTIVE ORDERS</span><h2>YOUR NEXT DECISIONS</h2></div><small>SERVER-RECORDED GOALS<br/>NO UNCONFIRMED REWARDS</small></div>
+          <div className="t-campaign-orders-grid">
+            {campaignOrders.map(order => <article key={order.id} className={`t-campaign-order is-${order.category.toLowerCase()} is-${order.status.toLowerCase()}`}>
+              <div className="t-campaign-order-top"><span>{order.category}</span><b>{order.status.replace("_"," ")}</b></div>
+              <h3>{order.title}</h3><strong>{order.goal}</strong><p>{order.consequence}</p>
+              {order.missionId ? <button className="t-btn t-btn-primary" type="button" disabled={loading} onClick={() => openOperationBrief(order.missionId!)}>{order.status === "IN_PROGRESS" ? "RESUME BRIEF" : "PLAN OPERATION"}</button> : null}
+            </article>)}
+          </div>
+          {campaignCareer ? <div className="t-campaign-career" aria-label="Persisted commander career"><span>CAREER · {campaignCareer.missions} FIELD SECURES</span><span>{campaignCareer.challenges} CHALLENGES</span><span>{campaignCareer.advanced} ADVANCED CLEARS</span><span>{campaignCareer.fronts} FRONTS SECURED</span></div> : <small>Career record unavailable until the server provides it.</small>}
+        </section>
+
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
