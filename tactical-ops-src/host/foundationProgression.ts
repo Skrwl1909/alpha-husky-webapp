@@ -37,7 +37,7 @@ export interface FoundationProgressionState {
   fieldOps?: FieldOpsProgression;
   /** Read-only optional V1 from authoritative backend; absent = no new campaign UI. */
   tacticalChapter?: ChapterSnapshot;
-  chapterActiveMission?: { runId: string; missionId: string; squadIds: string[]; fieldContext?: FieldContext; rulesetVersion: string };
+  chapterActiveMission?: OperationMissionRun;
   operations?: Record<string, OperationProgressionState>;
   campaignIntel?: { "dead-relay": { courierTraceAcquired: boolean } };
   intel?: { routingTrace: boolean; commanderProfile: boolean };
@@ -266,8 +266,18 @@ function parseState(raw: unknown): FoundationProgressionState | null {
           active.rulesetVersion !== TACTICAL_VNEXT_RULESET) return null;
       const fieldContext = parseFieldContext(active.fieldContext);
       if (active.fieldContext != null && !fieldContext) return null;
+      const contract=parseRunRulesContract(active.rulesContract);
+      if(!contract || contract.missionId!==active.missionId ||
+         !parseChapterContext(active.chapterContext))return null;
       state.chapterActiveMission = {runId:active.runId,missionId:active.missionId,
-        squadIds:[...active.squadIds],rulesetVersion:TACTICAL_VNEXT_RULESET,
+        squadIds:[...active.squadIds],rulesContract:contract,
+        chapterContext:parseChapterContext(active.chapterContext),
+        packMastery:parsePackMastery(active.packMastery),
+        tacticalProfile:parseTacticalProfile(active.tacticalProfile),
+        ...(active.playerGrowth!=null?{playerGrowth:requireRunGrowth(active.playerGrowth)}:{}),
+        ...(active.combatProfileV2!=null?{combatProfileV2:parseCombatProfileV2(active.combatProfileV2)}:{}),
+        ...(active.combatProfileV3!=null?{combatProfileV3:parseCombatProfileV3(active.combatProfileV3)}:{}),
+        ...(parseCampaignContext(active.campaignContext)?{campaignContext:parseCampaignContext(active.campaignContext)!}:{}),
         ...(fieldContext?{fieldContext}:{})};
     }
   }
