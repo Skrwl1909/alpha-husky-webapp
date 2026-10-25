@@ -8,7 +8,7 @@ import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
-import { FX_ROOT, combatFxVisualClasses } from "./combatFxAtlas";
+import { FX_ROOT, combatFxVisualClasses, combatFxTravelKind } from "./combatFxAtlas";
 import { playerBattleGuidance } from "./playerGuidance";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
@@ -129,6 +129,7 @@ function Token({
   signalCarrier,
   interceptTarget = false,
   hitReacting = false,
+  travelGhost = false,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -139,6 +140,7 @@ function Token({
   signalCarrier: boolean;
   interceptTarget?: boolean;
   hitReacting?: boolean;
+  travelGhost?: boolean;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
@@ -155,6 +157,7 @@ function Token({
     targeting && validTarget ? "targetable" : "",
     attacking ? "attacking" : "",
     hitReacting ? "hit-reacting" : "",
+    travelGhost ? "travel-ghost" : "",
     signalCarrier ? "trace-carrier" : "",
     unit.role === "leader" ? "boss-target" : "",
     `depth-${Math.max(0, Math.min(4, Math.floor(unit.r * 4 / (GRID_ROWS - 1))))}`,
@@ -467,6 +470,7 @@ export function BattleScreen() {
   const lastActionSkillId = useBattleStore((s) => s.lastActionSkillId);
   const combatMoment = useBattleStore((s) => s.combatMoment);
   const combatFx = useBattleStore((s) => s.combatFx);
+  const travelActors = new Set(combatFx.filter(fx=>combatFxTravelKind(fx.name)==="dash" && fx.actorId).map(fx=>fx.actorId));
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
@@ -590,6 +594,7 @@ export function BattleScreen() {
                 targeting={mode === "targeting"}
                 attacking={u.id === attackingId}
                 hitReacting={u.id === impactId && impactKey > 0}
+                travelGhost={travelActors.has(u.id)}
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
@@ -600,7 +605,9 @@ export function BattleScreen() {
             const receiver=effect.terminal || units.find(u=>u.id===effect.targetId);
             if(!performer || !effect.from || !receiver || (effect.from.c===receiver.c && effect.from.r===receiver.r))return null;
             const from=fieldPercent(effect.from.c,effect.from.r),to=fieldPercent(receiver.c,receiver.r);
-            const ranged=effect.name.startsWith("cnc_");
+            const travelKind=combatFxTravelKind(effect.name);
+            if(travelKind==="none")return null;
+            const ranged=travelKind==="beam";
             return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
               style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
               {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:

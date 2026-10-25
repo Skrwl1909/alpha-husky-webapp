@@ -31,6 +31,12 @@ export const COMBAT_FX_VISUAL_CLASSES: Readonly<Record<string,string>> = {
 /** Rendering identity only. Never schedules a combat effect or changes its gameplay outcome. */
 export function combatFxVisualClasses(name: string): string { return COMBAT_FX_VISUAL_CLASSES[name] ?? ""; }
 
+/** Only real contact actions travel; support never teleports across the field. */
+export function combatFxTravelKind(name:string): "dash"|"beam"|"none" {
+  if (["alpha_strike","alpha_rend","shadow_sweep","pet_bite","pet_hamstring"].includes(name))return "dash";
+  if (["cnc_thrust","cnc_lunge","cnc_pressure","cnc_interrupt"].includes(name))return "beam";
+  return "none";
+}
 export interface CombatFx { id:number; name:string; targetId?:string; terminal?:{c:number;r:number}; durationMs:number; actorId?:string; from?:{c:number;r:number}; }
 export function fx(name:string,id:number,targetId?:string,terminal?:{c:number;r:number}): CombatFx {
  if (!(name in DURATIONS)) throw Error("Unknown combat FX "+name);
