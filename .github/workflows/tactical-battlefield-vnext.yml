@@ -5,6 +5,9 @@ on:
       - "tactical-ops-src/combat/**"
       - "tactical-ops-src/ui/Battle.tsx"
       - "tactical-ops-src/ui/tacticalCampaignOrders.ts"
+      - "tactical-ops-src/data/campaignChapter.ts"
+      - "tactical-ops-src/ui/campaignChapter.css"
+      - "tools/verify_tactical_s9b_chapter.mjs"
       - "tactical-ops-src/ui/tacticalCampaignOrders.css"
       - "tools/verify_tactical_s9_campaign_orders.mjs"
       - "tools/verify_tactical_battlefield_visual_closure.mjs"
@@ -94,6 +97,7 @@ jobs:
       - run: node tools/verify_tactical_combat_consequences.mjs
       - run: node tools/verify_tactical_visual_cohesion.mjs
       - run: node tools/verify_tactical_s9_campaign_orders.mjs
+      - run: node tools/verify_tactical_s9b_chapter.mjs
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
       - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_player_clarity.mjs
