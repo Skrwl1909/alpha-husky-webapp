@@ -86,6 +86,7 @@ jobs:
       - run: node tools/verify_tactical_contact_sync.mjs
       - run: node tools/verify_tactical_hp_impact.mjs
       - run: node tools/verify_tactical_enemy_presentation.mjs
+      - run: node tools/verify_tactical_combat_consequences.mjs
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
       - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_player_clarity.mjs

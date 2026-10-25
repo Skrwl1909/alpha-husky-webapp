@@ -27,6 +27,7 @@ import {
 import { VERSION } from "../version";
 import { confirmedPathfinderMove, confirmedSkillMoment, type CombatMoment } from "../ui/combatIdentity";
 import { spriteEvents, pathfinderFx, fx, combatFxContactMs, type CombatFx } from "../ui/combatFxAtlas";
+import {confirmedHitConsequence,confirmedCounterConsequence,type CombatConsequence} from "../ui/combatConsequences";
 import {enemyScene, type EnemyScene} from "../ui/enemyAttackPresentation";
 import { newS3Proof, recordS3Skill, recordS3Hold, type S3CombatProof } from "../ui/s3CombatProof";
 import {
@@ -71,6 +72,7 @@ interface UiBattle {
   combatFx: CombatFx[];
   enemyScene: EnemyScene | null;
   displayHp: Record<string,number>;
+  consequences: CombatConsequence[];
   muted: boolean;
   queue: string[];
   identity: PlayerIdentity;
@@ -224,6 +226,12 @@ export const useBattleStore = create<Store>((set, get) => {
       return {displayHp:{...s.displayHp,[ev.unitId!]:next}};
     });
   };
+  const showConsequence = (raw:Omit<CombatConsequence,"id">|null,g:number) => {
+    if(!raw||g!==runGen)return;
+    const item={...raw,id:impactSeq++};
+    set(st=>({consequences:[...st.consequences,item].slice(-4)}));
+    void wait(1050).then(()=>{if(g===runGen)set(st=>({consequences:st.consequences.filter(x=>x.id!==item.id)}));});
+  };
   const pushFloat = (unitId: string, text: string, kind: string) => {
     const id = floatSeq++;
     set((s) => ({ floats: [...s.floats, { id, unitId, text, kind }] }));
@@ -244,6 +252,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ banner: null });
       }
       if (ev.type === "damage" && ev.unitId && ev.text) {
+        showConsequence(confirmedHitConsequence(ev,get().battle.units,get().displayHp),g);
         revealHp(ev);
         sfx("hit");
         set({ impactId: ev.unitId, impactKey: impactSeq++ });
@@ -501,6 +510,7 @@ export const useBattleStore = create<Store>((set, get) => {
       combatFx: [],
       enemyScene: null,
       displayHp: {},
+      consequences: [],
       currentRunKey: runKey,
       activeRulesetVersion: rulesContract?.rulesetVersion || null,
       currentFieldContext: fieldContext || null,
@@ -539,6 +549,7 @@ export const useBattleStore = create<Store>((set, get) => {
     combatFx: [],
     enemyScene: null,
     displayHp: {},
+    consequences: [],
     muted: false,
     queue: [],
     identity: resolvePlayerIdentity(),
@@ -888,6 +899,7 @@ export const useBattleStore = create<Store>((set, get) => {
         impactId: null,
         enemyScene: null,
         displayHp: {},
+        consequences: [],
         currentRunKey: `${onboardingStageId}:${g}`,
       });
       void (async () => {
@@ -1016,6 +1028,7 @@ export const useBattleStore = create<Store>((set, get) => {
         publishMoment(confirmedSkillMoment(actor, selectedSkillId, res.events, impactSeq++, interrupt.interrupted), g);
         await playEvents(res.events, g);
         if (interrupt.interrupted) {
+          showConsequence(confirmedCounterConsequence(interrupt.interrupted,id,res.events),g);
           set({ ticker: "SIGNAL INTERRUPTED · ENEMY INTENT CANCELED" });
           sfx("status");
         }

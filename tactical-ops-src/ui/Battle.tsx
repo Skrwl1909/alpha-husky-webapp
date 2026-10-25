@@ -152,7 +152,7 @@ function Token({
     "t-token",
     unit.team,
     roleClass(unit),
-    unit.defeated ? "defeated" : "",
+    unit.defeated && hp<=0 ? "defeated" : "",
     unit.hasActed ? "acted" : "",
     selected ? "selected active" : "",
     inspecting ? "inspect" : "",
@@ -197,7 +197,7 @@ function Token({
           else inspectUnit(unit.id);
         }}
       />
-      {unit.defeated ? null : (
+      {hp<=0 ? null : (
         <div className="t-plate">
           <div className="t-plate-name">
             <span>{unit.name}</span>
@@ -481,6 +481,7 @@ export function BattleScreen() {
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
+  const consequences = useBattleStore((s) => s.consequences);
   const threats = useBattleStore((s) => s.threats);
   const attackingId = useBattleStore((s) => s.attackingId);
   const impactId = useBattleStore((s) => s.impactId);
@@ -652,6 +653,13 @@ export function BattleScreen() {
               <i className="t-master-fx-ring" /><i className="t-master-fx-core" />
             </div>;
           })()}
+          {consequences.map(item=>{
+            const u=units.find(u=>u.id===item.unitId);
+            if(!u)return null;
+            const pos=fieldPercent(u.c,u.r);
+            return <div key={item.id} className={`t-consequence t-consequence-${item.kind}`}
+              style={{left:pos.x+"%",top:(pos.y-12)+"%"}} aria-hidden="true">{item.label}</div>;
+          })}
           {floats.map((f) => {
             const u = units.find((x) => x.id === f.unitId);
             if (!u) return null;

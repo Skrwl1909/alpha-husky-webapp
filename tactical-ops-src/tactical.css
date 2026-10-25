@@ -5052,3 +5052,11 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-hostile-jam line{stroke:#d5a0ff;stroke-dasharray:3 8;}
 @keyframes t-hostile-beam{0%{stroke-dashoffset:100;opacity:0;}16%{opacity:1;}44%{stroke-dashoffset:0;}100%{stroke-dashoffset:-15;opacity:0;}}
 @media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-hostile-scene{display:none!important;}}
+
+/* S7 combat consequences: event-verified signals; never fabricated damage or rewards. */
+#tacticalOpsRoot .t-consequence{position:absolute;z-index:15;pointer-events:none;transform:translate(-50%,-50%);font-size:clamp(9px,1.85vw,12px);font-weight:900;letter-spacing:.075em;white-space:nowrap;padding:5px 8px;border:1px solid rgba(212,231,242,.6);border-radius:5px;color:#effaff;background:linear-gradient(120deg,rgba(9,22,37,.94),rgba(24,46,62,.9));text-shadow:0 1px 4px #000;box-shadow:0 5px 20px #0009;animation:t-consequence-rise 1s ease-out both;}
+#tacticalOpsRoot .t-consequence-finisher{color:#ffe7c2;border-color:rgba(244,182,113,.75);background:linear-gradient(110deg,rgba(58,29,20,.95),rgba(30,25,30,.93));}
+#tacticalOpsRoot .t-consequence-counter{color:#aef8ef;border-color:rgba(101,237,221,.8);background:linear-gradient(110deg,rgba(8,42,47,.95),rgba(18,28,45,.93));}
+#tacticalOpsRoot .t-consequence-guarded{color:#c9e5ff;border-color:rgba(124,193,248,.78);}
+@keyframes t-consequence-rise{0%{opacity:0;translate:0 6px;scale:.86;}18%{opacity:1;scale:1.06;}65%{opacity:.98;}100%{opacity:0;translate:0 -24px;scale:.98;}}
+@media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-consequence{animation:none;opacity:1;}}
