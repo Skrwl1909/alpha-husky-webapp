@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import {createHash} from 'node:crypto';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {childTransport} from './integration.js';
+import {childTransport,receiptPresentation} from './integration.js';
 function fixture(){
   let listener;const sent=[],parent={postMessage:(data,origin)=>sent.push({data,origin})};
   const win={parent,location:{origin:'https://game.example'},addEventListener:(type,fn)=>{listener=fn;},removeEventListener:()=>{listener=null;}};
@@ -19,11 +19,18 @@ test('unknown actions and closed transports cannot call arbitrary authenticated 
   const p=t.request('start',{run_id:'synthetic',raidInstanceId:'test'});t.dispose();await assert.rejects(p,/CLOSED/);
   await assert.rejects(t.request('state'),/CLOSED/);const solo={};solo.parent=solo;assert.throws(()=>childTransport(solo),/HOST_REQUIRED/);
 });
-test('legacy Blood Moon attack implementation remains byte-equivalent and integration has no economy endpoint',async()=>{
+test('legacy attack implementation remains byte-equivalent; client bridge cannot call attack or claim directly',async()=>{
   const source=await readFile(new URL('../../js/bloodmoon.js',import.meta.url),'utf8');
   const normalized=source.replaceAll('\r\n','\n'),begin=normalized.indexOf('  async function attack()'),end=normalized.indexOf('  async function claim(',begin);
   assert.equal(createHash('sha256').update(normalized.slice(begin,end)).digest('hex'),'7936bd1c604bb0ae77728d9c5107634898a6b6ce8b52cfa2507e4ae2d14b9bde');
   assert(source.includes('async function attack()'));assert(source.includes('run_id: commandId'));assert(source.includes('bloodMoonLastStandBtn'));
   const bridge=await readFile(new URL('./integration.js',import.meta.url),'utf8');
   assert(!bridge.includes('/claim'));assert(!bridge.includes('/attack'));assert(!bridge.includes('localStorage'));
+});
+test('settlement UI reports actual server credit and preserves no-credit/cancelled distinctions',()=>{
+  const candidate={mode:'AUTHENTICATED_SETTLEMENT_CANDIDATE',verified:true,settled:true,status:'won',attemptsConsumed:1,sharedHpDelta:27,contribution:27};
+  assert(receiptPresentation(candidate).summary.includes('27 raid damage'));assert(receiptPresentation(candidate).title.includes('settled'));
+  const voided=receiptPresentation({...candidate,sharedHpDelta:0,contribution:0,attemptsConsumed:0,reason:'WAVE_CLEARED'});assert(voided.title.includes('no raid damage'));assert(voided.summary.includes('0 attempt consumed'));
+  assert(receiptPresentation({mode:'AUTHENTICATED_NO_CREDIT',status:'won'}).summary.includes('No raid credit'));
+  for(const changed of [{sharedHpDelta:-1},{contribution:1000},{attemptsConsumed:2},{verified:false},{settled:false}])assert.throws(()=>receiptPresentation({...candidate,...changed}),/UNSUPPORTED_RECEIPT/);
 });

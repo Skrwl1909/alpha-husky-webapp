@@ -6,7 +6,7 @@ import {LOCAL_PROFILES} from './combat-parameters.js';
 import {DEMO_SCENARIOS} from './p2/demo-profiles.js';
 import {P3_PROFILES} from './p3/balance.js';
 import {combatParameters} from './combat-parameters.js';
-import {integratedMode,childTransport} from './integration.js';
+import {integratedMode,childTransport,receiptPresentation} from './integration.js';
 const scenarioFor=value=>value.startsWith('p3-')?P3_PROFILES[value.slice(3)]:DEMO_SCENARIOS[value];
 const $=id=>document.getElementById(id),canvas=$('arena');
 let game=new Encounter(1909,{},scenarioFor($('profile').value)?.parameters??LOCAL_PROFILES[$('profile').value]),running=false,playback=null,replayIndex=0,saved=null;
@@ -24,19 +24,18 @@ async function connect(){
   try{const r=await transport.request('state');if(!r?.ok||!r.data?.enabled)throw Error(r?.reason||'FEATURE_DISABLED');context=r.data;
     if(!context.supported)throw Error('UNSUPPORTED_WAVE: continue with the existing raid strike.');
     if(!context.canStart)throw Error(context.reason||'INELIGIBLE');integrationError='';$('start').disabled=!assetResult?.ready;
-    $('result').textContent='Authenticated Last Stand';$('summary').textContent=`Wave ${context.wave} · Faction boss ${context.sharedHP}/${context.sharedMaxHP} HP. Verified no-credit preview; attempts and raid progress remain unchanged.`;
+    $('result').textContent='Authenticated Last Stand';$('summary').textContent=`Wave ${context.wave} · Faction boss ${context.sharedHP}/${context.sharedMaxHP} HP. ${context.mode==='AUTHENTICATED_SETTLEMENT_CANDIDATE'?'Proposed isolated candidate: reserves one existing attempt and fixes its server damage budget.':'Verified no-credit preview; attempts and raid progress remain unchanged.'}`;
   }catch(e){integrationError=e.message;$('result').textContent='Last Stand unavailable';$('summary').textContent=integrationError;}
 }
 async function submitIntegrated(){
   if(busy||!pendingSubmission)return;busy=true;$('start').disabled=true;$('result').textContent='Verifying combat…';
   try{const response=await transport.request('submit',pendingSubmission);
     if(!response?.ok||!response.data?.verified)throw Error(response?.reason||'VERIFICATION_FAILED');
-    verified=response.data;integrationError='';sessionStorage.removeItem(storageKey);
-    $('result').textContent=verified.status==='won'?'Verified solo victory':'Verified run ended';
-    $('summary').textContent='No raid credit awarded. Attempts, cooldowns, shared HP, contribution and rewards are unchanged. Settlement policy remains pending.';
+    const display=receiptPresentation(response.data);verified=response.data;integrationError='';sessionStorage.removeItem(storageKey);
+    $('result').textContent=display.title;$('summary').textContent=display.summary;
     $('start').textContent='New encounter';pendingSubmission=null;
   }catch(e){integrationError=e.message;$('result').textContent='Result not credited';
-    const terminal=['EXPIRED','STALE_RAID_INSTANCE','INVALID_ENCOUNTER','INVALID_TRACE','INVALID_SUBMISSION','FEATURE_DISABLED','ENGINE_VERSION_UNAVAILABLE'].includes(e.message);
+    const terminal=['EXPIRED','STALE_RAID_INSTANCE','INVALID_ENCOUNTER','INVALID_TRACE','INVALID_SUBMISSION','FEATURE_DISABLED','ENGINE_VERSION_UNAVAILABLE','WAVE_CLEARED','RAID_ROLLOVER','DAY_ROLLOVER','FACTION_CHANGED','OPERATOR_CANCELLED'].includes(e.message);
     if(terminal){pendingSubmission=null;ticket=null;sessionStorage.removeItem(storageKey);}
     $('summary').textContent=terminal?`${e.message}. No credit awarded. Request a new eligible encounter or return to the raid.`:`${e.message}. Retry sends the same recorded run; no client damage or victory claim is accepted.`;
     $('start').textContent=terminal?'Request new encounter':'Retry verification';}
@@ -53,9 +52,9 @@ async function startIntegrated(){
       game=replay(stored.record);saved=stored.record;pendingSubmission=stored.submission;$('overlay').hidden=false;$('replay').disabled=false;busy=false;return submitIntegrated();
     }
     const current=await transport.request('state');if(!current?.ok||!current.data?.canStart)throw Error(current?.data?.reason||current?.reason||'INELIGIBLE');context=current.data;
-    const run_id=stored?.run_id||crypto.randomUUID();sessionStorage.setItem(storageKey,JSON.stringify({run_id}));
+    const run_id=stored?.run_id||context.activeRunId||crypto.randomUUID();sessionStorage.setItem(storageKey,JSON.stringify({run_id}));
     const r=await transport.request('start',{run_id,raidInstanceId:context.raidInstanceId});if(!r?.ok)throw Error(r?.reason||'START_FAILED');
-    if(r.data?.policyId!=='last-stand-p3-v1'||r.data?.mode!=='AUTHENTICATED_NO_CREDIT'||!Number.isInteger(r.data.seed))throw Error('UNSUPPORTED_SERVER_POLICY');
+    if(r.data?.policyId!=='last-stand-p3-v1'||!['AUTHENTICATED_NO_CREDIT','AUTHENTICATED_SETTLEMENT_CANDIDATE'].includes(r.data?.mode)||!Number.isInteger(r.data.seed))throw Error('UNSUPPORTED_SERVER_POLICY');
     ticket={...structuredClone(r.data),parameters:combatParameters(r.data.parameters)};verified=null;integrationError='';start();
     if(stored?.record&&stored.record.seed===ticket.seed&&JSON.stringify(stored.record.parameters)===JSON.stringify(ticket.parameters)){
       const resumed=replay(stored.record);if(resumed.status==='playing'){game=resumed;game.setInput();}
@@ -122,7 +121,7 @@ function frame(ms){
         $('summary').textContent=`${game.time.toFixed(1)}s · Howler ${Number(game.player.hp.toFixed(1))} / ${game.t.playerHP} HP · Husk ${Number(game.boss.hp.toFixed(1))} / ${game.t.bossHP} HP.${last?` Last hit: ${last.kind}.`:''} ${game.status==='won'?'You held your ground.':'Read the warning. Dodge, then stop to counter.'}`;
         $('start').textContent='Fight again';
         if(integrated&&!playback){pendingSubmission={run_id:ticket.run_id,ticks:game.tick,trace:game.recording().trace};sessionStorage.setItem(storageKey,JSON.stringify({run_id:ticket.run_id,record:game.recording(),submission:pendingSubmission}));void submitIntegrated();}
-        if(integrated&&playback)$('result').textContent='Replay complete · no raid credit';
+        if(integrated&&playback)$('result').textContent='Replay complete · no new settlement';
 
       }
     }

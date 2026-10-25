@@ -2,6 +2,14 @@
 const CHANNEL='alpha-last-stand-v1';
 const paths=Object.freeze({state:'/webapp/bloodmoon/laststand/state',start:'/webapp/bloodmoon/laststand/start',submit:'/webapp/bloodmoon/laststand/submit'});
 export const integratedMode=()=>new URLSearchParams(location.search).get('integrated')==='1';
+export function receiptPresentation(receipt){
+  if(receipt.mode==='AUTHENTICATED_SETTLEMENT_CANDIDATE'){
+    if(!receipt.verified||receipt.settled!==true||![0,1].includes(receipt.attemptsConsumed)||!Number.isFinite(receipt.sharedHpDelta)||receipt.sharedHpDelta<0||receipt.contribution!==receipt.sharedHpDelta)throw Error('UNSUPPORTED_RECEIPT');
+    return {title:receipt.sharedHpDelta>0?(receipt.status==='won'?'Verified victory · settled':'Verified run · settled'):'Verified result · no raid damage',
+      summary:`Proposed isolated settlement: ${receipt.sharedHpDelta} raid damage · ${receipt.contribution} contribution · ${receipt.attemptsConsumed} attempt consumed.${receipt.reason?` ${receipt.reason}.`:''} Existing reward claims remain separate.`};
+  }
+  return {title:receipt.status==='won'?'Verified solo victory':'Verified run ended',summary:'No raid credit awarded. Attempts, cooldowns, shared HP, contribution and rewards are unchanged. Settlement policy remains pending.'};
+}
 export function childTransport(win=window){
   if(win.parent===win)throw Error('HOST_REQUIRED');
   let id=0,closed=false;const pending=new Map();
