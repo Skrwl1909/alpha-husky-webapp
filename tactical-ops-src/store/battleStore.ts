@@ -68,6 +68,7 @@ interface UiBattle {
   combatMoment: CombatMoment | null;
   s3CombatProof: S3CombatProof | null;
   combatFx: CombatFx[];
+  displayHp: Record<string,number>;
   muted: boolean;
   queue: string[];
   identity: PlayerIdentity;
@@ -203,6 +204,20 @@ export const useBattleStore = create<Store>((set, get) => {
     if (delay) await wait(delay);
     return g === runGen;
   };
+  const stageHp = (before: BattleState, events: readonly BattleEvent[]) => {
+    const affected = new Set(events.filter(e => (e.type==="damage"||e.type==="heal") && e.unitId).map(e => e.unitId!));
+    if(affected.size) set(s=>({displayHp:{...s.displayHp,...Object.fromEntries(before.units.filter(u=>affected.has(u.id)).map(u=>[u.id,u.hp]))}}));
+  };
+  const revealHp = (ev: BattleEvent) => {
+    if(!ev.unitId)return;
+    set(s=>{
+      if(!(ev.unitId! in s.displayHp))return {};
+      const previous=s.displayHp[ev.unitId!],delta=Math.max(0,Number(ev.amount)||0);
+      const unit=s.battle.units.find(u=>u.id===ev.unitId);
+      const next=ev.type==="damage"?Math.max(0,previous-delta):Math.min(unit?.maxHp??previous+delta,previous+delta);
+      return {displayHp:{...s.displayHp,[ev.unitId!]:next}};
+    });
+  };
   const pushFloat = (unitId: string, text: string, kind: string) => {
     const id = floatSeq++;
     set((s) => ({ floats: [...s.floats, { id, unitId, text, kind }] }));
@@ -223,6 +238,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ banner: null });
       }
       if (ev.type === "damage" && ev.unitId && ev.text) {
+        revealHp(ev);
         sfx("hit");
         set({ impactId: ev.unitId, impactKey: impactSeq++ });
         pushFloat(ev.unitId, ev.text, ev.kind ?? "dmg");
@@ -231,6 +247,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set((current) => current.impactId === ev.unitId ? { impactId: null } : {});
       }
       if (ev.type === "heal" && ev.unitId && ev.text) {
+        revealHp(ev);
         sfx("heal");
         pushFloat(ev.unitId, ev.text, "heal");
         await wait(240);
@@ -249,6 +266,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       if (ev.type === "move") sfx("move");
     }
+    if(g===runGen)set({displayHp:{}});
   };
 
   const finishIfNeeded = async (g: number) => {
@@ -378,6 +396,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ attackingId: actor.id, lastActionSkillId: action.skillId });
     }
     const applied = applyAi(get().battle, action);
+    stageHp(st,applied.events);
     set({ battle: applied.state, queue: refreshQueue(applied.state), attackingId: action.type === "skill" ? actor.id : null });
     await playEvents(applied.events, g);
     if (g !== runGen) return;
@@ -464,6 +483,7 @@ export const useBattleStore = create<Store>((set, get) => {
       combatMoment: null,
       s3CombatProof: mission ? newS3Proof(runKey, mission.missionId) : null,
       combatFx: [],
+      displayHp: {},
       currentRunKey: runKey,
       activeRulesetVersion: rulesContract?.rulesetVersion || null,
       currentFieldContext: fieldContext || null,
@@ -500,6 +520,7 @@ export const useBattleStore = create<Store>((set, get) => {
     combatMoment: null,
     s3CombatProof: null,
     combatFx: [],
+    displayHp: {},
     muted: false,
     queue: [],
     identity: resolvePlayerIdentity(),
@@ -847,6 +868,7 @@ export const useBattleStore = create<Store>((set, get) => {
         floats: [],
         attackingId: null,
         impactId: null,
+        displayHp: {},
         currentRunKey: `${onboardingStageId}:${g}`,
       });
       void (async () => {
@@ -923,6 +945,7 @@ export const useBattleStore = create<Store>((set, get) => {
           return;
         }
         const evidence = recordS3Skill(get().s3CombatProof, actor, skillId, undefined, res.events, false, battle);
+        stageHp(battle,res.events);
         set({ battle: res.state, queue: refreshQueue(res.state), s3CombatProof: evidence });
         const effects=spriteEvents(actor,skillId,res.events,impactSeq++,false);
         publishFx(effects,g);
@@ -964,6 +987,7 @@ export const useBattleStore = create<Store>((set, get) => {
         : { cycle: threatCycle, interrupted: false };
       if (interrupt.interrupted) threatCycle = interrupt.cycle;
       const evidence = recordS3Skill(get().s3CombatProof, actor, selectedSkillId, id, res.events, interrupt.interrupted, battle);
+      stageHp(battle,res.events);
       set({ s3CombatProof: evidence, battle: res.state, queue: refreshQueue(res.state),
         ...(interrupt.interrupted ? { threats: threatCycle.pending.map(t => t.plan) } : {}) });
       const effects=spriteEvents(actor,selectedSkillId,res.events,impactSeq++,interrupt.interrupted);
