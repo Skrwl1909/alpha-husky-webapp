@@ -6,5 +6,9 @@ export function enemyScene(actor:CombatUnit,skillId:string,events:readonly Battl
  const target=units.find(u=>u.id===result?.unitId);
  if(!target)return null;
  const style=/jam|intimidate|interference/.test(skillId)?"jam":/pulse|aim|shot/.test(skillId)||actor.archetype==="MARKSMAN"?"ranged":/crush|maul/.test(skillId)||actor.role==="leader"?"heavy":"melee";
- return {id,actorId:actor.id,style,from:{c:actor.c,r:actor.r},to:{c:target.c,r:target.r},durationMs:style==="heavy"?680:style==="jam"?620:550,contactMs:style==="heavy"?300:235};
+ const durationMs=style==="heavy"?680:style==="jam"?620:550;
+ // Match damage reveal to the visible actor arrival / beam strike in tactical.css.
+ // No combat resolution or AI cadence changes; this is playback-only.
+ const contactPhase=style==="heavy"?.49:style==="melee"?.42:.44;
+ return {id,actorId:actor.id,style,from:{c:actor.c,r:actor.r},to:{c:target.c,r:target.r},durationMs,contactMs:Math.round(durationMs*contactPhase)};
 }

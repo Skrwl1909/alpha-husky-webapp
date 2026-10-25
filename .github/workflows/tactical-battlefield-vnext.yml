@@ -26,6 +26,8 @@ on:
       - "tools/verify_tactical_signal_atlas_v2.mjs"
       - "docs/TACTICAL_SIGNAL_ATLAS_V2_ENGINEERING_GATE.md"
       - "tactical-ops-src/tactical.css"
+      - "tactical-ops-src/ui/combatCohesion.css"
+      - "tools/verify_tactical_visual_cohesion.mjs"
       - "tools/verify_tactical_vnext_skillbook_integration.mjs"
       - "tactical-ops-src/data/playerGrowth.ts"
       - "tactical-ops-src/data/signalCodex.ts"
@@ -87,6 +89,7 @@ jobs:
       - run: node tools/verify_tactical_hp_impact.mjs
       - run: node tools/verify_tactical_enemy_presentation.mjs
       - run: node tools/verify_tactical_combat_consequences.mjs
+      - run: node tools/verify_tactical_visual_cohesion.mjs
       - run: node tools/verify_tactical_battlefield_visual_closure.mjs
       - run: node tools/verify_tactical_battlefield_shell_closure.mjs
       - run: node tools/verify_tactical_player_clarity.mjs
