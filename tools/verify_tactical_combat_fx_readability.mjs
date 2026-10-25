@@ -8,6 +8,6 @@ assert(battle.includes('["alpha_howl","shadow_pack_heal_def","shadow_pack_def_on
 assert(css.includes("@keyframes t-fx-contact")&&css.includes("@keyframes t-fx-soft-wave"),"Contact and AoE visuals exist");
 assert(css.includes("prefers-reduced-motion:reduce"),"Reduced-motion fallback retained");
 assert(css.includes(".t-threat-tile {z-index:16;}"),"Enemy hazard telegraphs remain above FX");
-assert(store.includes("publishFx(spriteEvents(actor,selectedSkillId,res.events"),"Skill FX remain event-confirmed");
+assert(store.includes("const effects=spriteEvents(actor,selectedSkillId,res.events") && store.includes("publishFx(effects,g)") && store.includes("await waitForContact(effects,g)"),"Skill FX remain event-confirmed");
 assert(battle.includes('className="t-cell move"'),"Movement tap targets retained");
 console.log("PASS Combat FX readability P1: separate AoE/contact, event truth, hazard and accessibility");

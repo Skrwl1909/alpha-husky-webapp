@@ -25,8 +25,8 @@ for (const name of names) {
 }
 assert.ok(battle.includes("combatFxVisualClasses(effect.name)"), "Visual identities not bound to renderer");
 assert.ok(battle.includes('["alpha_howl","shadow_pack_heal_def","shadow_pack_def_only","shadow_pack_guard"]'), "Existing AoE scope must remain");
-assert.ok(store.includes("publishFx(spriteEvents(actor,selectedSkillId,res.events"), "Atlas must follow accepted event");
-assert.ok(store.includes("publishFx(spriteEvents(actor,skillId,res.events"), "Self-activation must follow accepted event");
+assert.ok(store.includes("const effects=spriteEvents(actor,selectedSkillId,res.events") && store.includes("publishFx(effects,g)"), "Atlas must follow accepted event");
+assert.ok(store.includes("const effects=spriteEvents(actor,skillId,res.events") && store.includes("publishFx(effects,g)"), "Self-activation must follow accepted event");
 assert.ok(!store.includes("combatFxVisualClasses"), "Presentation classes must not enter gameplay store");
 assert.ok(css.includes(".t-threat-tile {z-index:16;}"), "Enemy red danger layer must remain over FX");
 assert.ok(css.includes(".t-sprite-fx {pointer-events:none;"), "Battlefield taps must remain free");
