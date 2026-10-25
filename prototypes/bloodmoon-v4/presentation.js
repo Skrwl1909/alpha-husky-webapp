@@ -30,6 +30,7 @@ export class Presentation {
       c.strokeStyle='#ffe8b650';c.lineWidth=1;for(let x=-540;x<900;x+=18){c.beginPath();c.moveTo(x,0);c.lineTo(x+540,540);c.stroke();}c.restore();
       const q=a.kind==='CIRCLE'?a.center:{x:180,y:230},x=clamp(q.x,60,300),y=clamp(q.y,185,470);
       this.text(a.kind,x,y,'#fff4d7',16);this.text(g.phase==='impact'?'IMPACT':`${Math.max(0,g.phaseTime).toFixed(1)}s`,x,y+19,'#fff4d7',13);
+      if(g.phase==='telegraph')this.text({LINE:'SIDESTEP',CIRCLE:'LEAVE THE RING',CONE:'CROSS AN EDGE'}[a.kind],180,486,'#fff4d7',11);
     }
     const open=['opening','recovery'].includes(g.phase),state=bossState(g),boss=bossImage(this.images,state);
     c.fillStyle='#0008';c.beginPath();c.ellipse(b.x,b.y+41,40,10,0,0,Math.PI*2);c.fill();

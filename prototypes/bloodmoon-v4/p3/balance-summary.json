@@ -1,0 +1,212 @@
+{
+  "kind": "SYNTHETIC_DRIVER_NOT_HUMAN_WIN_RATE",
+  "policy": {
+    "id": "last-stand-p3-v1",
+    "supportDamage": 8,
+    "damageScale": 0.28,
+    "damageCeiling": 13,
+    "hazardHPCap": 0.4
+  },
+  "seeds": [
+    1,
+    7,
+    19,
+    42,
+    77,
+    99,
+    123,
+    256,
+    512,
+    777,
+    1024,
+    1909,
+    2026,
+    4096,
+    8192,
+    10001
+  ],
+  "encounters": 336,
+  "replayComparisons": 336,
+  "profiles": {
+    "fresh": {
+      "resolved": {
+        "version": 1,
+        "provenance": "local-fixture",
+        "player": {
+          "maxHP": 50,
+          "damagePerHit": 5.125
+        },
+        "enemy": {
+          "id": "tower_husk",
+          "maxHP": 1000,
+          "damagePerHit": 60
+        }
+      },
+      "effective": {
+        "version": 1,
+        "provenance": "local-fixture",
+        "player": {
+          "maxHP": 50,
+          "damagePerHit": 9.435
+        },
+        "enemy": {
+          "id": "tower_husk",
+          "maxHP": 1000,
+          "damagePerHit": 20
+        }
+      },
+      "before": {
+        "outcomes": [
+          "timeout"
+        ],
+        "seconds": [
+          75,
+          75
+        ],
+        "remainingBossHP": [
+          369.625,
+          385
+        ]
+      },
+      "after": {
+        "wins": 16,
+        "seconds": [
+          64.217,
+          66.233
+        ]
+      },
+      "imperfect": {
+        "wins": 16,
+        "seconds": [
+          65.483,
+          66.433
+        ],
+        "remainingHP": [
+          10
+        ]
+      },
+      "idleLosses": 16,
+      "repeatedErrorLosses": 16
+    },
+    "baseline": {
+      "resolved": {
+        "version": 1,
+        "provenance": "local-fixture",
+        "player": {
+          "maxHP": 170,
+          "damagePerHit": 10.5
+        },
+        "enemy": {
+          "id": "tower_husk",
+          "maxHP": 1000,
+          "damagePerHit": 60
+        }
+      },
+      "effective": {
+        "version": 1,
+        "provenance": "local-fixture",
+        "player": {
+          "maxHP": 170,
+          "damagePerHit": 10.94
+        },
+        "enemy": {
+          "id": "tower_husk",
+          "maxHP": 1000,
+          "damagePerHit": 60
+        }
+      },
+      "before": {
+        "outcomes": [
+          "won"
+        ],
+        "seconds": [
+          58.217,
+          60.05
+        ],
+        "remainingBossHP": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "wins": 16,
+        "seconds": [
+          55.8,
+          57.8
+        ]
+      },
+      "imperfect": {
+        "wins": 16,
+        "seconds": [
+          56.817,
+          58.167
+        ],
+        "remainingHP": [
+          50
+        ]
+      },
+      "idleLosses": 16,
+      "repeatedErrorLosses": 16
+    },
+    "progressed": {
+      "resolved": {
+        "version": 1,
+        "provenance": "local-fixture",
+        "player": {
+          "maxHP": 278,
+          "damagePerHit": 16.875
+        },
+        "enemy": {
+          "id": "tower_husk",
+          "maxHP": 1000,
+          "damagePerHit": 60
+        }
+      },
+      "effective": {
+        "version": 1,
+        "provenance": "local-fixture",
+        "player": {
+          "maxHP": 278,
+          "damagePerHit": 12.725
+        },
+        "enemy": {
+          "id": "tower_husk",
+          "maxHP": 1000,
+          "damagePerHit": 60
+        }
+      },
+      "before": {
+        "outcomes": [
+          "won"
+        ],
+        "seconds": [
+          35.65,
+          37.817
+        ],
+        "remainingBossHP": [
+          0,
+          0
+        ]
+      },
+      "after": {
+        "wins": 16,
+        "seconds": [
+          47.467,
+          49.7
+        ]
+      },
+      "imperfect": {
+        "wins": 16,
+        "seconds": [
+          48.983,
+          49.917
+        ],
+        "remainingHP": [
+          158
+        ]
+      },
+      "idleLosses": 16,
+      "repeatedErrorLosses": 16
+    }
+  }
+}

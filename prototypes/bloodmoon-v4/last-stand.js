@@ -4,23 +4,25 @@ import {loadAssets,bossImage} from './assets.js';
 import {Presentation} from './presentation.js';
 import {LOCAL_PROFILES} from './combat-parameters.js';
 import {DEMO_SCENARIOS} from './p2/demo-profiles.js';
+import {P3_PROFILES} from './p3/balance.js';
+const scenarioFor=value=>value.startsWith('p3-')?P3_PROFILES[value.slice(3)]:DEMO_SCENARIOS[value];
 const $=id=>document.getElementById(id),canvas=$('arena');
-let game=new Encounter(1909,{},DEMO_SCENARIOS[$('profile').value]?.parameters??LOCAL_PROFILES[$('profile').value]),running=false,playback=null,replayIndex=0,saved=null;
+let game=new Encounter(1909,{},scenarioFor($('profile').value)?.parameters??LOCAL_PROFILES[$('profile').value]),running=false,playback=null,replayIndex=0,saved=null;
 let accumulator=0,previous=0,presentation=null,assetResult=null,renderedState='loading';
 const input=bindInput(canvas,(x,y)=>{if(running&&!playback)game.setInput(x,y);});
 $('lite').checked=matchMedia('(prefers-reduced-motion: reduce)').matches;
 function start(record=null){
   if(!assetResult?.ready)return;
   input.reset();playback=record;replayIndex=0;presentation.reset();
-  const scenario=DEMO_SCENARIOS[$('profile').value];
+  const scenario=scenarioFor($('profile').value);
   game=record?fromRecording(record):new Encounter(1909,{},scenario?.parameters??LOCAL_PROFILES[$('profile').value]);
   $('player-hp').max=game.t.playerHP;$('boss-hp').max=game.t.bossHP;
   accumulator=0;previous=0;running=true;$('overlay').hidden=true;$('profile').disabled=true;
 }
 $('start').onclick=()=>start();$('restart').onclick=()=>start();
 function showResolution(){
-  const scenario=DEMO_SCENARIOS[$('profile').value];
-  $('resolution-status').textContent=scenario?`${scenario.label}: ${scenario.parameters.player.maxHP} HP, ${scenario.parameters.player.damagePerHit} damage/hit against fixed 1000 HP. Proposed demo tuning; no backend formula or account integration is included. No attempts, contribution or rewards.`:'P1 local strength fixture; not account data.';
+  const scenario=scenarioFor($('profile').value);
+  $('resolution-status').textContent=scenario?`${scenario.label}: ${scenario.parameters.player.maxHP} HP, ${Number(scenario.parameters.player.damagePerHit.toFixed(3))} damage/hit, ${scenario.parameters.enemy.damagePerHit} incoming. Fixed 1000 boss HP. ${scenario.resolved?'Last Stand support + bounded offense; ward limits one hit to 40% HP. ':''}Proposed demo tuning; no account integration. No attempts, contribution or rewards.`:'P1 local strength fixture; not account data.';
 }
 $('profile').onchange=showResolution;showResolution();
 $('replay').onclick=()=>{if(saved)start(saved);};
