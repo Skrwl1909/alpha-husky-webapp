@@ -1,5 +1,11 @@
 # Blood Moon V4 · local synthetic progression demo
 
+## P6 isolated settlement candidate
+
+The optional private P6 candidate can return an actually credited server receipt for Tower Husk wave 1. The client displays its authoritative raid damage, contribution and attempt charge/refund; it does not calculate credit. Candidate entry/resume is visibly labelled proposed and isolated. The P5 no-credit mode remains supported unchanged, and both capabilities default OFF.
+
+Reservation, grace/expiry, refunds and at-most-once economic finalization are implemented and tested separately in private isolated stores, not distributed in this public checkout. Their proposed policy requires owner approval. Existing reward claims and V3 fallback remain separate. No production backend module, combat balance or replay mechanic is changed by the receipt UI update.
+
 ## P5 authenticated integration checkpoint
 
 The existing Blood Moon screen now discovers the server's Last Stand capability. It offers wave-1 Last Stand only when the private feature is enabled and the authenticated player is eligible; otherwise the existing V3 strike remains available. Unsupported waves (2–10) stay on V3. No production routing, build or deployment is changed by this PR.
