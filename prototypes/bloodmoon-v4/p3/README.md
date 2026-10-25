@@ -1,5 +1,7 @@
 # P3 Last Stand — playable balance pass
 
+**P5 update:** the three scenarios below remain synthetic balance/regression fixtures. The integrated mode now obtains its effective parameters from the private authoritative resolver and applies the accepted P3 modifier once on the server. It does not use these scenarios as account data. The P3 pure raid contract below is the historical rehearsal, not the new server lifecycle: P5 verification tolerates other participants' damage and completed waves, while retaining raid/faction binding. Economic settlement remains blocked. See the [current integration checkpoint](../README.md).
+
 Node 22+, original repository assets, no new dependencies:
 
 ```sh

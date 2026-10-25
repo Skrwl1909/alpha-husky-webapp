@@ -10,7 +10,7 @@ let sequence=0;const pending=new Map(),exceptions=[],requests=[];
 ws.addEventListener('message',e=>{const m=JSON.parse(e.data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);m.error?p.reject(m.error):p.resolve(m.result);}else if(m.method==='Runtime.exceptionThrown')exceptions.push(m.params.exceptionDetails);else if(m.method==='Network.requestWillBeSent')requests.push(m.params.request.url);});
 function call(method,params={}){return new Promise((resolve,reject)=>{const id=++sequence;pending.set(id,{resolve,reject});ws.send(JSON.stringify({id,method,params}));});}
 async function read(expression){const r=await call('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true});if(r.exceptionDetails)throw Error(JSON.stringify(r.exceptionDetails));return r.result.value;}
-const snapshot=()=>read('window.lastStand.snapshot()');
+const snapshot=()=>read('(()=>{const s=window.lastStand.snapshot();s.visual=window.lastStand.visuals();s.scroll=scrollY;return s;})()');
 async function touch(type,x,y){await call('Input.dispatchTouchEvent',{type,touchPoints:x===undefined?[]:[{x,y,id:1,force:1,radiusX:5,radiusY:5}]});}
 async function rect(id){return read(`(()=>{const r=document.getElementById('${id}').getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height};})()`);}
 async function tap(id){await read(`document.getElementById('${id}').scrollIntoView({block:'center'})`);await delay(40);const r=await rect(id);await touch('touchStart',r.x+r.width/2,r.y+r.height/2);await touch('touchEnd');await read('window.scrollTo(0,0)');await delay(40);}
@@ -48,18 +48,13 @@ for(const profile of ['fresh']){
   let held=false,target=null,attackTick=-1,reactAt=0,captured=false,recording=profile==='fresh',videoSaved=false;
   if(recording)await read(`(()=>{window.qaChunks=[];window.qaVideo=new MediaRecorder(document.getElementById('arena').captureStream(15),{mimeType:'video/webm;codecs=vp8',videoBitsPerSecond:180000});window.qaVideo.ondataavailable=e=>{if(e.data.size)window.qaChunks.push(e.data);};window.qaVideo.start();})()`);
   while((state=await snapshot()).status==='playing'){
-    const visuals=await read('window.lastStand.visuals()');assert.equal(visuals.playerSize,76);assert.equal(visuals.hitboxRadius,11);assert.equal(await read('scrollY'),0);
-    const key=state.phase==='telegraph'?`${state.phaseTime<.3?'imminent':'warning'}-${state.attack.kind}`:state.phase==='impact'?`impact-${state.attack.kind}`:state.phase==='recovery'?'recovery':null;
-    if(key&&!captures.has(key)){await capture(key);captures.add(key);stages.add(key);}
-    if(visuals.feedback.hurtVisible&&!captures.has('player-hit')){await capture('player-hit');captures.add('player-hit');}
-    if(visuals.feedback.connection&&!captures.has('boss-hit')){await capture('boss-hit');captures.add('boss-hit');}
-    if(state.pressure&&!captures.has('escalation-'+state.pressure)){await capture('escalation-'+state.pressure);captures.add('escalation-'+state.pressure);}
+    const visuals=state.visual;assert.equal(visuals.playerSize,76);assert.equal(visuals.hitboxRadius,11);assert.equal(state.scroll,0);
     const attack=state.events.findLast(e=>e.type==='telegraph');
     if(attack&&attack.tick!==attackTick){attackTick=attack.tick;reactAt=state.time+(profile==='fresh'?.45:.25);target=null;const number=state.events.filter(e=>e.type==='telegraph').length;
       if(!(profile==='fresh'&&[4,13].includes(number)))for(let x=25;x<=335;x+=10)for(let y=190;y<=340;y+=10){if(hits({x,y},state.attack,profile==='fresh'?44:34)||Math.hypot(x-state.boss.x,y-state.boss.y)>250)continue;const d=Math.hypot(x-state.player.x,y-state.player.y);if(!target||d<target.d)target={x,y,d};}
     }
     if(target&&state.time>=reactAt){const dx=target.x-state.player.x,dy=target.y-state.player.y,d=Math.hypot(dx,dy),r=await rect('arena'),ax=r.x+r.width*.5,ay=r.y+r.height*.83;
-      if(d>10){if(!held){await touch('touchStart',ax,ay);held=true;}await touch('touchMove',ax+dx/d*38*r.width/360,ay+dy/d*38*r.height/540);}else{if(held)await touch('touchEnd');held=false;target=null;}
+      if(d>18){if(!held){await touch('touchStart',ax,ay);held=true;}await touch('touchMove',ax+dx/d*38*r.width/360,ay+dy/d*38*r.height/540);}else{if(held)await touch('touchEnd');held=false;target=null;}
     }
     if(!captured&&state.time>8&&state.phase==='telegraph'){await capture(profile+'-combat');captured=true;}
     if(recording&&!videoSaved&&state.time>=12){const data=await read(`new Promise(resolve=>{window.qaVideo.onstop=async()=>{const b=new Uint8Array(await new Blob(window.qaChunks,{type:'video/webm'}).arrayBuffer());let s='';for(let i=0;i<b.length;i+=32768)s+=String.fromCharCode(...b.subarray(i,i+32768));resolve(btoa(s));};window.qaVideo.stop();})`);await writeFile(new URL('p4-gameplay.webm',out),Buffer.from(data,'base64'));videoSaved=true;}
@@ -73,8 +68,16 @@ for(const profile of ['fresh']){
   if(profile==='fresh'){
     await read('document.getElementById("lite").checked=true');
     await tap('replay');await delay(100);assert((await snapshot()).playback);
-    let reducedCaptured=false;while((await snapshot()).status==='playing'){assert.equal(await read('window.lastStand.visuals().feedback.motion'),false);if(!reducedCaptured&&(await snapshot()).time>8){await capture('reduced-motion');reducedCaptured=true;}await delay(300);}
-    const uiReplay=await snapshot();assert.deepEqual(uiReplay.events,state.events);assert.deepEqual(uiReplay.player,state.player);console.log('PASS full P4 browser UI replay with frozen resolved parameters');
+    let reducedCaptured=false;while((state=await snapshot()).status==='playing'){
+      const visuals=state.visual;assert.equal(visuals.feedback.motion,false);
+    const key=state.phase==='telegraph'?`${state.phaseTime<.3?'imminent':'warning'}-${state.attack.kind}`:state.phase==='impact'?`impact-${state.attack.kind}`:state.phase==='recovery'?'recovery':null;
+    if(key&&!captures.has(key)){await capture(key);captures.add(key);stages.add(key);}
+    if(visuals.feedback.hurtVisible&&!captures.has('player-hit')){await capture('player-hit');captures.add('player-hit');}
+    if(visuals.feedback.connection&&!captures.has('boss-hit')){await capture('boss-hit');captures.add('boss-hit');}
+    if(state.pressure&&!captures.has('escalation-'+state.pressure)){await capture('escalation-'+state.pressure);captures.add('escalation-'+state.pressure);}
+      if(!reducedCaptured&&state.time>8){await capture('reduced-motion');reducedCaptured=true;}await delay(25);
+    }
+    const uiReplay=await snapshot();assert.deepEqual(uiReplay.events,result.events);assert.deepEqual(uiReplay.player,again.player);console.log('PASS full P4 browser UI replay with frozen resolved parameters');
   }
 }
 for(const kind of ['LINE','CIRCLE','CONE'])for(const stage of ['warning','imminent','impact'])assert(stages.has(stage+'-'+kind),stage+'-'+kind);assert(captures.has('recovery'));assert(captures.has('player-hit'));assert(captures.has('boss-hit'));assert(captures.has('escalation-1'));assert(captures.has('escalation-2'));

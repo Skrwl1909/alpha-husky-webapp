@@ -1,5 +1,7 @@
 # Public synthetic progression demo
 
+**Historical P2 reference.** These fixtures and the memory-only validation utility remain unchanged for regression. They are not real account resolution or the P5 server authority. Current authenticated integration uses server-held snapshots and the host API transport; see the [P5 checkpoint](../README.md). Its current mode verifies without consuming attempts or awarding raid credit because settlement policy remains unconfirmed. Never substitute these P2 snapshots for an authenticated player.
+
 This directory contains public demo fixtures and a local validation utility. It contains no backend stat formula, raw backend implementation, account record, source-derived stat breakdown or production integration. The numeric demonstration values remain unchanged:
 
 | Fixture | Player HP | Damage/hit | Same enemy HP | Incoming hazard |
