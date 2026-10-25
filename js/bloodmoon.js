@@ -6,6 +6,7 @@
   let _dbg = false;
   let _busy = false;
   let _state = null;
+  let _lastStand = null;
   let _mounted = false;
   let _battleReplayTimer = 0;
   let _battlePixiLoadPromise = null;
@@ -2749,7 +2750,13 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       const mount = document.getElementById(FEED_MOUNT_ID);
       if (!mount) return;
       mount.innerHTML = renderFeed(_state?.recentFeed);
-      bindFeedToggle();
+      const lastStandBtn=document.getElementById("bloodMoonLastStandBtn");
+    if(lastStandBtn)lastStandBtn.onclick=async()=>{
+      if(_busy)return;lastStandBtn.disabled=true;
+      try{const {openLastStand}=await import('/prototypes/bloodmoon-v4/integration.js');openLastStand({apiPost:call,onRefresh:loadState,onClose:()=>{if(_state)render(_state);}});}
+      catch{setInlineFeedback('error','Last Stand could not load. The existing raid strike is available.','state');if(_state)render(_state);}
+    };
+    bindFeedToggle();
     });
   }
 
@@ -2950,6 +2957,12 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       });
     });
 
+    const lastStandBtn=document.getElementById("bloodMoonLastStandBtn");
+    if(lastStandBtn)lastStandBtn.onclick=async()=>{
+      if(_busy)return;lastStandBtn.disabled=true;
+      try{const {openLastStand}=await import('/prototypes/bloodmoon-v4/integration.js');openLastStand({apiPost:call,onRefresh:loadState,onClose:()=>{if(_state)render(_state);}});}
+      catch{setInlineFeedback('error','Last Stand could not load. The existing raid strike is available.','state');if(_state)render(_state);}
+    };
     bindFeedToggle();
   }
 
@@ -3080,6 +3093,7 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
               ${v3Replay ? `<div class="bm-v3-result ${v3Replay.waveCleared ? "is-clear" : ""}"><span><strong>${esc(v3Replay.outcomeLabel)}</strong> · ${fmtNum(v3Damage)} damage · ${fmtNum(v3Replay.enemy.hpEnd)} / ${fmtNum(v3Replay.enemy.hpMax)} HP remain</span><button class="bm-v3-replay" data-bm-replay type="button">REPLAY</button></div>` : ""}
               ${renderInlineFeedback()}
               ${resolvingPriorWave ? "" : renderArenaV3Attempt(preparedAttempt, cta, attemptsLeft, my.dailyCap, cooldownLeftSec)}
+              ${_lastStand?.enabled ? `<div class="bm-v3-attempt-strip"><span>LAST STAND · AUTHENTICATED NO-CREDIT PREVIEW</span><span>${_lastStand.supported ? 'Server-verified combat. Attempts, raid HP and rewards remain unchanged.' : 'Wave 1 only. Continue with the existing raid strike.'}</span>${_lastStand.supported ? `<button id="bloodMoonLastStandBtn" class="bm-cta" type="button" ${_lastStand.canStart ? '' : 'disabled'}>${esc(_lastStand.canStart ? 'ENTER LAST STAND' : _lastStand.reason || 'UNAVAILABLE')}</button>` : ''}</div>` : ''}
               <div class="bm-v3-command">
                 <button id="bloodMoonAttackBtn" class="bm-cta" type="button" ${cta.enabled && !resolvingPriorWave ? "" : "disabled"}>${esc(resolvingPriorWave ? "RESOLVING WAVE" : (cta.label || "STRIKE THE TOWER"))}</button>
               </div>
@@ -3104,6 +3118,8 @@ html.ah-perf-lite .bm-v3-dock,body.ah-perf-lite .bm-v3-dock,html.ah-perf-lite .b
       if (!res || res.ok !== true || !res.data) {
         throw new Error((res && res.reason) || "BAD_STATE_RESPONSE");
       }
+      _lastStand=null;
+      try{const capability=await call('/webapp/bloodmoon/laststand/state',{});if(capability?.ok&&capability.data?.enabled===true)_lastStand=capability.data;}catch(_){}
       _inlineFeedback = null;
       render(res.data);
       clearStalePendingCommands(res.data?.raidInstanceId);

@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {ASSETS} from './assets.js';
 const root = new URL('./',import.meta.url), port = Number(process.env.PORT || 4173);
 const repo = new URL('../../',root), assetPaths = new Set(Object.values(ASSETS));
-const modules=new Set(['index.html','last-stand.css','last-stand.js','simulation.js','input.js','assets.js','presentation.js','combat-parameters.js','p2/demo-profiles.js','p3/balance.js']);
+const modules=new Set(['index.html','last-stand.css','last-stand.js','simulation.js','input.js','assets.js','presentation.js','combat-parameters.js','p2/demo-profiles.js','p3/balance.js','integration.js']);
 http.createServer(async(req,res)=>{
   try {
     const name=decodeURIComponent(new URL(req.url,'http://localhost').pathname).replace(/^\//,'') || 'index.html';
