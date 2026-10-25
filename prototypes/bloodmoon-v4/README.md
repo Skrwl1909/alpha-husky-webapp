@@ -1,5 +1,7 @@
 # Blood Moon V4 · local synthetic progression demo
 
+**P3 Last Stand:** start with Fresh, Baseline or Progressed in the scenario selector. The default Fresh encounter now has a survival ward and encounter support damage; all three face the same 1000 HP. See [P3 results, tests and private integration handoff](p3/README.md). Original P1/P2 scenarios remain available for regression/comparison.
+
 An isolated playable encounter with original Alpha Husky artwork. This public version contains only synthetic resolved combat fixtures, prototype mechanics and local validation tests. No private backend implementation or real account data is required or included. See [public/demo versus developer-only tests](p2/README.md).
 
 With Node 22+ and the original repository assets checked out:
