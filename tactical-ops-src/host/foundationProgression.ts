@@ -2,6 +2,7 @@ import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowt
 import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import type { CampaignContext } from "../data/operations";
+import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
@@ -34,6 +35,8 @@ export interface FoundationProgressionState {
   lastCompletedRunId: string | null;
   updatedAt: number;
   fieldOps?: FieldOpsProgression;
+  /** Read-only optional V1 from authoritative backend; absent = no new campaign UI. */
+  tacticalChapter?: ChapterSnapshot;
   operations?: Record<string, OperationProgressionState>;
   campaignIntel?: { "dead-relay": { courierTraceAcquired: boolean } };
   intel?: { routingTrace: boolean; commanderProfile: boolean };
@@ -245,6 +248,12 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       }
       Object.assign(state.fieldOps, { board, commander, region, ...(rotation ? { rotationProgress: rotation } : {}), ...(career ? { careerRecord: career } : {}), lastResult: parseFieldResult(field.lastResult) });
     }
+  }
+  // Fail closed on malformed optional chapter wire data. Never infer progress from local results.
+  if (Object.prototype.hasOwnProperty.call(value, "tacticalChapter")) {
+    const chapter=parseChapterSnapshot(value.tacticalChapter);
+    if(!chapter)return null;
+    state.tacticalChapter=chapter;
   }
   const operations = parseOperations(value.operations);
   state.playerIdentity = value.playerIdentity && typeof value.playerIdentity === "object" ? value.playerIdentity as Record<string, unknown> : undefined;
