@@ -101,7 +101,7 @@ function render(){
   $('phase-label').textContent=ready?'STAND BY':`${playback?'REPLAY · ':''}${cue.label}`;
   $('status').parentElement.dataset.phase=ready?'ready':cue.phase;
   $('status').textContent=!assetResult?'Loading encounter art…':!assetResult.ready?'Essential art unavailable · reload to retry':ready?'Tower Husk · 75-second encounter.':cue.message;
-  if(integrated&&!running){$('status').textContent=integrationError|| (verified?'Server verified · no raid credit awarded.':'Authenticated no-credit preview · server snapshot required.');if(!ticket){$('player-value').textContent='SERVER';$('boss-value').textContent=context?`${context.sharedHP} / ${context.sharedMaxHP}`:'SERVER';}}
+  if(integrated&&!running){$('status').textContent=integrationError|| (verified?receiptPresentation(verified).title:(context?.mode==='AUTHENTICATED_SETTLEMENT_CANDIDATE'?'Proposed isolated settlement · server snapshot required.':'Authenticated no-credit preview · server snapshot required.'));if(!ticket){$('player-value').textContent='SERVER';$('boss-value').textContent=context?`${context.sharedHP} / ${context.sharedMaxHP}`:'SERVER';}}
   $('events').textContent=g.events.slice(-12).map(e=>`${(e.tick*g.t.step).toFixed(2)} ${e.type} ${e.kind??''} ${e.hp??''}${e.type==='escalation'?` stage ${e.pressure} · ${e.recovery*1000}ms recovery`:''}`).join('\n');
 }
 function frame(ms){
