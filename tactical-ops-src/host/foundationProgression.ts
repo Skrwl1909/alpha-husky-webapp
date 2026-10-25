@@ -263,7 +263,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
           typeof active.runId !== "string" || active.runId !== chapter.activeRunId ||
           typeof active.missionId !== "string" || !Array.isArray(active.squadIds) ||
           !active.squadIds.every((x: unknown) => typeof x === "string") ||
-          active.rulesetVersion !== TACTICAL_VNEXT_RULESET) return null;
+          (active.rulesContract as Record<string,unknown> | undefined)?.rulesetVersion !== TACTICAL_VNEXT_RULESET) return null;
       const fieldContext = parseFieldContext(active.fieldContext);
       if (active.fieldContext != null && !fieldContext) return null;
       const contract=parseRunRulesContract(active.rulesContract);
