@@ -130,6 +130,7 @@ function Token({
   interceptTarget = false,
   hitReacting = false,
   travelGhost = false,
+  shownHp,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -141,8 +142,10 @@ function Token({
   interceptTarget?: boolean;
   hitReacting?: boolean;
   travelGhost?: boolean;
+  shownHp?: number;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
+  const hp = shownHp ?? unit.hp;
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
   const selectTarget = useBattleStore((s) => s.selectTarget);
   const className = [
@@ -201,10 +204,10 @@ function Token({
           </div>
           <div className="t-hp">
             <div className="t-hp-bar">
-              <i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} />
+              <i style={{ width: `${(hp / unit.maxHp) * 100}%` }} />
             </div>
             <span className="t-hp-num">
-              {unit.hp}/{unit.maxHp}
+              {hp}/{unit.maxHp}
             </span>
           </div>
           {unit.statuses.length ? (
@@ -259,11 +262,13 @@ function StatusStrip() {
   const inspectId = useBattleStore((s) => s.battle.inspectId);
   const activeId = useBattleStore((s) => s.battle.activeId);
   const units = useBattleStore((s) => s.battle.units);
+  const displayHp = useBattleStore((s) => s.displayHp);
   const identity = useBattleStore((s) => s.identity);
   const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
   const [expanded, setExpanded] = useState(false);
   const unit = units.find((u) => u.id === inspectId) || units.find((u) => u.id === activeId) || units.find((u) => u.role === "alpha" && u.team === "ally" && !u.defeated);
   if (!unit) return null;
+  const hp = displayHp[unit.id] ?? unit.hp;
   const isAlpha = unit.role === "alpha" || unit.defId === "alpha" || unit.id === "alpha";
   const level = isAlpha ? readHostLevel() : null;
   const kit = isAlpha ? [level != null ? `Lv ${level}` : null, identity.skinName || identity.armorLabel || identity.weaponLabel].filter(Boolean).join(" · ") : "";
@@ -470,6 +475,7 @@ export function BattleScreen() {
   const lastActionSkillId = useBattleStore((s) => s.lastActionSkillId);
   const combatMoment = useBattleStore((s) => s.combatMoment);
   const combatFx = useBattleStore((s) => s.combatFx);
+  const displayHp = useBattleStore((s) => s.displayHp);
   const travelActors = new Set(combatFx.filter(fx=>combatFxTravelKind(fx.name)==="dash" && fx.actorId).map(fx=>fx.actorId));
   const banner = useBattleStore((s) => s.banner);
   const ticker = useBattleStore((s) => s.ticker);
@@ -594,6 +600,7 @@ export function BattleScreen() {
                 targeting={mode === "targeting"}
                 attacking={u.id === attackingId}
                 hitReacting={u.id === impactId && impactKey > 0}
+                shownHp={displayHp[u.id]}
                 travelGhost={travelActors.has(u.id)}
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
