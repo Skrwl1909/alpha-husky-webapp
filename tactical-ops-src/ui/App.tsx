@@ -198,6 +198,9 @@ function WarTable() {
   const [selectedFieldOp, setSelectedFieldOp] = useState<string | null>(null);
   const progression = useBattleStore((s) => s.progression);
   const openOperationBrief = useBattleStore((s) => s.openOperationBrief);
+  const chooseDoctrine = useBattleStore((s) => s.chooseDoctrine);
+  const openChapterBrief = useBattleStore((s) => s.openChapterBrief);
+  const chapterSaving = useBattleStore((s) => s.progressionCommitPending);
   const progressionError = useBattleStore((s) => s.progressionError);
   const missionFirstClear = useBattleStore((s) => s.missionFirstClear);
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
@@ -326,9 +329,11 @@ function WarTable() {
           <div className="t-kicker">CAMPAIGN CHAPTER · SERVER RECORDED</div>
           <h2 className="t-title">{chapterView.title}</h2>
           <div className="t-chapter-steps">{acceptedChapter.status === "AVAILABLE" ? (Object.entries(DOCTRINES).map(([id,def]) =>
-            <div key={id}><strong>{id} · {def.title}</strong><p>{def.copy}</p></div>)) :
+            <div key={id}><strong>{id} · {def.title}</strong><p>{def.copy}</p>{id==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={()=>void chooseDoctrine()}>COMMIT TO GHOST SIGNAL</button> : <small>Future doctrine · not yet operational</small>}</div>)) :
             <><strong>{chapterView.stage} / {chapterView.total} OPERATIONS VERIFIED</strong>
             <p>{chapterView.nextMissionName ? `NEXT · ${chapterView.nextMissionName}` : "CHAPTER COMPLETE"}</p></>}</div>
+          {acceptedChapter.status==="ACTIVE" && acceptedChapter.doctrine==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={openChapterBrief}>{acceptedChapter.activeRunId?"RESUME CHAPTER RUN":"DEPLOY NEXT CHAPTER OP"}</button>:null}
+          {acceptedChapter.status==="COMPLETED"?<strong>{acceptedChapter.intelConsumedByRunId?"INTEL DEPLOYED IN AN ACCEPTED RUN":"RECON INTEL READY · DELAY NEXT ELIGIBLE REINFORCEMENT"}</strong>:null}
           <p>{chapterView.consequence}</p>
           <small>{acceptedChapter.status === "AVAILABLE" ? "Doctrine selection becomes playable only after the server exposes a verified choice action. No client-only selection." : "Mission progress advances only on the next accepted server receipt. Existing Field Ops can still be played normally."}</small>
         </section> : null}
@@ -615,12 +620,14 @@ function Brief() {
   const progressionError = useBattleStore((s) => s.progressionError);
   const busy = useBattleStore((s) => s.busy);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
+  const chapterMode = useBattleStore((s) => s.chapterMode);
+  const chapterActive = useBattleStore((s) => s.progression?.chapterActiveMission);
   const campaignRun = useBattleStore((s) => s.progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun);
   const campaignIntel = useBattleStore((s) => s.progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true);
   const campaignContext = campaignRun?.missionId === selectedMissionId ? campaignRun.campaignContext : { version: 1 as const, courierTraceAcquired: campaignIntel };
   const baseMission = getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
-  const savedRun = campaignMission ? campaignRun : field?.activeMissionRun;
+  const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
   const mission = baseMission ? missionForContext(baseMission, fieldContext) : null;
@@ -631,7 +638,8 @@ function Brief() {
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
   const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
-  const reinforcementRound = mission && (fieldOp || campaignMission) ? missionBattleRules(mission, false, fieldContext, campaignContext).reinforcement?.triggerRound : undefined;
+  const chapterIntel = useBattleStore((s)=>s.currentChapterIntel);
+  const reinforcementRound = mission && (fieldOp || campaignMission) ? (chapterIntel?.effectiveRound || missionBattleRules(mission, false, fieldContext, campaignContext).reinforcement?.triggerRound) : undefined;
   const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
@@ -991,6 +999,9 @@ function Results() {
   const results = useBattleStore((s) => s.battle.results);
   const fieldResult = useBattleStore((s) => s.fieldResult);
   const campaignResult = useBattleStore((s) => s.campaignResult);
+  const chapterResult = useBattleStore((s) => s.chapterResult);
+  const chapterMode = useBattleStore((s) => s.chapterMode);
+  const saveChapterResult = useBattleStore((s) => s.saveChapterResult);
   const saveCampaignResult = useBattleStore((s) => s.saveCampaignResult);
   const saveFieldResult = useBattleStore((s) => s.saveFieldResult);
   const replay = useBattleStore((s) => s.replay);
@@ -1040,14 +1051,18 @@ function Results() {
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
           {operationVictory && !campaignMission && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
-          {fieldOp ? <div>
+          {chapterMode ? <div className="t-panel" role="status">
+            <strong>{chapterResult ? "CHAPTER RESULT RECORDED" : progressionCommitPending ? "RECORDING CHAPTER RESULT…" : "CHAPTER RESULT NOT YET RECORDED"}</strong>
+            <p>{chapterResult ? `GHOST SIGNAL · ${chapterResult.stageRecorded}/3 accepted operations. ${chapterResult.chapterComplete?"RECON Intel ready for a qualifying encounter.":"Return to War Table for the next mission."}` : "Only server-recorded results advance this chapter."}</p>
+          </div>:null}
+          {!chapterMode && fieldOp ? <div>
             
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
             {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
           </div> : null}
           
-          {fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
-          {campaignMission ? <div className="t-panel t-deploy-overview" role="status">
+          {!chapterMode && fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
+          {!chapterMode && campaignMission ? <div className="t-panel t-deploy-overview" role="status">
             <strong>{recordedCampaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
             <p>{mission?.missionId === "dead-relay-courier"
               ? recordedCampaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || recordedCampaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
@@ -1089,7 +1104,10 @@ function Results() {
             </section>
           ) : null}
           <div className="t-brief-actions t-result-actions">
-            {campaignMission ? (
+            {chapterMode ? (chapterResult ?
+              <button type="button" className="t-btn t-btn-primary" onClick={()=>continueOnboarding()}>RETURN TO CHAPTER</button>
+              : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={()=>void saveChapterResult()}>{progressionCommitPending?"RECORDING…":"RECORD CHAPTER RESULT"}</button>
+            ) : campaignMission ? (
               recordedCampaignResult ? <>
                 <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>BACK TO CAMPAIGN</button>
                 <button type="button" className="t-btn" onClick={replay}>REPLAY / SQUAD</button>
