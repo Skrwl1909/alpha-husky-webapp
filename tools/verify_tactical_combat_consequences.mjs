@@ -1,0 +1,22 @@
+import assert from "node:assert/strict";import{createServer}from"vite";import{readFileSync}from"node:fs";
+const server=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
+try{const {confirmedHitConsequence:hit,confirmedCounterConsequence:counter}=await server.ssrLoadModule("/tactical-ops-src/ui/combatConsequences.ts");
+const target={id:"h1",hp:0,defeated:true,statuses:[]};
+const dmg={type:"damage",unitId:"h1",amount:21,text:"-21"};
+assert.equal(hit(dmg,[target],{h1:16})?.kind,"finisher");
+assert.equal(hit(dmg,[target],{h1:41}),null,"nonlethal hit must not claim kill");
+assert.equal(hit({...dmg,type:"status"},[target],{h1:16}),null);
+const guard={...target,hp:45,defeated:false,statuses:[{type:"GUARD"}]};
+assert.equal(hit(dmg,[guard],{h1:48})?.kind,"guarded");
+assert.equal(hit(dmg,[{...guard,statuses:[]}],{h1:48}),null);
+assert.equal(counter(true,"h1",[{type:"status",unitId:"h1"}])?.kind,"counter");
+assert.equal(counter(false,"h1",[{type:"status",unitId:"h1"}]),null);
+assert.equal(counter(true,"h1",[{type:"status",unitId:"h2"}]),null);
+const store=readFileSync("tactical-ops-src/store/battleStore.ts","utf8");
+assert(store.indexOf("showConsequence(confirmedHitConsequence")<store.indexOf("revealHp(ev)"),"inspect pre-impact HP");
+assert(store.includes("confirmedCounterConsequence(interrupt.interrupted,id,res.events)"));
+const battle=readFileSync("tactical-ops-src/ui/Battle.tsx","utf8");
+assert(battle.includes('unit.defeated && hp<=0'),"defeat must follow staged HP");
+assert(battle.includes("t-consequence-"),"visual consequences missing");
+console.log("PASS S7: no fake finishes/guard/counters, staged defeat and presentation");
+}finally{await server.close()}
