@@ -475,6 +475,7 @@ export function BattleScreen() {
   const lastActionSkillId = useBattleStore((s) => s.lastActionSkillId);
   const combatMoment = useBattleStore((s) => s.combatMoment);
   const combatFx = useBattleStore((s) => s.combatFx);
+  const enemyScene = useBattleStore((s) => s.enemyScene);
   const displayHp = useBattleStore((s) => s.displayHp);
   const travelActors = new Set(combatFx.filter(fx=>combatFxTravelKind(fx.name)==="dash" && fx.actorId).map(fx=>fx.actorId));
   const banner = useBattleStore((s) => s.banner);
@@ -607,6 +608,14 @@ export function BattleScreen() {
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
               />
             ))}
+          {enemyScene && (() => {
+            const from=fieldPercent(enemyScene.from.c,enemyScene.from.r),to=fieldPercent(enemyScene.to.c,enemyScene.to.r);
+            const actor=units.find(u=>u.id===enemyScene.actorId);
+            const style={"--enemy-x":from.x+"%","--enemy-y":from.y+"%","--enemy-target-x":to.x+"%","--enemy-target-y":to.y+"%","--enemy-duration":enemyScene.durationMs+"ms"} as CSSProperties;
+            return <div className={`t-hostile-scene t-hostile-${enemyScene.style}`} key={enemyScene.id} style={style} aria-hidden="true">
+              {["melee","heavy"].includes(enemyScene.style)&&actor?<img src={actor.attackSprite||actor.sprite} alt="" />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
+            </div>;
+          })()}
           {combatFx.map(effect=>{
             const performer=effect.actorId ? units.find(u=>u.id===effect.actorId) : null;
             const receiver=effect.terminal || units.find(u=>u.id===effect.targetId);
