@@ -26,7 +26,7 @@ import {
 } from "../host/foundationProgression";
 import { VERSION } from "../version";
 import { confirmedPathfinderMove, confirmedSkillMoment, type CombatMoment } from "../ui/combatIdentity";
-import { spriteEvents, pathfinderFx, fx, type CombatFx } from "../ui/combatFxAtlas";
+import { spriteEvents, pathfinderFx, fx, combatFxContactMs, type CombatFx } from "../ui/combatFxAtlas";
 import { newS3Proof, recordS3Skill, recordS3Hold, type S3CombatProof } from "../ui/s3CombatProof";
 import {
   DEFAULT_ONBOARDING_STAGE,
@@ -197,6 +197,11 @@ export const useBattleStore = create<Store>((set, get) => {
     void wait(Math.max(...capped.map(effect=>effect.durationMs))+70).then(()=>{
       if(generation===runGen && get().combatFx[0]?.id===capped[0].id)set({combatFx:[]});
     });
+  };
+  const waitForContact = async (effects: CombatFx[], g: number): Promise<boolean> => {
+    const delay = combatFxContactMs(effects);
+    if (delay) await wait(delay);
+    return g === runGen;
   };
   const pushFloat = (unitId: string, text: string, kind: string) => {
     const id = floatSeq++;
@@ -919,9 +924,11 @@ export const useBattleStore = create<Store>((set, get) => {
         }
         const evidence = recordS3Skill(get().s3CombatProof, actor, skillId, undefined, res.events, false, battle);
         set({ battle: res.state, queue: refreshQueue(res.state), s3CombatProof: evidence });
-        publishMoment(confirmedSkillMoment(actor, skillId, res.events, impactSeq++, false), g);
-        publishFx(spriteEvents(actor,skillId,res.events,impactSeq++,false),g);
+        const effects=spriteEvents(actor,skillId,res.events,impactSeq++,false);
+        publishFx(effects,g);
         void (async () => {
+          if (!(await waitForContact(effects,g))) return;
+          publishMoment(confirmedSkillMoment(actor, skillId, res.events, impactSeq++, false), g);
           await playEvents(res.events, g);
           set({ attackingId: null });
           await afterPlayerAction(g);
@@ -959,9 +966,11 @@ export const useBattleStore = create<Store>((set, get) => {
       const evidence = recordS3Skill(get().s3CombatProof, actor, selectedSkillId, id, res.events, interrupt.interrupted, battle);
       set({ s3CombatProof: evidence, battle: res.state, queue: refreshQueue(res.state),
         ...(interrupt.interrupted ? { threats: threatCycle.pending.map(t => t.plan) } : {}) });
-      publishMoment(confirmedSkillMoment(actor, selectedSkillId, res.events, impactSeq++, interrupt.interrupted), g);
-      publishFx(spriteEvents(actor,selectedSkillId,res.events,impactSeq++,interrupt.interrupted),g);
+      const effects=spriteEvents(actor,selectedSkillId,res.events,impactSeq++,interrupt.interrupted);
+      publishFx(effects,g);
       void (async () => {
+        if (!(await waitForContact(effects,g))) return;
+        publishMoment(confirmedSkillMoment(actor, selectedSkillId, res.events, impactSeq++, interrupt.interrupted), g);
         await playEvents(res.events, g);
         if (interrupt.interrupted) {
           set({ ticker: "SIGNAL INTERRUPTED · ENEMY INTENT CANCELED" });
