@@ -1,0 +1,122 @@
+/* S8 — Final Combat Visual Cohesion.
+   Render-only overrides. Source of truth for events, hit targets, HP, skills,
+   movement and telegraphs remains unchanged. Load LAST in styles.ts. */
+#tacticalOpsRoot .t-battle {
+  --t8-cyan: #8fe3f2;
+  --t8-amber: #efc28b;
+  --t8-danger: #ff7774;
+  --t8-ink: rgba(5, 17, 29, .96);
+  --t8-ease: cubic-bezier(.19, .75, .23, 1);
+}
+/* One depth model: traversal and contact below the dangerous squares;
+   confirmed numbers and the battle HUD remain clearly legible. */
+#tacticalOpsRoot .t-choreo-travel,
+#tacticalOpsRoot .t-hostile-scene { z-index: 14; pointer-events: none; }
+#tacticalOpsRoot .t-sprite-fx,
+#tacticalOpsRoot .t-master-fx { z-index: 15; pointer-events: none; }
+#tacticalOpsRoot .t-consequence { z-index: 17; pointer-events: none; }
+#tacticalOpsRoot .t-impact { z-index: 18; pointer-events: none; }
+#tacticalOpsRoot .t-threat-tile { z-index: 19; pointer-events: none; }
+#tacticalOpsRoot .t-float { z-index: 20; pointer-events: none; }
+
+/* A restrained visual vocabulary. Contact follows travel; action numbers
+   are the strongest transient signal, except persistent enemy-danger tiles. */
+#tacticalOpsRoot .t-choreo-travel .t-choreo-actor {
+  filter: drop-shadow(0 7px 12px rgba(0,0,0,.66));
+  animation-timing-function: var(--t8-ease);
+}
+#tacticalOpsRoot .t-hostile-scene img {
+  filter: drop-shadow(0 7px 12px rgba(0,0,0,.66)) drop-shadow(0 0 7px rgba(235,112,91,.28));
+}
+#tacticalOpsRoot .t-choreo-line line { filter: drop-shadow(0 0 3px rgba(246,192,117,.35)); }
+#tacticalOpsRoot .t-hostile-scene line { filter: drop-shadow(0 0 4px rgba(252,101,89,.42)); }
+
+/* Actual damage only: 360 ms pulse is timed to the battleStore event. */
+#tacticalOpsRoot .t-impact {
+  width: 48px; height: 48px;
+  border: 2px solid rgba(241,229,204,.83);
+  box-shadow: 0 0 0 2px rgba(4,15,26,.55), 0 0 17px rgba(239,194,139,.25);
+  animation: t8-contact-pulse .36s var(--t8-ease) both;
+}
+@keyframes t8-contact-pulse {
+  0% { opacity: 0; scale: .64; }
+  18% { opacity: .92; scale: 1; }
+  65% { opacity: .55; scale: 1.18; }
+  100% { opacity: 0; scale: 1.52; }
+}
+#tacticalOpsRoot .t-float.dmg {
+  color: #ffc7b3;
+  text-shadow: 0 2px 4px #070d15, 0 0 12px rgba(255,111,99,.36);
+}
+#tacticalOpsRoot .t-float.heal { color: #a2f5d4; }
+
+/* Confirmed consequence captions always fit the battlefield, including
+   10x7 edge tiles and compact 8x5 legacy boards. Left/top are CSS-clamped
+   by Battle.tsx; never place an interactive surface over the field. */
+#tacticalOpsRoot .t-consequence {
+  max-width: min(190px, 72%);
+  box-sizing: border-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.15;
+  padding: 5px 9px;
+  border-radius: 4px;
+  letter-spacing: .09em;
+  font-family: var(--t-font-display);
+  font-weight: 800;
+  color: #e6f4f8;
+  border: 1px solid rgba(143,227,242,.57);
+  background: linear-gradient(115deg, rgba(6,23,36,.98), rgba(14,37,50,.94));
+  box-shadow: 0 2px 0 rgba(123,221,235,.12) inset, 0 7px 16px rgba(0,0,0,.55);
+  animation: t8-consequence .99s var(--t8-ease) both;
+}
+#tacticalOpsRoot .t-consequence-finisher {
+  color: #ffe5c8;
+  border-color: rgba(239,194,139,.80);
+  background: linear-gradient(115deg,rgba(56,29,24,.98),rgba(19,28,38,.96));
+}
+#tacticalOpsRoot .t-consequence-counter {
+  color: #b6fff0;
+  border-color: rgba(112,236,212,.79);
+  background: linear-gradient(115deg,rgba(8,41,42,.98),rgba(12,31,43,.96));
+}
+#tacticalOpsRoot .t-consequence-guarded {
+  color: #d4ebff;
+  border-color: rgba(148,195,243,.76);
+  background: linear-gradient(115deg,rgba(13,33,59,.98),rgba(9,24,39,.96));
+}
+@keyframes t8-consequence {
+  0% { opacity: 0; translate: 0 5px; scale: .94; }
+  20%, 63% { opacity: 1; translate: 0 0; scale: 1; }
+  100% { opacity: 0; translate: 0 -10px; scale: .98; }
+}
+
+/* The status rail and the action dock read as the same command system.
+   Keep layout, number of controls and gesture-safe insets untouched. */
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {
+  background: linear-gradient(180deg,rgba(2,13,24,.99),rgba(6,25,38,.97));
+  border-bottom: 1px solid rgba(116,208,230,.22);
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card {
+  background: linear-gradient(145deg,rgba(8,34,49,.93),rgba(5,22,35,.95));
+  border-color: rgba(113,204,224,.48);
+  box-shadow: inset 0 1px 0 rgba(154,229,240,.08);
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-dock {
+  border-top: 1px solid rgba(116,208,230,.20);
+  background-image: linear-gradient(180deg,rgba(5,19,31,.97),rgba(2,12,22,.99));
+}
+#tacticalOpsRoot .t-threat-brief { border-color: rgba(255,119,116,.57); }
+#tacticalOpsRoot .t-threat-brief-pip { background: var(--t8-danger); }
+
+@media(max-width:620px) {
+  #tacticalOpsRoot .t-consequence { font-size: 10px; padding: 4px 6px; letter-spacing: .045em; }
+  #tacticalOpsRoot .t-impact { width: 42px; height: 42px; }
+}
+/* Accessibility: no looping flashes or moving critical captions when the
+   user requests reduced motion. Truthful text stays visible until timeout. */
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-consequence { animation: none !important; opacity: 1; translate: none; scale: 1; }
+  #tacticalOpsRoot .t-impact { animation: none !important; opacity: .35; scale: 1; }
+  #tacticalOpsRoot .t-float { animation: none !important; }
+}
