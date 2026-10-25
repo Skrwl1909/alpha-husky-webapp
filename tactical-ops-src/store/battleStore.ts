@@ -27,6 +27,7 @@ import {
 import { VERSION } from "../version";
 import { confirmedPathfinderMove, confirmedSkillMoment, type CombatMoment } from "../ui/combatIdentity";
 import { spriteEvents, pathfinderFx, fx, combatFxContactMs, type CombatFx } from "../ui/combatFxAtlas";
+import {enemyScene, type EnemyScene} from "../ui/enemyAttackPresentation";
 import { newS3Proof, recordS3Skill, recordS3Hold, type S3CombatProof } from "../ui/s3CombatProof";
 import {
   DEFAULT_ONBOARDING_STAGE,
@@ -68,6 +69,7 @@ interface UiBattle {
   combatMoment: CombatMoment | null;
   s3CombatProof: S3CombatProof | null;
   combatFx: CombatFx[];
+  enemyScene: EnemyScene | null;
   displayHp: Record<string,number>;
   muted: boolean;
   queue: string[];
@@ -198,6 +200,10 @@ export const useBattleStore = create<Store>((set, get) => {
     void wait(Math.max(...capped.map(effect=>effect.durationMs))+70).then(()=>{
       if(generation===runGen && get().combatFx[0]?.id===capped[0].id)set({combatFx:[]});
     });
+  };
+  const showEnemyScene = async (scene:EnemyScene|null,g:number) => {
+    if(scene){set({enemyScene:scene});await wait(scene.contactMs);}
+    return g===runGen;
   };
   const waitForContact = async (effects: CombatFx[], g: number): Promise<boolean> => {
     const delay = combatFxContactMs(effects);
@@ -355,9 +361,15 @@ export const useBattleStore = create<Store>((set, get) => {
         threatCycle = resolved.cycle;
         set({ threats: threatCycle.pending.map(t => t.plan) });
         if (resolved.state !== st) {
+          const events=resolved.events??[];
+          const action=locked.action.type==="skill"?locked.action:locked.action.type==="move"?locked.action.then:null;
+          const scene=action?.type==="skill"?enemyScene(actor,action.skillId,events,st.units,impactSeq++):null;
+          stageHp(st,events);
           set({ battle: resolved.state, queue: refreshQueue(resolved.state) });
-          await playEvents(resolved.events ?? [], g);
+          if(!(await showEnemyScene(scene,g)))return;
+          await playEvents(events,g);
           if (g !== runGen) return;
+          set({enemyScene:null});
           await wait(160);
           if (g === runGen) await continueLoop(g);
           return;
@@ -396,10 +408,14 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ attackingId: actor.id, lastActionSkillId: action.skillId });
     }
     const applied = applyAi(get().battle, action);
+    const skillAction=action.type==="skill"?action:action.type==="move"?action.then:null;
+    const scene=skillAction?.type==="skill"?enemyScene(actor,skillAction.skillId,applied.events,st.units,impactSeq++):null;
     stageHp(st,applied.events);
     set({ battle: applied.state, queue: refreshQueue(applied.state), attackingId: action.type === "skill" ? actor.id : null });
+    if(!(await showEnemyScene(scene,g)))return;
     await playEvents(applied.events, g);
     if (g !== runGen) return;
+    set({enemyScene:null});
     set({ attackingId: null });
     await wait(160);
     await continueLoop(g);
@@ -483,6 +499,7 @@ export const useBattleStore = create<Store>((set, get) => {
       combatMoment: null,
       s3CombatProof: mission ? newS3Proof(runKey, mission.missionId) : null,
       combatFx: [],
+      enemyScene: null,
       displayHp: {},
       currentRunKey: runKey,
       activeRulesetVersion: rulesContract?.rulesetVersion || null,
@@ -520,6 +537,7 @@ export const useBattleStore = create<Store>((set, get) => {
     combatMoment: null,
     s3CombatProof: null,
     combatFx: [],
+    enemyScene: null,
     displayHp: {},
     muted: false,
     queue: [],
@@ -868,6 +886,7 @@ export const useBattleStore = create<Store>((set, get) => {
         floats: [],
         attackingId: null,
         impactId: null,
+        enemyScene: null,
         displayHp: {},
         currentRunKey: `${onboardingStageId}:${g}`,
       });
