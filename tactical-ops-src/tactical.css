@@ -5033,3 +5033,10 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-choreo-line line{stroke:#f5bf79;stroke-width:1.5;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:8 100;animation:t-choreo-shot var(--travel-ms) ease-out both;filter:drop-shadow(0 0 4px #eab865);}
 @keyframes t-choreo-shot{0%{opacity:0;stroke-dashoffset:100;}15%{opacity:1;}46%{stroke-dashoffset:0;opacity:1;}100%{stroke-dashoffset:-20;opacity:0;}}
 @media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-choreo-travel{display:none!important;}}
+
+/* Choreography S4: one visible actor during confirmed travel. */
+#tacticalOpsRoot .t-token.travel-ghost img.body {visibility:hidden;}
+#tacticalOpsRoot .t-token.travel-ghost .t-ring {opacity:.5;}
+#tacticalOpsRoot .t-choreo-travel.melee .t-choreo-actor {animation-timing-function:cubic-bezier(.22,.72,.21,1);}
+#tacticalOpsRoot .t-choreo-travel.ranged .t-choreo-line line {stroke-width:2;stroke-dasharray:12 100;}
+@media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-token.travel-ghost img.body {visibility:visible!important;}}

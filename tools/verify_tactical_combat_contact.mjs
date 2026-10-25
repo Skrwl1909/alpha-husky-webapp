@@ -14,3 +14,10 @@ assert(css.includes("@keyframes t-contact-collapse"));
 assert(css.includes("prefers-reduced-motion:reduce"));
 assert(css.includes(".t-threat-tile {z-index:16;}"));
 console.log("PASS: confirmed-hit reaction, defeated feedback, reduced motion and danger overlay");
+
+const atlas=readFileSync("tactical-ops-src/ui/combatFxAtlas.ts","utf8");
+assert(atlas.includes("export function combatFxTravelKind"),"Missing travel classifier");
+assert(atlas.includes('return "none"'),"Support must not dash");
+assert(battle.includes("travelGhost={travelActors.has(u.id)}"),"Original must hide");
+assert(battle.includes('if(travelKind==="none")return null'),"No support dash");
+assert(css.includes(".t-token.travel-ghost img.body"),"Single performer rule");
