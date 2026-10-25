@@ -1,7 +1,7 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
 import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
-import type { CampaignContext } from "../data/operations";
+import type { CampaignContext, ChapterIntel } from "../data/operations";
 import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
@@ -37,6 +37,7 @@ export interface FoundationProgressionState {
   fieldOps?: FieldOpsProgression;
   /** Read-only optional V1 from authoritative backend; absent = no new campaign UI. */
   tacticalChapter?: ChapterSnapshot;
+  chapterActiveMission?: { runId: string; missionId: string; squadIds: string[]; fieldContext?: FieldContext; rulesetVersion: string };
   operations?: Record<string, OperationProgressionState>;
   campaignIntel?: { "dead-relay": { courierTraceAcquired: boolean } };
   intel?: { routingTrace: boolean; commanderProfile: boolean };
@@ -128,6 +129,8 @@ export interface OperationMissionRun {
   squadIds: string[];
   fieldContext?: FieldContext;
   campaignContext?: CampaignContext;
+  chapterContext?: { version: 1; chapterId: "edge-relay"; doctrine: "RECON"; stageIndex: number };
+  chapterIntel?: ChapterIntel;
 }
 
 export interface CampaignReport {
@@ -254,6 +257,19 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     const chapter=parseChapterSnapshot(value.tacticalChapter);
     if(!chapter)return null;
     state.tacticalChapter=chapter;
+    if (value.chapterActiveMission != null) {
+      const active = value.chapterActiveMission as Record<string, unknown>;
+      if (!active || typeof active !== "object" || Array.isArray(active) ||
+          typeof active.runId !== "string" || active.runId !== chapter.activeRunId ||
+          typeof active.missionId !== "string" || !Array.isArray(active.squadIds) ||
+          !active.squadIds.every((x: unknown) => typeof x === "string") ||
+          active.rulesetVersion !== TACTICAL_VNEXT_RULESET) return null;
+      const fieldContext = parseFieldContext(active.fieldContext);
+      if (active.fieldContext != null && !fieldContext) return null;
+      state.chapterActiveMission = {runId:active.runId,missionId:active.missionId,
+        squadIds:[...active.squadIds],rulesetVersion:TACTICAL_VNEXT_RULESET,
+        ...(fieldContext?{fieldContext}:{})};
+    }
   }
   const operations = parseOperations(value.operations);
   state.playerIdentity = value.playerIdentity && typeof value.playerIdentity === "object" ? value.playerIdentity as Record<string, unknown> : undefined;
@@ -280,6 +296,22 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   return state;
 }
 
+function parseChapterContext(raw: unknown): OperationMissionRun["chapterContext"] {
+  if (!raw || typeof raw !== "object") return undefined;
+  const x=raw as Record<string,unknown>;
+  if (x.version!==1 || x.chapterId!=="edge-relay" || x.doctrine!=="RECON" ||
+      !Number.isInteger(x.stageIndex) || Number(x.stageIndex)<0 || Number(x.stageIndex)>2) return undefined;
+  return {version:1,chapterId:"edge-relay",doctrine:"RECON",stageIndex:Number(x.stageIndex)};
+}
+function parseChapterIntel(raw:unknown, missionId:string):ChapterIntel|undefined {
+  if (!raw || typeof raw!=="object") return undefined;
+  const x=raw as Record<string,unknown>;
+  if(x.version!==1 || x.effect!=="DELAY_REINFORCEMENT" || x.sourceChapterId!=="edge-relay" ||
+     x.missionId!==missionId || !Number.isInteger(x.baselineRound) || !Number.isInteger(x.effectiveRound) ||
+     Number(x.effectiveRound)!==Number(x.baselineRound)+1) return undefined;
+  return {version:1,effect:"DELAY_REINFORCEMENT",sourceChapterId:"edge-relay",
+    missionId,baselineRound:Number(x.baselineRound),effectiveRound:Number(x.effectiveRound)};
+}
 function parseCampaignContext(raw: unknown): CampaignContext | null {
   if (!raw || typeof raw !== "object") return null;
   const item = raw as Record<string, unknown>;
@@ -321,7 +353,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
       if (activeValue.fieldContext != null && !fieldContext) return null;
       const contract = parseRunRulesContract(activeValue.rulesContract);
       if (contract && contract.missionId !== activeValue.missionId) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}) };
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}), ...(parseChapterContext(activeValue.chapterContext) ? {chapterContext:parseChapterContext(activeValue.chapterContext)} : {}), ...(parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string) ? {chapterIntel:parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string)} : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -385,6 +417,14 @@ export async function continueFoundationRun(
   );
 }
 
+export type ChapterResult = {version:1;chapterId:"edge-relay";runId:string;missionId:string;
+ victory:boolean;stageRecorded:number;chapterComplete:boolean;combatProof:"CLIENT_REPORT_ONLY"};
+
+export async function chooseTacticalDoctrine(requestId:string,expectedRevision:number,doctrine:"RECON"):Promise<FoundationProgressionState>{
+  return responseState(await request("/webapp/tactical-foundation/chapter/choose",
+    {requestId,expectedRevision,doctrine}));
+}
+
 export async function startOperationMission(
   requestId: string,
   expectedRevision: number,
@@ -392,8 +432,13 @@ export async function startOperationMission(
   squadIds?: string[],
   fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier },
   rulesetVersion?: string,
+  chapterMode = false,
+  chapterIntelVersion?: 1,
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
-  const response = await request("/webapp/tactical-foundation/mission/start", { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}), ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}) });
+  const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/start" : "/webapp/tactical-foundation/mission/start",
+    { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}),
+      ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}),
+      ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}) });
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
@@ -407,7 +452,7 @@ export async function startOperationMission(
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
   const rulesContract = parseRunRulesContract(value.rulesContract);
   if (rulesContract && rulesContract.missionId !== value.missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}) } };
+  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
 }
 
 export async function continueOperationMission(
@@ -418,9 +463,21 @@ export async function continueOperationMission(
   fieldReport?: FieldReport,
   campaignReport?: CampaignReport,
   rulesetVersion?: string,
-): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null }> {
-  const response = await request("/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}), ...(rulesetVersion ? { rulesetVersion } : {}) });
-  return { state: responseState(response), firstClear: response.firstClear === true, fieldResult: parseFieldResult(response.fieldResult), campaignResult: parseCampaignResult(response.campaignResult) };
+  chapterMode = false,
+): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
+  const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/continue" : "/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}), ...(rulesetVersion ? { rulesetVersion } : {}) });
+  const rawChapter = response.chapterResult as Record<string,unknown> | undefined;
+  const chapterResult:ChapterResult|null = rawChapter?.version===1 && rawChapter.chapterId==="edge-relay" &&
+    typeof rawChapter.runId==="string" && typeof rawChapter.missionId==="string" &&
+    typeof rawChapter.victory==="boolean" && Number.isInteger(rawChapter.stageRecorded) &&
+    typeof rawChapter.chapterComplete==="boolean" && rawChapter.combatProof==="CLIENT_REPORT_ONLY"
+      ? {version:1,chapterId:"edge-relay",runId:rawChapter.runId,missionId:rawChapter.missionId,
+         victory:rawChapter.victory,stageRecorded:Number(rawChapter.stageRecorded),
+         chapterComplete:rawChapter.chapterComplete,combatProof:"CLIENT_REPORT_ONLY"}:null;
+  if(chapterMode && !chapterResult)throw new FoundationProgressionError("invalid_chapter_receipt");
+  return { state: responseState(response), firstClear: response.firstClear === true,
+    fieldResult: parseFieldResult(response.fieldResult),
+    campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
 }
 
 export async function saveKodaSidegrade(requestId: string, expectedRevision: number, kodaSidegrade: KodaSidegrade): Promise<FoundationProgressionState> {
@@ -449,7 +506,7 @@ export async function savePackMastery(requestId: string, expectedRevision: numbe
   return responseState(await request("/webapp/tactical-foundation/pack-mastery", { requestId, expectedRevision, unitId, choice }));
 }
 
-export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec"): string {
+export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "chapter-choose" | "chapter-start" | "chapter-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec"): string {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
