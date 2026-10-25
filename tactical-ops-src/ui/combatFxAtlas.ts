@@ -31,7 +31,7 @@ export const COMBAT_FX_VISUAL_CLASSES: Readonly<Record<string,string>> = {
 /** Rendering identity only. Never schedules a combat effect or changes its gameplay outcome. */
 export function combatFxVisualClasses(name: string): string { return COMBAT_FX_VISUAL_CLASSES[name] ?? ""; }
 
-export interface CombatFx { id:number; name:string; targetId?:string; terminal?:{c:number;r:number}; durationMs:number; }
+export interface CombatFx { id:number; name:string; targetId?:string; terminal?:{c:number;r:number}; durationMs:number; actorId?:string; from?:{c:number;r:number}; }
 export function fx(name:string,id:number,targetId?:string,terminal?:{c:number;r:number}): CombatFx {
  if (!(name in DURATIONS)) throw Error("Unknown combat FX "+name);
  return {id,name,targetId,terminal,durationMs:DURATIONS[name]};
@@ -43,7 +43,7 @@ export function spriteEvents(actor:CombatUnit,skillId:string,events:readonly Bat
  const recipients=(type:string)=>[...new Set(events.filter(e=>e.type===type && e.unitId).map(e=>e.unitId!))];
  const target=recipients("damage")[0]||recipients("status")[0]||recipients("heal")[0];
  const list:CombatFx[]=[];
- const add=(name:string,recipient?:string)=>list.push(fx(name,id+list.length,recipient||actor.id));
+ const add=(name:string,recipient?:string)=>list.push({ ...fx(name,id+list.length,recipient||actor.id), actorId:actor.id, from:{c:actor.c,r:actor.r} });
  const damage=has("damage"), heal=events.some(e=>e.type==="heal"&&(e.amount||0)>0);
  switch(canonical){
  case "alpha-strike":if(damage)add("alpha_strike",target);break;

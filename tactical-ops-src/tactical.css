@@ -4984,3 +4984,52 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
   #tacticalOpsRoot .t-sprite-fx.fx-pathfinder::before,#tacticalOpsRoot .t-sprite-fx.fx-recover::before,
   #tacticalOpsRoot .t-sprite-fx.fx-howl::after,#tacticalOpsRoot .t-sprite-fx.fx-pack::after {animation:none!important;opacity:0!important;}
 }
+
+/* Combat contact P3 — confirmed damage only. Never changes tactical geometry. */
+#tacticalOpsRoot .t-token.hit-reacting:not(.defeated) img.body {
+  animation:t-contact-recoil .34s cubic-bezier(.16,.8,.24,1) both !important;
+  transform-origin:50% 78%;
+  filter:drop-shadow(0 8px 14px rgba(0,0,0,.65)) brightness(1.4) contrast(1.11);
+}
+#tacticalOpsRoot .t-token.hit-reacting.defeated {
+  opacity:1;
+  filter:brightness(.72) saturate(.65);
+}
+#tacticalOpsRoot .t-token.hit-reacting.defeated img.body {
+  animation:t-contact-collapse .35s ease-in both !important;
+  transform-origin:50% 82%;
+}
+@keyframes t-contact-recoil {
+  0%{transform:translateX(0) scale(1);filter:brightness(1);}
+  18%{transform:translateX(5px) rotate(3deg) scale(1.05);filter:brightness(1.8);}
+  52%{transform:translateX(-3px) rotate(-2deg) scale(.97);filter:brightness(1.25);}
+  100%{transform:translateX(0) rotate(0) scale(1);filter:brightness(1);}
+}
+@keyframes t-contact-collapse {
+  0%{opacity:1;transform:translateY(0) rotate(0) scale(1);}
+  60%{opacity:.9;transform:translateY(8px) rotate(8deg) scale(.96);}
+  100%{opacity:.55;transform:translateY(15px) rotate(12deg) scale(.91);}
+}
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-token.hit-reacting img.body {animation:none!important;transform:none!important;}
+  #tacticalOpsRoot .t-token.hit-reacting.defeated {opacity:.6;}
+}
+
+/* Event-confirmed choreography: one actor-to-target travel per accepted combat atlas. */
+#tacticalOpsRoot .t-choreo-travel{position:absolute;inset:0;z-index:15;pointer-events:none;overflow:visible;--travel-ms:580ms;}
+#tacticalOpsRoot .t-choreo-travel .t-choreo-actor{
+  position:absolute;left:var(--from-x);top:var(--from-y);width:clamp(42px,12%,110px);height:auto;
+  filter:drop-shadow(0 5px 10px #0009);transform:translate(-50%,-88%);
+  animation:t-choreo-dash var(--travel-ms) ease-in-out both;
+}
+@keyframes t-choreo-dash{
+  0%{left:var(--from-x);top:var(--from-y);opacity:0;scale:.92;}
+  12%{opacity:.95;}
+  37%{left:var(--to-x);top:var(--to-y);opacity:1;scale:1.08;}
+  64%{left:var(--to-x);top:var(--to-y);opacity:.9;}
+  100%{left:var(--from-x);top:var(--from-y);opacity:0;scale:1;}
+}
+#tacticalOpsRoot .t-choreo-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
+#tacticalOpsRoot .t-choreo-line line{stroke:#f5bf79;stroke-width:1.5;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:8 100;animation:t-choreo-shot var(--travel-ms) ease-out both;filter:drop-shadow(0 0 4px #eab865);}
+@keyframes t-choreo-shot{0%{opacity:0;stroke-dashoffset:100;}15%{opacity:1;}46%{stroke-dashoffset:0;opacity:1;}100%{stroke-dashoffset:-20;opacity:0;}}
+@media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-choreo-travel{display:none!important;}}

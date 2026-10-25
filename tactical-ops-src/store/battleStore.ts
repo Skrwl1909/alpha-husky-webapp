@@ -221,7 +221,9 @@ export const useBattleStore = create<Store>((set, get) => {
         sfx("hit");
         set({ impactId: ev.unitId, impactKey: impactSeq++ });
         pushFloat(ev.unitId, ev.text, ev.kind ?? "dmg");
-        await wait(280);
+        await wait(360);
+        if (g !== runGen) return;
+        set((current) => current.impactId === ev.unitId ? { impactId: null } : {});
       }
       if (ev.type === "heal" && ev.unitId && ev.text) {
         sfx("heal");
