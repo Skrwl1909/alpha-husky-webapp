@@ -1,0 +1,27 @@
+name: Tactical P2 synthetic encounter baseline
+on:
+  pull_request:
+    paths:
+      - "tools/verify_tactical_ops_p2_encounter_baseline.mjs"
+      - ".github/workflows/tactical-p2-baseline.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  synthetic-engine-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - name: Run actual Tactical engine against synthetic fixtures
+        run: node tools/verify_tactical_ops_p2_encounter_baseline.mjs | tee tactical-p2-baseline.log
+      - name: Archive action traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactical-p2-baseline-log
+          path: tactical-p2-baseline.log
+          if-no-files-found: ignore
