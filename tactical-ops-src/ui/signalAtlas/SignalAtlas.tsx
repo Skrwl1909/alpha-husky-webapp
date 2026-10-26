@@ -166,7 +166,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
       <div className="tsa-atlas-footer">
         <span><b>●</b> LIVE SECTOR</span><span>◌ DESIGN RESERVE — NOT RELEASED</span>
       </div>
-      <button type="button" className="tsa-future-toggle" aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
+      <button type="button" className="tsa-future-toggle" disabled={unavailable} aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
       {showFuture?<p className="tsa-explain">This atlas can accept additional sectors without changing existing skill IDs. Grey markers are design space only—not earnable abilities, locked missions or promised rewards.</p>:null}
     </div>:<div className="tsa-focus">
       <div className="tsa-focus-heading"><div><span className="tsa-eyebrow">{HERO_TITLES[heroId]} / {sector.title} SECTOR</span><h3>{sector.title} NETWORK</h3><small>{sector.description} · {sector.skillIds.length} skills / 3 per hero</small></div><button type="button" onClick={()=>setView("atlas")} disabled={unavailable}>← ATLAS</button></div>
@@ -179,7 +179,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
           <span>{hero?.discipline===p?"SERVER RECORDED":hero?.discipline?"ALTERNATIVE · UNAVAILABLE":"PREVIEW PATH"}</span></button>)}
       </div>
       <p className="tsa-path-explain">{PATH_EXPLANATIONS[chosenPath]} {hero?.discipline?"Your recorded discipline is fixed until an eligible one-time reset.":"Previewing does not save a discipline. Your first successful skill purchase selects it."}</p>
-      <button type="button" className="tsa-detail-toggle" aria-pressed={!compactFocus} onClick={()=>setCompactFocus(v=>!v)}>{compactFocus?"SHOW FULL SKILL DETAILS +":"COMPACT SKILL NETWORK −"}</button>
+      <button type="button" className="tsa-detail-toggle" disabled={unavailable} aria-pressed={!compactFocus} onClick={()=>setCompactFocus(v=>!v)}>{compactFocus?"SHOW FULL SKILL DETAILS +":"COMPACT SKILL NETWORK −"}</button>
       <div className={`tsa-lanes ${compactFocus?"is-compact":""}`}>
         {sector.skillIds.map(skillId=>{
           const skill=getSkill(skillId);
