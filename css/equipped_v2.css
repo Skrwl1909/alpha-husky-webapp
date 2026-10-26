@@ -1260,3 +1260,62 @@
   #equipped-root .eq-hbtn:active,
   #equipped-root .eq-action:active{ transform:none; }
 }
+
+
+/* Equipped Character Preview P0 — real Rustfang Fangs only.
+   The mounted cutout is deliberately limited to the stable backend composite;
+   arbitrary skins and portraits receive a small truthful equipment marker. */
+#equipped-root .eq-worn-fangs,
+#equipped-root .eq-worn-fangs-label{
+  position:absolute;
+  pointer-events:none;
+  z-index:3;
+}
+#equipped-root .eq-worn-fangs[hidden],
+#equipped-root .eq-worn-fangs-label[hidden]{
+  display:none !important;
+}
+#equipped-root .eq-worn-fangs{
+  left:50%;
+  top:62%;
+  width:clamp(27px, 8%, 39px);
+  aspect-ratio:1;
+  transform:translateX(-50%);
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6));
+}
+#equipped-root .eq-worn-fangs img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+#equipped-root .eq-worn-fangs-label{
+  left:10px;
+  bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  max-width:calc(100% - 20px);
+  padding:3px 7px;
+  border-radius:6px;
+  border:1px solid rgba(111,219,231,.5);
+  background:rgba(4,20,30,.9);
+  color:#c7f4f6;
+  font:700 9px/1.3 system-ui,sans-serif;
+  letter-spacing:.45px;
+}
+#equipped-root .eq-worn-fangs-label img{
+  display:block;
+  width:16px;
+  height:16px;
+  object-fit:contain;
+}
+#equipped-root[data-layout="portrait"] .eq-pet-companion{
+  right:5%;
+  bottom:5%;
+  width:clamp(46px, 18%, 78px);
+  min-height:clamp(48px, 18%, 80px);
+}
+#equipped-root[data-layout="portrait"] .eq-pet-companion__visual{
+  height:clamp(44px, 18%, 76px);
+}

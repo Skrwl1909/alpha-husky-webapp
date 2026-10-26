@@ -969,7 +969,22 @@
       if (data && typeof data === "object") {
         this.state = data;
         window.__AH_EQUIPPED_STATE__ = data;
+        this._syncWornFangsPreview();
       }
+    },
+
+    _syncWornFangsPreview() {
+      const mounted = document.getElementById("eq-worn-fangs");
+      const fallback = document.getElementById("eq-worn-fangs-label");
+      if (!mounted || !fallback) return;
+      const slot = this._slotState("fangs");
+      const hasFangs = !!(slot && !slot.empty && itemKeyOf(slot) === "rustfang_fangs");
+      const previewReady = this._previewState === PREVIEW_STATE.READY || this._previewState === PREVIEW_STATE.FALLBACK;
+      // The composite has a known framed portrait. Other image sources may use
+      // different poses/crops, so never pretend we can align gear to their bodies.
+      const canMount = hasFangs && previewReady && this._previewSourceKind === PREVIEW_SOURCE.COMPOSITE;
+      mounted.hidden = !canMount;
+      fallback.hidden = !(hasFangs && previewReady && !canMount);
     },
 
     _fingerprint() {
@@ -1229,6 +1244,13 @@
                   <div class="eq-char-frame">
                     <div class="eq-char-skel is-on" id="eq-char-skel"></div>
                     <img id="equipped-character-img" alt="Character" />
+                    <div class="eq-worn-fangs" id="eq-worn-fangs" hidden aria-hidden="true">
+                      <img src="/assets/equip/rustfang_fangs.png" alt="" draggable="false" />
+                    </div>
+                    <div class="eq-worn-fangs-label" id="eq-worn-fangs-label" hidden aria-hidden="true">
+                      <img src="/assets/equip/rustfang_fangs.png" alt="" draggable="false" />
+                      <span>FANGS EQUIPPED</span>
+                    </div>
                     <div class="eq-pet-companion" id="eq-pet-companion" hidden aria-hidden="true">
                       <div class="eq-pet-companion__visual" id="eq-pet-companion-visual">
                         <img class="eq-pet-companion__image" id="eq-pet-companion-img" alt="" draggable="false" />
@@ -1614,6 +1636,7 @@
       }
       logPreviewEvent("state", { applied, kind: this._previewSourceKind || "", url: url || this._previewSource || "" });
       this._applyPetCompanionVisibility();
+      this._syncWornFangsPreview();
     },
 
     _acceptPreviewSource(kind, url, token, state) {
