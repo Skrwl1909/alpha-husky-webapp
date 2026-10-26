@@ -121,7 +121,8 @@ jobs:
           if-no-files-found: error
 
   atlas-browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -129,8 +130,12 @@ jobs:
           node-version: "22"
       - run: npm install --no-audit --no-fund
       - run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
+      # The hosted Ubuntu image supplies Chrome and its system dependencies.
+      # Avoid an independent browser/apt download before every visual QA run.
+      - run: /usr/bin/google-chrome --version
       - run: node tools/verify_tactical_signal_atlas_p3_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: always()
         with:

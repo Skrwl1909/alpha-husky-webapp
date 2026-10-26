@@ -44,7 +44,7 @@ npx playwright install --with-deps chromium
 node tools/verify_tactical_signal_atlas_p3_browser.mjs
 ```
 
-The workflow runs the same browser runner and uploads all PNG captures plus `results.json` as `signal-atlas-p3-browser-evidence`. Local execution used Playwright 1.62.1 and Chromium 153.0.8010.0. See [browser-results.json](browser-results.json) for the exact scenario groups.
+CI uses the [documented Chrome binary on GitHub’s Ubuntu 24.04 runner](https://github.com/actions/runner-images/blob/main/images/ubuntu/scripts/build/install-google-chrome.sh), avoiding a separate browser/apt download, and runs the same browser test runner. It uploads all PNG captures plus `results.json` as `signal-atlas-p3-browser-evidence`. Local execution used Playwright 1.62.1 and Chromium 153.0.8010.0. See [browser-results.json](browser-results.json) for the exact scenario groups.
 
 Coverage: 320×568, 360×844, 390×844 and 430×844; default, partially purchased and maxed fixture records; all heroes/sectors/ranks; specialization preview immutability; 44px controls; horizontal overflow including concealed host overflow; confirm/cancel; focus trap/Escape/restoration; pending lockout; successful mocked receipt and reopen; one-time reset; stale/rejected/network saves; absent progression; zero-effect ranks; reduced motion; failed image/portrait fallback; 430×300 dialog with simulated Telegram safe areas; classic fallback/query opt-in round trip.
 
