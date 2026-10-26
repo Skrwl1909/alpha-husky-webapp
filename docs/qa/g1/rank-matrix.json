@@ -1,0 +1,6442 @@
+{
+  "compositions": 432,
+  "uniqueDoctrineRankPairs": 36,
+  "legacyNoOps": 39,
+  "v2NoOps": 0,
+  "rows": [
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "vanguard",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 1 → 2"
+      ],
+      "changes": [
+        "RANGE 1 → 2"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-strike",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 1,
+      "legacyChanges": [
+        "BLEED 2 → 3 TURNS"
+      ],
+      "changes": [
+        "BLEED 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-rend",
+      "rank": 2,
+      "legacyChanges": [
+        "BLEED 3 → 4 TURNS"
+      ],
+      "changes": [
+        "BLEED 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 4 → 3"
+      ],
+      "changes": [
+        "COOLDOWN 4 → 3"
+      ]
+    },
+    {
+      "heroId": "alpha",
+      "path": "howlkeeper",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "alpha-howl",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS",
+        "SPD_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS",
+        "SPD_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS",
+        "SPD_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS",
+        "SPD_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 2 → 3 TURNS",
+        "SPD_DOWN 2 → 3 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 2 → 3 TURNS",
+        "SPD_DOWN 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 5 → 6"
+      ],
+      "changes": [
+        "RANGE 5 → 6"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "pursuer",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 5 → 6 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 5 → 6 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 5 → 6 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 5 → 6 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 3 → 4 TURNS",
+        "SPD_DOWN 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-shot",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 4 → 5"
+      ],
+      "changes": [
+        "RANGE 4 → 5"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 3 → 2"
+      ],
+      "changes": [
+        "COOLDOWN 3 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-burst",
+      "rank": 2,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "COOLDOWN 2 → 1"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 1,
+      "legacyChanges": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 4 → 5 TURNS",
+        "SPD_DOWN 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-02",
+      "path": "disruptor",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u02-suppress",
+      "rank": 2,
+      "legacyChanges": [
+        "ATK_DOWN 5 → 6 TURNS",
+        "SPD_DOWN 5 → 6 TURNS"
+      ],
+      "changes": [
+        "ATK_DOWN 5 → 6 TURNS",
+        "SPD_DOWN 5 → 6 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [
+        "COOLDOWN 2 → 1"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "sentinel",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 4 → 5 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": null,
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RADIUS 1 → 2"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "DEF_UP 2 → 3 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "A",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "DEF_UP 3 → 4 TURNS"
+      ],
+      "changes": [
+        "DEF_UP 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 0,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 3,
+      "signature": null,
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "A",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 1,
+      "legacyChanges": [
+        "RANGE 2 → 3"
+      ],
+      "changes": [
+        "RANGE 2 → 3"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-tap",
+      "rank": 2,
+      "legacyChanges": [
+        "RANGE 3 → 4"
+      ],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 1,
+      "legacyChanges": [],
+      "changes": [
+        "RANGE 3 → 4"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-mend",
+      "rank": 2,
+      "legacyChanges": [],
+      "changes": [
+        "GUARD 0 → 1 TURNS · ≤50% HP before healing"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 1,
+      "legacyChanges": [
+        "GUARD 2 → 3 TURNS"
+      ],
+      "changes": [
+        "GUARD 2 → 3 TURNS"
+      ]
+    },
+    {
+      "heroId": "ally-03",
+      "path": "medic",
+      "sidegrade": "B",
+      "mastery": 8,
+      "signature": "B",
+      "skill": "u03-pack",
+      "rank": 2,
+      "legacyChanges": [
+        "GUARD 3 → 4 TURNS"
+      ],
+      "changes": [
+        "GUARD 3 → 4 TURNS"
+      ]
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import type { MissionDef } from "../data/operations";
 
 export type S3Action = "CNC_INTERRUPT" | "CNC_CONTROL" | "SHADOW_COVER" | "SHADOW_HOLD" | "PET_COURIER_SLOW" | "PET_SLOW";
 export interface S3Moment { kind: S3Action; unitTurn: number; detail: string }
-export interface S3CombatProof { runId: string; missionId: string; moments: readonly S3Moment[] }
+export interface S3CombatProof { fieldcraft?: readonly string[]; runId: string; missionId: string; moments: readonly S3Moment[] }
 export interface S3TrainingGoal { id: string; title: string; instruction: string; requirement: string }
 export interface S3TrainingResult { id: string; title: string; evidence: string }
 const MAX_MOMENTS = 24; // Bounded ephemeral journal, never a server reward ledger.
@@ -51,7 +51,7 @@ export function recordS3Hold(current: S3CombatProof | null, before: BattleState,
   const zone = after.objective;
   const guarded = after.units.some(u => u.team === "ally" && !u.defeated &&
     Math.max(Math.abs(u.c-zone.terminal!.c), Math.abs(u.r-zone.terminal!.r)) <= (zone.radius ?? 0) &&
-    u.statuses.some(s => s.source === "ally-03" && (s.type === "GUARD" || s.type === "DEF_UP") && s.duration > 0));
+    u.statuses.some(s => (s.source === "ally-03" || s.source.startsWith("u03-pack")) && (s.type === "GUARD" || s.type === "DEF_UP") && s.duration > 0));
   return guarded ? add(current, { kind: "SHADOW_HOLD", unitTurn: after.unitTurn,
     detail: `Relay control advanced to ${zone.progress}/${zone.duration} while SHADOW's protection covered the holder.` }) : current;
 }

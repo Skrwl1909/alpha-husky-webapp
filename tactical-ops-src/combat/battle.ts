@@ -1,4 +1,4 @@
-import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
+import { validateGrowthSnapshot, growthHero, type GrowthSnapshot } from "../data/playerGrowth";
 import { resolveGrowthSkill } from "../data/playerGrowth";
 import { recoverSignalOpen, resolveTimedObjective } from "./missionRules";
 import type { BattleObjective, MissionDirective } from "./types";
@@ -107,7 +107,7 @@ export function createBattle(
   const roster = growth ? validateGrowthSnapshot(growth) : null;
   const units = placed.map((s) => {
     const unit = spawnUnit(s.defId, s.id, s.c, s.r, identity, s.unitDef);
-    const hero = roster?.heroes.find(h => h.heroId === unit.defId && unit.team === "ally");
+    const hero = unit.team === "ally" ? growthHero(roster, unit.defId) : undefined;
     return hero ? { ...unit, growth: { ...hero, ranks: { ...hero.ranks } } } : unit;
   });
   return {

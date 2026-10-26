@@ -4,7 +4,7 @@
  */
 import type { SkillDef, UnitDef } from "../combat/types";
 import { getSkill } from "./skills";
-import { canonicalGrowthSkillId, resolveGrowthSkill, type GrowthSnapshot } from "./playerGrowth";
+import { canonicalGrowthSkillId, growthHero, resolveGrowthSkill, type GrowthSnapshot } from "./playerGrowth";
 export type SignalFamily = "Recon" | "Control" | "Defense" | "Mobility" | "Support";
 export const SIGNAL_FAMILIES: readonly SignalFamily[] = ["Recon", "Control", "Defense", "Mobility", "Support"];
 export interface EquippedProtocol {
@@ -28,7 +28,7 @@ export function signalFamily(skill: SkillDef): SignalFamily | null {
 export function equippedSignalCodex(units: readonly UnitDef[], snapshot?: GrowthSnapshot | null): EquippedProtocol[] {
   const result: EquippedProtocol[] = [];
   for (const unit of units) {
-    const hero = snapshot?.heroes.find(h => h.heroId === unit.defId);
+    const hero = growthHero(snapshot,unit.defId);
     const skillIds = Array.isArray(unit.skillIds) ? unit.skillIds : [];
     for (const skillId of skillIds) {
       const base = getSkill(skillId);
@@ -76,7 +76,7 @@ export function activeProtocolSlots(
   snapshot?: GrowthSnapshot | null,
 ): ActiveProtocolSlot[] {
   return units.flatMap(unit => {
-    const hero = snapshot?.heroes.find(h => h.heroId === unit.defId);
+    const hero = growthHero(snapshot,unit.defId);
     return unit.skillIds.map(id => {
       const skill = resolveGrowthSkill(getSkill(id), hero);
       return {
