@@ -1,3 +1,4 @@
+import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
@@ -708,6 +709,8 @@ function Brief() {
             <div className="t-kicker">Objective</div>
             <strong>{purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             <p>{purpose ? `FAIL: ${purpose.failConditionText}` : footnote}</p>
+            <p className="t-brief-purpose-meta"><b>BUILD FIT:</b> {buildFit(mission,allies,previewGrowth)[0]}</p>
+            <details className="t-detail" aria-label="Build fit"><summary>BUILD FIT · {resuming ? "FROZEN RUN" : "NEXT ACCEPTED RUN"}</summary>{buildFit(mission,allies,previewGrowth).slice(1).map(row => <p key={row}>{row}</p>)}<small>Trade reach, shelter and control against this objective. No guaranteed win. Saved runs keep their original loadout.</small></details>
             {purpose ? <p className="t-brief-purpose-meta"><b>THREAT:</b> {purpose.tacticalThreat}</p> : null}
             {purpose ? <p className="t-brief-purpose-meta"><b>AFTER:</b> {purpose.nextConsequence}</p> : null}
           </div>
@@ -1033,6 +1036,7 @@ function Results() {
   const s3Goals = s3TrainingGoals(mission, selectedSquadIds, activeRulesetVersion === "tactical-intent-vnext.0");
   const s3Trials = s3TrainingResults(s3CombatProof, acceptedS3Run, Boolean(recordedFieldResult?.victory || recordedCampaignResult?.victory), s3Goals);
   const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
+  const buildEvidence = fieldcraftResults(s3CombatProof,currentRunKey,selectedMissionId);
   if (!results) return null;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
@@ -1075,6 +1079,7 @@ function Results() {
             {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
             <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
           </section> : null}
+          <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. These events are not persisted progress or extra rewards.</small></section>
           {acceptedS3Run && s3Moment ? <section className="t-panel" aria-label="This session combat evidence"><span className="t-kicker">THIS RUN · ENGINE-CONFIRMED MOMENT</span><strong>{s3Moment.detail}</strong><p>Observed in the current device session only. Not a persisted combat event log or extra reward.</p></section> : null}
           {acceptedS3Run && s3Trials.length ? <section className="t-panel" aria-label="Verified optional training"><span className="t-kicker">OPTIONAL TRAINING · CONFIRMED THIS RUN</span>{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
           <PlayerIdentityCard />

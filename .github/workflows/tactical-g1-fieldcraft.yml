@@ -1,0 +1,48 @@
+name: Tactical G1 Meaningful Builds and Fieldcraft
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'tools/verify_tactical_g1*.mjs'
+      - 'tools/simulate_tactical_s2_full_combat.mjs'
+      - 'package.json'
+      - '.github/workflows/tactical-g1-fieldcraft.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run verify:tactical-ops:g1
+      - name: Existing growth, snapshots, combat and all 12 missions
+        run: |
+          node tools/verify_tactical_vnext_player_growth.mjs
+          node tools/verify_tactical_vnext_skillbook_integration.mjs
+          node tools/verify_tactical_vnext_run_contract_wire.mjs
+          node tools/verify_tactical_vnext_step5_squad_matrix.mjs
+          node tools/verify_tactical_s3_power_proof.mjs
+          node tools/verify_tactical_s3_combat_proof.mjs
+          node tools/verify_tactical_signal_atlas_v2.mjs
+          node tools/verify_tactical_ops_vnext_scheduler.mjs
+          node tools/simulate_tactical_s2_full_combat.mjs
+      - run: npm run build:tactical-ops
+      - name: Bundle and loader match committed source
+        run: |
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - name: Browser fixtures (no live accounts)
+        run: |
+          npm install --no-save --package-lock=false playwright@1.62.1
+          npx playwright install --with-deps chromium
+          npm run verify:tactical-ops:g1:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-g1-qa
+          path: artifacts/

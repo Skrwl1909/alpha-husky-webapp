@@ -45,6 +45,8 @@ export type StatusType =
 export type FloatKind = "dmg" | "heal" | "guard" | "info" | "status";
 
 export interface StatusEffect {
+  /** V2 authored reduction; absent preserves legacy 50% GUARD. */
+  guardReduction?: number;
   id: string;
   type: StatusType;
   source: string;
@@ -53,6 +55,8 @@ export interface StatusEffect {
 }
 
 export interface SkillEffectSpec {
+  /** Optional rescue condition, measured before this ability heals. */
+  maxHpRatio?: number;
   kind: "damage" | "heal" | "status";
   multiplier?: number;
   base?: number;
@@ -156,6 +160,8 @@ export interface BattleEvent {
     | "cooldown"
     | "info";
   unitId?: string;
+  /** Engine measurements for the current session, never persisted rewards. */
+  buildEvidence?: string;
   text?: string;
   amount?: number;
   kind?: FloatKind;

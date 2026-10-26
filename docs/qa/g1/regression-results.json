@@ -1,0 +1,257 @@
+[
+  {
+    "test": "tools/benchmark_tactical_vnext_grids.mjs",
+    "exit": 0,
+    "seconds": 0.56
+  },
+  {
+    "test": "tools/simulate_tactical_s2_full_combat.mjs",
+    "exit": 0,
+    "seconds": 0.85
+  },
+  {
+    "test": "tools/simulate_tactical_vnext_step0_legacy.mjs",
+    "exit": 0,
+    "seconds": 0.85
+  },
+  {
+    "test": "tools/verify_tactical_accepted_foundation_grid.mjs",
+    "exit": 0,
+    "seconds": 0.39
+  },
+  {
+    "test": "tools/verify_tactical_battle_directive_p0.mjs",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "test": "tools/verify_tactical_battlefield_preview.mjs",
+    "exit": 0,
+    "seconds": 0.65
+  },
+  {
+    "test": "tools/verify_tactical_battlefield_shell_closure.mjs",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "test": "tools/verify_tactical_battlefield_visual_closure.mjs",
+    "exit": 0,
+    "seconds": 0.06
+  },
+  {
+    "test": "tools/verify_tactical_combat_consequences.mjs",
+    "exit": 0,
+    "seconds": 1.26
+  },
+  {
+    "test": "tools/verify_tactical_combat_contact.mjs",
+    "exit": 0,
+    "seconds": 0.08
+  },
+  {
+    "test": "tools/verify_tactical_combat_fx.mjs",
+    "exit": 0,
+    "seconds": 1.43
+  },
+  {
+    "test": "tools/verify_tactical_combat_fx_identity.mjs",
+    "exit": 0,
+    "seconds": 0.09
+  },
+  {
+    "test": "tools/verify_tactical_combat_fx_readability.mjs",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "test": "tools/verify_tactical_combat_identity.mjs",
+    "exit": 0,
+    "seconds": 0.58
+  },
+  {
+    "test": "tools/verify_tactical_command_deck.mjs",
+    "exit": 0,
+    "seconds": 0.1
+  },
+  {
+    "test": "tools/verify_tactical_contact_sync.mjs",
+    "exit": 0,
+    "seconds": 0.49
+  },
+  {
+    "test": "tools/verify_tactical_enemy_presentation.mjs",
+    "exit": 0,
+    "seconds": 1.4
+  },
+  {
+    "test": "tools/verify_tactical_g1_fieldcraft.mjs",
+    "exit": 0,
+    "seconds": 0.87
+  },
+  {
+    "test": "tools/verify_tactical_g1_transactions.mjs",
+    "exit": 0,
+    "seconds": 0.88
+  },
+  {
+    "test": "tools/verify_tactical_hp_impact.mjs",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "test": "tools/verify_tactical_ops_action_icons.mjs",
+    "exit": 0,
+    "seconds": 0.09
+  },
+  {
+    "test": "tools/verify_tactical_ops_campaign_discovery.mjs",
+    "exit": 0,
+    "seconds": 0.09
+  },
+  {
+    "test": "tools/verify_tactical_ops_dead_relay_squad.mjs",
+    "exit": 0,
+    "seconds": 0.14
+  },
+  {
+    "test": "tools/verify_tactical_ops_failure_recording.mjs",
+    "exit": 0,
+    "seconds": 0.16
+  },
+  {
+    "test": "tools/verify_tactical_ops_ios_field_hud.mjs",
+    "exit": 0,
+    "seconds": 0.14
+  },
+  {
+    "test": "tools/verify_tactical_ops_p2_courier_pressure.mjs",
+    "exit": 0,
+    "seconds": 1.02
+  },
+  {
+    "test": "tools/verify_tactical_ops_pr1b.mjs",
+    "exit": 0,
+    "seconds": 0.7
+  },
+  {
+    "test": "tools/verify_tactical_ops_results_status_layout.mjs",
+    "exit": 0,
+    "seconds": 0.08
+  },
+  {
+    "test": "tools/verify_tactical_ops_vnext_contract.mjs",
+    "exit": 0,
+    "seconds": 0.68
+  },
+  {
+    "test": "tools/verify_tactical_ops_vnext_scheduler.mjs",
+    "exit": 0,
+    "seconds": 0.86
+  },
+  {
+    "test": "tools/verify_tactical_player_clarity.mjs",
+    "exit": 0,
+    "seconds": 0.69
+  },
+  {
+    "test": "tools/verify_tactical_s1_purpose_truth.mjs",
+    "exit": 0,
+    "seconds": 0.69
+  },
+  {
+    "test": "tools/verify_tactical_s2_objective_ai.mjs",
+    "exit": 0,
+    "seconds": 0.71
+  },
+  {
+    "test": "tools/verify_tactical_s3_after_action.mjs",
+    "exit": 0,
+    "seconds": 0.64
+  },
+  {
+    "test": "tools/verify_tactical_s3_combat_proof.mjs",
+    "exit": 0,
+    "seconds": 0.5
+  },
+  {
+    "test": "tools/verify_tactical_s3_consequence_chain.mjs",
+    "exit": 0,
+    "seconds": 0.67
+  },
+  {
+    "test": "tools/verify_tactical_s3_power_proof.mjs",
+    "exit": 0,
+    "seconds": 0.75
+  },
+  {
+    "test": "tools/verify_tactical_s9_campaign_orders.mjs",
+    "exit": 0,
+    "seconds": 0.61
+  },
+  {
+    "test": "tools/verify_tactical_s9b_chapter.mjs",
+    "exit": 0,
+    "seconds": 0.65
+  },
+  {
+    "test": "tools/verify_tactical_signal_atlas_assets_p2.mjs",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "test": "tools/verify_tactical_signal_atlas_p3.mjs",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "test": "tools/verify_tactical_signal_atlas_v2.mjs",
+    "exit": 0,
+    "seconds": 1.15
+  },
+  {
+    "test": "tools/verify_tactical_visual_cohesion.mjs",
+    "exit": 0,
+    "seconds": 1.31
+  },
+  {
+    "test": "tools/verify_tactical_vnext_combat_intelligence.mjs",
+    "exit": 0,
+    "seconds": 0.58
+  },
+  {
+    "test": "tools/verify_tactical_vnext_counterplay.mjs",
+    "exit": 0,
+    "seconds": 0.61
+  },
+  {
+    "test": "tools/verify_tactical_vnext_player_growth.mjs",
+    "exit": 0,
+    "seconds": 1.31
+  },
+  {
+    "test": "tools/verify_tactical_vnext_run_contract_wire.mjs",
+    "exit": 0,
+    "seconds": 0.46
+  },
+  {
+    "test": "tools/verify_tactical_vnext_skillbook_integration.mjs",
+    "exit": 0,
+    "seconds": 0.76
+  },
+  {
+    "test": "tools/verify_tactical_vnext_step0_baseline.mjs",
+    "exit": 0,
+    "seconds": 0.56
+  },
+  {
+    "test": "tools/verify_tactical_vnext_step5_squad_codex.mjs",
+    "exit": 0,
+    "seconds": 0.7
+  },
+  {
+    "test": "tools/verify_tactical_vnext_step5_squad_matrix.mjs",
+    "exit": 0,
+    "seconds": 0.82
+  }
+]

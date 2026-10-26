@@ -1,3 +1,4 @@
+import { rankChanges } from "../data/buildPreview";
 import type { BattleEvent, CombatUnit } from "../combat/types";
 import { canonicalGrowthSkillId, resolveGrowthSkill, type Discipline, type HeroGrowth } from "../data/playerGrowth";
 import { getSkill } from "../data/skills";
@@ -54,18 +55,8 @@ export function combatIdentityLabel(unit: CombatUnit): string | null {
   if (!mastery || mastery.stage < 2) return null;
   return mastery.stage >= 3 && mastery.selected ? `MASTERED · ${mastery.selected}` : "TRAINED · 3/8";
 }
-export function skillChangePreview(baseId: string, hero: HeroGrowth, nextRank: 1 | 2, chosenPath: Discipline): string[] {
-  const skill = getSkill(baseId);
-  const growth = { ...hero, discipline: hero.discipline || chosenPath };
-  const before = resolveGrowthSkill(skill, growth);
-  const after = resolveGrowthSkill(skill, { ...growth, ranks: { ...growth.ranks, [baseId]: nextRank } });
-  const diff: string[] = [];
-  if (after.maxRange !== before.maxRange) diff.push(`RANGE ${before.maxRange} → ${after.maxRange}`);
-  if (after.cooldownMax !== before.cooldownMax) diff.push(`COOLDOWN ${before.cooldownMax} → ${after.cooldownMax}`);
-  const durationBefore = before.effects.find(e => e.kind === "status")?.duration || 0;
-  const durationAfter = after.effects.find(e => e.kind === "status")?.duration || 0;
-  if (durationAfter !== durationBefore) diff.push(`STATUS ${durationBefore} → ${durationAfter} TURNS`);
-  return diff;
+export function skillChangePreview(baseId: string, hero: HeroGrowth, nextRank: 1 | 2, chosenPath: Discipline, base?: import("../combat/types").SkillDef): string[] {
+  return rankChanges(base || getSkill(baseId), hero, nextRank, chosenPath);
 }
 export function confirmedSkillMoment(actor: CombatUnit, skillId: string, events: readonly BattleEvent[], sequence: number, interrupted: boolean): CombatMoment | null {
   const outcomes = events.filter(ev => (ev.type === "damage" || ev.type === "heal" || ev.type === "status") && !!ev.unitId);

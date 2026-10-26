@@ -1,3 +1,5 @@
+import { growthPreviewBase, savedGrowthHero, DOCTRINE_TRADEOFF } from "../../data/buildPreview";
+import { upgradeDescription } from "../../data/playerGrowth";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { SIGNAL_ATLAS_ASSETS } from "./signalAtlasAssets";
@@ -50,13 +52,13 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const sectorPageCount=Math.ceil(sectors.length/3);
   const visibleSectors=sectors.slice(sectorPage*3,(sectorPage+1)*3);
   const sector=sectors.find(s=>s.id===sectorId) || sectors[0];
-  const hero=growth?.heroes.find(h=>h.heroId===heroId) || null;
+  const hero=savedGrowthHero(growth,heroId) || null;
   const chosenPath=pathPreview;
   useEffect(()=>{setPathPreview(hero?.discipline || HERO_PATHS[heroId][0]);},[heroId,hero?.discipline]);
   const points=growth ? growth.earnedPoints-growth.spentPoints : 0;
   const unavailable=saving || progressionPending;
   const node=selection && sector.skillIds.includes(selection.skillId)
-    ? getNodeView(heroId,selection.skillId,selection.rank,hero,chosenPath,points) : null;
+    ? getNodeView(heroId,selection.skillId,selection.rank,hero,chosenPath,points,growthPreviewBase(selection.skillId,progression)) : null;
   const canBuy=Boolean(node?.state==="available" && !unavailable && growth);
   const canRespec=Boolean(hero?.discipline && !hero.respecUsed && Object.keys(hero.ranks).length>0 && !unavailable);
   const purchased=hero?.ranks || {};
@@ -103,7 +105,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
       const saved=current.progression?.playerGrowth?.heroes.find(h=>h.heroId===captured.heroId);
       if(current.progression && current.progression.revision>captured.revision &&
         (saved?.ranks[captured.skillId]||0)>=captured.rank && !current.progressionError) {
-        setFeedback({kind:"success",text:`SERVER RECORDED · ${getSkill(captured.skillId).name} RANK ${captured.rank}. Your next battle will use the saved skill.`});
+        setFeedback({kind:"success",text:`SERVER RECORDED · ${getSkill(captured.skillId).name} RANK ${captured.rank}. Your next accepted run will use the saved skill. Existing runs keep their frozen build.`});
       } else {
         setFeedback({kind:"error",text:current.progressionError || "Upgrade not confirmed by the server. Points and skill ownership remain server-owned; refresh and retry."});
       }
@@ -187,7 +189,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
             <div className="tsa-lane-title"><img onError={hideArt} src={tacticalActionImageForSkill(skillId)||""} alt=""/><div><b>{skill.name}</b><small>{skill.slot} · {skill.desc}</small></div><span>{purchased[skillId]||0}/2</span></div>
             <div className="tsa-node-line" role="group" aria-label={`${skill.name} upgrade ranks`}>
               {([0,1,2] as const).map((rank,index)=>{
-                const current=getNodeView(heroId,skillId,rank,hero,chosenPath,points);
+                const current=getNodeView(heroId,skillId,rank,hero,chosenPath,points,growthPreviewBase(skillId,progression));
                 const focused=selection?.skillId===skillId && selection.rank===rank;
                 return <div className="tsa-node-wrap" key={current.id}>
                   {index>0?<span className={`tsa-connector ${(purchased[skillId]||0)>=rank?"is-lit":""}`} aria-hidden="true"/>:null}
@@ -205,6 +207,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
       <section ref={inspectorRef} className={`tsa-inspector ${node ? "has-selection" : ""}`} aria-label="Skill node inspection" aria-live="polite">
         {node ? <><span className="tsa-eyebrow">{getSkill(node.skillId).name} / {node.rank===0?"BASE":`RANK ${node.rank===1?"I":"II"}`}</span>
           <h3>{node.title}</h3><div className="tsa-saved-rank">SAVED RANK {purchased[node.skillId]||0} / 2 · {node.rank===0?"BASE ACTION":`INSPECTING RANK ${node.rank}`}</div><p>{node.reason}</p>
+          {node.rank > 0 ? <p>{upgradeDescription(node.skillId,node.rank,growth?.version)}<br/>{DOCTRINE_TRADEOFF[chosenPath]}<br/>Costs 1 shared point. Saved runs keep their frozen build; changes apply to the next accepted run.</p> : null}
           {node.changes.length?<div className="tsa-deltas">{node.changes.map(c=><strong key={c}>{c}</strong>)}</div>:null}
           <div className="tsa-inspector-bottom"><span>{node.rank===0?"ALREADY OWNED":node.state==="recorded"||node.state==="maxed"?"SERVER RECORDED":"COST: 1 SKILL POINT"}</span>
           <button type="button" disabled={!canBuy} onClick={()=>setConfirm("upgrade")}>{saving?"SAVING…":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
@@ -219,6 +222,7 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
       <h3 id="tsa-confirm-title">{confirm==="upgrade"?"CONFIRM SKILL UPGRADE":"CONFIRM ONE-TIME RESET"}</h3>
       <p>{confirm==="upgrade" ? `${node?.title} · cost 1 shared skill point. ${hero?.discipline?"Existing discipline remains recorded.":`First purchase will record ${chosenPath.toUpperCase()} as this hero's discipline.`}` : "Refund this hero's spent skill points and clear their specialization. You cannot use this one-time reset again."}</p>
       {confirm==="upgrade" && node?.changes.length?<div className="tsa-deltas">{node.changes.map(c=><strong key={c}>{c}</strong>)}</div>:null}
+      {confirm === "upgrade" ? <p>{DOCTRINE_TRADEOFF[chosenPath]}<br/>1 shared point. First purchase selects this doctrine. One reset per hero. Applies to the next accepted run; saved runs stay frozen.</p> : null}
       <div className="tsa-dialog-actions"><button type="button" onClick={()=>setConfirm(null)}>CANCEL</button><button type="button" className="is-primary" disabled={confirm==="upgrade"?!canBuy:!canRespec} onClick={()=>void (confirm==="upgrade"?commitUpgrade():commitRespec())}>CONFIRM</button></div>
     </div></div>,document.getElementById("tacticalOpsRoot") || document.body):null}
   </section>;
