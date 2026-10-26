@@ -1,0 +1,7900 @@
+{
+  "phase": "before",
+  "browser": "153.0.8010.0",
+  "results": [
+    {
+      "label": "320x568-v1",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 443
+      },
+      "dock": {
+        "x": 0,
+        "y": 495.09375,
+        "width": 320,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 93.359375,
+          "y": 147.171875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 57.703125,
+          "y": 204.765625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 90.625,
+          "y": 204.765625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 123.53125,
+          "y": 204.765625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 18.390625,
+          "y": 262.359375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 53.140625,
+          "y": 262.359375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 87.875,
+          "y": 262.359375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 12,
+          "y": 319.9375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 48.5625,
+          "y": 319.9375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 5.59375,
+          "y": 377.53125,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 121.06499481201172,
+          "y": 230.5859375,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 190.54937744140625,
+          "y": 230.5859375,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 82.92062377929688,
+          "y": 290.58544921875,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 119.48312377929688,
+          "y": 286.3935852050781,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 41.11187744140625,
+          "y": 344.4525146484375,
+          "width": 45.75999450683594,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 79.50250244140625,
+          "y": 344.890625,
+          "width": 45.75999450683594,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND MK-2"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "8.8px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "320x568-hold",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 443
+      },
+      "dock": {
+        "x": 0,
+        "y": 423.0625,
+        "width": 320,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 81.546875,
+          "y": 149.171875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 54.046875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 79.171875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 104.296875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 24.65625,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 50.734375,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 76.8125,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 20.390625,
+          "y": 264.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 47.421875,
+          "y": 264.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 16.125,
+          "y": 302.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 99.9749984741211,
+          "y": 193.1476593017578,
+          "width": 41.79999542236328,
+          "height": 53.19999694824219,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 152.13124084472656,
+          "y": 193.1476593017578,
+          "width": 41.80000305175781,
+          "height": 53.19999694824219,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 70.87749481201172,
+          "y": 232.99656677246094,
+          "width": 43.12000274658203,
+          "height": 54.88002014160156,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 97.89312744140625,
+          "y": 229.80593872070312,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 40.533748626708984,
+          "y": 270.033447265625,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 68.50249481201172,
+          "y": 270.3865661621094,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "8.8px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "320x568-intercept",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 443
+      },
+      "dock": {
+        "x": 0,
+        "y": 423.0625,
+        "width": 320,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 81.546875,
+          "y": 149.171875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 54.046875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 79.171875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 104.296875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 24.65625,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 50.734375,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 76.8125,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 20.390625,
+          "y": 264.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 47.421875,
+          "y": 264.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 16.125,
+          "y": 302.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 99.9749984741211,
+          "y": 193.1476593017578,
+          "width": 41.79999542236328,
+          "height": 53.19999694824219,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 152.13124084472656,
+          "y": 193.1476593017578,
+          "width": 41.80000305175781,
+          "height": 53.19999694824219,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 70.87749481201172,
+          "y": 232.99656677246094,
+          "width": 43.12000274658203,
+          "height": 54.88002014160156,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 97.89312744140625,
+          "y": 229.80593872070312,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 40.533748626708984,
+          "y": 270.033447265625,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 68.50249481201172,
+          "y": 270.3865661621094,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "8.8px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "320x568-recover",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 443
+      },
+      "dock": {
+        "x": 0,
+        "y": 495.09375,
+        "width": 320,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 81.546875,
+          "y": 149.171875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 54.046875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 79.171875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 104.296875,
+          "y": 187.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 24.65625,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 50.734375,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 76.8125,
+          "y": 225.953125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 20.390625,
+          "y": 264.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 47.421875,
+          "y": 264.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 16.125,
+          "y": 302.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 99.9749984741211,
+          "y": 193.1476593017578,
+          "width": 41.79999542236328,
+          "height": 53.19999694824219,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 152.13124084472656,
+          "y": 193.1476593017578,
+          "width": 41.80000305175781,
+          "height": 53.19999694824219,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 70.87749481201172,
+          "y": 232.99656677246094,
+          "width": 43.12000274658203,
+          "height": 54.88002014160156,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 97.89312744140625,
+          "y": 229.80593872070312,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 40.533748626708984,
+          "y": 270.033447265625,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 68.50249481201172,
+          "y": 270.3865661621094,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "8.8px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-v1",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 655
+      },
+      "dock": {
+        "x": 0,
+        "y": 707.09375,
+        "width": 360,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 107.53125,
+          "y": 202.296875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 67.421875,
+          "y": 287.4375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.453125,
+          "y": 287.4375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 141.484375,
+          "y": 287.4375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 23.1875,
+          "y": 372.59375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 62.28125,
+          "y": 372.59375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.359375,
+          "y": 372.59375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 16,
+          "y": 457.75,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 57.140625,
+          "y": 457.75,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 8.796875,
+          "y": 542.890625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 138.8931121826172,
+          "y": 341.19500732421875,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 217.0649871826172,
+          "y": 341.19500732421875,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 96.0612564086914,
+          "y": 429.30517578125,
+          "width": 44.43999481201172,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 137.20187377929688,
+          "y": 424.5690612792969,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 49.111873626708984,
+          "y": 510.45562744140625,
+          "width": 45.7599983215332,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 92.29937744140625,
+          "y": 510.9593811035156,
+          "width": 45.75999450683594,
+          "height": 58.239959716796875,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "ALPHA",
+          "HOUND MK-2"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-hold",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 655
+      },
+      "dock": {
+        "x": 0,
+        "y": 635.0625,
+        "width": 360,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 94,
+          "y": 204.296875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 63.0625,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 91.328125,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 119.59375,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 30,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 59.328125,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 88.65625,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 25.1875,
+          "y": 374.59375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 55.59375,
+          "y": 374.59375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 20.390625,
+          "y": 431.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 115.0999984741211,
+          "y": 285.2537536621094,
+          "width": 41.79999542236328,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 173.75624084472656,
+          "y": 285.2537536621094,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 82.4323501586914,
+          "y": 343.83062744140625,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 112.83061981201172,
+          "y": 340.26434326171875,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 48.291717529296875,
+          "y": 399.1100158691406,
+          "width": 43.12000274658203,
+          "height": 54.879974365234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 79.76046752929688,
+          "y": 399.51123046875,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-intercept",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 655
+      },
+      "dock": {
+        "x": 0,
+        "y": 635.0625,
+        "width": 360,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 94,
+          "y": 204.296875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 63.0625,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 91.328125,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 119.59375,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 30,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 59.328125,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 88.65625,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 25.1875,
+          "y": 374.59375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 55.59375,
+          "y": 374.59375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 20.390625,
+          "y": 431.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 115.0999984741211,
+          "y": 285.2537536621094,
+          "width": 41.79999542236328,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 173.75624084472656,
+          "y": 285.2537536621094,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 82.4323501586914,
+          "y": 343.83062744140625,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 112.83061981201172,
+          "y": 340.26434326171875,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 48.291717529296875,
+          "y": 399.1100158691406,
+          "width": 43.12000274658203,
+          "height": 54.879974365234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 79.76046752929688,
+          "y": 399.51123046875,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-recover",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 655
+      },
+      "dock": {
+        "x": 0,
+        "y": 707.09375,
+        "width": 360,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 94,
+          "y": 204.296875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 63.0625,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 91.328125,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 119.59375,
+          "y": 261.0625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 30,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 59.328125,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 88.65625,
+          "y": 317.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 25.1875,
+          "y": 374.59375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 55.59375,
+          "y": 374.59375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 20.390625,
+          "y": 431.359375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 115.0999984741211,
+          "y": 285.2537536621094,
+          "width": 41.79999542236328,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 173.75624084472656,
+          "y": 285.2537536621094,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 82.4323501586914,
+          "y": 343.83062744140625,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 112.83061981201172,
+          "y": 340.26434326171875,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 48.291717529296875,
+          "y": 399.1100158691406,
+          "width": 43.12000274658203,
+          "height": 54.879974365234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 79.76046752929688,
+          "y": 399.51123046875,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-v1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 719
+      },
+      "dock": {
+        "x": 0,
+        "y": 771.09375,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 118.15625,
+          "y": 218.9375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.703125,
+          "y": 312.40625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 114.828125,
+          "y": 312.40625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 154.9375,
+          "y": 312.40625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 26.796875,
+          "y": 405.875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.140625,
+          "y": 405.875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 111.484375,
+          "y": 405.875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 19,
+          "y": 499.34375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 63.5625,
+          "y": 499.34375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 11.1875,
+          "y": 592.8125,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 152.2681121826172,
+          "y": 374.7706298828125,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 236.9399871826172,
+          "y": 374.7706298828125,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 105.91273498535156,
+          "y": 471.5676574707031,
+          "width": 44.44000244140625,
+          "height": 56.560028076171875,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 150.48312377929688,
+          "y": 466.4487609863281,
+          "width": 44.44000244140625,
+          "height": 56.560028076171875,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 55.12000274658203,
+          "y": 560.8662719726562,
+          "width": 45.76000213623047,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 101.91687774658203,
+          "y": 561.407470703125,
+          "width": 45.76000213623047,
+          "height": 58.24005126953125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-hold",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 719
+      },
+      "dock": {
+        "x": 0,
+        "y": 699.0625,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 220.9375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 407.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 407.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 470.1875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 377.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 373.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 438.3243713378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 438.7434387207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-intercept",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 719
+      },
+      "dock": {
+        "x": 0,
+        "y": 699.0625,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 220.9375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 407.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 407.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 470.1875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 377.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 373.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 438.3243713378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 438.7434387207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-recover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 719
+      },
+      "dock": {
+        "x": 0,
+        "y": 771.09375,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 220.9375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 283.25,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 345.5625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 407.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 407.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 470.1875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 377.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 373.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 438.3243713378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 438.7434387207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-v1",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 807
+      },
+      "dock": {
+        "x": 0,
+        "y": 859.09375,
+        "width": 430,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 132.328125,
+          "y": 241.8125,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 84.421875,
+          "y": 346.71875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 128.65625,
+          "y": 346.71875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 172.875,
+          "y": 346.71875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 31.59375,
+          "y": 451.625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 78.28125,
+          "y": 451.625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 124.96875,
+          "y": 451.625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 23,
+          "y": 556.546875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 72.140625,
+          "y": 556.546875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 14.390625,
+          "y": 661.453125,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 170.09625244140625,
+          "y": 420.91064453125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 263.45562744140625,
+          "y": 420.91064453125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 119.0533676147461,
+          "y": 529.6760864257812,
+          "width": 44.43999481201172,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 168.20187377929688,
+          "y": 524.0306396484375,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 63.119998931884766,
+          "y": 630.150634765625,
+          "width": 45.7599983215332,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 114.7137451171875,
+          "y": 630.7393798828125,
+          "width": 45.760009765625,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-hold",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 807
+      },
+      "dock": {
+        "x": 0,
+        "y": 787.0625,
+        "width": 430,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 115.765625,
+          "y": 243.8125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 78.828125,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 112.578125,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 146.34375,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 39.328125,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 74.359375,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 109.40625,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 33.59375,
+          "y": 453.625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 69.90625,
+          "y": 453.625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 27.859375,
+          "y": 523.578125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 141.5300750732422,
+          "y": 351.6260986328125,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 211.6082000732422,
+          "y": 351.6260986328125,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 102.65109252929688,
+          "y": 424.040283203125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 138.96359252929688,
+          "y": 419.7940368652344,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 61.86984634399414,
+          "y": 492.2337646484375,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 99.46359252929688,
+          "y": 492.69122314453125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-intercept",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 807
+      },
+      "dock": {
+        "x": 0,
+        "y": 787.0625,
+        "width": 430,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 115.765625,
+          "y": 243.8125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 78.828125,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 112.578125,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 146.34375,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 39.328125,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 74.359375,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 109.40625,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 33.59375,
+          "y": 453.625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 69.90625,
+          "y": 453.625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 27.859375,
+          "y": 523.578125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 141.5300750732422,
+          "y": 351.6260986328125,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 211.6082000732422,
+          "y": 351.6260986328125,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 102.65109252929688,
+          "y": 424.040283203125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 138.96359252929688,
+          "y": 419.7940368652344,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 61.86984634399414,
+          "y": 492.2337646484375,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 99.46359252929688,
+          "y": 492.69122314453125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-recover",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 807
+      },
+      "dock": {
+        "x": 0,
+        "y": 859.09375,
+        "width": 430,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 115.765625,
+          "y": 243.8125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 78.828125,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 112.578125,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 146.34375,
+          "y": 313.75,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 39.328125,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 74.359375,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 109.40625,
+          "y": 383.6875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 33.59375,
+          "y": 453.625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 69.90625,
+          "y": 453.625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 27.859375,
+          "y": 523.578125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 141.5300750732422,
+          "y": 351.6260986328125,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 211.6082000732422,
+          "y": 351.6260986328125,
+          "width": 41.80000305175781,
+          "height": 53.20001220703125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 102.65109252929688,
+          "y": 424.040283203125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 138.96359252929688,
+          "y": 419.7940368652344,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 61.86984634399414,
+          "y": 492.2337646484375,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 99.46359252929688,
+          "y": 492.69122314453125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-v1",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 275
+      },
+      "dock": {
+        "x": 0,
+        "y": 327.09375,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 118.15625,
+          "y": 103.5,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.703125,
+          "y": 139.25,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 114.828125,
+          "y": 139.25,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 154.9375,
+          "y": 139.25,
+          "width": 40,
+          "height": 40,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 26.796875,
+          "y": 175,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.140625,
+          "y": 175,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 111.484375,
+          "y": 175,
+          "width": 40,
+          "height": 40,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 19,
+          "y": 210.75,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 63.5625,
+          "y": 210.75,
+          "width": 40,
+          "height": 40,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 11.1875,
+          "y": 246.5,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 152.2681121826172,
+          "y": 143.8956298828125,
+          "width": 43.12001037597656,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 236.9399871826172,
+          "y": 143.8956298828125,
+          "width": 43.12001037597656,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 105.91273498535156,
+          "y": 182.97390747070312,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 150.48312377929688,
+          "y": 177.85499572753906,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 55.12000274658203,
+          "y": 214.5537567138672,
+          "width": 45.76000213623047,
+          "height": 58.24000549316406,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 101.91687774658203,
+          "y": 215.09500122070312,
+          "width": 45.76000213623047,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "HOUND MK-2",
+          "HOUND MK-2"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-hold",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 275
+      },
+      "dock": {
+        "x": 0,
+        "y": 255.0625,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 105.5,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 177,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 177,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 200.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 120.8051528930664,
+          "width": 41.80000305175781,
+          "height": 53.20000457763672,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 120.8051528930664,
+          "width": 41.80000305175781,
+          "height": 53.20000457763672,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 146.74624633789062,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 142.8878173828125,
+          "width": 43.12000274658203,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 168.96499633789062,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 169.38406372070312,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 1,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,0",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 0,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 3,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 2,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "SHADOW"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 7,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-intercept",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 275
+      },
+      "dock": {
+        "x": 0,
+        "y": 255.0625,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 105.5,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 177,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 177,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 200.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 120.8051528930664,
+          "width": 41.80000305175781,
+          "height": 53.20000457763672,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 120.8051528930664,
+          "width": 41.80000305175781,
+          "height": 53.20000457763672,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 146.74624633789062,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 142.8878173828125,
+          "width": 43.12000274658203,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 168.96499633789062,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 169.38406372070312,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 1,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,0",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 0,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 3,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 2,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "SHADOW"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 7,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-recover",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 275
+      },
+      "dock": {
+        "x": 0,
+        "y": 327.09375,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 105.5,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 129.328125,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 153.15625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 177,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 177,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 200.828125,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 120.8051528930664,
+          "width": 41.80000305175781,
+          "height": 53.20000457763672,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 120.8051528930664,
+          "width": 41.80000305175781,
+          "height": 53.20000457763672,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 146.74624633789062,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 142.8878173828125,
+          "width": 43.12000274658203,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 168.96499633789062,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 169.38406372070312,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 1,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,0",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 0,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 3,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 1,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 2,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "SHADOW"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 7,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-v1",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 519
+      },
+      "dock": {
+        "x": 0,
+        "y": 603.09375,
+        "width": 390,
+        "height": 96.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 118.15625,
+          "y": 198.9375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.703125,
+          "y": 266.40625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 114.828125,
+          "y": 266.40625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 154.9375,
+          "y": 266.40625,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 26.796875,
+          "y": 333.875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.140625,
+          "y": 333.875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 111.484375,
+          "y": 333.875,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 19,
+          "y": 401.34375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 63.5625,
+          "y": 401.34375,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 11.1875,
+          "y": 468.8125,
+          "width": 40,
+          "height": 40,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 152.2681121826172,
+          "y": 302.7706298828125,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 236.9399871826172,
+          "y": 302.7706298828125,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 105.91273498535156,
+          "y": 373.5676574707031,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 150.48312377929688,
+          "y": 368.4487609863281,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 55.12000274658203,
+          "y": 436.86627197265625,
+          "width": 45.76000213623047,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 101.91687774658203,
+          "y": 437.4075012207031,
+          "width": 45.76000213623047,
+          "height": 58.239990234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-hold",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 519
+      },
+      "dock": {
+        "x": 0,
+        "y": 531.0625,
+        "width": 390,
+        "height": 96.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 200.9375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 335.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 335.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 380.859375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 258.53955078125,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 258.53955078125,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 305.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 301.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 348.9962463378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 349.4153137207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-intercept",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 519
+      },
+      "dock": {
+        "x": 0,
+        "y": 531.0625,
+        "width": 390,
+        "height": 96.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 200.9375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 335.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 335.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 380.859375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 258.53955078125,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 258.53955078125,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 305.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 301.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 348.9962463378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 349.4153137207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-recover",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 519
+      },
+      "dock": {
+        "x": 0,
+        "y": 603.09375,
+        "width": 390,
+        "height": 96.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 200.9375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 245.90625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 290.890625,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 335.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 335.875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 380.859375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 258.53955078125,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 258.53955078125,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 305.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 301.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 348.9962463378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 349.4153137207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "ALPHA"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ],
+        [
+          "HOUND BULWARK",
+          "SHADOW"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 3,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-v1",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 181
+      },
+      "dock": {
+        "x": 0,
+        "y": 264.71875,
+        "width": 780,
+        "height": 95.28125
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 254.328125,
+          "y": 109.046875,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 167.421875,
+          "y": 132.578125,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 247.65625,
+          "y": 132.578125,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 327.875,
+          "y": 132.578125,
+          "width": 44,
+          "height": 44,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 71.59375,
+          "y": 156.109375,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 156.28125,
+          "y": 156.109375,
+          "width": 44,
+          "height": 44,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 240.96875,
+          "y": 156.109375,
+          "width": 44,
+          "height": 44,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 56,
+          "y": 179.640625,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 145.140625,
+          "y": 179.640625,
+          "width": 44,
+          "height": 44,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 40.390625,
+          "y": 203.171875,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 326.0962219238281,
+          "y": 130.51531982421875,
+          "width": 43.120025634765625,
+          "height": 54.8800048828125,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 495.4555969238281,
+          "y": 130.51531982421875,
+          "width": 43.120025634765625,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 234.0533447265625,
+          "y": 161.7603302001953,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 323.2018737792969,
+          "y": 152.15234375,
+          "width": 44.44000244140625,
+          "height": 56.55999755859375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 133.11187744140625,
+          "y": 179.1631317138672,
+          "width": 45.75999450683594,
+          "height": 58.24000549316406,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 226.70562744140625,
+          "y": 180.19813537597656,
+          "width": 45.760009765625,
+          "height": 58.24000549316406,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND MK-2"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "HOUND MK-2",
+          "HOUND MK-2"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 6,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-hold",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 181
+      },
+      "dock": {
+        "x": 0,
+        "y": 244,
+        "width": 780,
+        "height": 95.28125
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 224.65625,
+          "y": 113.046875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 157.640625,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 218.875,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 280.125,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 86,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 149.546875,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 213.109375,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 75.59375,
+          "y": 160.109375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 141.453125,
+          "y": 160.109375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 65.1875,
+          "y": 175.796875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 273.74884033203125,
+          "y": 114.9234390258789,
+          "width": 41.79998779296875,
+          "height": 53.20000457763672,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 400.85821533203125,
+          "y": 114.9234390258789,
+          "width": 41.79998779296875,
+          "height": 53.20000457763672,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 203.76812744140625,
+          "y": 136.46844482421875,
+          "width": 43.1199951171875,
+          "height": 54.87998962402344,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 269.6198425292969,
+          "y": 128.7687530517578,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 129.80734252929688,
+          "y": 148.95437622070312,
+          "width": 43.12001037597656,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 197.97921752929688,
+          "y": 149.79249572753906,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,0",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,1",
+          "CNC"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "SHADOW"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 9,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-intercept",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 181
+      },
+      "dock": {
+        "x": 0,
+        "y": 244,
+        "width": 780,
+        "height": 95.28125
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 224.65625,
+          "y": 113.046875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 157.640625,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 218.875,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 280.125,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 86,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 149.546875,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 213.109375,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 75.59375,
+          "y": 160.109375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 141.453125,
+          "y": 160.109375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 65.1875,
+          "y": 175.796875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 273.74884033203125,
+          "y": 114.9234390258789,
+          "width": 41.79998779296875,
+          "height": 53.20000457763672,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 400.85821533203125,
+          "y": 114.9234390258789,
+          "width": 41.79998779296875,
+          "height": 53.20000457763672,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 203.76812744140625,
+          "y": 136.46844482421875,
+          "width": 43.1199951171875,
+          "height": 54.87998962402344,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 269.6198425292969,
+          "y": 128.7687530517578,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 129.80734252929688,
+          "y": 148.95437622070312,
+          "width": 43.12001037597656,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 197.97921752929688,
+          "y": 149.79249572753906,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,0",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,1",
+          "CNC"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "SHADOW"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 9,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "STOP COURIER BEFORE EXIT",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-recover",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 181
+      },
+      "dock": {
+        "x": 0,
+        "y": 264.71875,
+        "width": 780,
+        "height": 95.28125
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 224.65625,
+          "y": 113.046875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 157.640625,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 218.875,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 280.125,
+          "y": 128.734375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 86,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 149.546875,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 213.109375,
+          "y": 144.421875,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 75.59375,
+          "y": 160.109375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 141.453125,
+          "y": 160.109375,
+          "width": 36,
+          "height": 36,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 65.1875,
+          "y": 175.796875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 273.74884033203125,
+          "y": 114.9234390258789,
+          "width": 41.79998779296875,
+          "height": 53.20000457763672,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 400.85821533203125,
+          "y": 114.9234390258789,
+          "width": 41.79998779296875,
+          "height": 53.20000457763672,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 203.76812744140625,
+          "y": 136.46844482421875,
+          "width": 43.1199951171875,
+          "height": 54.87998962402344,
+          "centerHit": false,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 269.6198425292969,
+          "y": 128.7687530517578,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 129.80734252929688,
+          "y": 148.95437622070312,
+          "width": 43.12001037597656,
+          "height": 54.87998962402344,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 197.97921752929688,
+          "y": 149.79249572753906,
+          "width": 43.12001037597656,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 2,0",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,0",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,0",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,1",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,1",
+          "CNC"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 2,1",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,1",
+          "SHADOW"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,3"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 1,2",
+          "CNC"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 0,4"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "HOUND DISRUPTOR",
+          "HOUND BULWARK"
+        ],
+        [
+          "ALPHA",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 9,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "SIGNAL OPEN",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "idle-frame-sample",
+      "timing": {
+        "samples": 39,
+        "medianMs": 16.699999999999932,
+        "p95Ms": 16.799999999999955,
+        "maxMs": 16.799999999999955
+      }
+    },
+    {
+      "label": "fx-frame-sample",
+      "timing": {
+        "samples": 39,
+        "medianMs": 16.699999999999818,
+        "p95Ms": 16.799999999999955,
+        "maxMs": 16.799999999999955
+      }
+    },
+    {
+      "label": "target-mode",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 719
+      },
+      "dock": {
+        "x": 0,
+        "y": 771.09375,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 313.2113952636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 377.6212463378906,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 373.7628173828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 438.3243713378906,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 438.7434387207031,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "expanded-hud",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 150.984375,
+        "width": 390,
+        "height": 719
+      },
+      "dock": {
+        "x": 0,
+        "y": 771.09375,
+        "width": 390,
+        "height": 72.90625
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 150.984375
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 103.328125,
+          "y": 319.921875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 69.8125,
+          "y": 382.234375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 100.4375,
+          "y": 382.234375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 131.0625,
+          "y": 382.234375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 34,
+          "y": 444.546875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.765625,
+          "y": 444.546875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 97.546875,
+          "y": 444.546875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 28.796875,
+          "y": 506.859375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 61.71875,
+          "y": 506.859375,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 23.59375,
+          "y": 569.171875,
+          "width": 36,
+          "height": 36,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR",
+          "x": 126.42070007324219,
+          "y": 412.1957702636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND MK-2",
+          "x": 189.9675750732422,
+          "y": 412.1957702636719,
+          "width": 41.80000305175781,
+          "height": 53.199981689453125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "ALPHA",
+          "x": 91.09625244140625,
+          "y": 476.6056213378906,
+          "width": 43.1199951171875,
+          "height": 54.879974365234375,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "HOUND BULWARK",
+          "x": 124.0261001586914,
+          "y": 472.7471923828125,
+          "width": 43.12000274658203,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "CNC",
+          "x": 54.127498626708984,
+          "y": 537.3087158203125,
+          "width": 43.119998931884766,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        },
+        {
+          "label": "SHADOW",
+          "x": 88.20562744140625,
+          "y": 537.727783203125,
+          "width": 43.1199951171875,
+          "height": 54.8800048828125,
+          "centerHit": true,
+          "coveredBy": "t-hit"
+        }
+      ],
+      "overlaps": [
+        [
+          "Move to 1,1",
+          "Move to 2,1"
+        ],
+        [
+          "Move to 2,1",
+          "Move to 3,1"
+        ],
+        [
+          "Move to 2,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 3,1",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 0,2",
+          "Move to 1,2"
+        ],
+        [
+          "Move to 1,2",
+          "Move to 2,2"
+        ],
+        [
+          "Move to 1,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND DISRUPTOR"
+        ],
+        [
+          "Move to 2,2",
+          "ALPHA"
+        ],
+        [
+          "Move to 2,2",
+          "HOUND BULWARK"
+        ],
+        [
+          "Move to 0,3",
+          "Move to 1,3"
+        ],
+        [
+          "Move to 0,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "ALPHA"
+        ],
+        [
+          "Move to 1,3",
+          "CNC"
+        ],
+        [
+          "Move to 1,3",
+          "SHADOW"
+        ],
+        [
+          "Move to 0,4",
+          "CNC"
+        ],
+        [
+          "ALPHA",
+          "HOUND BULWARK"
+        ],
+        [
+          "CNC",
+          "SHADOW"
+        ]
+      ],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "10.08px"
+        },
+        {
+          "text": "108/120",
+          "size": "8.32px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "9.6px"
+        }
+      ],
+      "overflow": false
+    }
+  ],
+  "errors": [],
+  "limits": "Chromium headless touch emulation; deterministic engine fixtures, no physical-device or live-server evidence."
+}

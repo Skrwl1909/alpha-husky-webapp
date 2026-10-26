@@ -1,0 +1,10 @@
+{
+  "node": "v24.22.1",
+  "version": "tactical_ops.js v3.5.20-battlefield-p5",
+  "cacheKey": "tops-3.5.20-battlefield-p5",
+  "sha256": "9ef938e2a1d6c1550d09186fef62010224eebbab4fe221d78a2619642d4dc2e2",
+  "repeatBuildIdentical": true,
+  "syntax": "PASS",
+  "fixtureNotBundled": true,
+  "sourceMain": "5c6133360927f0c306540a2cb89bca8b3a0aad45"
+}

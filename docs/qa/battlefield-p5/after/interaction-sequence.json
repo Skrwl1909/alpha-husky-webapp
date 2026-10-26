@@ -1,0 +1,156 @@
+{
+  "sequence": [
+    {
+      "step": "1-read",
+      "mode": "READ",
+      "battle": {
+        "turn": 4,
+        "hp": [
+          {
+            "id": "alpha",
+            "hp": 108
+          },
+          {
+            "id": "ally-02",
+            "hp": 84
+          },
+          {
+            "id": "ally-03",
+            "hp": 88
+          },
+          {
+            "id": "enemy",
+            "hp": 92
+          },
+          {
+            "id": "courier",
+            "hp": 68
+          },
+          {
+            "id": "h3",
+            "hp": 65
+          }
+        ],
+        "threats": []
+      }
+    },
+    {
+      "step": "2-target",
+      "mode": "TARGET",
+      "battle": {
+        "turn": 4,
+        "hp": [
+          {
+            "id": "alpha",
+            "hp": 108
+          },
+          {
+            "id": "ally-02",
+            "hp": 84
+          },
+          {
+            "id": "ally-03",
+            "hp": 88
+          },
+          {
+            "id": "enemy",
+            "hp": 92
+          },
+          {
+            "id": "courier",
+            "hp": 68
+          },
+          {
+            "id": "h3",
+            "hp": 65
+          }
+        ],
+        "threats": []
+      }
+    },
+    {
+      "step": "3-react",
+      "mode": "REACT",
+      "battle": {
+        "turn": 4,
+        "hp": [
+          {
+            "id": "alpha",
+            "hp": 108
+          },
+          {
+            "id": "ally-02",
+            "hp": 84
+          },
+          {
+            "id": "ally-03",
+            "hp": 88
+          },
+          {
+            "id": "enemy",
+            "hp": 92
+          },
+          {
+            "id": "courier",
+            "hp": 68
+          },
+          {
+            "id": "h3",
+            "hp": 65
+          }
+        ],
+        "threats": [
+          "threat:3:enemy:1"
+        ]
+      }
+    },
+    {
+      "step": "4-resolve",
+      "mode": "RESOLVE",
+      "battle": {
+        "turn": 6,
+        "hp": [
+          {
+            "id": "alpha",
+            "hp": 108
+          },
+          {
+            "id": "ally-02",
+            "hp": 84
+          },
+          {
+            "id": "ally-03",
+            "hp": 75
+          },
+          {
+            "id": "enemy",
+            "hp": 70
+          },
+          {
+            "id": "courier",
+            "hp": 68
+          },
+          {
+            "id": "h3",
+            "hp": 65
+          }
+        ],
+        "threats": []
+      }
+    }
+  ],
+  "castEvents": [
+    {
+      "type": "ticker",
+      "text": "ALPHA  ·  STRIKE  →  HOUND BULWARK"
+    },
+    {
+      "type": "damage",
+      "unitId": "enemy",
+      "amount": 22,
+      "text": "-22",
+      "kind": "dmg"
+    }
+  ],
+  "limits": "Real render/engine with isolated manual fixture transport, not live server or physical device."
+}

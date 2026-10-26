@@ -1,0 +1,632 @@
+[
+  {
+    "label": "320x568-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 443
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 444
+    },
+    "beforeOverlaps": 20,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 27.34375,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "320x568-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 443
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 444
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 21.265625,
+    "minAfterCellHeight": 33.859375
+  },
+  {
+    "label": "320x568-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 443
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 444
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 21.265625,
+    "minAfterCellHeight": 33.859375
+  },
+  {
+    "label": "320x568-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 443
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 320,
+      "height": 444
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 21.265625,
+    "minAfterCellHeight": 33.859375
+  },
+  {
+    "label": "360x780-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 655
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 656
+    },
+    "beforeOverlaps": 8,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 30.765625,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "360x780-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 655
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 656
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 23.921875,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "360x780-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 655
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 656
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 23.921875,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "360x780-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 655
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 360,
+      "height": 656
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 23.921875,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "390x844-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 719
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 720
+    },
+    "beforeOverlaps": 0,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 33.328125,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "390x844-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 719
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 720
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "390x844-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 719
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 720
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "390x844-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 719
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 720
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "430x932-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 807
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 808
+    },
+    "beforeOverlaps": 0,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 36.75,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "430x932-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 807
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 808
+    },
+    "beforeOverlaps": 9,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 28.578125,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "430x932-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 807
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 808
+    },
+    "beforeOverlaps": 9,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 28.578125,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "430x932-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 807
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 430,
+      "height": 808
+    },
+    "beforeOverlaps": 9,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 28.578125,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "390x400-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 275
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 276
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 33.328125,
+    "minAfterCellHeight": 31.5625
+  },
+  {
+    "label": "390x400-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 275
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 276
+    },
+    "beforeOverlaps": 48,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 7,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 21.046875
+  },
+  {
+    "label": "390x400-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 275
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 276
+    },
+    "beforeOverlaps": 48,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 7,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 21.046875
+  },
+  {
+    "label": "390x400-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 275
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 276
+    },
+    "beforeOverlaps": 48,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 7,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 21.046875
+  },
+  {
+    "label": "390x700-insets-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 519
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 520
+    },
+    "beforeOverlaps": 8,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 33.328125,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "390x700-insets-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 519
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 520
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 39.65625
+  },
+  {
+    "label": "390x700-insets-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 519
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 520
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 39.65625
+  },
+  {
+    "label": "390x700-insets-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 519
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 390,
+      "height": 520
+    },
+    "beforeOverlaps": 23,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 3,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 39.65625
+  },
+  {
+    "label": "780x360-insets-v1",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 181
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 180
+    },
+    "beforeOverlaps": 15,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 6,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 44,
+    "minAfterCellHeight": 20.578125
+  },
+  {
+    "label": "780x360-insets-hold",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 181
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 180
+    },
+    "beforeOverlaps": 21,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 9,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 44,
+    "minAfterCellHeight": 13.71875
+  },
+  {
+    "label": "780x360-insets-intercept",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 181
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 180
+    },
+    "beforeOverlaps": 21,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 9,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 44,
+    "minAfterCellHeight": 13.71875
+  },
+  {
+    "label": "780x360-insets-recover",
+    "beforeBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 181
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 84,
+      "width": 780,
+      "height": 180
+    },
+    "beforeOverlaps": 21,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 9,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 44,
+    "minAfterCellHeight": 13.71875
+  },
+  {
+    "label": "target-mode",
+    "beforeBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 719
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 720
+    },
+    "beforeOverlaps": 2,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 27.953125,
+    "minAfterCellHeight": 44
+  },
+  {
+    "label": "expanded-hud",
+    "beforeBoard": {
+      "x": 0,
+      "y": 150.984375,
+      "width": 390,
+      "height": 719
+    },
+    "afterBoard": {
+      "x": 0,
+      "y": 52,
+      "width": 390,
+      "height": 720
+    },
+    "beforeOverlaps": 18,
+    "afterOverlaps": 0,
+    "beforeCoveredCenters": 0,
+    "afterCoveredCenters": 0,
+    "minAfterCellWidth": 25.921875,
+    "minAfterCellHeight": 44
+  }
+]

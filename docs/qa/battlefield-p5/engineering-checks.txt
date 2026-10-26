@@ -1,0 +1,1222 @@
+$ node tools/benchmark_tactical_vnext_grids.mjs
+{
+  "schema": "tactical-grid-benchmark.v1",
+  "method": "spawn anchors scaled proportionally; first allied unit vs enemy spawn; move 2, attack 1; geometry only",
+  "records": [
+    {
+      "mission": "broken-signal-breach",
+      "grid": "8x5",
+      "enemyCount": 3,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "broken-signal-breach",
+      "grid": "10x7",
+      "enemyCount": 3,
+      "closestEnemySteps": 7,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "broken-signal-breach",
+      "grid": "12x8",
+      "enemyCount": 3,
+      "closestEnemySteps": 10,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "broken-signal-recover",
+      "grid": "8x5",
+      "enemyCount": 0,
+      "closestEnemySteps": null,
+      "firstContactActions": null,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "broken-signal-recover",
+      "grid": "10x7",
+      "enemyCount": 0,
+      "closestEnemySteps": null,
+      "firstContactActions": null,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "broken-signal-recover",
+      "grid": "12x8",
+      "enemyCount": 0,
+      "closestEnemySteps": null,
+      "firstContactActions": null,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "broken-signal-commander",
+      "grid": "8x5",
+      "enemyCount": 3,
+      "closestEnemySteps": 5,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "broken-signal-commander",
+      "grid": "10x7",
+      "enemyCount": 3,
+      "closestEnemySteps": 7,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "broken-signal-commander",
+      "grid": "12x8",
+      "enemyCount": 3,
+      "closestEnemySteps": 7,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "field-relay-recovery",
+      "grid": "8x5",
+      "enemyCount": 2,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "field-relay-recovery",
+      "grid": "10x7",
+      "enemyCount": 2,
+      "closestEnemySteps": 7,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "field-relay-recovery",
+      "grid": "12x8",
+      "enemyCount": 2,
+      "closestEnemySteps": 10,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "field-relay-hold",
+      "grid": "8x5",
+      "enemyCount": 2,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "field-relay-hold",
+      "grid": "10x7",
+      "enemyCount": 2,
+      "closestEnemySteps": 7,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "field-relay-hold",
+      "grid": "12x8",
+      "enemyCount": 2,
+      "closestEnemySteps": 10,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "field-squad-survival",
+      "grid": "8x5",
+      "enemyCount": 3,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "field-squad-survival",
+      "grid": "10x7",
+      "enemyCount": 3,
+      "closestEnemySteps": 8,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "field-squad-survival",
+      "grid": "12x8",
+      "enemyCount": 3,
+      "closestEnemySteps": 9,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "field-relay-intercept",
+      "grid": "8x5",
+      "enemyCount": 3,
+      "closestEnemySteps": 4,
+      "firstContactActions": 2,
+      "exitDistance": 9,
+      "boardCells": 40
+    },
+    {
+      "mission": "field-relay-intercept",
+      "grid": "10x7",
+      "enemyCount": 3,
+      "closestEnemySteps": 5,
+      "firstContactActions": 2,
+      "exitDistance": 12,
+      "boardCells": 70
+    },
+    {
+      "mission": "field-relay-intercept",
+      "grid": "12x8",
+      "enemyCount": 3,
+      "closestEnemySteps": 6,
+      "firstContactActions": 3,
+      "exitDistance": 14,
+      "boardCells": 96
+    },
+    {
+      "mission": "field-isolated-hold",
+      "grid": "8x5",
+      "enemyCount": 2,
+      "closestEnemySteps": 6,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "field-isolated-hold",
+      "grid": "10x7",
+      "enemyCount": 2,
+      "closestEnemySteps": 8,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "field-isolated-hold",
+      "grid": "12x8",
+      "enemyCount": 2,
+      "closestEnemySteps": 9,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "field-rearguard",
+      "grid": "8x5",
+      "enemyCount": 2,
+      "closestEnemySteps": 5,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "field-rearguard",
+      "grid": "10x7",
+      "enemyCount": 2,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "field-rearguard",
+      "grid": "12x8",
+      "enemyCount": 2,
+      "closestEnemySteps": 8,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "dead-relay-courier",
+      "grid": "8x5",
+      "enemyCount": 3,
+      "closestEnemySteps": 4,
+      "firstContactActions": 1,
+      "exitDistance": 9,
+      "boardCells": 40
+    },
+    {
+      "mission": "dead-relay-courier",
+      "grid": "10x7",
+      "enemyCount": 3,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": 12,
+      "boardCells": 70
+    },
+    {
+      "mission": "dead-relay-courier",
+      "grid": "12x8",
+      "enemyCount": 3,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": 14,
+      "boardCells": 96
+    },
+    {
+      "mission": "dead-relay-hold",
+      "grid": "8x5",
+      "enemyCount": 2,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "dead-relay-hold",
+      "grid": "10x7",
+      "enemyCount": 2,
+      "closestEnemySteps": 7,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "dead-relay-hold",
+      "grid": "12x8",
+      "enemyCount": 2,
+      "closestEnemySteps": 10,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    },
+    {
+      "mission": "dead-relay-guardian",
+      "grid": "8x5",
+      "enemyCount": 3,
+      "closestEnemySteps": 6,
+      "firstContactActions": 2,
+      "exitDistance": null,
+      "boardCells": 40
+    },
+    {
+      "mission": "dead-relay-guardian",
+      "grid": "10x7",
+      "enemyCount": 3,
+      "closestEnemySteps": 8,
+      "firstContactActions": 3,
+      "exitDistance": null,
+      "boardCells": 70
+    },
+    {
+      "mission": "dead-relay-guardian",
+      "grid": "12x8",
+      "enemyCount": 3,
+      "closestEnemySteps": 9,
+      "firstContactActions": 4,
+      "exitDistance": null,
+      "boardCells": 96
+    }
+  ]
+}
+TACTICAL_VNEXT_GRID_BENCHMARK_PASS
+
+
+$ node tools/simulate_tactical_s2_full_combat.mjs
+{
+  "schema": "s2-real-combat-matrix.v1",
+  "runs": 136,
+  "byMission": {
+    "broken-signal-breach": {
+      "runs": 4,
+      "win": 4,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 16,
+      "counters": 13,
+      "roundMin": 4,
+      "roundMax": 6,
+      "dualWinsDifferent": 2
+    },
+    "broken-signal-recover": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 41,
+      "counters": 33,
+      "roundMin": 2,
+      "roundMax": 10,
+      "dualWinsDifferent": 6
+    },
+    "broken-signal-commander": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 83,
+      "counters": 60,
+      "roundMin": 3,
+      "roundMax": 8,
+      "dualWinsDifferent": 6
+    },
+    "field-relay-recovery": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 36,
+      "counters": 32,
+      "roundMin": 4,
+      "roundMax": 8,
+      "dualWinsDifferent": 6
+    },
+    "field-relay-hold": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 80,
+      "counters": 51,
+      "roundMin": 5,
+      "roundMax": 13,
+      "dualWinsDifferent": 6
+    },
+    "field-squad-survival": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 58,
+      "counters": 45,
+      "roundMin": 5,
+      "roundMax": 5,
+      "dualWinsDifferent": 6
+    },
+    "field-relay-intercept": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 53,
+      "counters": 13,
+      "roundMin": 2,
+      "roundMax": 7,
+      "dualWinsDifferent": 6
+    },
+    "field-isolated-hold": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 12,
+      "counters": 6,
+      "roundMin": 4,
+      "roundMax": 7,
+      "dualWinsDifferent": 6
+    },
+    "field-rearguard": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 47,
+      "counters": 41,
+      "roundMin": 6,
+      "roundMax": 6,
+      "dualWinsDifferent": 6
+    },
+    "dead-relay-courier": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 25,
+      "counters": 18,
+      "roundMin": 3,
+      "roundMax": 7,
+      "dualWinsDifferent": 6
+    },
+    "dead-relay-hold": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 80,
+      "counters": 51,
+      "roundMin": 5,
+      "roundMax": 13,
+      "dualWinsDifferent": 6
+    },
+    "dead-relay-guardian": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 76,
+      "counters": 55,
+      "roundMin": 3,
+      "roundMax": 8,
+      "dualWinsDifferent": 6
+    }
+  }
+}
+S2_ENGINEERING_GATE_PASS: 12/12 missions, 68/68 dual-victory pairs, actual telegraph and counter events
+S2_FULL_COMBAT_MATRIX_PASS (tempo vs control; still requires genuine dual-win evidence)
+
+
+$ node tools/simulate_tactical_vnext_step0_legacy.mjs
+{
+  "schema": "tactical-legacy-autoplay.v1",
+  "policy": "greedy A1 / nearest objective; NOT human playtest",
+  "turnCap": 240,
+  "results": [
+    {
+      "missionId": "broken-signal-breach",
+      "objective": "ELIMINATE",
+      "outcome": "victory",
+      "round": 4,
+      "unitTurns": 18,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 6,
+      "alliedSkills": 11,
+      "enemyMoves": 5,
+      "enemySkills": 4,
+      "recoveries": 0,
+      "alliedSkips": 1,
+      "capReached": false
+    },
+    {
+      "missionId": "broken-signal-recover",
+      "objective": "RECOVER",
+      "outcome": "victory",
+      "round": 4,
+      "unitTurns": 13,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 4,
+      "alliedSkills": 6,
+      "enemyMoves": 3,
+      "enemySkills": 3,
+      "recoveries": 1,
+      "alliedSkips": 2,
+      "capReached": false
+    },
+    {
+      "missionId": "broken-signal-commander",
+      "objective": "BOSS",
+      "outcome": "victory",
+      "round": 6,
+      "unitTurns": 29,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 5,
+      "alliedSkills": 16,
+      "enemyMoves": 6,
+      "enemySkills": 9,
+      "recoveries": 0,
+      "alliedSkips": 1,
+      "capReached": false
+    },
+    {
+      "missionId": "field-relay-recovery",
+      "objective": "RECOVER",
+      "outcome": "victory",
+      "round": 4,
+      "unitTurns": 14,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 5,
+      "alliedSkills": 7,
+      "enemyMoves": 3,
+      "enemySkills": 3,
+      "recoveries": 1,
+      "alliedSkips": 2,
+      "capReached": false
+    },
+    {
+      "missionId": "field-relay-hold",
+      "objective": "HOLD",
+      "outcome": "victory",
+      "round": 4,
+      "unitTurns": 14,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 4,
+      "alliedSkills": 8,
+      "enemyMoves": 4,
+      "enemySkills": 2,
+      "recoveries": 0,
+      "alliedSkips": 2,
+      "capReached": false
+    },
+    {
+      "missionId": "field-squad-survival",
+      "objective": "SURVIVE",
+      "outcome": "victory",
+      "round": 5,
+      "unitTurns": 23,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 5,
+      "alliedSkills": 11,
+      "enemyMoves": 3,
+      "enemySkills": 6,
+      "recoveries": 0,
+      "alliedSkips": 4,
+      "capReached": false
+    },
+    {
+      "missionId": "field-relay-intercept",
+      "objective": "INTERCEPT",
+      "outcome": "victory",
+      "round": 5,
+      "unitTurns": 26,
+      "firstAlliedHitTurn": 1,
+      "alliedMoves": 7,
+      "alliedSkills": 14,
+      "enemyMoves": 7,
+      "enemySkills": 3,
+      "recoveries": 0,
+      "alliedSkips": 2,
+      "capReached": false
+    },
+    {
+      "missionId": "field-isolated-hold",
+      "objective": "HOLD",
+      "outcome": "victory",
+      "round": 6,
+      "unitTurns": 23,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 5,
+      "alliedSkills": 10,
+      "enemyMoves": 2,
+      "enemySkills": 7,
+      "recoveries": 0,
+      "alliedSkips": 6,
+      "capReached": false
+    },
+    {
+      "missionId": "field-rearguard",
+      "objective": "SURVIVE",
+      "outcome": "victory",
+      "round": 6,
+      "unitTurns": 21,
+      "firstAlliedHitTurn": 1,
+      "alliedMoves": 10,
+      "alliedSkills": 12,
+      "enemyMoves": 2,
+      "enemySkills": 3,
+      "recoveries": 0,
+      "alliedSkips": 5,
+      "capReached": false
+    },
+    {
+      "missionId": "dead-relay-courier",
+      "objective": "INTERCEPT",
+      "outcome": "defeat",
+      "round": 4,
+      "unitTurns": 19,
+      "firstAlliedHitTurn": 1,
+      "alliedMoves": 5,
+      "alliedSkills": 10,
+      "enemyMoves": 5,
+      "enemySkills": 2,
+      "recoveries": 0,
+      "alliedSkips": 2,
+      "capReached": false
+    },
+    {
+      "missionId": "dead-relay-hold",
+      "objective": "HOLD",
+      "outcome": "victory",
+      "round": 4,
+      "unitTurns": 14,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 4,
+      "alliedSkills": 8,
+      "enemyMoves": 4,
+      "enemySkills": 2,
+      "recoveries": 0,
+      "alliedSkips": 2,
+      "capReached": false
+    },
+    {
+      "missionId": "dead-relay-guardian",
+      "objective": "BOSS",
+      "outcome": "victory",
+      "round": 4,
+      "unitTurns": 20,
+      "firstAlliedHitTurn": 2,
+      "alliedMoves": 2,
+      "alliedSkills": 10,
+      "enemyMoves": 4,
+      "enemySkills": 7,
+      "recoveries": 0,
+      "alliedSkips": 1,
+      "capReached": false
+    }
+  ]
+}
+TACTICAL_VNEXT_STEP0_REAL_ENGINE_SIMULATION_PASS
+
+
+$ node tools/verify_tactical_accepted_foundation_grid.mjs
+PASS: 10x7 accepted backend contract, 8x5 legacy fallback, Foundation data boundary
+
+
+$ node tools/verify_tactical_battle_directive_p0.mjs
+PASS: BattleScreen directive scope and production bundle/cache synchronization
+
+
+$ node tools/verify_tactical_battlefield_p5.mjs
+PASS P5 director: V1/VNext, priority/layer arbitration, legal targeting, real interruption equivalence, no speculative resolve, single FX owner, neutral GUARD, immutable inputs and disjoint projection.
+
+
+$ node tools/verify_tactical_battlefield_preview.mjs
+TACTICAL_BATTLEFIELD_10X7_PREVIEW_SMOKE_PASS
+
+
+$ node tools/verify_tactical_battlefield_shell_closure.mjs
+PASS Battlefield shell safe areas, real PET emblem absence, HUD and gesture safety
+
+
+$ node tools/verify_tactical_battlefield_visual_closure.mjs
+PASS Tactical battlefield visual closure: movement, status fallback, signature labels, threats, accessibility
+
+
+$ node tools/verify_tactical_combat_consequences.mjs
+PASS S7: no fake finishes/guard/counters, staged defeat and presentation
+
+
+$ node tools/verify_tactical_combat_contact.mjs
+PASS: confirmed-hit reaction, defeated feedback, reduced motion and danger overlay
+
+
+$ node tools/verify_tactical_combat_fx.mjs
+PASS Tactical Combat FX: 17 atlases and actual event-gated bindings
+
+
+$ node tools/verify_tactical_combat_fx_identity.mjs
+PASS FX Identity P2: 17 assets mapped, renderer wired, event truth, telegraphs, tap freedom, reduced motion
+
+
+$ node tools/verify_tactical_combat_fx_readability.mjs
+PASS Combat FX readability P1: separate AoE/contact, event truth, hazard and accessibility
+
+
+$ node tools/verify_tactical_combat_identity.mjs
+PASS Tactical Mastery V1: pure event truth, frozen progression, all 4 identities, FX + UI contracts
+
+
+$ node tools/verify_tactical_command_deck.mjs
+PASS Command Deck source invariants: War Table and Brief tabs, saved actions, sticky navigation and deploy, version
+PASS Command Deck premium UX: compact command and exclusive squad progression views
+PASS Command Deck completion UX invariants
+PASS Mobile Mission Brief action dock in document flow
+
+
+$ node tools/verify_tactical_contact_sync.mjs
+PASS: S4 physical contact aligned; support immediate; cancelled generations ignored
+
+
+$ node tools/verify_tactical_enemy_presentation.mjs
+PASS confirmed 4-style enemy attacks and VNext HP event sequencing
+
+
+$ node tools/verify_tactical_hp_impact.mjs
+PASS: staged visual HP impact in both HUDs, with bounded damage/healing
+
+
+$ node tools/verify_tactical_ops_action_icons.mjs
+verify_tactical_ops_action_icons: 14 PNG + skill mapping + presentation wiring PASS
+
+
+$ node tools/verify_tactical_ops_campaign_discovery.mjs
+PASS campaign hierarchy / resume / locks / mobile
+
+
+$ node tools/verify_tactical_ops_dead_relay_squad.mjs
+PASS dead-relay-courier select/deselect/cap/invalid/busy
+PASS dead-relay-hold select/deselect/cap/invalid/busy
+PASS dead-relay-guardian select/deselect/cap/invalid/busy
+PASS legacy broken-signal-commander
+PASS legacy field-relay-intercept
+PASS legacy broken-signal-recover
+PASS squad regression for all 3 Dead Relay missions
+
+
+$ node tools/verify_tactical_ops_failure_recording.mjs
+✔ Field Op defeat records the result once (1.4445ms)
+✔ Dead Relay failure must not record a Field Op (0.322516ms)
+✔ ordinary mission defeat remains on defeat screen (0.162369ms)
+✔ victory is unaffected (0.141769ms)
+✔ stale generation cannot auto-record (0.19677ms)
+✔ production bundle has the guard and valid JavaScript (24.645693ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35.080339
+
+
+$ node tools/verify_tactical_ops_ios_field_hud.mjs
+✔ battle HUD lives in its own rail above the battlefield (1.573521ms)
+✔ tap-accessible collapsible cards preserve iOS safe area and avoid HUD stealing board taps (0.4538ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 7.888142
+
+
+$ node tools/verify_tactical_ops_p2_courier_pressure.mjs
+P2_COURIER_PRESSURE_SYNTHETIC 16 scenarios
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":0,"damageTaken":34,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":1,"damageTaken":48,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":true,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":10,"enemyActions":3,"controlActions":0,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":true,"mode":"control","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":2,"damageTaken":50,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":0,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":1,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":true,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":true,"mode":"control","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":2,"damageTaken":50,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":0,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":1,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":true,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":true,"mode":"control","intel":false,"outcome":"victory","round":2,"actions":10,"enemyActions":3,"controlActions":2,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":4,"actions":15,"enemyActions":5,"controlActions":0,"damageTaken":50,"reinforcementPlanned":2,"reinforcementSeen":2,"capped":false}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":4,"actions":15,"enemyActions":5,"controlActions":1,"damageTaken":44,"reinforcementPlanned":2,"reinforcementSeen":2,"capped":false}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"focus","intel":true,"outcome":"victory","round":4,"actions":14,"enemyActions":4,"controlActions":0,"damageTaken":50,"reinforcementPlanned":3,"reinforcementSeen":3,"capped":false}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"control","intel":true,"outcome":"victory","round":4,"actions":14,"enemyActions":4,"controlActions":1,"damageTaken":44,"reinforcementPlanned":3,"reinforcementSeen":3,"capped":false}
+P2_COURIER_TRACES_BEGIN
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":0,"damageTaken":34,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"courier","action":"move:"},{"round":2,"actor":"h1","action":"move:"},{"round":2,"actor":"h2","action":"move:"},{"round":3,"actor":"ally-03","action":"skill:u03-tap:h1"},{"round":3,"actor":"ally-02","action":"skill:u02-shot:courier"}]}
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":1,"damageTaken":48,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"courier","action":"move:"},{"round":2,"actor":"h1","action":"move:"},{"round":2,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"ally-03","action":"skill:u03-tap:h1"},{"round":3,"actor":"ally-02","action":"skill:u02-shot:courier"}]}
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":true,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":10,"enemyActions":3,"controlActions":0,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"pet:synthetic","action":"move"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"pet:synthetic","action":"skill:pet-bite:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"}]}
+{"missionId":"dead-relay-courier","profile":"fresh","petEnabled":true,"mode":"control","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":2,"damageTaken":50,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"pet:synthetic","action":"move"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"pet:synthetic","action":"skill:pet-hamstring:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"h1","action":"move:"},{"round":2,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"courier","action":"move:"},{"round":3,"actor":"pet:synthetic","action":"skill:pet-bite:courier"}]}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":0,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"}]}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":1,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"}]}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":true,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"pet:synthetic","action":"move"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"pet:synthetic","action":"skill:pet-bite:courier"}]}
+{"missionId":"dead-relay-courier","profile":"mid","petEnabled":true,"mode":"control","intel":false,"outcome":"victory","round":3,"actions":14,"enemyActions":6,"controlActions":2,"damageTaken":50,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"pet:synthetic","action":"move"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"pet:synthetic","action":"skill:pet-hamstring:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"h1","action":"move:"},{"round":2,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"courier","action":"move:"},{"round":3,"actor":"pet:synthetic","action":"skill:pet-bite:courier"}]}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":0,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"}]}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":1,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"}]}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":true,"mode":"focus","intel":false,"outcome":"victory","round":2,"actions":9,"enemyActions":3,"controlActions":0,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"pet:synthetic","action":"move"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:courier"},{"round":2,"actor":"pet:synthetic","action":"skill:pet-bite:courier"}]}
+{"missionId":"dead-relay-courier","profile":"high","petEnabled":true,"mode":"control","intel":false,"outcome":"victory","round":2,"actions":10,"enemyActions":3,"controlActions":2,"damageTaken":18,"reinforcementPlanned":null,"reinforcementSeen":null,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:courier"},{"round":1,"actor":"pet:synthetic","action":"move"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:courier"},{"round":1,"actor":"courier","action":"move:"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"pet:synthetic","action":"skill:pet-hamstring:courier"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:courier"}]}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"focus","intel":false,"outcome":"victory","round":4,"actions":15,"enemyActions":5,"controlActions":0,"damageTaken":50,"reinforcementPlanned":2,"reinforcementSeen":2,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:h1"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:h1"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:h1"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"alpha","action":"skip"},{"round":2,"actor":"h2","action":"move:"},{"round":2,"actor":"ally-03","action":"move"},{"round":3,"actor":"dead-relay-reinforcement","action":"move:"},{"round":3,"actor":"ally-02","action":"skill:u02-shot:h2"},{"round":3,"actor":"alpha","action":"skip"},{"round":3,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"alpha","action":"skill:alpha-howl:h2"}]}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"control","intel":false,"outcome":"victory","round":4,"actions":15,"enemyActions":5,"controlActions":1,"damageTaken":44,"reinforcementPlanned":2,"reinforcementSeen":2,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:h1"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:h1"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:h1"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:h1"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"alpha","action":"skip"},{"round":2,"actor":"h2","action":"move:"},{"round":2,"actor":"ally-03","action":"move"},{"round":3,"actor":"dead-relay-reinforcement","action":"move:"},{"round":3,"actor":"ally-02","action":"skill:u02-shot:h2"},{"round":3,"actor":"alpha","action":"skip"},{"round":3,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"alpha","action":"skill:alpha-howl:h2"}]}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"focus","intel":true,"outcome":"victory","round":4,"actions":14,"enemyActions":4,"controlActions":0,"damageTaken":50,"reinforcementPlanned":3,"reinforcementSeen":3,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:h1"},{"round":1,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:h1"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:h1"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"alpha","action":"skip"},{"round":2,"actor":"h2","action":"move:"},{"round":2,"actor":"ally-03","action":"move"},{"round":3,"actor":"ally-02","action":"skill:u02-shot:h2"},{"round":3,"actor":"alpha","action":"skip"},{"round":3,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"alpha","action":"skill:alpha-howl:h2"}]}
+{"missionId":"dead-relay-hold","profile":"mid","petEnabled":false,"mode":"control","intel":true,"outcome":"victory","round":4,"actions":14,"enemyActions":4,"controlActions":1,"damageTaken":44,"reinforcementPlanned":3,"reinforcementSeen":3,"capped":false,"history":[{"round":1,"actor":"alpha","action":"skill:alpha-howl:h1"},{"round":1,"actor":"ally-02","action":"skill:u02-suppress:h1"},{"round":1,"actor":"h1","action":"move:"},{"round":1,"actor":"h2","action":"move:"},{"round":1,"actor":"ally-03","action":"skill:u03-pack:h1"},{"round":2,"actor":"alpha","action":"skill:alpha-strike:h1"},{"round":2,"actor":"ally-02","action":"skill:u02-shot:h1"},{"round":2,"actor":"alpha","action":"skip"},{"round":2,"actor":"h2","action":"move:"},{"round":2,"actor":"ally-03","action":"move"},{"round":3,"actor":"ally-02","action":"skill:u02-shot:h2"},{"round":3,"actor":"alpha","action":"skip"},{"round":3,"actor":"h2","action":"skill:hostile-strike"},{"round":3,"actor":"alpha","action":"skill:alpha-howl:h2"}]}
+P2_COURIER_TRACES_END
+
+
+$ node tools/verify_tactical_ops_pr1b.mjs
+PR1B_PASS: legacy, Alpha, pet, enemy neutrality, squad mismatch, corrupt V3 — actual createBattle()
+
+
+$ node tools/verify_tactical_ops_results_status_layout.mjs
+PASS Tactical Results portrait constraints / mobile status HUD guard
+
+
+$ node tools/verify_tactical_ops_vnext_contract.mjs
+VNEXT_CONTRACT_PASS: 12 missions + Foundation stages; legacy variants; 40-cell topology; intent timing, cancellation, locked targeting, factual ledger, disabled rollout, strict snapshots.
+
+
+$ node tools/verify_tactical_ops_vnext_scheduler.mjs
+VNEXT_SCHEDULER_CONTRACT_PASS: announcement, locked enemy, reaction delay, defeat counter, no live enable
+
+
+$ node tools/verify_tactical_player_clarity.mjs
+PASS Player Clarity: Alpha-down allied continuation, invalid target recovery, skip, mission identity, next step, progress feedback
+
+
+$ node tools/verify_tactical_s1_purpose_truth.mjs
+PASS S1: 12 mission descriptions, real objective counters and honest Commander eligibility
+
+
+$ node tools/verify_tactical_s2_objective_ai.mjs
+PASS S2 shared 12 mission objective targeting, legal enemy plans, HOLD/RECOVER pressure 2
+
+
+$ node tools/verify_tactical_s3_after_action.mjs
+PASS: S3 after-action receipt boundaries and return recommendations
+
+
+$ node tools/verify_tactical_s3_combat_proof.mjs
+PASS S3: 3 role trials, 2 synergy solutions, run receipt gates, no empty-event fantasy
+
+
+$ node tools/verify_tactical_s3_consequence_chain.mjs
+PASS S3: Courier Intel, pressure→reinforcement, frozen accepted context, no phantom server change
+
+
+$ node tools/verify_tactical_s3_power_proof.mjs
+PASS S3: saved Pack Mastery + sidegrade executable BEFORE/AFTER proof
+
+
+$ node tools/verify_tactical_s9_campaign_orders.mjs
+PASS S9: story, rotation, challenges, accepted run, advanced gating, career truth, no local fake progression
+
+
+$ node tools/verify_tactical_s9b_chapter.mjs
+PASS S9B doctrine: 3 paths × 3 staged ops, revision CAS, idempotency, no forged results, frozen choice, strict canonical read
+
+
+$ node tools/verify_tactical_signal_atlas_assets_p2.mjs
+PASS Signal Atlas P2: 19 runtime assets, art mapping, crest fallback, beta gate (device QA separate)
+
+
+$ node tools/verify_tactical_signal_atlas_p3.mjs
+PASS Signal Atlas P3: 13 integrated runtime references; asset existence, receipt guards, dialog containment, state labels, fallbacks
+
+
+$ node tools/verify_tactical_signal_atlas_v2.mjs
+PASS SIGNAL ATLAS V2 (React SSR): 3 heroes, 6 live UI sectors, 9 canonical skills, 18 ranks, all receipt/availability states, zero-effect gate, 50 demo-node layout, real store wiring
+
+
+$ node tools/verify_tactical_visual_cohesion.mjs
+PASS S8: matched hostile contact, edge-safe captions, FX hierarchy and reduced motion
+
+
+$ node tools/verify_tactical_vnext_combat_intelligence.mjs
+{
+  "schema": "tactical-combat-intelligence.v1",
+  "missions": [
+    {
+      "mission": "broken-signal-breach",
+      "enemyTypes": [
+        "BULWARK",
+        "DISRUPTOR",
+        "MARKSMAN"
+      ]
+    },
+    {
+      "mission": "broken-signal-recover",
+      "enemyTypes": []
+    },
+    {
+      "mission": "broken-signal-commander",
+      "enemyTypes": [
+        "BULWARK",
+        "COMMANDER",
+        "MARKSMAN",
+        "SKIRMISHER"
+      ]
+    },
+    {
+      "mission": "field-relay-recovery",
+      "enemyTypes": [
+        "BULWARK",
+        "MARKSMAN"
+      ]
+    },
+    {
+      "mission": "field-relay-hold",
+      "enemyTypes": [
+        "BULWARK",
+        "MARKSMAN",
+        "SKIRMISHER"
+      ]
+    },
+    {
+      "mission": "field-squad-survival",
+      "enemyTypes": [
+        "BULWARK",
+        "DISRUPTOR",
+        "MARKSMAN"
+      ]
+    },
+    {
+      "mission": "field-relay-intercept",
+      "enemyTypes": [
+        "BULWARK",
+        "COURIER",
+        "MARKSMAN",
+        "SKIRMISHER"
+      ]
+    },
+    {
+      "mission": "field-isolated-hold",
+      "enemyTypes": [
+        "BULWARK",
+        "COMMANDER"
+      ]
+    },
+    {
+      "mission": "field-rearguard",
+      "enemyTypes": [
+        "BULWARK",
+        "MARKSMAN",
+        "SKIRMISHER"
+      ]
+    },
+    {
+      "mission": "dead-relay-courier",
+      "enemyTypes": [
+        "BULWARK",
+        "COURIER",
+        "MARKSMAN"
+      ]
+    },
+    {
+      "mission": "dead-relay-hold",
+      "enemyTypes": [
+        "BULWARK",
+        "MARKSMAN",
+        "SKIRMISHER"
+      ]
+    },
+    {
+      "mission": "dead-relay-guardian",
+      "enemyTypes": [
+        "BULWARK",
+        "COMMANDER",
+        "MARKSMAN",
+        "SKIRMISHER"
+      ]
+    }
+  ],
+  "archetypes": [
+    "BULWARK",
+    "COMMANDER",
+    "COURIER",
+    "DISRUPTOR",
+    "MARKSMAN",
+    "SKIRMISHER"
+  ],
+  "announced": 1
+}
+TACTICAL_VNEXT_COMBAT_INTELLIGENCE_LAB_PASS
+
+
+$ node tools/verify_tactical_vnext_counterplay.mjs
+{
+  "schema": "combat-counterplay-proof.v1",
+  "trace": [
+    {
+      "event": "threat_announced",
+      "turn": 3,
+      "target": "ally-03"
+    },
+    {
+      "event": "target_repositioned",
+      "turn": 4,
+      "to": {
+        "c": 1,
+        "r": 6
+      }
+    },
+    {
+      "event": "threat_countered",
+      "turn": 7
+    }
+  ]
+}
+TACTICAL_VNEXT_REAL_COUNTERPLAY_PASS
+
+
+$ node tools/verify_tactical_vnext_player_growth.mjs
+PASS: growth trees, ranks, immutable skill resolution, strict snapshot validation
+
+
+$ node tools/verify_tactical_vnext_run_contract_wire.mjs
+PASS: VNext run contract wire strict, legacy preserved, no unsafe live flip
+
+
+$ node tools/verify_tactical_vnext_skillbook_integration.mjs
+PASS Growth: backend record, run snapshot, authored skills, Skillbook read/save/respec wiring
+
+
+$ node tools/verify_tactical_vnext_step0_baseline.mjs
+{
+  "schema": "tactical-baseline.v1",
+  "grid": {
+    "cols": 8,
+    "rows": 5,
+    "cells": 40
+  },
+  "missions": [
+    {
+      "id": "broken-signal-breach",
+      "family": "broken-signal",
+      "objectiveType": "ELIMINATE",
+      "squadCap": 3,
+      "enemyCountDefined": 3,
+      "spawnCountDefined": 6,
+      "objective": "ELIMINATE",
+      "reinforcement": false,
+      "challenge": null
+    },
+    {
+      "id": "broken-signal-commander",
+      "family": "broken-signal",
+      "objectiveType": "BOSS",
+      "squadCap": 3,
+      "enemyCountDefined": 3,
+      "spawnCountDefined": 6,
+      "objective": "BOSS",
+      "reinforcement": true,
+      "challenge": null
+    },
+    {
+      "id": "broken-signal-recover",
+      "family": "broken-signal",
+      "objectiveType": "RECOVER",
+      "squadCap": 2,
+      "enemyCountDefined": 0,
+      "spawnCountDefined": 0,
+      "objective": "RECOVER",
+      "reinforcement": false,
+      "challenge": null
+    },
+    {
+      "id": "dead-relay-courier",
+      "family": "dead-relay",
+      "objectiveType": "INTERCEPT",
+      "squadCap": 3,
+      "enemyCountDefined": 3,
+      "spawnCountDefined": 3,
+      "objective": "INTERCEPT",
+      "reinforcement": false,
+      "challenge": null
+    },
+    {
+      "id": "dead-relay-guardian",
+      "family": "dead-relay",
+      "objectiveType": "BOSS",
+      "squadCap": 3,
+      "enemyCountDefined": 3,
+      "spawnCountDefined": 3,
+      "objective": "BOSS",
+      "reinforcement": true,
+      "challenge": null
+    },
+    {
+      "id": "dead-relay-hold",
+      "family": "dead-relay",
+      "objectiveType": "HOLD",
+      "squadCap": 3,
+      "enemyCountDefined": 2,
+      "spawnCountDefined": 2,
+      "objective": "HOLD",
+      "reinforcement": true,
+      "challenge": null
+    },
+    {
+      "id": "field-isolated-hold",
+      "family": "field-ops",
+      "objectiveType": "HOLD",
+      "squadCap": 3,
+      "enemyCountDefined": 2,
+      "spawnCountDefined": 2,
+      "objective": "HOLD",
+      "reinforcement": false,
+      "challenge": "TURN_LIMIT"
+    },
+    {
+      "id": "field-rearguard",
+      "family": "field-ops",
+      "objectiveType": "SURVIVE",
+      "squadCap": 3,
+      "enemyCountDefined": 2,
+      "spawnCountDefined": 2,
+      "objective": "SURVIVE",
+      "reinforcement": true,
+      "challenge": "SQUAD"
+    },
+    {
+      "id": "field-relay-hold",
+      "family": "field-ops",
+      "objectiveType": "HOLD",
+      "squadCap": 3,
+      "enemyCountDefined": 2,
+      "spawnCountDefined": 2,
+      "objective": "HOLD",
+      "reinforcement": true,
+      "challenge": "NO_HEALING"
+    },
+    {
+      "id": "field-relay-intercept",
+      "family": "field-ops",
+      "objectiveType": "INTERCEPT",
+      "squadCap": 3,
+      "enemyCountDefined": 3,
+      "spawnCountDefined": 3,
+      "objective": "INTERCEPT",
+      "reinforcement": true,
+      "challenge": "NO_HEALING"
+    },
+    {
+      "id": "field-relay-recovery",
+      "family": "field-ops",
+      "objectiveType": "RECOVER",
+      "squadCap": 3,
+      "enemyCountDefined": 2,
+      "spawnCountDefined": 2,
+      "objective": "RECOVER",
+      "reinforcement": false,
+      "challenge": "TURN_LIMIT"
+    },
+    {
+      "id": "field-squad-survival",
+      "family": "field-ops",
+      "objectiveType": "SURVIVE",
+      "squadCap": 3,
+      "enemyCountDefined": 3,
+      "spawnCountDefined": 3,
+      "objective": "SURVIVE",
+      "reinforcement": false,
+      "challenge": "SQUAD"
+    }
+  ]
+}
+TACTICAL_VNEXT_STEP0_STATIC_BASELINE_PASS
+
+
+$ node tools/verify_tactical_vnext_step5_squad_codex.mjs
+PASS Step 5: 5 honest Codex families, real team sidegrade/mastery composition, bounded cooldowns, verified interrupt + enemy turn loss
+
+
+$ node tools/verify_tactical_vnext_step5_squad_matrix.mjs
+{
+  "schema": "tactical-step5-squad-coverage.v1",
+  "missions": 12,
+  "deployProfiles": 68,
+  "squadVariants": 3,
+  "byMission": {
+    "broken-signal-breach": 2,
+    "broken-signal-commander": 6,
+    "broken-signal-recover": 6,
+    "dead-relay-courier": 6,
+    "dead-relay-guardian": 6,
+    "dead-relay-hold": 6,
+    "field-isolated-hold": 6,
+    "field-rearguard": 6,
+    "field-relay-hold": 6,
+    "field-relay-intercept": 6,
+    "field-relay-recovery": 6,
+    "field-squad-survival": 6
+  }
+}
+PASS Step5 12/12 mission squad deployment legality, three role tradeoffs, frozen Alpha/PET stats, Growth snapshot and honest Codex
