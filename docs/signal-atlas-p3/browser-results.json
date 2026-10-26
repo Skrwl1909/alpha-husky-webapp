@@ -1,0 +1,23 @@
+{
+  "browser": "153.0.8010.0",
+  "results": [
+    "320 default: overview/focus/inspector, no overflow, 44px targets",
+    "320 partial: overview/focus/inspector, no overflow, 44px targets",
+    "320 maxed: overview/focus/inspector, no overflow, 44px targets",
+    "360 default: overview/focus/inspector, no overflow, 44px targets",
+    "360 partial: overview/focus/inspector, no overflow, 44px targets",
+    "360 maxed: overview/focus/inspector, no overflow, 44px targets",
+    "390 default: overview/focus/inspector, no overflow, 44px targets",
+    "390 partial: overview/focus/inspector, no overflow, 44px targets",
+    "390 maxed: overview/focus/inspector, no overflow, 44px targets",
+    "430 default: overview/focus/inspector, no overflow, 44px targets",
+    "430 partial: overview/focus/inspector, no overflow, 44px targets",
+    "430 maxed: overview/focus/inspector, no overflow, 44px targets",
+    "All heroes, 6 sectors, 9 skills, rank 0/1/2 and non-mutating specialization previews",
+    "Dialog focus trap/Escape/focus restoration; pending blocks controls; fixture receipt/reopen/reset/cancel",
+    "Stale, failed and network fixture saves never report success or spend points",
+    "Absent progression/reduced motion; alternative path locked; zero-effect disabled; missing art; short dialog with simulated Telegram safe areas",
+    "Classic fallback and query opt-in round trip"
+  ],
+  "limits": "Emulated Chromium + mocked store receipts only. No live server persistence or device QA."
+}

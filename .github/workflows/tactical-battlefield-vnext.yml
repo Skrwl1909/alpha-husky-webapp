@@ -30,6 +30,7 @@ on:
       - "tactical-ops-src/styles.ts"
       - "tactical-ops-src/ui/signalAtlas/**"
       - "tools/verify_tactical_signal_atlas_v2.mjs"
+      - "tools/verify_tactical_signal_atlas_p3*.mjs"
       - "docs/TACTICAL_SIGNAL_ATLAS_V2_ENGINEERING_GATE.md"
       - "tactical-ops-src/tactical.css"
       - "tactical-ops-src/ui/combatCohesion.css"
@@ -83,6 +84,7 @@ jobs:
       - run: node tools/verify_tactical_vnext_skillbook_integration.mjs
       - run: node tools/verify_tactical_signal_atlas_v2.mjs
       - run: node tools/verify_tactical_signal_atlas_assets_p2.mjs
+      - run: node tools/verify_tactical_signal_atlas_p3.mjs
       - run: node tools/verify_tactical_vnext_step5_squad_codex.mjs
       - run: node tools/verify_tactical_vnext_step5_squad_matrix.mjs
       - run: node tools/verify_tactical_command_deck.mjs
@@ -117,3 +119,26 @@ jobs:
             js/tactical_ops.js
             js/boot_loaders.js
           if-no-files-found: error
+
+  atlas-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.62.1
+      # The hosted Ubuntu image supplies Chrome and its system dependencies.
+      # Avoid an independent browser/apt download before every visual QA run.
+      - run: /usr/bin/google-chrome --version
+      - run: node tools/verify_tactical_signal_atlas_p3_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: signal-atlas-p3-browser-evidence
+          path: artifacts/signal-atlas-p3
+          if-no-files-found: ignore
