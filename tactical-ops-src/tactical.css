@@ -4174,35 +4174,6 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell:is([data-screen="war-table"], 
   #tacticalOpsRoot .t-threat-warning { top: clamp(108px, 15%, 154px); }
 }
 
-/* Tactical threat brief: a dedicated readable layer between the battlefield and dock. */
-#tacticalOpsRoot .t-threat-brief {
-  position: relative;
-  z-index: 30;
-  box-sizing: border-box;
-  width: calc(100% - 24px);
-  max-width: 560px;
-  margin: 0 auto 6px;
-  padding: 9px 12px 10px;
-  border: 1px solid rgba(244, 102, 98, .58);
-  border-left: 3px solid #ff7771;
-  border-radius: 10px;
-  background: linear-gradient(110deg, rgba(34, 12, 23, .98), rgba(14, 23, 38, .98));
-  box-shadow: 0 5px 20px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.07);
-  color: #fff0ec;
-  pointer-events: none;
-}
-#tacticalOpsRoot .t-threat-brief-head { display: flex; align-items: center; gap: 7px; font-size: 10px; line-height: 1.25; font-weight: 850; letter-spacing: .13em; }
-#tacticalOpsRoot .t-threat-brief-pip { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #ff7771; box-shadow: 0 0 8px #ff7771; }
-#tacticalOpsRoot .t-threat-brief-head small { margin-left: auto; color: #ffb0a8; font-size: 9px; font-weight: 700; letter-spacing: .06em; }
-#tacticalOpsRoot .t-threat-brief-detail { margin-top: 5px; font-size: 12px; font-weight: 750; line-height: 1.35; overflow-wrap: anywhere; }
-#tacticalOpsRoot .t-threat-brief-action { margin-top: 6px; color: #b6e7f5; font-size: 10px; font-weight: 750; line-height: 1.3; letter-spacing: .06em; }
-#tacticalOpsRoot .t-threat-brief-action span { color: #7395a5; padding: 0 3px; }
-@media (max-width: 620px) {
-  #tacticalOpsRoot .t-threat-brief { width: calc(100% - 16px); padding: 8px 10px; margin-bottom: 4px; }
-  #tacticalOpsRoot .t-threat-brief-detail { font-size: 11px; }
-  #tacticalOpsRoot .t-threat-brief-action { font-size: 9px; }
-}
-
 /* Player Growth & Mastery: one readable, touch-first Skillbook for every mission. */
 #tacticalOpsRoot .t-growth-panel { margin-block: 16px; padding: clamp(14px, 3vw, 22px); border: 1px solid rgba(101,208,240,.34); background: linear-gradient(135deg,rgba(10,28,44,.98),rgba(10,17,30,.98)); }
 #tacticalOpsRoot .t-growth-heading { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
@@ -4799,12 +4770,6 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-player-route-metrics span{padding:5px 7px;border:1px solid rgba(105,198,233,.28);background:rgba(5,26,39,.83);color:#c1e7f3;font-weight:800;font-size:.59rem;letter-spacing:.045em}
 #tacticalOpsRoot .t-player-mission-counter{font-size:.65rem;font-weight:800;letter-spacing:.06em;color:#a9dbe9;margin-bottom:6px}
 #tacticalOpsRoot .t-player-result-meaning{font-size:.76rem;line-height:1.45;margin:8px 0;padding:10px;color:#cfedf6;background:#102c3a;border-left:3px solid #70d8eb}
-#tacticalOpsRoot .t-player-guidance{position:absolute;z-index:30;left:50%;top:72px;transform:translateX(-50%);width:max-content;max-width:min(82%,340px);display:flex;flex-direction:column;gap:3px;padding:7px 10px;pointer-events:none;text-align:center;border:1px solid rgba(96,194,225,.4);border-radius:6px;background:rgba(4,22,34,.93);box-shadow:0 6px 18px rgba(0,0,0,.26)}
-#tacticalOpsRoot .t-player-guidance strong{font-size:.66rem;letter-spacing:.09em;color:#caf3fc}
-#tacticalOpsRoot .t-player-guidance span{font-size:.66rem;line-height:1.3;color:#b4d6e2}
-@media(max-width:620px){#tacticalOpsRoot .t-player-guidance{top:60px;max-width:75%;padding:5px 8px}#tacticalOpsRoot .t-player-guidance span{font-size:.60rem}}
-
-/* S1 objective-first mobile finish: battle goal stays on the board, not beneath host chrome. */
 #tacticalOpsRoot .t-obj-chip{width:min(220px,48vw);padding:8px 9px;background:rgba(3,19,29,.96);border-color:rgba(87,211,239,.58)}
 #tacticalOpsRoot .t-obj-chip strong{font-size:.65rem;letter-spacing:.045em;line-height:1.25}
 #tacticalOpsRoot .t-obj-chip .t-objective-directive{display:block;-webkit-line-clamp:unset;line-clamp:unset;overflow:visible;color:#7edcf0;font-size:.67rem;line-height:1.3;font-weight:800;letter-spacing:.06em;margin-top:5px}
@@ -4832,60 +4797,35 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics span{font-size:.58rem}
 @media(max-width:620px){#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics{gap:4px}#tacticalOpsRoot .t-wt-feature-copy .t-player-route-metrics span{padding:4px 6px}}
 
-/* Battlefield HUD declutter P1: compact summary rail OUTSIDE of the playable field.
-   Details expand only on explicit tap. Never change board geometry or hit areas. */
+/* Battlefield P5 — BLACKGLASS RELAY COMMAND.
+   One fixed rail, one projected field, one fixed dock. Presentation only. */
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {
-  display:grid;
-  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-  gap:6px;
-  align-items:stretch;
-  min-height:calc(52px + var(--t-battle-safe-top));
-  padding:calc(var(--t-battle-safe-top) + 4px) max(7px,var(--ah-safe-right,0px)) 5px max(7px,var(--ah-safe-left,0px));
-  overflow:visible;
-  background:linear-gradient(180deg,rgba(2,12,23,.99),rgba(4,20,32,.96));
-  pointer-events:auto;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px;
+  height:calc(52px + var(--t-battle-safe-top));min-height:calc(52px + var(--t-battle-safe-top));
+  padding:calc(var(--t-battle-safe-top) + 4px) max(5px,var(--ah-safe-right,0px)) 4px max(5px,var(--ah-safe-left,0px));
+  background:linear-gradient(180deg,#071725,#0a202e);border:0;
+  overflow:hidden;pointer-events:auto;align-items:stretch;
 }
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card {
-  box-sizing:border-box;
-  position:relative;
-  inset:auto;
-  grid-area:auto;
-  display:grid;
-  margin:0;
-  width:100%;
-  min-width:0;
-  max-width:none;
-  min-height:42px;
-  max-height:none;
-  height:auto;
-  overflow:hidden;
-  padding:4px 7px;
-  border:1px solid rgba(94,204,232,.46);
-  border-radius:6px;
-  background:rgba(6,31,46,.82);
-  box-shadow:none;
-  color:#d9f5fa;
-  font:inherit;
-  text-align:left;
-  cursor:pointer;
-  pointer-events:auto;
-  touch-action:manipulation;
+  box-sizing:border-box;position:relative;inset:auto;grid-area:auto;display:grid;
+  margin:0;width:100%;min-width:0;max-width:none;height:44px;min-height:44px;max-height:44px;
+  padding:3px 6px;overflow:hidden;border:1px solid #426272;border-radius:5px;
+  background:linear-gradient(145deg,#102e3e,#0b1e2c);box-shadow:inset 0 1px #bce5ef0d;
+  color:#e2f3f7;font:inherit;text-align:left;cursor:pointer;pointer-events:auto;touch-action:manipulation;
 }
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card:focus-visible {outline:2px solid #8be5fa;outline-offset:1px}
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status {
-  grid-template-columns:27px minmax(0,1fr);
-  column-gap:6px;
-  align-items:center;
+  grid-template-columns:27px minmax(0,1fr);column-gap:6px;align-items:center;
 }
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-portrait {width:27px;height:27px}
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-portrait > img {width:100%;height:100%}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-name {font-size:.63rem;line-height:1.1;letter-spacing:.025em}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status .t-hp {margin-top:3px;gap:4px}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hp-num {font-size:.52rem}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip {align-content:center}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-name {
+  font-size:11px;line-height:14px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#edf9fc;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status .t-hp {margin-top:2px;gap:4px}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hp-num {font-size:11px;line-height:13px;color:#deedf4}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip {align-content:center;gap:1px}
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip strong {
-  font-size:.60rem;line-height:1.2;letter-spacing:.02em;display:-webkit-box;-webkit-line-clamp:2;
-  line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+  font-size:11px;line-height:14px;letter-spacing:0;color:#e2f4f7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;
 }
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-kit,
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-mods,
@@ -4894,43 +4834,93 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-stats,
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-objective-directive,
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-objective-action,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip > span:not(.t-objective-directive),
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip > span:not(.t-objective-summary):not(.t-objective-detail),
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip > small,
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-rounds {display:none}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded {
-  overflow:visible;
-  z-index:50;
-  border-color:#78dcf4;
-  background:#061827;
-  box-shadow:0 9px 22px rgba(0,0,0,.65);
+#tacticalOpsRoot .t-battle-hud-rail .t-status-detail,
+#tacticalOpsRoot .t-battle-hud-rail .t-objective-detail {display:none}
+#tacticalOpsRoot .t-battle-hud-rail .t-objective-summary {display:block;color:#a3d9e6;font-size:11px;line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Details replace content inside the same 44px card; no growth, board overlay,
+   automatic closing, or competing popovers. Long detail lines pan horizontally. */
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded {border-color:#b3dfe9;box-shadow:none}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status.is-expanded {grid-template-columns:minmax(0,1fr);grid-template-rows:16px 16px;align-content:center;gap:0}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status.is-expanded .t-status-portrait {display:none}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status.is-expanded .t-status-main {display:flex;align-items:center;gap:5px;min-width:0}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status.is-expanded .t-hp-bar {display:none}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status.is-expanded .t-hp {margin:0}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status.is-expanded .t-status-detail,
+#tacticalOpsRoot .t-battle-hud-rail .t-obj-chip.is-expanded .t-objective-detail {
+  display:block;font-size:11px;line-height:16px;color:#e2f3f7;white-space:nowrap;overflow-x:auto;touch-action:pan-x;scrollbar-width:none;
 }
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-kit,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-mods,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-combat-identity,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-chips,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-objective-directive,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-objective-action,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-obj-chip > span,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded > span,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded > small,
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-obj-rounds {display:block}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-main::after {content:"Tap to close";display:block;font-size:9px;color:#81b8c8;margin-top:5px}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded .t-status-stats {display:none}
-#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail > * {pointer-events:auto}
+#tacticalOpsRoot .t-battle-hud-rail .t-obj-chip.is-expanded .t-objective-summary {display:none}
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-order-wrap {display:none}
-@media(max-width:620px) {
-  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {
-    grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-    min-height:calc(52px + var(--t-battle-safe-top));
-    padding:calc(var(--t-battle-safe-top) + 4px) max(7px,var(--ah-safe-right,0px)) 5px max(7px,var(--ah-safe-left,0px));
-  }
-  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip {width:100%;max-width:none}
-  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card.is-expanded {max-height:none}
+#tacticalOpsRoot .t-battle .t-field {container-type:size}
+/* Use the existing image without excessive blackening; local grade separates silhouettes. */
+#tacticalOpsRoot .t-battle .t-field-art {filter:saturate(.72) brightness(.98) contrast(.96)}
+#tacticalOpsRoot .t-battle .t-field-grade {background:linear-gradient(180deg,#07172570,transparent 24%,#081a2930 70%,#061321b8),radial-gradient(ellipse at center,#3b647b20,transparent 70%)}
+#tacticalOpsRoot .t-battle .t-grid i {opacity:.34;border-color:#a9cfdb70;background:none}
+#tacticalOpsRoot .t-battle .t-token .body {filter:drop-shadow(0 3px 3px #020a14) drop-shadow(0 0 2px #bdd7e740)}
+#tacticalOpsRoot .t-battle .t-token.active .t-ring {filter:none;color:#b7f0ff}
+#tacticalOpsRoot .t-battle .t-token.subdued {opacity:.65;filter:saturate(.6)}
+/* Actual pointer regions use projection spacing, NEVER overlapping 44px boxes.
+   Unit hit buttons are siblings at their cell anchors, not offset inside sprites. */
+#tacticalOpsRoot .t-battle .t-cell,
+#tacticalOpsRoot .t-battle .t-unit-hit {
+  width:min(44px,var(--cell-touch-w));height:min(44px,var(--cell-touch-h));
+  min-width:0;min-height:0;max-width:44px;max-height:44px;
+  position:absolute;bottom:auto;transform:translate(-50%,-50%);border-radius:4px;transition:none;
 }
-@media(max-width:350px) {
-  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail {gap:4px;padding-left:4px;padding-right:4px}
-  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-hud-card {padding:3px 4px}
-  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-status-name {font-size:.55rem}
+#tacticalOpsRoot .t-battle .t-unit-hit {z-index:35;border:0;background:transparent}
+#tacticalOpsRoot .t-battle .t-unit-hit.is-legal-target {border:2px solid #e3faff;background:#89dcf026;box-shadow:inset 0 0 0 1px #072430}
+#tacticalOpsRoot .t-battle .t-cell.move::after {width:9px;height:9px;border-radius:2px;box-shadow:none;background:#8adbed20;border:1px solid #a2e0ef;transform:translate(-50%,-50%) rotate(45deg)}
+#tacticalOpsRoot .t-battle .t-cell.move:hover::after,
+#tacticalOpsRoot .t-battle .t-cell.move:focus-visible::after {width:13px;height:13px;background:#a1e7f178;box-shadow:none}
+#tacticalOpsRoot .t-battle :is(.t-unit-hit,.t-cell,button):focus-visible {outline:2px solid #f4d49f;outline-offset:1px}
+#tacticalOpsRoot .t-battle .t-threat-tile {
+  z-index:32;width:var(--cell-touch-w);height:var(--cell-touch-h);aspect-ratio:auto;
+  border:2px solid #ffb4a5;border-radius:3px;box-shadow:none;animation:none;
+  background:repeating-linear-gradient(135deg,#b9323655 0 3px,#220f1a33 3px 7px);pointer-events:none;
+}
+#tacticalOpsRoot .t-threat-tile > span {position:absolute;right:0;top:0;padding:0 2px;font:900 11px/12px var(--t-font-sans);color:#fff4ec;background:#751f2d}
+#tacticalOpsRoot .t-threat-source {position:absolute;z-index:33;transform:translate(-50%,-50%);color:#fff0e8;background:#692431;border:1px solid #ffb4a5;border-radius:3px;font:800 11px/15px var(--t-font-sans);min-width:16px;text-align:center;pointer-events:none}
+#tacticalOpsRoot .t-command-cue {
+  position:absolute;z-index:34;left:10px;right:10px;top:7px;max-height:calc(21cqh - 10px);
+  overflow:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  padding-left:8px;border-left:2px solid #799cab;color:#e4f0f4;text-shadow:0 1px 2px #04111d;
+}
+#tacticalOpsRoot .t-command-cue strong {font:800 11px/14px var(--t-font-sans);letter-spacing:.035em}
+#tacticalOpsRoot .t-command-cue > span {font:400 12px/15px var(--t-font-sans);max-width:100%;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#tacticalOpsRoot .t-command-cue small {font:500 11px/14px var(--t-font-sans);color:#c2d8e4}
+#tacticalOpsRoot .t-battle[data-decision="REACT"] .t-command-cue {border-color:#ffb4a5}
+#tacticalOpsRoot .t-battle[data-decision="REACT"] .t-command-cue strong {color:#ffcfbf}
+#tacticalOpsRoot .t-battle[data-decision="REACT"] :is(.t-ring,.t-target-reticle) {animation:none;filter:none}
+#tacticalOpsRoot .t-battle[data-decision="RESOLVE"] .t-command-cue {border-color:#c9e8d9}
+/* Assistance is optional and outside projected rows. Small/short boards retain
+   exact per-cell input; no global confirmation/double-tap gesture. */
+#tacticalOpsRoot .t-target-assist {display:none}
+@container (min-height:340px) {
+  #tacticalOpsRoot .t-target-assist {position:absolute;z-index:34;left:10px;right:10px;bottom:8px;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;pointer-events:auto}
+  #tacticalOpsRoot .t-target-assist button {flex:0 0 auto;min-width:112px;max-width:200px;height:44px;display:flex;align-items:center;gap:7px;padding:4px 9px;color:#e5f6fa;background:#102c3d;border:1px solid #92cfdd;border-radius:5px;font:700 11px/14px var(--t-font-sans);text-align:left;touch-action:pan-x}
+  #tacticalOpsRoot .t-target-assist svg {width:16px;height:16px;flex:none}
+  #tacticalOpsRoot .t-target-assist small {display:block;color:#c2dde5;font-size:11px;font-weight:400}
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-dock {grid-template-columns:44px minmax(0,1fr) 50px;gap:3px;padding-top:2px;padding-left:max(5px,var(--ah-safe-left,0px));padding-right:max(5px,var(--ah-safe-right,0px))}
+#tacticalOpsRoot .t-battle .t-icon-btn {width:44px;min-width:44px;height:44px;min-height:44px}
+#tacticalOpsRoot .t-battle .t-actions {min-height:60px}
+#tacticalOpsRoot .t-battle .t-enemy-command {height:60px;min-height:60px;max-height:60px}
+#tacticalOpsRoot .t-battle .t-act {height:60px;min-height:60px;padding:7px 1px 3px;gap:1px}
+#tacticalOpsRoot .t-battle .t-act .name {font-size:10px;line-height:12px;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tacticalOpsRoot .t-battle .t-act .meta {font-size:10px;line-height:12px;letter-spacing:0;color:#d0e5ec}
+#tacticalOpsRoot .t-battle .t-act .slot {font-size:9px;line-height:10px;letter-spacing:0}
+#tacticalOpsRoot .t-battle .t-act-art {width:24px;height:24px;flex:0 0 24px;margin:0 auto}
+#tacticalOpsRoot .t-battle .t-act.on {outline:1px solid #c1e9f1;outline-offset:-3px}
+#tacticalOpsRoot .t-battle .t-act .cd {font-size:11px}
+#tacticalOpsRoot .t-battle .t-skip {min-width:44px;padding-inline:2px;font-size:11px;letter-spacing:0}
+#tacticalOpsRoot .t-cancel-label {font:400 24px/22px var(--t-font-sans)}
+#tacticalOpsRoot .t-cancel-label small {display:block;font:700 9px/10px var(--t-font-sans)}
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-battle :is(.t-token,.t-ring,.t-target-reticle,.t-terminal,.t-reinforcement-marker) {animation:none!important;transition:none!important}
+  #tacticalOpsRoot .t-battle .t-unit-hit.is-legal-target {background:#2e5c70}
 }
 
 /* Combat FX readability P1 — confirmed effects only; no targeting or gameplay changes. */

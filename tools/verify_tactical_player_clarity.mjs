@@ -35,7 +35,7 @@ try {
  assert(!field.includes('className="t-player-route" aria-label="Your next tactical goal"'),"do not duplicate recommended mission on phone");
  assert(field.includes("OPERATION {activeMissionIds.indexOf"),"mission identity");
  assert(field.includes("t-player-result-meaning"),"results progression explanation");
- assert(view.includes("playerBattleGuidance"),"in-battle escape and objective hints");
+ assert(view.includes("deriveBattlePresentation") && readFileSync("tactical-ops-src/ui/battlePresentation.ts","utf8").includes("playerBattleGuidance(battle, input.mission)"),"in-battle escape and objective hints routed through director");
  assert(view.includes("role=\"status\""),"accessible notice");
  console.log("PASS Player Clarity: Alpha-down allied continuation, invalid target recovery, skip, mission identity, next step, progress feedback");
 } finally {await vite.close();}

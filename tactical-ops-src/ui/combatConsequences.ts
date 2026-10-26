@@ -11,7 +11,7 @@ export function confirmedHitConsequence(event:BattleEvent, units:readonly Combat
    return {unitId:event.unitId,kind:"finisher",label:"TARGET DOWN"};
  // GUARD is a confirmed active defensive state; do not invent a blocked-damage amount.
  if(target.statuses.some(s=>s.type==="GUARD"))
-   return {unitId:event.unitId,kind:"guarded",label:"GUARD HELD"};
+   return {unitId:event.unitId,kind:"guarded",label:"GUARD ACTIVE"};
  return null;
 }
 export function confirmedCounterConsequence(interrupted:boolean,targetId:string,events:readonly BattleEvent[]):Omit<CombatConsequence,"id">|null {

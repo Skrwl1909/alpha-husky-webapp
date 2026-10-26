@@ -1,0 +1,202 @@
+[
+  {
+    "command": "node tools/benchmark_tactical_vnext_grids.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/simulate_tactical_s2_full_combat.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/simulate_tactical_vnext_step0_legacy.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_accepted_foundation_grid.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_battle_directive_p0.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_battlefield_p5.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_battlefield_preview.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_battlefield_shell_closure.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_battlefield_visual_closure.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_combat_consequences.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_combat_contact.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_combat_fx.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_combat_fx_identity.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_combat_fx_readability.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_combat_identity.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_command_deck.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_contact_sync.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_enemy_presentation.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_hp_impact.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_action_icons.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_campaign_discovery.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_dead_relay_squad.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_failure_recording.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_ios_field_hud.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_p2_courier_pressure.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_pr1b.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_results_status_layout.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_vnext_contract.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_ops_vnext_scheduler.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_player_clarity.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s1_purpose_truth.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s2_objective_ai.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s3_after_action.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s3_combat_proof.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s3_consequence_chain.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s3_power_proof.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s9_campaign_orders.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_s9b_chapter.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_signal_atlas_assets_p2.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_signal_atlas_p3.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_signal_atlas_v2.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_visual_cohesion.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_combat_intelligence.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_counterplay.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_player_growth.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_run_contract_wire.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_skillbook_integration.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_step0_baseline.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_step5_squad_codex.mjs",
+    "exitCode": 0
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_step5_squad_matrix.mjs",
+    "exitCode": 0
+  }
+]

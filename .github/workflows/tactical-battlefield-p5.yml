@@ -1,0 +1,35 @@
+name: Tactical Battlefield P5
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/ui/Battle.tsx'
+      - 'tactical-ops-src/ui/battlePresentation.ts'
+      - 'tactical-ops-src/ui/combatConsequences.ts'
+      - 'tactical-ops-src/ui/combatCohesion.css'
+      - 'tactical-ops-src/tactical.css'
+      - 'tools/fixtures/battlefield-p5.tsx'
+      - 'tools/verify_tactical_battlefield_p5*.mjs'
+      - '.github/workflows/tactical-battlefield-p5.yml'
+permissions:
+  contents: read
+jobs:
+  decision-and-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - run: node tools/verify_tactical_battlefield_p5.mjs
+      - run: node tools/verify_tactical_battlefield_p5_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: battlefield-p5-browser-evidence
+          path: artifacts/battlefield-p5
+          if-no-files-found: ignore
