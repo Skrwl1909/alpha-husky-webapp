@@ -205,3 +205,85 @@
 #tacticalOpsRoot .tsa-sector {background:linear-gradient(145deg,#102c3cf5,#071924f4);}
 @media(max-width:380px) { #tacticalOpsRoot .tsa-sector .tsa-sector-glyph {width:32px;height:32px;} }
 /* END P2 FROZEN RELAY ASSET INTEGRATION */
+
+/* P3 final integration. Artwork frames controls; text and native borders survive art loss. */
+#tacticalOpsRoot .tsa-root {box-sizing:border-box;overflow-wrap:anywhere;--tsa-recorded:#edc184;}
+#tacticalOpsRoot .tsa-root *,#tacticalOpsRoot .tsa-dialog * {box-sizing:border-box;}
+#tacticalOpsRoot .tsa-root img[hidden] {display:none!important;}
+#tacticalOpsRoot .tsa-header>div:first-child {min-width:0;}
+#tacticalOpsRoot .tsa-header .tsa-eyebrow {font-size:9px;letter-spacing:.06em;}
+#tacticalOpsRoot .tsa-hero-tabs button,#tacticalOpsRoot .tsa-nav button,#tacticalOpsRoot .tsa-disciplines button {clip-path:none;}
+#tacticalOpsRoot .tsa-hero-tabs img {width:26px;height:34px;}
+#tacticalOpsRoot .tsa-hero-tabs b {font-size:10px;letter-spacing:0;white-space:nowrap;}
+#tacticalOpsRoot .tsa-hero-tabs small {font-size:9px;}
+#tacticalOpsRoot .tsa-nav {grid-template-columns:1fr 1fr 52px;}
+#tacticalOpsRoot .tsa-nav button {font-size:10px;letter-spacing:0;min-width:44px;}
+#tacticalOpsRoot .tsa-atlas-map {height:clamp(300px,85vw,390px);}
+#tacticalOpsRoot .tsa-core-housing {position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);width:clamp(136px,39vw,176px);aspect-ratio:1;pointer-events:none;z-index:2;}
+#tacticalOpsRoot .tsa-core-bezel {width:100%;height:100%;object-fit:contain;}
+#tacticalOpsRoot .tsa-core {top:58%;width:clamp(94px,27vw,122px);box-shadow:0 4px 20px #0009;border:1px solid #72a6bb;z-index:1;}
+#tacticalOpsRoot .tsa-core::before {display:none;}
+#tacticalOpsRoot .tsa-core b {font-size:16px;}
+#tacticalOpsRoot .tsa-core small {font-size:8px;letter-spacing:0;}
+#tacticalOpsRoot .tsa-core b,#tacticalOpsRoot .tsa-core small {top:20%;}
+#tacticalOpsRoot .tsa-sector,#tacticalOpsRoot .tsa-sector.tsa-tone-amber,#tacticalOpsRoot .tsa-sector.tsa-tone-cyan {width:44%;max-width:194px;min-height:112px;padding:10px 2px;gap:3px;border:10px solid #4c7183;border-image:var(--tsa-sectorFrame) 42 fill / 10px;clip-path:none;background:#0a2030;box-shadow:0 4px 12px #0008;}
+#tacticalOpsRoot .tsa-sector:enabled:hover {background:#14374a;}
+#tacticalOpsRoot .tsa-sector:focus-visible {outline-offset:0;}
+#tacticalOpsRoot .tsa-sector em {color:var(--tsa-recorded);font-size:10px;}
+#tacticalOpsRoot .tsa-sector b {font-size:12px;letter-spacing:.02em;}
+#tacticalOpsRoot .tsa-sector small {font-size:10px;}
+#tacticalOpsRoot .tsa-sector .tsa-sector-glyph {width:34px;height:34px;filter:none;}
+#tacticalOpsRoot .tsa-reserve {width:28px;height:28px;font-size:18px;opacity:.45;}
+#tacticalOpsRoot .tsa-atlas-footer {gap:6px 14px;font-size:10px;}
+#tacticalOpsRoot .tsa-focus {background:linear-gradient(180deg,#04121be8,#04121bdb),var(--tsa-sectorBackground) center top / cover;}
+#tacticalOpsRoot .tsa-focus-heading h3 {font-size:19px;letter-spacing:.04em;}
+#tacticalOpsRoot .tsa-sector-switch {display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:0 0 12px;}
+#tacticalOpsRoot .tsa-sector-switch button {min-width:44px;min-height:48px;padding:8px;border:1px solid #4c7183;background:#091d2c;color:#bcd4e1;font-size:12px;font-weight:800;border-radius:4px;}
+#tacticalOpsRoot .tsa-sector-switch button[aria-pressed=true] {border-color:#8bdcf0;background:#153a4b;color:#effaff;box-shadow:inset 0 -2px #8bdcf0;}
+#tacticalOpsRoot .tsa-sector-switch small {display:block;font-size:10px;color:#edc184;margin-top:3px;}
+#tacticalOpsRoot .tsa-disciplines b {overflow-wrap:anywhere;font-size:11px;}
+#tacticalOpsRoot .tsa-disciplines span {font-size:10px;}
+#tacticalOpsRoot .tsa-path-explain {font-size:12px;line-height:1.5;}
+#tacticalOpsRoot .tsa-lane {background:linear-gradient(110deg,#0c2637f5,#071723f2);box-shadow:inset 0 1px #99eaf321;}
+#tacticalOpsRoot .tsa-node {width:54px;height:54px;border:1px solid #587587;background:radial-gradient(circle,#183a4e,#071724);box-shadow:none!important;}
+#tacticalOpsRoot .tsa-node::before {content:"";position:absolute;inset:-4px;background:var(--tsa-nodeFrame) center / contain no-repeat;pointer-events:none;}
+#tacticalOpsRoot .tsa-node img {width:28px;height:28px;filter:none;}
+#tacticalOpsRoot .tsa-node.tsa-state-base {border-color:#8ca9b7;}
+#tacticalOpsRoot .tsa-node.tsa-state-available {border-color:#8bdcf0;background:#123a4a;outline:1px solid #8bdcf0;outline-offset:2px;}
+#tacticalOpsRoot .tsa-node.tsa-state-recorded,#tacticalOpsRoot .tsa-node.tsa-state-maxed {border-color:#edc184;background:#332b20;}
+#tacticalOpsRoot .tsa-node.tsa-state-recorded .tsa-rank-stamp,#tacticalOpsRoot .tsa-node.tsa-state-maxed .tsa-rank-stamp {color:#ffe1ac;border-color:#edc184;background:#30271c;}
+#tacticalOpsRoot .tsa-node.tsa-state-available .tsa-rank-stamp {color:#b6f2ff;border-color:#8bdcf0;background:#0c2b3a;}
+#tacticalOpsRoot .tsa-node.is-focused {outline:2px solid #effaff;outline-offset:4px;}
+#tacticalOpsRoot .tsa-connector {top:27px;background:#3f596b;}
+#tacticalOpsRoot .tsa-connector.is-lit {background:#caa56e;box-shadow:none;}
+#tacticalOpsRoot .tsa-node-status {font-size:9px;line-height:1.4;color:#b9ccd8;display:block;text-align:center;margin-top:3px;}
+#tacticalOpsRoot .tsa-node-wrap:has(.tsa-state-available) .tsa-node-status {color:#a6eaff;}
+#tacticalOpsRoot .tsa-node-wrap:has(.tsa-state-recorded,.tsa-state-maxed) .tsa-node-status {color:#f2ce95;}
+#tacticalOpsRoot .tsa-inspector {position:relative;scroll-margin:16px;border:14px solid #628695;border-image:var(--tsa-inspectorFrame) 48 fill / 14px;padding:7px;background:#081b29;box-shadow:none;}
+#tacticalOpsRoot .tsa-inspector.has-selection::after {content:"";position:absolute;right:8px;top:5px;width:18px;height:18px;background:var(--tsa-contact) center / contain no-repeat;pointer-events:none;}
+#tacticalOpsRoot .tsa-inspector .tsa-eyebrow {padding-right:22px;}
+#tacticalOpsRoot .tsa-inspector h3 {font-size:21px;line-height:1.2;letter-spacing:.03em;}
+#tacticalOpsRoot .tsa-saved-rank {font-size:10px;color:#efcc94;margin:9px 0;font-weight:800;}
+#tacticalOpsRoot .tsa-inspector-bottom {flex-wrap:wrap;}
+#tacticalOpsRoot .tsa-inspector-bottom button {white-space:normal;clip-path:none;min-width:44px;}
+#tacticalOpsRoot .tsa-secondary small {font-size:11px;}
+#tacticalOpsRoot .tsa-dialog-backdrop {padding:max(16px,env(safe-area-inset-top),var(--tg-content-safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom),var(--tg-content-safe-area-inset-bottom,0px));height:100dvh;overflow-y:auto;overscroll-behavior:contain;}
+#tacticalOpsRoot .tsa-dialog {box-sizing:border-box;max-height:100%;overflow-y:auto;overscroll-behavior:contain;padding:18px;flex-shrink:1;overflow-wrap:anywhere;}
+#tacticalOpsRoot .tsa-dialog-actions {position:sticky;bottom:-18px;background:#0b2030;padding:10px 0;margin-top:10px;}
+#tacticalOpsRoot .tsa-dialog-actions button {min-width:44px;}
+#tacticalOpsRoot .tsa-dialog button:focus-visible {outline:3px solid #effaff;outline-offset:2px;}
+@media(max-width:380px){
+  #tacticalOpsRoot .tsa-hero-tabs button {flex-direction:column;align-items:flex-start;gap:4px;padding:7px;}
+  #tacticalOpsRoot .tsa-hero-tabs img {display:none;}
+  #tacticalOpsRoot .tsa-hero-tabs button {min-height:57px;}
+  #tacticalOpsRoot .tsa-hero-tabs small {font-size:9px;}
+  #tacticalOpsRoot .tsa-disciplines button {grid-template-columns:26px 1fr;gap:5px;padding:7px;}
+  #tacticalOpsRoot .tsa-disciplines img {width:26px;height:26px;}
+}
+@media(prefers-reduced-transparency:reduce){#tacticalOpsRoot .tsa-focus{background:#071726}}
+@media(forced-colors:active){#tacticalOpsRoot .tsa-root button {border:2px solid ButtonText;border-image:none;}#tacticalOpsRoot .tsa-node::before,#tacticalOpsRoot .tsa-core-housing{display:none}#tacticalOpsRoot .tsa-inspector{border-image:none}}
+@media(max-width:380px){
+  #tacticalOpsRoot .tsa-disciplines button {grid-template-columns:1fr;grid-template-rows:auto auto;justify-items:start;gap:4px;}
+  #tacticalOpsRoot .tsa-disciplines img {display:none;}
+  #tacticalOpsRoot .tsa-disciplines b {font-size:11px;}
+}
