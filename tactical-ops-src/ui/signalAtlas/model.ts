@@ -1,3 +1,4 @@
+import { rankChanges } from "../../data/buildPreview";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, resolveGrowthSkill, type Discipline, type HeroGrowth, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
 import { SIGNAL_ATLAS_SECTOR_EMBLEMS } from "./signalAtlasAssets";
@@ -30,26 +31,10 @@ export const PATH_EXPLANATIONS: Record<Discipline, string> = {
 };
 export type NodeState = "base" | "recorded" | "available" | "maxed" | "needs-rank-one" | "no-points" | "different-discipline" | "no-effect" | "unavailable";
 export interface NodeView { id: string; skillId: string; rank: 0|1|2; title: string; state: NodeState; reason: string; changes: string[]; }
-export function nextSkillChanges(skillId: string, rank: 1|2, hero: HeroGrowth, path: Discipline): string[] {
-  const base = getSkill(skillId);
-  const selected = { ...hero, discipline: hero.discipline || path };
-  const before = resolveGrowthSkill(base, selected);
-  const after = resolveGrowthSkill(base, { ...selected, ranks: { ...selected.ranks, [skillId]: rank } });
-  const rows: string[] = [];
-  if (before.maxRange !== after.maxRange) rows.push(`RANGE ${before.maxRange} → ${after.maxRange}`);
-  if (before.cooldownMax !== after.cooldownMax) rows.push(`COOLDOWN ${before.cooldownMax} → ${after.cooldownMax}`);
-  if (before.radius !== after.radius) rows.push(`RADIUS ${before.radius} → ${after.radius}`);
-  if (before.targetType !== after.targetType) rows.push(`TARGET ${before.targetType} → ${after.targetType}`);
-  const beforeEffects = before.effects.map(e => JSON.stringify(e)).join("|");
-  const afterEffects = after.effects.map(e => JSON.stringify(e)).join("|");
-  if (beforeEffects !== afterEffects) {
-    const a = before.effects.map(e => e.kind === "status" ? `${e.status || "STATUS"} ${e.duration || 0}T` : e.kind);
-    const b = after.effects.map(e => e.kind === "status" ? `${e.status || "STATUS"} ${e.duration || 0}T` : e.kind);
-    rows.push(`EFFECT ${a.join(", ")} → ${b.join(", ")}`);
-  }
-  return rows;
+export function nextSkillChanges(skillId: string, rank: 1|2, hero: HeroGrowth, path: Discipline, base?: import("../../combat/types").SkillDef): string[] {
+  return rankChanges(base || getSkill(skillId), hero, rank, path);
 }
-export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: HeroGrowth | null, path: Discipline, points: number): NodeView {
+export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: HeroGrowth | null, path: Discipline, points: number, baseSkill?: import("../../combat/types").SkillDef): NodeView {
   if (!HERO_SKILLS[heroId].includes(skillId)) throw Error("atlas_invalid_skill");
   const current = hero?.ranks[skillId] || 0;
   const info = rank ? UPGRADES.find(u=>u.skillId===skillId && u.rank===rank) : null;
@@ -60,7 +45,7 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
   if (!hero || !info) return { ...base, state:"unavailable", reason:"Awaiting authenticated progression." };
   if (rank===2 && current<1) return { ...base, state:"needs-rank-one", reason:"Record Rank I of this skill first." };
   if (hero.discipline && hero.discipline!==path) return { ...base, state:"different-discipline", reason:"Another discipline is saved. A one-time respec may change it." };
-  const changes = nextSkillChanges(skillId,rank,hero,path);
+  const changes = nextSkillChanges(skillId,rank,hero,path,baseSkill);
   if (!changes.length) return { ...base, changes, state:"no-effect", reason:"This upgrade produces no effective battle change. Purchase disabled pending balance review." };
   if (points<1) return { ...base, changes, state:"no-points", reason:"Earn a first-clear point before purchasing." };
   return { ...base, changes, state:"available", reason:"Eligible for a server-recorded purchase of 1 point." };

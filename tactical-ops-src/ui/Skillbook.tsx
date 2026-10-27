@@ -1,3 +1,5 @@
+import { growthPreviewBase, savedGrowthHero, DOCTRINE_TRADEOFF } from "../data/buildPreview";
+import { upgradeDescription } from "../data/playerGrowth";
 import { useEffect, useState } from "react";
 import { SignalAtlas } from "./signalAtlas/SignalAtlas";
 import { useBattleStore } from "../store/battleStore";
@@ -32,7 +34,8 @@ const PATH_COPY: Record<Discipline, string> = {
 
 /** Client renders server-owned points and choices only; no optimistic rewards or local storage. */
 export function SkillbookPanel() {
-  const growth = useBattleStore(s => s.progression?.playerGrowth);
+  const progression = useBattleStore(s => s.progression);
+  const growth = progression?.playerGrowth;
   const pending = useBattleStore(s => s.progressionCommitPending);
   const error = useBattleStore(s => s.progressionError);
   const upgrade = useBattleStore(s => s.upgradeGrowth);
@@ -43,8 +46,8 @@ export function SkillbookPanel() {
   const [path, setPath] = useState<Discipline>("vanguard");
   const [skillId, setSkillId] = useState<string | null>(null);
   const [respecConfirm, setRespecConfirm] = useState(false);
-  const [purchaseProof, setPurchaseProof] = useState<{ heroId: HeroId; skillId: string; rank: 1 | 2 } | null>(null);
-  const hero = growth?.heroes.find(h => h.heroId === heroId);
+  const [purchaseProof, setPurchaseProof] = useState<{ heroId: HeroId; skillId: string; rank: 1 | 2; revision: number } | null>(null);
+  const hero = savedGrowthHero(growth,heroId);
   const remaining = growth ? growth.earnedPoints - growth.spentPoints : 0;
 
   useEffect(() => {
@@ -58,14 +61,14 @@ export function SkillbookPanel() {
   const nextRank = (rank + 1) as 1 | 2;
   const upgradeInfo = skillId ? UPGRADES.find(u => u.skillId === skillId && u.rank === nextRank) : null;
   const locked = pending || !growth || remaining < 1 || (hero?.discipline != null && hero.discipline !== path);
-  const delta = skillId && upgradeInfo && hero ? skillChangePreview(skillId, hero, nextRank, path) : [];
+  const delta = skillId && upgradeInfo && hero ? skillChangePreview(skillId, hero, nextRank, path, growthPreviewBase(skillId,progression)) : [];
   // Match the Atlas: never charge for a rank with zero effective combat improvement.
   const canBuy = !!(skillId && upgradeInfo && !locked && delta.length > 0);
   const canRespec = !!(hero?.discipline && !hero?.respecUsed && Object.keys(hero.ranks).length > 0);
   const savedPowerProof = selectedSkill && hero && rank > 0 && skillId
-    ? skillChangePreview(skillId, { ...hero, ranks: { ...hero.ranks, [skillId]: (rank - 1) as 0 | 1 } }, rank as 1 | 2, hero.discipline || path)
+    ? skillChangePreview(skillId, { ...hero, ranks: { ...hero.ranks, [skillId]: (rank - 1) as 0 | 1 } }, rank as 1 | 2, hero.discipline || path, growthPreviewBase(skillId,progression))
     : [];
-  const upgradeConfirmed = !!(purchaseProof && !pending && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
+  const upgradeConfirmed = !!(purchaseProof && !pending && !error && progression && progression.revision > purchaseProof.revision && growth?.heroes.find(h => h.heroId === purchaseProof.heroId)?.ranks[purchaseProof.skillId] === purchaseProof.rank);
 
   if (atlasOpen && atlasBetaAllowed) return <SignalAtlas onClose={() => setAtlasOpen(false)} />;
   return (
@@ -112,7 +115,7 @@ export function SkillbookPanel() {
                   </span>
                   <em>RANK {current}/2</em>
                 </span>
-                <small>{next ? next.description : "Maximum rank reached"}</small>
+                <small>{next ? upgradeDescription(id,next.rank,growth.version) : "Maximum rank reached"}</small>
               </button>;
             })}
           </div>
@@ -123,13 +126,14 @@ export function SkillbookPanel() {
                 <small>SAVED POWER PROOF · CURRENT RANK {rank}/2</small>
                 {savedPowerProof.map(change => <b key={change}>{change}</b>)}
               </div> : null}
-              <small>{upgradeInfo?.description ?? (selectedSkill ? "All upgrades unlocked." : "Select one of the three skills to see its next upgrade.")}</small>
+              <small>{(upgradeInfo && skillId ? upgradeDescription(skillId,nextRank,growth.version) : null) ?? (selectedSkill ? "All upgrades unlocked." : "Select one of the three skills to see its next upgrade.")}</small>
+              {skillId ? <small>{DOCTRINE_TRADEOFF[path]} Costs 1 shared point. First purchase selects the doctrine; one reset per hero. Applies only to the next accepted run, never an existing saved run.</small> : null}
               {delta.length ? <div className="t-growth-delta" aria-label="Actual combat upgrade preview">{delta.map(change => <b key={change}>{change}</b>)}</div> : null}
               {nextRank === 2 && upgradeInfo ? <span className="t-growth-signature">RANK 2 · EVOLVED COMBAT EFFECT</span> : null}
               <small>{hero?.discipline && hero.discipline !== path ? "Other specialization is locked. Use your one free respec to change it." : upgradeInfo && !delta.length ? "No effective combat change at this rank. Purchase disabled pending balance review." : remaining < 1 ? "Earn a point from a first-time mission clear." : "Each upgrade costs 1 point and changes real combat behavior."}</small>
             </div>
             <button className="t-btn t-btn-primary" type="button" disabled={!canBuy}
-              onClick={() => { if (skillId && canBuy) { setPurchaseProof({ heroId, skillId, rank: nextRank }); void upgrade(heroId, path, skillId, nextRank); } }}>
+              onClick={() => { if (skillId && canBuy) { setPurchaseProof({ heroId, skillId, rank: nextRank, revision: progression?.revision ?? -1 }); void upgrade(heroId, path, skillId, nextRank); } }}>
               {pending ? "SAVING..." : "CONFIRM UPGRADE"}
             </button>
           </div>

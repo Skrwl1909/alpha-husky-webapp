@@ -72,3 +72,14 @@ export function withPackMastery(spawns: SpawnSpec[], pack?: PackMastery): SpawnS
     return { ...spawn, unitDef: def };
   });
 }
+
+/** Every server-accepted attempt locks its companions, including chapter attempts. */
+export function companionRunLocked(progression: {
+  fieldOps?: { activeMissionRun?: { squadIds: string[] } | null };
+  operations?: Record<string, { activeMissionRun?: { squadIds: string[] } | null }>;
+  chapterActiveMission?: { squadIds: string[] } | null;
+} | null | undefined, unitId: string): boolean {
+  const runs = [progression?.fieldOps?.activeMissionRun, progression?.chapterActiveMission,
+    ...Object.values(progression?.operations || {}).map(op => op.activeMissionRun)];
+  return runs.some(run => run?.squadIds.includes(unitId));
+}

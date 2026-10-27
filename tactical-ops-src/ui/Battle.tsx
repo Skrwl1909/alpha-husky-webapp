@@ -1,3 +1,4 @@
+import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
 import { useMemo, useState, type CSSProperties } from "react";
@@ -9,7 +10,6 @@ import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
 import { affinityFor, combatIdentityLabel, combatTier, skillRankLabel } from "./combatIdentity";
 import { FX_ROOT, combatFxVisualClasses, combatFxTravelKind } from "./combatFxAtlas";
-import { playerBattleGuidance } from "./playerGuidance";
 import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
 import { canRecover } from "../combat/battle";
@@ -148,6 +148,7 @@ function Token({
   const hp = shownHp ?? unit.hp;
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
   const selectTarget = useBattleStore((s) => s.selectTarget);
+  const busy = useBattleStore((s) => s.busy);
   const className = [
     "t-token",
     unit.team,
@@ -171,6 +172,7 @@ function Token({
     .join(" ");
   const src = attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
   return (
+    <>
     <div
       className={className}
       style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0) }}
@@ -186,17 +188,6 @@ function Token({
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
       <img className="body" src={src} alt="" draggable={false} />
-      <button
-        type="button"
-        className="t-hit"
-        aria-label={unit.name}
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          unlockAudio();
-          if (targeting && validTarget) selectTarget(unit.id);
-          else inspectUnit(unit.id);
-        }}
-      />
       {hp<=0 ? null : (
         <div className="t-plate">
           <div className="t-plate-name">
@@ -223,29 +214,22 @@ function Token({
         </div>
       )}
     </div>
-  );
-}
-
-function TurnOrderBar() {
-  const queue = useBattleStore((s) => s.queue);
-  const units = useBattleStore((s) => s.battle.units);
-  const activeId = useBattleStore((s) => s.battle.activeId);
-  return (
-    <div className="t-order" aria-label="Turn order">
-      {queue.map((id, i) => {
-        const u = units.find((x) => x.id === id);
-        if (!u) return null;
-        return (
-          <div
-            key={`${id}-${i}`}
-            className={`t-order-unit ${u.team === "enemy" ? "enemy" : ""} ${id === activeId && i === 0 ? "active" : ""}`}
-            title={u.name}
-          >
-            <img src={u.portrait || u.sprite} alt="" />
-          </div>
-        );
-      })}
-    </div>
+      <button
+        type="button"
+        className={`t-hit t-unit-hit${targeting && validTarget ? " is-legal-target" : ""}`}
+        disabled={busy || unit.defeated}
+        data-unit-id={unit.id}
+        style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(unit.r, GRID_COLS, GRID_ROWS) } as CSSProperties}
+        aria-label={`${unit.name}. ${hp}/${unit.maxHp} HP${targeting && validTarget ? ". Legal target" : ""}`}
+        onClick={e => { if (e.detail !== 0) return; if (targeting && validTarget) selectTarget(unit.id); else inspectUnit(unit.id); }}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          unlockAudio();
+          if (targeting && validTarget) selectTarget(unit.id);
+          else inspectUnit(unit.id);
+        }}
+      />
+    </>
   );
 }
 
@@ -266,7 +250,8 @@ function StatusStrip() {
   const identity = useBattleStore((s) => s.identity);
   const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
   const [expanded, setExpanded] = useState(false);
-  const unit = units.find((u) => u.id === inspectId) || units.find((u) => u.id === activeId) || units.find((u) => u.role === "alpha" && u.team === "ally" && !u.defeated);
+  const unit = units.find((u) => u.id === activeId) || units.find((u) => u.team === "ally" && !u.defeated);
+  const inspected = units.find(u => u.id === inspectId);
   if (!unit) return null;
   const hp = displayHp[unit.id] ?? unit.hp;
   const isAlpha = unit.role === "alpha" || unit.defId === "alpha" || unit.id === "alpha";
@@ -274,8 +259,9 @@ function StatusStrip() {
   const kit = isAlpha ? [level != null ? `Lv ${level}` : null, identity.skinName || identity.armorLabel || identity.weaponLabel].filter(Boolean).join(" · ") : "";
   const atk = effectiveAtk(unit);
   const defn = effectiveDef(unit);
+  const detail = `${inspected && inspected.id !== unit.id ? `${inspected.name} ${displayHp[inspected.id] ?? inspected.hp}/${inspected.maxHp} HP · ` : ""}ATK ${atk} · DEF ${defn} · SPD ${effectiveSpd(unit)} · MOV ${unit.move}${kit ? ` · ${kit}` : ""}`;
   return (
-    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Selected unit: ${unit.name}, ${unit.hp} of ${unit.maxHp} HP. Toggle combat details`}>
+    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Acting unit: ${unit.name}, ${hp} of ${unit.maxHp} HP. ${expanded ? detail + ". Tap to close details" : "Toggle combat details"}`}>
       <HudPortrait key={unit.id} unit={unit} />
       <div className="t-status-main">
         <div className="t-status-head">
@@ -290,10 +276,10 @@ function StatusStrip() {
         </div>
         <div className="t-hp">
           <div className="t-hp-bar">
-            <i style={{ width: `${(unit.hp / unit.maxHp) * 100}%` }} />
+            <i style={{ width: `${(hp / unit.maxHp) * 100}%` }} />
           </div>
           <span className="t-hp-num">
-            {unit.hp}/{unit.maxHp}
+            {hp}/{unit.maxHp}
           </span>
         </div>
         {unit.statuses.length ? (
@@ -306,6 +292,7 @@ function StatusStrip() {
           </div>
         ) : null}
       </div>
+      <span className="t-status-detail">{detail}</span>
       <dl className="t-status-stats">
         <div>
           <dt>ATK</dt>
@@ -371,8 +358,10 @@ function ObjectiveChip() {
         ? mission.challenge.limit
         : null;
   return (
-    <button type="button" className={`t-obj-chip t-hud-card ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. Toggle mission details`}>
+    <button type="button" className={`t-obj-chip t-hud-card ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? directive.action + " " + body + " " + extras + ". Tap to close details" : "Toggle mission details"}`}>
       <strong>{liveGoal || title}</strong>
+      <span className="t-objective-summary">{objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE" : directive.status}</span>
+      <span className="t-objective-detail">{directive.action}{body ? ` ${body}` : ""}{extras ? ` · ${extras}` : ""}</span>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
       {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
@@ -391,13 +380,13 @@ function ObjectiveChip() {
   );
 }
 
-function SkillHud() {
+function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBattlePresentation>["actions"] }) {
   const battle = useBattleStore((s) => s.battle);
   const busy = useBattleStore((s) => s.busy);
   const selectSkill = useBattleStore((s) => s.selectSkill);
   const selectRecover = useBattleStore((s) => s.selectRecover);
   const actor = battle.units.find((u) => u.id === battle.activeId);
-  const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy);
+  const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy && battle.outcome === "ongoing");
   const skills = actor ? availableSkills(battle, actor) : [];
   const recoveryMission = battle.objective?.type === "RECOVER" && !battle.objective.completed;
   const recoverReady = canRecover(battle);
@@ -419,6 +408,7 @@ function SkillHud() {
         const on = battle.actionSkillId && sk && battle.actionSkillId === sk.id;
         const cooling = sk && !sk.ready;
         const presentation = sk ? getActionPresentation(sk) : null;
+        const reason = actionStates.find(state => state.id === sk?.id)?.reason || "WAIT";
         const tier = sk && actor ? combatTier(actor, sk.id) : "base";
         const rankLabel = sk && actor ? skillRankLabel(actor, sk.id) : null;
         return (
@@ -428,7 +418,7 @@ function SkillHud() {
             className={`t-act t-growth-${tier} ${on ? "on" : ""} ${cooling ? "cooling" : ""} ${presentation ? `kind-${presentation.archetype} fx-${presentation.effectClass}` : ""}`}
             disabled={!allyTurn || !sk || !!cooling}
             aria-pressed={!!on}
-            aria-label={sk ? `${sk.slot} ${sk.name}. ${sk.desc}` : `Empty slot A${i + 1}`}
+            aria-label={sk ? `${sk.slot} ${sk.name}. ${reason}. ${sk.desc}` : `Empty slot A${i + 1}`}
             onClick={() => {
               if (!sk) return;
               unlockAudio();
@@ -439,7 +429,7 @@ function SkillHud() {
             <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
             {rankLabel ? <span className={`t-skill-rank${rankLabel === "SIGNATURE" ? " is-signature" : ""}`} aria-label={`Upgrade ${rankLabel}`}>{rankLabel}</span> : null}
             <span className="name">{sk?.name ?? "—"}</span>
-            {presentation ? <span className="meta">{presentation.cue}</span> : null}
+            <span className="meta">{reason}</span>
             {cooling ? <span className="cd">{sk!.cd}T</span> : null}
           </button>
         );
@@ -449,7 +439,7 @@ function SkillHud() {
           type="button"
           className={`t-act t-act-obj kind-${RECOVER_PRESENTATION.archetype} fx-${RECOVER_PRESENTATION.effectClass} ${recoverReady ? "on" : "cooling"}`}
           disabled={!allyTurn || !recoverReady}
-          aria-label={recoverReady ? "Recover. Complete objective, consumes action." : "Recover unavailable"}
+          aria-label={recoverReady && allyTurn ? "Recover. Complete objective, consumes action." : !recoverSignalOpen(battle) ? "Recover unavailable. Signal jammed." : "Recover unavailable. Move within relay range on your turn."}
           onClick={() => {
             unlockAudio();
             selectRecover();
@@ -458,7 +448,7 @@ function SkillHud() {
           <ActionArt src={tacticalActionImageForCommand("recover")} archetype={RECOVER_PRESENTATION.archetype} />
           <span className="slot">OBJ</span>
           <span className="name">RECOVER</span>
-          <span className="meta">{RECOVER_PRESENTATION.cue}</span>
+          <span className="meta">{!allyTurn ? "WAIT" : recoverReady ? "READY" : !recoverSignalOpen(battle) ? "JAMMED" : "GET CLOSER"}</span>
         </button>
       ) : null}
     </div>
@@ -466,8 +456,9 @@ function SkillHud() {
 }
 
 export function BattleScreen() {
-  const units = useBattleStore((s) => s.battle.units);
-  const round = useBattleStore((s) => s.battle.round);
+  const battle = useBattleStore((s) => s.battle);
+  const activeRulesetVersion = useBattleStore(s => s.activeRulesetVersion);
+  const units = battle.units;
   const mode = useBattleStore((s) => s.battle.mode);
   const activeId = useBattleStore((s) => s.battle.activeId);
   const inspectId = useBattleStore((s) => s.battle.inspectId);
@@ -479,10 +470,9 @@ export function BattleScreen() {
   const displayHp = useBattleStore((s) => s.displayHp);
   const travelActors = new Set(combatFx.filter(fx=>combatFxTravelKind(fx.name)==="dash" && fx.actorId).map(fx=>fx.actorId));
   const banner = useBattleStore((s) => s.banner);
-  const ticker = useBattleStore((s) => s.ticker);
   const floats = useBattleStore((s) => s.floats);
   const consequences = useBattleStore((s) => s.consequences);
-  const threats = useBattleStore((s) => s.threats);
+  const pendingThreats = useBattleStore((s) => s.threats);
   const attackingId = useBattleStore((s) => s.attackingId);
   const impactId = useBattleStore((s) => s.impactId);
   const impactKey = useBattleStore((s) => s.impactKey);
@@ -503,32 +493,27 @@ export function BattleScreen() {
   );
   const targets = useMemo(() => targetIdsNow(), [units, activeId, mode, actionSkillId]);
 
-  const actor = units.find((u) => u.id === activeId);
+  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission });
+  const threats = presentation.threats;
+  const actor = presentation.actor;
   const activeSkill = actionSkillId ? getSkill(actionSkillId) : null;
   const focusPresentation = activeSkill ? getActionPresentation(activeSkill) : null;
   const impactSkill = lastActionSkillId ? getSkill(lastActionSkillId) : null;
   const impactPresentation = impactSkill ? getActionPresentation(impactSkill) : null;
-  const allyTurn = !!(actor && actor.team === "ally" && !actor.hasActed && !actor.defeated && !busy);
+  const allyTurn = presentation.interactive;
   const impact = units.find((u) => u.id === impactId);
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
-  const directive = objectiveDirective(useBattleStore.getState().battle);
-  const guidance = playerBattleGuidance(useBattleStore.getState().battle, mission);
 
   return (
     <div
       className={`t-battle${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-impact-kind={impactPresentation?.effectClass || "damage"}
+      data-decision={presentation.mode}
     >
       <header className="t-top t-battle-hud-rail" aria-label="Battle status and mission">
         <StatusStrip />
         <ObjectiveChip />
       </header>
-      <div className="t-order-wrap">
-        <TurnOrderBar />
-      </div>
-      {guidance && guidance.title !== directive.status && !["POSITION FIRST","NO ATTACK IN RANGE","HOLD THE RELAY","SECURE THE RELAY","SURVIVE THE WAVES","HOLD FORMATION"].includes(guidance.title) ? <div className="t-player-guidance" role="status"><strong>{guidance.title}</strong><span>{guidance.copy}</span></div> : null}
-      {ticker ? <div className="t-ticker">{ticker}</div> : null}
-      {reinforcement?.telegraphed && !reinforcement.spawned ? <div className="t-ticker t-ticker-warn">ROUTING TRACE · REINFORCEMENT DETECTED</div> : null}
       <div className="t-field-wrap">
         <div
           className="t-field"
@@ -541,6 +526,11 @@ export function BattleScreen() {
           <img className="t-field-art" src={missionBattlefield(mission).art} alt="" />
           <div className="t-field-grade" />
           <div className="t-vignette" />
+          <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
+            <strong>{presentation.title}</strong><span>{presentation.detail}</span>
+            {presentation.sources.length ? <small>{presentation.sources.map(source => `${source.label}. ${source.name} · ${source.effect}`).join(" / ")}</small> : null}
+            {presentation.mode === "REACT" && presentation.result ? <small>{presentation.result}</small> : null}
+          </div>
           <div className="t-grid" aria-hidden="true">
             {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => {
               const c = i % GRID_COLS;
@@ -551,8 +541,13 @@ export function BattleScreen() {
           </div>
           {threats.flatMap((threat) => threat.impactTiles.map((cell, i) => {
             const pos = fieldPercent(cell.c, cell.r);
-            return <div key={threat.id + ":" + i} className="t-threat-tile" style={{ left: pos.x + "%", top: pos.y + "%" }} aria-hidden="true" />;
+            return <div key={threat.id + ":" + i} className="t-threat-tile" style={{ left: pos.x + "%", top: pos.y + "%", ...cellTouchStyle(cell.r, GRID_COLS, GRID_ROWS) } as CSSProperties} aria-hidden="true"><span>!</span></div>;
           }))}
+          {presentation.sources.map(source => {
+            const unit = units.find(u => u.id === source.id); if (!unit) return null;
+            const pos = fieldPercent(unit.c, unit.r);
+            return <span key={source.id} className="t-threat-source" style={{left: `${pos.x}%`, top: `${pos.y}%`}} aria-label={`Threat ${source.label}: ${source.name}, ${source.effect}`}>{source.label}</span>;
+          })}
           {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
             return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
@@ -573,15 +568,16 @@ export function BattleScreen() {
             const c = i % GRID_COLS;
             const r = Math.floor(i / GRID_COLS);
             const key = cellKey(c, r);
-            if (!moves.has(key)) return null;
+            if (!presentation.interactive || !moves.has(key)) return null;
             const pos = fieldPercent(c, r);
             return (
               <button
                 key={key}
                 type="button"
                 className="t-cell move"
-                style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+                style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(r, GRID_COLS, GRID_ROWS) } as CSSProperties}
                 aria-label={`Move to ${c},${r}`}
+                onClick={e => { if (e.detail === 0) selectCell(c, r); }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
                   unlockAudio();
@@ -599,7 +595,7 @@ export function BattleScreen() {
                 unit={u}
                 selected={u.id === activeId}
                 validTarget={targets.has(u.id)}
-                targeting={mode === "targeting"}
+                targeting={presentation.targeting}
                 attacking={u.id === attackingId}
                 hitReacting={u.id === impactId && impactKey > 0}
                 shownHp={displayHp[u.id]}
@@ -617,7 +613,7 @@ export function BattleScreen() {
               {["melee","heavy"].includes(enemyScene.style)&&actor?<img src={actor.attackSprite||actor.sprite} alt="" />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
             </div>;
           })()}
-          {combatFx.map(effect=>{
+          {presentation.primaryFx.map(effect=>{
             const performer=effect.actorId ? units.find(u=>u.id===effect.actorId) : null;
             const receiver=effect.terminal || units.find(u=>u.id===effect.targetId);
             if(!performer || !effect.from || !receiver || (effect.from.c===receiver.c && effect.from.r===receiver.r))return null;
@@ -631,7 +627,7 @@ export function BattleScreen() {
                 <img className="t-choreo-actor" src={performer.attackSprite||performer.sprite} alt="" />}
             </div>;
           })}
-          {combatFx.map(effect=>{
+          {presentation.primaryFx.map(effect=>{
             const unit=units.find(u=>u.id===effect.targetId);
             const anchor=effect.terminal||unit;
             if(!anchor)return null;
@@ -645,7 +641,7 @@ export function BattleScreen() {
               </div>
             </div>;
           })}
-          {combatMoment && (() => {
+          {combatMoment && presentation.showFallbackMasterFx && (() => {
             const target = units.find(u => u.id === combatMoment.targetId);
             if (!target) return null;
             const pos = fieldPercent(target.c, target.r);
@@ -670,7 +666,12 @@ export function BattleScreen() {
               </div>
             );
           })}
-          {impactPos ? (
+          {presentation.targeting && presentation.targetIds.length ? <div className="t-target-assist" role="group" aria-label="Large legal target buttons">
+            {presentation.targetIds.map(id => { const unit = units.find(u => u.id === id)!; return <button key={id} type="button" onClick={e => { e.stopPropagation(); unlockAudio(); useBattleStore.getState().selectTarget(id); }}>
+              <Crosshair aria-hidden="true"/><span>{unit.name}<small>{unit.hp}/{unit.maxHp} HP</small></span>
+            </button>; })}
+          </div> : null}
+          {impactPos && presentation.showFallbackImpact ? (
             <div
               key={impactKey}
               className={`t-impact t-impact-${impactPresentation?.effectClass || "damage"}`}
@@ -679,27 +680,13 @@ export function BattleScreen() {
           ) : null}
         </div>
       </div>
-      {threats.length > 0 ? (
-        <aside className="t-threat-brief" role="status" aria-live="polite" aria-label="Incoming enemy attack">
-          <div className="t-threat-brief-head"><span className="t-threat-brief-pip" aria-hidden="true" /> INCOMING ATTACK <small>RED = DANGER</small></div>
-          <div className="t-threat-brief-detail">{threats.length === 1 ? threats[0].predictedEffect : `${threats.length} ENEMY ATTACKS LOCKED`}</div>
-          <div className="t-threat-brief-action">MOVE OFF RED <span>·</span> INTERRUPT <span>·</span> GUARD</div>
-        </aside>
-      ) : null}
-      {combatMoment ? <div className={`t-master-moment t-master-moment-${combatMoment.affinity} t-master-moment-${combatMoment.tier}`} role="status" aria-live="polite" key={combatMoment.id}>
-        <strong>{combatMoment.title}</strong><small>{combatMoment.consequence}</small>
-      </div> : null}
-      {banner ? (
-        <div className="t-banner">
-          <span>{banner}</span>
-        </div>
-      ) : null}
       <footer className="t-dock">
         <button
           type="button"
           className="t-icon-btn"
-          aria-label={muted ? "Unmute" : "Mute"}
+          aria-label={presentation.targeting ? "Cancel targeting" : muted ? "Unmute" : "Mute"}
           onClick={() => {
+            if (presentation.targeting) { cancel(); return; }
             const next = !isMuted();
             persistMute(next);
             toggleMute();
@@ -707,9 +694,9 @@ export function BattleScreen() {
             if (!next) sfx("ui");
           }}
         >
-          {muted ? <VolumeX className="t-ico" /> : <Volume2 className="t-ico" />}
+          {presentation.targeting ? <span className="t-cancel-label">×<small>CANCEL</small></span> : muted ? <VolumeX className="t-ico" /> : <Volume2 className="t-ico" />}
         </button>
-        <SkillHud />
+        <SkillHud actionStates={presentation.actions} />
         <button
           type="button"
           className="t-btn t-skip"
