@@ -13,6 +13,7 @@ export interface EncounterDef {
   operationName: string;
   objective: string;
   teaching: string;
+  steps: readonly string[];
   next: OnboardingEncounterId | null;
   resultsTitle: string;
   resultsNote: string;
@@ -22,8 +23,9 @@ export interface EncounterDef {
 export const ENCOUNTER_SOLO_1: EncounterDef = {
   id: "solo-1",
   operationName: "BROKEN SIGNAL — CONTACT",
-  objective: "Close to melee and eliminate the hostile scout.",
-  teaching: "Move, then Strike at range 1.",
+  objective: "Defeat the hostile scout.",
+  teaching: "Move toward the scout. STRIKE works from 1 tile away.",
+  steps: ["Tap a highlighted tile to move toward the scout.", "When next to the scout, tap STRIKE (A1), then tap the scout."],
   next: "solo-2",
   resultsTitle: "DRILL COMPLETE",
   resultsNote: "Next: multiple hostiles.",
@@ -36,8 +38,9 @@ export const ENCOUNTER_SOLO_1: EncounterDef = {
 export const ENCOUNTER_SOLO_2: EncounterDef = {
   id: "solo-2",
   operationName: "BROKEN SIGNAL — SPLIT CONTACT",
-  objective: "Eliminate both hostiles. You cannot be in two cells at once.",
-  teaching: "Two threats. Reposition between contacts.",
+  objective: "Defeat both hostile scouts.",
+  teaching: "Attack one scout, then reposition to reach the other.",
+  steps: ["Move into attack range of the first scout.", "Attack, then reposition for the second scout."],
   next: "ally-koda",
   resultsTitle: "DRILL COMPLETE",
   resultsNote: "COLDNCURSED / CNC — BUG HUNTER WARDEN joins Alpha for the next deployment.",
@@ -51,8 +54,9 @@ export const ENCOUNTER_SOLO_2: EncounterDef = {
 export const ENCOUNTER_ALLY_KODA: EncounterDef = {
   id: "ally-koda",
   operationName: "BROKEN SIGNAL — PACK LINK",
-  objective: "Fight with CNC. Cover range while Alpha holds melee.",
-  teaching: "CNC strikes at range 3. Howl covers nearby allies.",
+  objective: "Defeat the hostiles with Alpha and CNC.",
+  teaching: "Alpha attacks up close. CNC can attack from up to 3 tiles away.",
+  steps: ["Move Alpha close enough to strike.", "Use CNC to attack enemies farther away."],
   next: "full-broken-signal",
   resultsTitle: "SQUAD LINK ESTABLISHED",
   resultsNote: "Full operation ready.",
@@ -67,8 +71,9 @@ export const ENCOUNTER_ALLY_KODA: EncounterDef = {
 export const ENCOUNTER_FULL: EncounterDef = {
   id: "full-broken-signal",
   operationName: "BROKEN SIGNAL",
-  objective: "Eliminate the hostile force and secure the tactical sector.",
-  teaching: "Full pack. Shadow supports. Break the leader.",
+  objective: "Defeat the hostile squad to complete Broken Signal.",
+  teaching: "Alpha fights up close, CNC attacks from range, and Shadow supports the pack.",
+  steps: ["Use Alpha and CNC to pressure hostiles.", "Keep the squad standing with Shadow\u0027s support."],
   next: null,
   resultsTitle: "OPERATION COMPLETE",
   resultsNote: "Hostile force eliminated.",
