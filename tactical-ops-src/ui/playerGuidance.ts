@@ -6,6 +6,26 @@ import { validTargetIds } from "../combat/targeting";
 import { reachableCells } from "../combat/movement";
 
 export interface PlayerGuidance { title: string; copy: string }
+
+/** First contact: offer the next legal action, not raw distance notation.
+ * Read-only guidance; combat, targeting and saved progression are untouched. */
+export function foundationBattleGuidance(battle: BattleState, stageId: string | null | undefined): PlayerGuidance | null {
+  if (stageId !== "solo-1" || battle.outcome !== "ongoing") return null;
+  const actor = battle.units.find(u => u.id === battle.activeId);
+  const scout = battle.units.find(u => u.team === "enemy" && !u.defeated);
+  if (!actor || actor.defId !== "alpha" || actor.defeated || actor.hasActed || !scout || battle.mode === "targeting") return null;
+  const strike = resolveGrowthSkill(getSkill("alpha-strike"), actor.growth);
+  if ((actor.cooldowns[strike.id] ?? 0) === 0 && validTargetIds(battle.units, actor, strike).includes(scout.id)) {
+    return { title: "STRIKE IS READY", copy: "Tap STRIKE (A1), then tap the highlighted scout." };
+  }
+  if (actor.hasMoved) {
+    return { title: "NEXT TURN", copy: "Still too far away. Tap SKIP, then move closer on Alpha's next turn." };
+  }
+  if (reachableCells(actor, battle.units).length > 0) {
+    return { title: "MOVE TOWARD SCOUT", copy: "Tap a highlighted tile. Get 1 tile away from the scout to use STRIKE." };
+  }
+  return { title: "NO MOVE AVAILABLE", copy: "Choose an available action or SKIP to advance the turn." };
+}
 /** A contextual, non-blocking explanation. Never alters legal turns, AI or rewards. */
 export function playerBattleGuidance(battle: BattleState, mission: MissionDef | null): PlayerGuidance | null {
   if (battle.outcome !== "ongoing") return null;
