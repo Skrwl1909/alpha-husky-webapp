@@ -4,7 +4,7 @@ import type { PackMastery, MasteryRecord } from "../data/packMastery";
 import { tacticalPetDef, type TacticalPet } from "../data/companion";
 import { UNIT_DEFS, type SpawnSpec } from "../data/units";
 import { getSkill } from "../data/skills";
-import { resolveGrowthSkill, type GrowthSnapshot } from "../data/playerGrowth";
+import { resolveGrowthSkill, growthHero, type GrowthSnapshot } from "../data/playerGrowth";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
 
@@ -81,7 +81,7 @@ function compareUnits(before: UnitDef, after: UnitDef, growth?: GrowthSnapshot |
   const rows: string[] = [];
   if (before.move !== after.move) rows.push(`MOVE ${before.move} → ${after.move}`);
   if ((before.recoverRange || 1) !== (after.recoverRange || 1)) rows.push(`RECOVER RANGE ${before.recoverRange || 1} → ${after.recoverRange || 1}`);
-  const hero = growth?.heroes.find(h => h.heroId === after.defId);
+  const hero = growthHero(growth,after.defId);
   for (const afterId of after.skillIds) {
     const afterSkill = resolveGrowthSkill(getSkill(afterId), hero);
     const beforeId = before.skillIds.find(id => getSkill(id).slot === afterSkill.slot);
@@ -133,4 +133,13 @@ export function savedMasteryProof(
   return { subject: id === "ally-02" ? "CNC" : id === "ally-03" ? "SHADOW" : "PET",
     comparison: record.stage === 2 ? "BASE → TRAINED" : "TRAINED → SAVED SIGNATURE",
     changes, source: "SAVED_PROGRESSION" };
+}
+
+/** Saved A/B versus its alternative using the same doctrine, ranks and sidegrade. */
+export function alternateMasteryProof(id: string, choices: Choices, pet?: TacticalPet | null, growth?: GrowthSnapshot | null): string[] {
+  const record = choices.packMastery?.[id];
+  if (!record || record.stage !== 3 || !record.selected) return [];
+  const alternate = { ...choices, packMastery: { ...choices.packMastery, [id]: { ...record, selected: record.selected === "A" ? "B" as const : "A" as const } } };
+  const before = unitFor(id,choices,pet), after = unitFor(id,alternate,pet);
+  return before && after ? compareUnits(before,after,growth) : [];
 }

@@ -1,3 +1,7 @@
+import { companionRunLocked, masteryRecord } from "../data/packMastery";
+import { recordFieldcraft } from "../ui/fieldcraft";
+import { growthPreviewBase, rankChanges } from "../data/buildPreview";
+import { growthHero } from "../data/playerGrowth";
 import { resolveGrowthSkill, type GrowthSnapshot } from "../data/playerGrowth";
 import { fieldReport, type DeploymentApproach, type DirectiveTier, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
@@ -249,6 +253,8 @@ export const useBattleStore = create<Store>((set, get) => {
   };
 
   const playEvents = async (events: BattleEvent[], g: number) => {
+    if (g !== runGen) return;
+    set(s => ({ s3CombatProof: recordFieldcraft(s.s3CombatProof,events) }));
     for (const ev of events) {
       if (g !== runGen) return;
       if (ev.type === "ticker" && ev.text) set({ ticker: ev.text });
@@ -642,12 +648,13 @@ export const useBattleStore = create<Store>((set, get) => {
       const current = get();
       const growth = current.progression?.playerGrowth;
       if (current.screen !== "war-table" || current.busy || current.progressionCommitPending || !current.progression || !growth) return;
-      const hero = growth.heroes.find(h => h.heroId === heroId);
+      const hero = growthHero(growth,heroId);
       if (!hero || (hero.discipline && hero.discipline !== discipline) ||
           !((heroId === "alpha" && ["vanguard", "howlkeeper"].includes(discipline)) ||
             (heroId === "ally-02" && ["pursuer", "disruptor"].includes(discipline)) ||
             (heroId === "ally-03" && ["sentinel", "medic"].includes(discipline))) ||
           (growth.earnedPoints - growth.spentPoints) < 1 || (hero.ranks[skillId] ?? 0) + 1 !== rank) return;
+      if (!rankChanges(growthPreviewBase(skillId,current.progression),hero,rank,discipline).length) return;
       set({ progressionCommitPending: true, progressionError: null });
       try {
         const state = await upgradePlayerGrowth(createFoundationRequestId("growth-upgrade"), current.progression.revision, heroId, discipline, skillId, rank);
@@ -677,13 +684,16 @@ export const useBattleStore = create<Store>((set, get) => {
     selectMastery: async (unitId, choice) => {
       const current = get();
       if (!["brief", "war-table"].includes(current.screen) || current.busy || current.progressionCommitPending || !current.progression) return;
+      if ((choice !== "A" && choice !== "B") || companionRunLocked(current.progression,unitId) ||
+          masteryRecord(current.progression.packMastery,unitId).stage < 3 ||
+          masteryRecord(current.progression.packMastery,unitId).selected === choice) return;
       set({ progressionCommitPending: true, progressionError: null });
       try {
         const state = await savePackMastery(createFoundationRequestId("pack-mastery"), current.progression.revision, unitId, choice);
-        applyCanonicalProgression(state);
+        if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
       } catch (error) {
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
-        if (canonical) applyCanonicalProgression(canonical);
+        if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
         set({ progressionError: error instanceof FoundationProgressionError && error.code === "mastery_run_active" ? "Finish this companion's committed attempt before changing mastery." : "Mastery option could not be saved. Refresh and retry." });
       } finally { set({ progressionCommitPending: false }); }
     },
@@ -1095,7 +1105,10 @@ export const useBattleStore = create<Store>((set, get) => {
       const interrupt = TACTICAL_VNEXT_ENABLED
         ? interruptLockedThreatAfterControl(threatCycle, battle, res.state, actor.id, id, selectedSkillId, res.events)
         : { cycle: threatCycle, interrupted: false };
-      if (interrupt.interrupted) threatCycle = interrupt.cycle;
+      if (interrupt.interrupted) {
+        threatCycle = interrupt.cycle;
+        res.events.push({ type: "info", buildEvidence: `${actor.name} PRESSURE canceled ${id}'s locked enemy intent.` });
+      }
       const evidence = recordS3Skill(get().s3CombatProof, actor, selectedSkillId, id, res.events, interrupt.interrupted, battle);
       stageHp(battle,res.events);
       set({ s3CombatProof: evidence, battle: res.state, queue: refreshQueue(res.state),
@@ -1126,6 +1139,10 @@ export const useBattleStore = create<Store>((set, get) => {
         return;
       }
       const g = ++runGen;
+      if (actor.defId.startsWith("pet:") && battle.objective?.type === "RECOVER") {
+        const distance = Math.max(Math.abs(actor.c-battle.objective.terminal.c), Math.abs(actor.r-battle.objective.terminal.r));
+        res.events.push({ type: "info", buildEvidence: `PET recovered the relay from ${distance} cells (accepted reach ${actor.recoverRange || 1}).` });
+      }
       set({ busy: true, battle: res.state, queue: refreshQueue(res.state), ticker: "SIGNAL RECOVERED" });
       if(battle.objective?.type==="RECOVER") publishFx([fx("objective_recover",impactSeq++,undefined,battle.objective.terminal)],g);
       void (async () => {

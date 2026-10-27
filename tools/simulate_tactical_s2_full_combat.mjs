@@ -11,6 +11,7 @@ globalThis.window={location:{search:"?tacticalBattlefieldVNext=1"},localStorage:
 const {createServer}=await import("vite");
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 const MAX_ACTIVATIONS=240;
+const g1 = process.env.TACTICAL_G1_MATRIX === "1";
 try {
   const [ops,battle,ai,move,skills,target,defs,profiles,sidegrades,scheduler,rules]=await Promise.all([
     "/tactical-ops-src/data/operations.ts",
@@ -31,10 +32,16 @@ try {
     ["alpha","ally-02",`pet:${pet.id}`],
     ["alpha","ally-03",`pet:${pet.id}`],
   ];
-  const profilesData=[
+  let profilesData=[
     {name:"fresh",alpha:{hp:120,atk:28,def:12,spd:14},pet:{hp:78,atk:18,def:6,spd:13}},
     {name:"developed",alpha:{hp:138,atk:39,def:21,spd:16},pet:{hp:91,atk:25,def:11,spd:15}},
   ];
+  const builds = [
+    {name:"hold-line",paths:["vanguard","disruptor","sentinel"],koda:"B",shadow:"B",signature:"B"},
+    {name:"cut-courier",paths:["howlkeeper","pursuer","medic"],koda:"A",shadow:"A",signature:"A"},
+    {name:"break-signal",paths:["howlkeeper","disruptor","medic"],koda:"B",shadow:"A",signature:"A"},
+  ];
+  if(g1) profilesData=profilesData.flatMap(p=>builds.flatMap(build=>["standard","advanced"].map(tier=>({...p,name:`${p.name}/${build.name}/${tier}`,build,tier}))));
   const manhattan=(a,b)=>Math.abs(a.c-b.c)+Math.abs(a.r-b.r);
   const nearest=(arr,score)=>[...arr].sort((a,b)=>score(a)-score(b)||a.c-b.c||a.r-b.r)[0];
   function targetPriority(state,u,policy) {
@@ -55,13 +62,26 @@ try {
   }
   function strike(state,actor,preferred,policy,stats){
     const ready=skills.availableSkills(state,actor).filter(s=>s.ready);
+    const cast=(skill,id)=>{
+      const r=battle.trySkill(state,skill.id,id);
+      if(r.ok){stats.lastAction={before:state,after:r.state,actor:actor.id,skill:skill.id,target:id,events:r.events};stats.skillsUsed.add(skill.id);stats.evidence.push(...r.events.filter(e=>e.buildEvidence).map(e=>e.buildEvidence));}
+      return r;
+    };
+    if(g1 && actor.defId==="ally-02" && actor.growth?.discipline==="disruptor") {
+      const pressure=ready.find(s=>s.slot==="A3"), locked=stats.pending?.find(t=>pressure&&target.validTargetIds(state.units,actor,pressure).includes(t.plan.enemyId));
+      if(locked){const r=cast(pressure,locked.plan.enemyId);if(r.ok){stats.controlActions++;return r.state}}
+    }
+    if(g1 && actor.defId==="alpha" && actor.growth?.discipline==="vanguard") {
+      const howl=ready.find(s=>s.slot==="A3");
+      if(howl && !actor.statuses.some(s=>s.type==="GUARD")){const r=cast(howl);if(r.ok){stats.supportActions++;return r.state}}
+    }
     const wounded=state.units.filter(u=>u.team==="ally"&&!u.defeated&&u.hp<u.maxHp*.7);
     if(policy==="control"&&wounded.length&&actor.role==="support"){
       const heals=ready.filter(s=>s.effects.some(e=>e.kind==="heal"));
       for(const heal of heals){
         let recipient=heal.targetType==="ALLY_SINGLE"?nearest(wounded,u=>u.hp/u.maxHp):null;
         if(heal.targetType==="ALLY_SINGLE"&&!target.validTargetIds(state.units,actor,heal).includes(recipient?.id))continue;
-        const r=battle.trySkill(state,heal.id,recipient?.id);if(r.ok){stats.supportActions++;return r.state}
+        const r=cast(heal,recipient?.id);if(r.ok){stats.supportActions++;return r.state}
       }
     }
     const attacks=ready.filter(s=>s.effects.some(e=>e.kind==="damage")&&
@@ -73,7 +93,7 @@ try {
       const targets=target.validTargetIds(state.units,actor,s);
       if(!targets.length)continue;
       const id=targets.includes(preferred?.id)?preferred.id:nearest(targets.map(id=>state.units.find(u=>u.id===id)).filter(Boolean),u=>u.hp).id;
-      const r=battle.trySkill(state,s.id,id);
+      const r=cast(s,id);
       if(r.ok){stats.attacks++;stats.skillsUsed.add(s.id);return r.state}
     }
     return null;
@@ -134,12 +154,14 @@ try {
   function fullRun(mission,squad,profile,policy){
     const spawns=ops.missionSpawnsForSquad(mission,squad,pet);
     assert(spawns,mission.missionId+": cannot deploy "+squad);
-    const altered=sidegrades.withTeammateSidegrades(spawns,{kodaSidegrade:"B",shadowSidegrade:"B",packMastery:{}});
+    const pack=Object.fromEntries(squad.filter(id=>id!=="alpha").map(id=>[id,{progress:8,stage:3,selected:profile.build?.signature||"B"}]));
+    const altered=sidegrades.withTeammateSidegrades(spawns,{kodaSidegrade:profile.build?.koda||"B",shadowSidegrade:profile.build?.shadow||"B",packMastery:g1?pack:{}});
     const v3={version:3,mode:"battle-v1",alpha:profile.alpha,pet:squad.some(x=>x.startsWith("pet:"))?{...pet,...profile.pet}:null};
     const applied=profiles.applyRunCombatProfile(altered,v3,{pet:v3.pet});
-    const spec=ops.missionBattleRules(mission,false,mission.activity==="FIELD_OP"?{reportVersion:3,pressure:2}:undefined);
-    let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive);
-    const stats={moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
+    const spec=ops.missionBattleRules(mission,false,mission.activity==="FIELD_OP"?{reportVersion:3,pressure:2,directiveTier:profile.tier||"standard"}:undefined);
+    const growth = g1 ? {version:2,revision:1,heroes:["alpha","ally-02","ally-03"].map((id,i)=>({heroId:id,discipline:profile.build.paths[i],ranks:Object.fromEntries((i===0?["alpha-strike","alpha-rend","alpha-howl"]:i===1?["u02-shot","u02-burst","u02-suppress"]:["u03-tap","u03-mend","u03-pack"]).map(id=>[id,2]))}))}:undefined;
+    let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive,growth);
+    const stats={lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
     let cycle=scheduler.emptyThreatCycle(),stall=0,previous="",error=null,activations=0;
     for(;activations<MAX_ACTIVATIONS && state.outcome==="ongoing";activations++){
       const advanced=battle.advanceToNext(state);
@@ -161,7 +183,12 @@ try {
             if(moved.ok){state=moved.state;stats.moves++;stats.positions.add(unit.id+":"+dest.c+","+dest.r);const oldCount=cycle.ledger.length;cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length}
           }
         }
-        if(state.outcome==="ongoing")state=playAlly(state,policy,stats);
+        if(state.outcome==="ongoing"){
+          stats.pending=cycle.pending;stats.lastAction=null;
+          state=playAlly(state,policy,stats);
+          const action=stats.lastAction;
+          if(g1 && action?.target){const r=scheduler.interruptLockedThreatAfterControl(cycle,action.before,action.after,action.actor,action.target,action.skill,action.events);if(r.interrupted){cycle=r.cycle;stats.interrupts++;}}
+        }
       } else {
         if(cycle.interruptedEnemyIds?.includes(unit.id)){
           cycle={...cycle,interruptedEnemyIds:cycle.interruptedEnemyIds.filter(id=>id!==unit.id)};
@@ -202,7 +229,7 @@ try {
         stats.roundProgress.push({round:state.round,progress:state.objective.progress});
       }
     }
-    return {missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
+    return {build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
   }
   const all=[];
   for(const mission of Object.values(ops.MISSION_DEFS)){
@@ -213,7 +240,7 @@ try {
       all.push(row);
     }
   }
-  assert.equal(all.length,136,"34 legal lineups × two profiles × two policies = 136 actual battles");
+  assert.equal(all.length,g1?816:136,"34 legal lineups × two profiles × two policies = 136 actual battles");
   assert(all.every(r=>r.activations<=MAX_ACTIVATIONS));
   assert(all.some(r=>r.telegraphs>0),"No live threat announcements were recorded");
   const grouped={};
@@ -222,23 +249,32 @@ try {
     grouped[id]={runs:subset.length,win:subset.filter(r=>r.outcome==="victory").length,loss:subset.filter(r=>r.outcome==="defeat").length,unresolved:subset.filter(r=>r.outcome==="ongoing").length,policyStalls:subset.filter(r=>r.error?.startsWith("policy_stalled")).length,telegraphs:subset.reduce((n,r)=>n+r.telegraphs,0),counters:subset.reduce((n,r)=>n+r.counters,0),roundMin:Math.min(...subset.map(r=>r.rounds)),roundMax:Math.max(...subset.map(r=>r.rounds)),dualWinsDifferent:subset.filter(r=>r.policy==="tempo"&&r.outcome==="victory"&&all.some(v=>v.missionId===r.missionId&&v.squad===r.squad&&v.profile===r.profile&&v.policy==="control"&&v.outcome==="victory"&&(v.rounds!==r.rounds||v.objectiveActions!==r.objectiveActions||v.moves!==r.moves||v.attacks!==r.attacks))).length};
   }
   const result={schema:"s2-real-combat-matrix.v1",interpretation:"Controller stalls are defects in scripted policies until isolated. Only two victories with different observed costs demonstrate viable alternatives.",mode:"VNext Lab engine only",benchmark:"scripted tempo vs control policies, both attempt mission completion, not humans",missions:12,runs:all.length,maxActivations:MAX_ACTIVATIONS,byMission:grouped,runsData:all};
-  mkdirSync("artifacts",{recursive:true});
-  writeFileSync("artifacts/tactical-s2-full-combat.json",JSON.stringify(result,null,2));
+  mkdirSync(g1?"artifacts/g1":"artifacts",{recursive:true});
+  writeFileSync(g1?"artifacts/g1/full-combat.json":"artifacts/tactical-s2-full-combat.json",JSON.stringify(result,null,2));
   console.log(JSON.stringify({schema:result.schema,runs:all.length,byMission:grouped},null,2));
   // S2 engineering release gate — do not confuse this with a human balance/fun verdict.
   for(const [missionId,coverage] of Object.entries(grouped)){
-    assert.equal(coverage.runs,missionId==="broken-signal-breach"?4:12,missionId+": missing eligible squad/profile policies");
+    assert.equal(coverage.runs,(g1?6:1)*(missionId==="broken-signal-breach"?4:12),missionId+": missing eligible squad/profile policies");
     assert.equal(coverage.unresolved,0,missionId+": encounter did not terminate");
     assert.equal(coverage.policyStalls,0,missionId+": player strategy stalled");
     assert(coverage.telegraphs>0,missionId+": telegraph engine never engaged");
     assert(coverage.counters>0,missionId+": no genuine counter event in either policy");
     assert(coverage.dualWinsDifferent>0,missionId+": missing two real victory routes with different costs");
   }
-  assert.equal(all.filter(r=>r.outcome==="victory").length,all.length,"all legal paired profiles must finish mission");
+  if(!g1) assert.equal(all.filter(r=>r.outcome==="victory").length,all.length,"all legal paired profiles must finish mission");
+  if(g1){
+    for(const build of builds)for(const tier of ["standard","advanced"]){
+      const subset=all.filter(r=>r.build===build.name&&r.tier===tier);
+      assert(subset.some(r=>r.outcome==="victory"&&r.missionId.includes("hold")),build.name+" "+tier+" HOLD viability");
+      assert(subset.some(r=>r.outcome==="victory"&&r.missionId.includes("intercept")),build.name+" "+tier+" INTERCEPT viability");
+    }
+    assert(all.some(r=>r.interrupts>0),"Real control build never interrupted a locked intent");
+    console.log("G1_MATRIX",JSON.stringify({runs:all.length,wins:all.filter(r=>r.outcome==="victory").length,interrupts:all.reduce((n,r)=>n+r.interrupts,0)}));
+  }
   const totalCounters=all.reduce((sum,r)=>sum+r.counters,0);
   const totalTelegraphs=all.reduce((sum,r)=>sum+r.telegraphs,0);
   assert(totalCounters>0 && totalTelegraphs>totalCounters,"threats and reactions must both be observable");
-  console.log("S2_ENGINEERING_GATE_PASS: 12/12 missions, 68/68 dual-victory pairs, actual telegraph and counter events");
+  console.log(g1 ? "G1_ENGINEERING_GATE_PASS: 12/12 missions terminated; all three builds viable in HOLD and INTERCEPT at standard/advanced; real locked-intent interrupts. Losses remain in report." : "S2_ENGINEERING_GATE_PASS: 12/12 missions, 68/68 dual-victory pairs, actual telegraph and counter events");
   // Assertions gate correctness, but intentional gaps stay visible, not disguised as PASS.
   const stalledObjective=all.filter(r=>r.error);
   assert(!stalledObjective.length,"Objective controller stalled: "+stalledObjective.map(r=>r.missionId+":"+r.squad+":"+r.error).slice(0,8).join(";"));

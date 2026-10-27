@@ -1,9 +1,9 @@
 import { useBattleStore } from "../store/battleStore";
-import { masteryDef, masteryRecord, type PackMastery, type MasteryChange } from "../data/packMastery";
+import { masteryDef, masteryRecord, companionRunLocked, type PackMastery, type MasteryChange } from "../data/packMastery";
 import { UNIT_DEFS } from "../data/units";
 import { portraitFallback } from "./PlayerIdentity";
 import { useState } from "react";
-import { savedMasteryProof } from "./s3PowerProof";
+import { savedMasteryProof, alternateMasteryProof } from "./s3PowerProof";
 
 function compactEffect(unlock: NonNullable<ReturnType<typeof masteryDef>>["trained"]) {
   const labels: Record<string, string> = {
@@ -35,7 +35,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
   const pet = progression?.equippedPet;
   const [selectedId, setSelectedId] = useState("ally-02");
   const ids = ["ally-02", "ally-03", ...(pet ? [`pet:${pet.id}`] : [])];
-  const runs = [progression?.fieldOps?.activeMissionRun, ...Object.values(progression?.operations || {}).map((op: any) => op.activeMissionRun)] as Array<{ squadIds: string[] } | undefined>;
+
 
   return (
     <section className="t-panel t-brief-block t-pack-mastery t-pack-mastery-premium t-pack-mastery-v29" aria-label="Pack Mastery">
@@ -56,12 +56,13 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
           const def = masteryDef(id);
           if (!def || (ids.includes(selectedId) && id !== selectedId) || (!ids.includes(selectedId) && id !== ids[0])) return null;
           const m = masteryRecord(snapshot || progression?.packMastery, id);
-          const locked = runs.some((run) => run?.squadIds.includes(id));
+          const locked = Boolean(snapshot) || companionRunLocked(progression,id);
           const active = m.stage >= 3 && m.selected ? def.options[m.selected] : null;
           const role = companionRole(id, pet?.name);
           const activeUnlock = active || (m.stage >= 2 ? def.trained : null);
           const nextAt = m.stage < 2 ? 3 : m.stage < 3 ? 8 : null;
           const proof = snapshot ? null : savedMasteryProof(id, { packMastery: progression?.packMastery, kodaSidegrade: progression?.kodaSidegrade, shadowSidegrade: progression?.shadowSidegrade }, pet, progression?.playerGrowth);
+          const alternate = snapshot ? [] : alternateMasteryProof(id, { packMastery: progression?.packMastery, kodaSidegrade: progression?.kodaSidegrade, shadowSidegrade: progression?.shadowSidegrade }, pet, progression?.playerGrowth);
           const nextCopy = m.stage < 2
             ? compactEffect(def.trained)
             : m.stage < 3
@@ -92,7 +93,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                   <div>
                     <span className="t-kicker">Active</span>
                     <strong>{activeUnlock ? activeUnlock.name : "NO MASTERY YET"}</strong>
-                    <small>{activeUnlock ? compactEffect(activeUnlock) : "Earn 3 Mastery to unlock the first ability."}</small>
+                    <small>{activeUnlock ? id === "ally-03" && m.selected === "A" && progression?.playerGrowth?.version === 2 && progression.playerGrowth.heroes.find(h => h.heroId === id)?.discipline === "medic" ? "MEND +8 BASE HEAL · COOLDOWN 1" : compactEffect(activeUnlock) : "Earn 3 Mastery to unlock the first ability."}</small>
                   </div>
                   <div>
                     <span className="t-kicker">Next</span>
@@ -101,6 +102,8 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                   </div>
                 </div>
 
+                {m.stage >= 2 ? <p><small>TRAINED · {def.trained.name}: {def.trained.copy}</small></p> : null}
+                {m.stage === 3 ? <div className="t-growth-delta" aria-label="Saved versus alternate Mastery"><small>{snapshot ? "FROZEN" : "SAVED"} {m.selected} → ALTERNATE {m.selected === "A" ? "B" : "A"}</small>{alternate.length ? alternate.map(row => <b key={row}>{row}</b>) : <small>{snapshot ? "This run uses its frozen A/B. Compare alternatives in the War Table." : "No additional effective change in this composition."}</small>}<small>{id === "ally-02" ? "INTERCEPT: recharge sooner or keep control longer." : id === "ally-03" ? "HOLD: compare MEND timing against healing-free, disruption-safe shelter. MEDIC + STEADY HAND in V2 adds 8 base healing at the cooldown floor." : "RECOVER / INTERCEPT: choose objective mobility or HAMSTRING reach."} 8/8 is complete; experiment between runs without earning extra XP.</small></div> : null}
                 {proof ? <div className="t-growth-delta" aria-label="Saved Pack Mastery power proof"><small>POWER PROOF · {proof.comparison}</small>{proof.changes.map(change => <b key={change}>{change}</b>)}</div> : null}
                 <details className="t-detail t-mastery-detail">
                   <summary>{m.stage >= 3 ? "Specialization" : "Ability details"}</summary>
@@ -121,7 +124,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                           </button>
                         ))}
                       </div>
-                      {(["A", "B"] as const).map((choice) => <p key={choice}><small>{def.options[choice].name}: {def.options[choice].copy}</small></p>)}
+                      {(["A", "B"] as const).map((choice) => <p key={choice}><small>{def.options[choice].name}: {id === "ally-03" && choice === "A" && progression?.playerGrowth?.version === 2 ? "MEND cooldown -1, floor 1. With MEDIC at the floor: +8 base healing instead." : def.options[choice].copy}</small></p>)}
                     </>
                   ) : (
                     <p><small>Specializations unlock at 8 Mastery.</small></p>

@@ -66,7 +66,8 @@ export function effectiveSpd(unit: CombatUnit): number {
 }
 
 export function incomingDamageMultiplier(unit: CombatUnit): number {
-  return hasStatus(unit, "GUARD") ? 0.5 : 1;
+  const guard = hasStatus(unit, "GUARD");
+  return guard ? 1 - (guard.guardReduction ?? 0.5) : 1;
 }
 
 export const STATUS_LABEL: Record<StatusType, string> = {

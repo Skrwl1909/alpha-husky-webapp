@@ -51,6 +51,10 @@ export function applySkill(
   }
 
   const events: BattleEvent[] = [];
+  // Targetability proof compares the same accepted sidegrade/mastery without invested ranks.
+  const unranked = resolveGrowthSkill(getSkill(skillId), caster.growth ? { ...caster.growth, ranks: {} } : undefined);
+  const baselineTargets = resolveSkillTargets(state.units, caster, unranked, targetId, cell);
+  const addedReach = hits.filter(h => !baselineTargets.some(b => b.id === h.id));
   let units = state.units.map((u) => ({
     ...u,
     statuses: u.statuses.map((s) => ({ ...s })),
@@ -85,9 +89,12 @@ export function applySkill(
     for (const raw of rec) {
       const current = units.find((u) => u.id === raw.id);
       if (!current || current.defeated) continue;
+      const original = state.units.find(u => u.id === current.id)!;
+      if (spec.maxHpRatio !== undefined && original.hp / original.maxHp > spec.maxHpRatio) continue;
       if (spec.kind === "damage") {
         const mult = spec.multiplier ?? 1;
         let dmg = mitigatedDamage(atk, mult, current);
+        const withoutGuard = dmg;
         dmg = Math.max(1, Math.round(dmg * incomingDamageMultiplier(current)));
         const hp = Math.max(0, current.hp - dmg);
         const defeated = hp <= 0;
@@ -99,29 +106,43 @@ export function applySkill(
           defeated,
           statuses: defeated ? [] : u.statuses,
         }));
-        events.push({ type: "damage", unitId: current.id, amount: dmg, text: `-${dmg}`, kind: "dmg" });
+        events.push({ type: "damage", unitId: current.id, amount: dmg, text: `-${dmg}`, kind: "dmg",
+          ...(current.team === "ally" && withoutGuard > dmg ? { buildEvidence: `${current.name}: GUARD prevented ${withoutGuard - dmg} damage${withoutGuard >= current.hp && hp > 0 ? "; survived the blow" : ""}.` } : {}) });
         if (defeated) events.push({ type: "defeat", unitId: current.id, text: "DOWN", kind: "info" });
       } else if (spec.kind === "heal") {
         const healed = computeHeal(spec.base ?? 0, spec.scale ?? 0, atk, current);
         if (healed > 0) {
           units = patch(units, current.id, (u) => ({ ...u, hp: Math.min(u.maxHp, u.hp + healed) }));
-          events.push({ type: "heal", unitId: current.id, amount: healed, text: `+${healed}`, kind: "heal" });
+          events.push({ type: "heal", unitId: current.id, amount: healed, text: `+${healed}`, kind: "heal",
+            ...(caster.team === "ally" ? { buildEvidence: `${caster.name} ${skill.name}: restored ${healed} HP to ${current.name}.` } : {}) });
         }
       } else if (spec.kind === "status" && spec.status) {
         const dur = spec.duration ?? 1;
         const val = spec.value ?? 0;
         const res = applyStatus(current, spec.status, skill.id, dur, val);
+        if (spec.status === "GUARD" && caster.growth?.rulesVersion === 2) {
+          const existing = current.statuses.find(s => s.type === "GUARD");
+          const reduction = Math.max(existing ? existing.guardReduction ?? 0.5 : 0, Math.min(0.5, Math.max(0, val)));
+          res.unit = { ...res.unit, statuses: res.unit.statuses.map(s => s.type === "GUARD" ? { ...s, guardReduction: reduction } : s) };
+        }
         units = patch(units, current.id, () => res.unit);
         events.push({
           type: "status",
           unitId: current.id,
           text: STATUS_LABEL[spec.status],
           kind: spec.status === "GUARD" ? "guard" : "status",
+          ...(caster.team === "ally" && res.unit.statuses.some(s => s.source === skill.id && s.type === spec.status)
+            ? { buildEvidence: `${caster.name} ${skill.name}: ${STATUS_LABEL[spec.status]} applied to ${current.name} (${dur} personal turns).` } : {}),
         });
       }
     }
   }
 
+  if (caster.team === "ally") for (const target of addedReach) {
+    if (events.some(e => e.unitId === target.id && ["damage", "heal", "status"].includes(e.type))) {
+      events.push({ type: "info", buildEvidence: `${caster.name} ${skill.name}: reached ${target.name} beyond the unranked ${skill.targetType === "ALLY_AOE" ? "radius" : "range"} (${Math.max(Math.abs(caster.c-target.c), Math.abs(caster.r-target.r))} cells).` });
+    }
+  }
   units = patch(units, caster.id, (u) => ({
     ...u,
     hasActed: true,

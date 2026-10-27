@@ -6,13 +6,15 @@ export type Discipline = "vanguard" | "howlkeeper" | "pursuer" | "disruptor" | "
 export type SkillRank = 0 | 1 | 2;
 export interface HeroGrowth {
   heroId: HeroId;
+  /** Runtime rules copied from the validated accepted snapshot, never account ownership. */
+  rulesVersion?: 1 | 2;
   discipline: Discipline | null;
   /** Only present on persistent records, not frozen run snapshots. */
   respecUsed?: boolean;
   ranks: Record<string, SkillRank>;
 }
 export interface GrowthSnapshot {
-  version: 1;
+  version: 1 | 2;
   revision: number;
   heroes: HeroGrowth[];
 }
@@ -58,7 +60,7 @@ export const UPGRADES: readonly SkillUpgrade[] = [
 export function validateGrowthSnapshot(value: unknown): GrowthSnapshot {
   if (!value || typeof value !== "object") throw Error("invalid_growth_snapshot");
   const s = value as GrowthSnapshot;
-  if (s.version !== 1 || !Number.isSafeInteger(s.revision) || s.revision < 0 || !Array.isArray(s.heroes) || s.heroes.length !== 3) throw Error("invalid_growth_snapshot");
+  if ((s.version !== 1 && s.version !== 2) || !Number.isSafeInteger(s.revision) || s.revision < 0 || !Array.isArray(s.heroes) || s.heroes.length !== 3) throw Error("invalid_growth_snapshot");
   const ids = Object.keys(HERO_PATHS) as HeroId[];
   for (const id of ids) {
     const hero = s.heroes.find((h) => h && h.heroId === id);
@@ -93,13 +95,18 @@ export function resolveGrowthSkill(base: SkillDef, hero: HeroGrowth | undefined)
   const rank = hero.ranks[canonicalId] ?? 0;
   if (!Number.isInteger(rank) || rank < 0 || rank > 2) return base;
   const upgrade = rank ? UPGRADES.find((u) => u.skillId === canonicalId && u.rank === rank) : undefined;
+  const v2 = hero.rulesVersion === 2;
+  const mend = v2 && canonicalId === "u03-mend";
   const skill: SkillDef = {
     ...base,
-    maxRange: Math.max(base.minRange, base.maxRange + (upgrade?.rangeDelta ?? 0)),
-    cooldownMax: Math.max(base.cooldownMax > 0 ? 1 : 0, base.cooldownMax + (upgrade?.cooldownDelta ?? 0)),
+    maxRange: Math.max(base.minRange, base.maxRange + (upgrade?.rangeDelta ?? 0) + (mend && rank > 0 && base.targetType === "ALLY_SINGLE" ? 1 : 0)),
+    cooldownMax: Math.max(base.cooldownMax > 0 ? 1 : 0, base.cooldownMax + (mend ? 0 : upgrade?.cooldownDelta ?? 0)),
     effects: base.effects.map((effect) => effect.kind === "status" && upgrade?.durationDelta
       ? { ...effect, duration: (effect.duration ?? 1) + upgrade.durationDelta } : { ...effect }),
   };
+  if (mend && rank > 0 && base.targetType === "ALLY_AOE") skill.radius += 1;
+  if (mend && rank === 2) skill.effects.push({ kind: "status", status: "GUARD", duration: 1,
+    value: 0.2, on: base.targetType === "ALLY_AOE" ? "aoe_allies" : "primary", maxHpRatio: 0.5 });
   switch (hero.discipline) {
     case "vanguard":
       if (canonicalId === "alpha-howl" && !skill.effects.some(e => e.status === "GUARD")) skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
@@ -116,11 +123,33 @@ export function resolveGrowthSkill(base: SkillDef, hero: HeroGrowth | undefined)
       }
       break;
     case "sentinel":
+      if (v2 && canonicalId === "u03-pack" && skill.effects.some(e => e.status === "GUARD")) {
+        skill.effects = skill.effects.map(e => e.status === "GUARD" ? { ...e, duration: (e.duration ?? 1) + 1 } : e);
+      }
       if (canonicalId === "u03-pack" && !skill.effects.some(e => e.status === "GUARD")) skill.effects.push({ kind: "status", status: "GUARD", duration: 1, value: 0.2, on: "aoe_allies" });
       break;
     case "medic":
-      if (canonicalId === "u03-mend") skill.cooldownMax = Math.max(1, skill.cooldownMax - 1);
+      if (canonicalId === "u03-mend") {
+        skill.cooldownMax = Math.max(1, skill.cooldownMax - 1);
+        // STEADY HAND already consumed the only cooldown step: give it a bounded rescue benefit.
+        if (v2 && base.cooldownMax === 1 && base.id.endsWith(":mastery:SHADOW:3:A")) {
+          skill.effects = skill.effects.map(e => e.kind === "heal" ? { ...e, base: (e.base ?? 0) + 8 } : e);
+        }
+      }
       break;
   }
+  if (v2 && canonicalId === "u03-mend") skill.desc = `MEND: ${skill.targetType === "ALLY_AOE" ? `radius ${skill.radius}` : `range ${skill.maxRange}`}; cooldown ${skill.cooldownMax}. ${rank ? upgradeDescription(canonicalId,rank as 1 | 2,2) : "Restore HP to an ally."}${hero.discipline === "medic" && base.cooldownMax === 1 ? " STEADY HAND: +8 base healing at the cooldown floor." : ""}`;
   return skill;
+}
+
+/** Version belongs to the snapshot. Never trust a nested hero's runtime rulesVersion. */
+export function growthHero(snapshot: GrowthSnapshot | null | undefined, id: string): HeroGrowth | undefined {
+  const hero = snapshot?.heroes.find(h => h.heroId === id);
+  return hero ? { ...hero, ranks: { ...hero.ranks }, rulesVersion: snapshot!.version } : undefined;
+}
+export function upgradeDescription(skillId: string, rank: 1 | 2, version: 1 | 2 = 1): string {
+  if (version === 2 && skillId === "u03-mend") return rank === 1
+    ? "Rescue reach +1 cell (RESTORER: radius +1). Cooldown unchanged."
+    : "Keeps rescue reach. Allies at 50% HP or less before MEND gain 20% GUARD for 1 personal turn.";
+  return UPGRADES.find(u => u.skillId === skillId && u.rank === rank)?.description || "";
 }
