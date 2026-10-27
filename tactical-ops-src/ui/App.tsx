@@ -669,6 +669,8 @@ function Brief() {
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult) : null;
+  const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
+  const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
   return (
@@ -704,15 +706,25 @@ function Brief() {
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
         {campaignMission ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
-        <section className="t-panel t-deploy-overview" aria-label="Mission overview">
+        <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className="t-deploy-summary-main">
-            <div className="t-kicker">Objective</div>
+            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : "OBJECTIVE"}</div>
             <strong>{purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
-            <p>{purpose ? `FAIL: ${purpose.failConditionText}` : footnote}</p>
-            <p className="t-brief-purpose-meta"><b>BUILD FIT:</b> {buildFit(mission,allies,previewGrowth)[0]}</p>
-            <details className="t-detail" aria-label="Build fit"><summary>BUILD FIT · {resuming ? "FROZEN RUN" : "NEXT ACCEPTED RUN"}</summary>{buildFit(mission,allies,previewGrowth).slice(1).map(row => <p key={row}>{row}</p>)}<small>Trade reach, shelter and control against this objective. No guaranteed win. Saved runs keep their original loadout.</small></details>
-            {purpose ? <p className="t-brief-purpose-meta"><b>THREAT:</b> {purpose.tacticalThreat}</p> : null}
-            {purpose ? <p className="t-brief-purpose-meta"><b>AFTER:</b> {purpose.nextConsequence}</p> : null}
+            {trainingSteps.length ? (
+              <ol className="t-training-steps" aria-label="How to complete this training">
+                {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
+              </ol>
+            ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
+            {purpose ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
+            {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
+              <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
+              {buildNotes.map(row => <p key={row}>{row}</p>)}
+              {resuming ? <small>Saved mission: your original squad and equipment remain locked.</small> : null}
+            </details> : null}
+            {purpose ? <details className="t-mission-extra" aria-label="Mission outcome and recording">
+              <summary>WHAT HAPPENS AFTER <span>DETAILS</span></summary>
+              <p>{purpose.nextConsequence}</p>
+            </details> : null}
           </div>
           {fieldOp ? (
             <>
