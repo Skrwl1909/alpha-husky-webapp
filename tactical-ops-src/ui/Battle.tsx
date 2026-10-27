@@ -1,6 +1,8 @@
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
+import { resolveCurrentEncounter } from "../data/onboarding";
+import { foundationBattleGuidance } from "./playerGuidance";
 import { useMemo, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
@@ -319,11 +321,16 @@ function ObjectiveChip() {
   const battle = useBattleStore((s) => s.battle);
   const [expanded, setExpanded] = useState(false);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
+  const training = !mission && onboardingEnabled;
+  const trainingEncounter = training ? resolveCurrentEncounter(true, onboardingStageId) : null;
+  const trainingCue = training ? foundationBattleGuidance(battle, onboardingStageId) : null;
   const rulesText = missionHud(battle);
   const liveGoal = mission ? missionLiveProgress(battle) : null;
   const directive = objectiveDirective(battle);
   const objective = battle.objective;
-  if (!rulesText && !mission?.challenge && !objective) return null;
+  if (!rulesText && !mission?.challenge && !objective && !training) return null;
   const jammed = objective?.type === "RECOVER" && !recoverSignalOpen(battle);
   const title =
     objective?.type === "RECOVER"
@@ -338,7 +345,7 @@ function ObjectiveChip() {
             ? "Intercept"
             : objective?.type === "BOSS"
               ? "Defeat Commander"
-              : mission?.name || "Objective";
+              : training ? onboardingStageId === "solo-1" ? "DEFEAT THE SCOUT" : onboardingStageId === "solo-2" ? "DEFEAT BOTH SCOUTS" : "DEFEAT HOSTILES" : mission?.name || "Objective";
   const body =
     objective?.type === "RECOVER"
       ? jammed
@@ -357,11 +364,12 @@ function ObjectiveChip() {
       : mission?.challenge?.type === "TURN_LIMIT"
         ? mission.challenge.limit
         : null;
+  const detail = training ? trainingCue?.copy || trainingEncounter?.teaching || "" : `${directive.action}${body ? ` ${body}` : ""}${extras ? ` · ${extras}` : ""}`;
   return (
-    <button type="button" className={`t-obj-chip t-hud-card ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? directive.action + " " + body + " " + extras + ". Tap to close details" : "Toggle mission details"}`}>
+    <button type="button" className={`t-obj-chip t-hud-card ${training ? "is-training" : ""} ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? detail + " Tap to close details." : (trainingCue?.title || directive.status) + ". Tap for details."}`}>
       <strong>{liveGoal || title}</strong>
-      <span className="t-objective-summary">{objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE" : directive.status}</span>
-      <span className="t-objective-detail">{directive.action}{body ? ` ${body}` : ""}{extras ? ` · ${extras}` : ""}</span>
+      <span className="t-objective-summary">{training ? trainingCue?.title || "DEFEAT HOSTILES" : objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE" : directive.status}</span>
+      <span className="t-objective-detail">{detail}</span>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
       {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
@@ -484,6 +492,8 @@ export function BattleScreen() {
   const toggleMute = useBattleStore((s) => s.toggleMute);
   const objective = useBattleStore((s) => s.battle.objective);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const reinforcement = useBattleStore((s) => s.battle.reinforcement);
   const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
 
@@ -493,7 +503,7 @@ export function BattleScreen() {
   );
   const targets = useMemo(() => targetIdsNow(), [units, activeId, mode, actionSkillId]);
 
-  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission });
+  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: onboardingEnabled && !mission ? onboardingStageId : null });
   const threats = presentation.threats;
   const actor = presentation.actor;
   const activeSkill = actionSkillId ? getSkill(actionSkillId) : null;
@@ -506,7 +516,7 @@ export function BattleScreen() {
 
   return (
     <div
-      className={`t-battle${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
+      className={`t-battle${onboardingEnabled && !mission ? " is-foundation-training" : ""}${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
     >
