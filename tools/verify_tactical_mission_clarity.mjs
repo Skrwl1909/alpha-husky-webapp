@@ -12,8 +12,8 @@ const css = read("tactical-ops-src/ui/missionClarity.css");
 const version = read("tactical-ops-src/version.ts");
 const loader = read("js/boot_loaders.js");
 const bundle = read("js/tactical_ops.js");
-const cacheKey = version.match(/CACHE_KEY\\s*=\\s*"([^"]+)"/)?.[1];
-const bundleVersion = version.match(/VERSION\\s*=\\s*"([^"]+)"/)?.[1];
+const cacheKey = version.match(/CACHE_KEY\s*=\s*"([^"]+)"/)?.[1];
+const bundleVersion = version.match(/VERSION\s*=\s*"([^"]+)"/)?.[1];
 
 assert.equal((onboarding.match(/steps: \[/g) || []).length, 4, "All four foundation encounters need clear steps");
 assert.match(onboarding, /objective: "Defeat the hostile scout\."/);
