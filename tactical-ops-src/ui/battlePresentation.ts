@@ -4,7 +4,7 @@ import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 import { availableSkills } from "../combat/skills";
 import { reachableCells, cellKey } from "../combat/movement";
 import { skillNeedsTargetPick } from "../combat/targeting";
-import { playerBattleGuidance } from "./playerGuidance";
+import { foundationBattleGuidance, playerBattleGuidance } from "./playerGuidance";
 import { missionLiveProgress, objectiveDirective } from "./missionPurpose";
 import type { MissionDef } from "../data/operations";
 import type { CombatMoment } from "./combatIdentity";
@@ -23,6 +23,7 @@ export interface BattlePresentationInput {
   floats: readonly { unitId: string; text: string; kind: string }[];
   banner: string | null;
   mission: MissionDef | null;
+  onboardingStageId?: string | null;
 }
 
 /** Read-only capability, matching intentScheduler's existing control predicate.
@@ -54,7 +55,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   const interruptTargetIds = interactive ? interruptTargets(battle, actor, threats) : [];
   const moves = interactive && !actor.hasMoved && !targeting ? reachableCells(actor, battle.units) : [];
   const canReposition = moves.some(c => !danger.has(cellKey(c.c, c.r)));
-  const guidance = playerBattleGuidance(battle, input.mission);
+  const guidance = foundationBattleGuidance(battle, input.onboardingStageId) || playerBattleGuidance(battle, input.mission);
   const objective = missionLiveProgress(battle);
   const directive = objectiveDirective(battle);
   const sources = threats.map((t, i) => ({ id: t.enemyId, label: `${i + 1}`, name: battle.units.find(u => u.id === t.enemyId)?.name || "Enemy", effect: t.predictedEffect }));
