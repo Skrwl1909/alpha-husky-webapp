@@ -171,6 +171,7 @@ function Token({
   const identity = useBattleStore((s) => s.identity);
   const isAlpha = unit.team === "ally" && unit.role === "alpha";
   const directionalAlpha = allowDirectional(unit, identity);
+  const [artFailed, setArtFailed] = useState(false);
   const className = [
     "t-token",
     unit.team,
@@ -195,7 +196,6 @@ function Token({
     .join(" ");
   const previousCell = useRef({ c: unit.c, r: unit.r });
   const [facing, setFacing] = useState<Facing>("front");
-  const [artFailed, setArtFailed] = useState(false);
   useLayoutEffect(() => {
     const previous = previousCell.current;
     if (previous.c !== unit.c || previous.r !== unit.r) {
