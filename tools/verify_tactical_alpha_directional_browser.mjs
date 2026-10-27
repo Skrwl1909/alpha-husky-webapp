@@ -7,5 +7,13 @@ try{await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/fixtur
 const body=page.locator('.t-token.alpha img.body');const direction=async expected=>{await page.waitForFunction(e=>document.querySelector('.t-token.alpha img.body').getAttribute('src').endsWith('/'+e+'.png'),expected);assert(await body.evaluate(e=>e.complete&&e.naturalWidth>0));console.log('view',expected)};
 await direction('front');
 for(const [c,r,name] of [[3,3,'right'],[2,3,'left'],[2,2,'back'],[2,3,'front']]){await page.evaluate(([c,r])=>{const s=fixture.store,b=s.getState().battle;s.setState({battle:{...b,units:b.units.map(u=>u.id==='alpha'?{...u,c,r}:u)}})},[c,r]);await direction(name)}
-await page.evaluate(()=>fixture.confirmedCast('alpha','alpha-strike','enemy'));await direction('right');await page.waitForTimeout(50);assert(await page.locator('.t-choreo-actor').getAttribute('src').then(x=>x.endsWith('/right.png')));assert.deepEqual(errors,[]);console.log('PASS four directions and attack target; no page errors');
+await page.evaluate(()=>fixture.confirmedCast('alpha','alpha-strike','enemy'));await direction('right');await page.waitForTimeout(50);assert(await page.locator('.t-choreo-actor').getAttribute('src').then(x=>x.endsWith('/right.png')));await page.evaluate(()=>{const s=fixture.store;window.__alphaIdentity=s.getState().identity;s.setState({identity:{...s.getState().identity,skinKey:'custom-skin',skinUrl:'/assets/skins/custom.webp',source:'skin'}})});
+await page.waitForFunction(()=>document.querySelector('.t-token.alpha img.body')?.getAttribute('src')?.endsWith('/alpha.png'));
+assert.equal(await page.locator('.t-token.alpha.directional-alpha').count(),0,'Equipped skin disables base direction override');
+assert.equal(await page.locator('.t-alpha-ground-shadow').count(),0,'No directional shadow for equipped skin');
+await page.evaluate(()=>fixture.store.setState({identity:{...fixture.store.getState().identity,skinKey:'',skinUrl:'',source:'character-image'}}));
+assert.equal(await page.locator('.t-token.alpha.directional-alpha').count(),0,'Live composite prevents override');
+await page.evaluate(()=>fixture.store.setState({identity:window.__alphaIdentity}));
+await direction('right');
+assert.deepEqual(errors,[]);console.log('PASS four directions, attack, equipped skin & live-composite guards');
 }finally{await browser.close();await server.close()}
