@@ -1,6 +1,8 @@
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
+import { resolveCurrentEncounter } from "../data/onboarding";
+import { foundationBattleGuidance } from "./playerGuidance";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
@@ -14,7 +16,8 @@ import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
-import { OPERATION } from "../data/units";
+import { FALLBACK_SPRITE, OPERATION } from "../data/units";
+import type { PlayerIdentity } from "../host/identity";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
@@ -37,6 +40,11 @@ function facingToward(from: FacingCell, to: FacingCell, fallback: Facing): Facin
 }
 const alphaView = (facing: Facing) => `/images/tactical_ops/alpha_directional/${facing}.png`;
 
+function allowDirectional(unit: CombatUnit, identity: PlayerIdentity): boolean {
+  return unit.team === "ally" && unit.role === "alpha" && unit.sprite === FALLBACK_SPRITE &&
+    !identity.skinKey?.trim() && !identity.skinUrl?.trim() &&
+    identity.source !== "skin" && identity.source !== "character-image";
+}
 function readHostLevel(): number | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as Record<string, unknown>;
@@ -160,11 +168,14 @@ function Token({
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
   const selectTarget = useBattleStore((s) => s.selectTarget);
   const busy = useBattleStore((s) => s.busy);
+  const identity = useBattleStore((s) => s.identity);
+  const isAlpha = unit.team === "ally" && unit.role === "alpha";
+  const directionalAlpha = allowDirectional(unit, identity);
   const className = [
     "t-token",
     unit.team,
     roleClass(unit),
-    unit.team === "ally" && unit.role === "alpha" ? "directional-alpha" : "",
+    directionalAlpha && !artFailed ? "directional-alpha" : "",
     unit.defeated && hp<=0 ? "defeated" : "",
     unit.hasActed ? "acted" : "",
     selected ? "selected active" : "",
@@ -182,7 +193,6 @@ function Token({
   ]
     .filter(Boolean)
     .join(" ");
-  const isAlpha = unit.team === "ally" && unit.role === "alpha";
   const previousCell = useRef({ c: unit.c, r: unit.r });
   const [facing, setFacing] = useState<Facing>("front");
   const [artFailed, setArtFailed] = useState(false);
@@ -196,7 +206,7 @@ function Token({
   useLayoutEffect(() => {
     if (facingTarget) setFacing(current => facingToward(unit, facingTarget, current));
   }, [facingTarget?.c, facingTarget?.r, unit.c, unit.r]);
-  const src = isAlpha && !artFailed ? alphaView(facing) : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
+  const src = directionalAlpha && !artFailed ? alphaView(facing) : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
   return (
     <>
     <div
@@ -213,7 +223,7 @@ function Token({
       {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
-      {isAlpha && !artFailed ? <span className="t-alpha-ground-shadow" aria-hidden="true" /> : null}
+      {directionalAlpha && !artFailed ? <span className="t-alpha-ground-shadow" aria-hidden="true" /> : null}
       <img className="body" src={src} alt="" draggable={false} onError={isAlpha && !artFailed ? () => setArtFailed(true) : undefined} />
       {hp<=0 ? null : (
         <div className="t-plate">
@@ -346,11 +356,16 @@ function ObjectiveChip() {
   const battle = useBattleStore((s) => s.battle);
   const [expanded, setExpanded] = useState(false);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
+  const training = !mission && onboardingEnabled;
+  const trainingEncounter = training ? resolveCurrentEncounter(true, onboardingStageId) : null;
+  const trainingCue = training ? foundationBattleGuidance(battle, onboardingStageId) : null;
   const rulesText = missionHud(battle);
   const liveGoal = mission ? missionLiveProgress(battle) : null;
   const directive = objectiveDirective(battle);
   const objective = battle.objective;
-  if (!rulesText && !mission?.challenge && !objective) return null;
+  if (!rulesText && !mission?.challenge && !objective && !training) return null;
   const jammed = objective?.type === "RECOVER" && !recoverSignalOpen(battle);
   const title =
     objective?.type === "RECOVER"
@@ -365,7 +380,7 @@ function ObjectiveChip() {
             ? "Intercept"
             : objective?.type === "BOSS"
               ? "Defeat Commander"
-              : mission?.name || "Objective";
+              : training ? onboardingStageId === "solo-1" ? "DEFEAT THE SCOUT" : onboardingStageId === "solo-2" ? "DEFEAT BOTH SCOUTS" : "DEFEAT HOSTILES" : mission?.name || "Objective";
   const body =
     objective?.type === "RECOVER"
       ? jammed
@@ -384,11 +399,12 @@ function ObjectiveChip() {
       : mission?.challenge?.type === "TURN_LIMIT"
         ? mission.challenge.limit
         : null;
+  const detail = training ? trainingCue?.copy || trainingEncounter?.teaching || "" : `${directive.action}${body ? ` ${body}` : ""}${extras ? ` · ${extras}` : ""}`;
   return (
-    <button type="button" className={`t-obj-chip t-hud-card ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? directive.action + " " + body + " " + extras + ". Tap to close details" : "Toggle mission details"}`}>
+    <button type="button" className={`t-obj-chip t-hud-card ${training ? "is-training" : ""} ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? detail + " Tap to close details." : (trainingCue?.title || directive.status) + ". Tap for details."}`}>
       <strong>{liveGoal || title}</strong>
-      <span className="t-objective-summary">{objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE" : directive.status}</span>
-      <span className="t-objective-detail">{directive.action}{body ? ` ${body}` : ""}{extras ? ` · ${extras}` : ""}</span>
+      <span className="t-objective-summary">{training ? trainingCue?.title || "DEFEAT HOSTILES" : objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE" : directive.status}</span>
+      <span className="t-objective-detail">{detail}</span>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
       {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
@@ -511,8 +527,11 @@ export function BattleScreen() {
   const toggleMute = useBattleStore((s) => s.toggleMute);
   const objective = useBattleStore((s) => s.battle.objective);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
+  const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const reinforcement = useBattleStore((s) => s.battle.reinforcement);
   const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
+  const identity = useBattleStore((s) => s.identity);
 
   const moves = useMemo(
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
@@ -520,7 +539,7 @@ export function BattleScreen() {
   );
   const targets = useMemo(() => targetIdsNow(), [units, activeId, mode, actionSkillId]);
 
-  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission });
+  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: onboardingEnabled && !mission ? onboardingStageId : null });
   const threats = presentation.threats;
   const actor = presentation.actor;
   const activeSkill = actionSkillId ? getSkill(actionSkillId) : null;
@@ -533,7 +552,7 @@ export function BattleScreen() {
 
   return (
     <div
-      className={`t-battle${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
+      className={`t-battle${onboardingEnabled && !mission ? " is-foundation-training" : ""}${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
     >
@@ -630,7 +649,7 @@ export function BattleScreen() {
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
-                facingTarget={combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id) ? units.find(target => target.id === combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id)?.targetId) : undefined}
+                facingTarget={combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id) ? units.find(t => t.id === combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id)?.targetId) : undefined}
               />
             ))}
           {enemyScene && (() => {
@@ -652,7 +671,7 @@ export function BattleScreen() {
             return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
               style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
               {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:
-                <img className="t-choreo-actor" src={performer.role === "alpha" && performer.team === "ally" ? alphaView(facingToward(effect.from, receiver, "front")) : performer.attackSprite||performer.sprite} alt="" onError={e => { if (performer.role === "alpha") { e.currentTarget.onerror = null; e.currentTarget.src = performer.attackSprite || performer.sprite; } }} />}
+                <img className="t-choreo-actor" src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
             </div>;
           })}
           {presentation.primaryFx.map(effect=>{
