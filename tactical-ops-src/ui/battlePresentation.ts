@@ -55,7 +55,8 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   const interruptTargetIds = interactive ? interruptTargets(battle, actor, threats) : [];
   const moves = interactive && !actor.hasMoved && !targeting ? reachableCells(actor, battle.units) : [];
   const canReposition = moves.some(c => !danger.has(cellKey(c.c, c.r)));
-  const guidance = foundationBattleGuidance(battle, input.onboardingStageId) || playerBattleGuidance(battle, input.mission);
+  const foundationGuidance = foundationBattleGuidance(battle, input.onboardingStageId);
+  const guidance = foundationGuidance || playerBattleGuidance(battle, input.mission);
   const objective = missionLiveProgress(battle);
   const directive = objectiveDirective(battle);
   const sources = threats.map((t, i) => ({ id: t.enemyId, label: `${i + 1}`, name: battle.units.find(u => u.id === t.enemyId)?.name || "Enemy", effect: t.predictedEffect }));
@@ -82,7 +83,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
     title = battle.outcome === "victory" ? "SECTOR SECURED" : battle.outcome === "defeat" ? "OPERATION FAILED" : actor?.team === "enemy" ? "ENEMY ACTION" : "RESOLVING";
     detail = result || (actor ? actor.name : "Preparing next activation");
   } else {
-    title = guidance?.title === "THE PACK FIGHTS ON" ? guidance.title : actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD";
+    title = foundationGuidance?.title || (guidance?.title === "THE PACK FIGHTS ON" ? guidance.title : actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD");
     detail = guidance?.copy || directive.action;
   }
   if (!threats.length && !targeting && battle.reinforcement?.telegraphed && !battle.reinforcement.spawned && mode === "READ") {
