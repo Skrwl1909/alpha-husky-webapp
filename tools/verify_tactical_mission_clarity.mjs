@@ -30,4 +30,4 @@ assert.match(styles, /MISSION_CLARITY_CSS/);
 assert.match(css, /\.t-training-steps/);
 assert.match(css, /prefers-reduced-motion/);
 assert.doesNotMatch(css, /pointer-events:\s*auto/i, "Visual styles must not place blockers over the battlefield");
-console.log("Tactical mission clarity: 14 static contract checks PASS.");
+console.log("Tactical mission clarity: 17 static contract checks PASS.");
