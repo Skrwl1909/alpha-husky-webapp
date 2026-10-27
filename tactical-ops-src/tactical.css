@@ -966,6 +966,13 @@
   display: block;
 }
 
+#tacticalOpsRoot .t-token.directional-alpha .t-alpha-ground-shadow {
+  position:absolute; left:12%; right:12%; bottom:3%; height:9%;
+  border-radius:50%; background:radial-gradient(ellipse,rgba(0,0,0,.52),transparent 72%);
+  pointer-events:none;
+}
+#tacticalOpsRoot .t-token.directional-alpha img.body { position:relative; }
+
 #tacticalOpsRoot .t-plate {
   pointer-events: none;
   background: #07090df2;
@@ -4860,6 +4867,7 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-battle .t-field-grade {background:linear-gradient(180deg,#07172570,transparent 24%,#081a2930 70%,#061321b8),radial-gradient(ellipse at center,#3b647b20,transparent 70%)}
 #tacticalOpsRoot .t-battle .t-grid i {opacity:.34;border-color:#a9cfdb70;background:none}
 #tacticalOpsRoot .t-battle .t-token .body {filter:drop-shadow(0 3px 3px #020a14) drop-shadow(0 0 2px #bdd7e740)}
+#tacticalOpsRoot .t-battle .t-token.directional-alpha .body {filter:none}
 #tacticalOpsRoot .t-battle .t-token.active .t-ring {filter:none;color:#b7f0ff}
 #tacticalOpsRoot .t-battle .t-token.subdued {opacity:.65;filter:saturate(.6)}
 /* Actual pointer regions use projection spacing, NEVER overlapping 44px boxes.
