@@ -3,7 +3,7 @@ import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
 import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey } from "../combat/movement";
@@ -16,7 +16,8 @@ import { tacticalEmblemFor } from "./tacticalEmblems";
 import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./tacticalActionIcons";
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
-import { OPERATION } from "../data/units";
+import { FALLBACK_SPRITE, OPERATION } from "../data/units";
+import type { PlayerIdentity } from "../host/identity";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
@@ -30,6 +31,20 @@ const PRESENTATION = {
   reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
 } as const;
 
+type Facing = "front" | "back" | "left" | "right";
+type FacingCell = { c: number; r: number };
+function facingToward(from: FacingCell, to: FacingCell, fallback: Facing): Facing {
+  const dx = to.c - from.c, dy = to.r - from.r;
+  if (!dx && !dy) return fallback;
+  return Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "front" : "back");
+}
+const alphaView = (facing: Facing) => `/images/tactical_ops/alpha_directional/${facing}.png`;
+
+function allowDirectional(unit: CombatUnit, identity: PlayerIdentity): boolean {
+  return unit.team === "ally" && unit.role === "alpha" && unit.sprite === FALLBACK_SPRITE &&
+    !identity.skinKey?.trim() && !identity.skinUrl?.trim() &&
+    identity.source !== "skin" && identity.source !== "character-image";
+}
 function readHostLevel(): number | null {
   if (typeof window === "undefined") return null;
   const w = window as unknown as Record<string, unknown>;
@@ -133,6 +148,7 @@ function Token({
   hitReacting = false,
   travelGhost = false,
   shownHp,
+  facingTarget,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -145,16 +161,22 @@ function Token({
   hitReacting?: boolean;
   travelGhost?: boolean;
   shownHp?: number;
+  facingTarget?: FacingCell;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const hp = shownHp ?? unit.hp;
   const inspectUnit = useBattleStore((s) => s.inspectUnit);
   const selectTarget = useBattleStore((s) => s.selectTarget);
   const busy = useBattleStore((s) => s.busy);
+  const identity = useBattleStore((s) => s.identity);
+  const isAlpha = unit.team === "ally" && unit.role === "alpha";
+  const directionalAlpha = allowDirectional(unit, identity);
+  const [artFailed, setArtFailed] = useState(false);
   const className = [
     "t-token",
     unit.team,
     roleClass(unit),
+    directionalAlpha && !artFailed ? "directional-alpha" : "",
     unit.defeated && hp<=0 ? "defeated" : "",
     unit.hasActed ? "acted" : "",
     selected ? "selected active" : "",
@@ -172,7 +194,19 @@ function Token({
   ]
     .filter(Boolean)
     .join(" ");
-  const src = attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
+  const previousCell = useRef({ c: unit.c, r: unit.r });
+  const [facing, setFacing] = useState<Facing>("front");
+  useLayoutEffect(() => {
+    const previous = previousCell.current;
+    if (previous.c !== unit.c || previous.r !== unit.r) {
+      setFacing(current => facingToward(previous, unit, current));
+      previousCell.current = { c: unit.c, r: unit.r };
+    }
+  }, [unit.c, unit.r]);
+  useLayoutEffect(() => {
+    if (facingTarget) setFacing(current => facingToward(unit, facingTarget, current));
+  }, [facingTarget?.c, facingTarget?.r, unit.c, unit.r]);
+  const src = directionalAlpha && !artFailed ? alphaView(facing) : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
   return (
     <>
     <div
@@ -189,7 +223,8 @@ function Token({
       {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
-      <img className="body" src={src} alt="" draggable={false} />
+      {directionalAlpha && !artFailed ? <span className="t-alpha-ground-shadow" aria-hidden="true" /> : null}
+      <img className="body" src={src} alt="" draggable={false} onError={isAlpha && !artFailed ? () => setArtFailed(true) : undefined} />
       {hp<=0 ? null : (
         <div className="t-plate">
           <div className="t-plate-name">
@@ -496,6 +531,7 @@ export function BattleScreen() {
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const reinforcement = useBattleStore((s) => s.battle.reinforcement);
   const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
+  const identity = useBattleStore((s) => s.identity);
 
   const moves = useMemo(
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
@@ -613,6 +649,7 @@ export function BattleScreen() {
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
+                facingTarget={combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id) ? units.find(t => t.id === combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id)?.targetId) : undefined}
               />
             ))}
           {enemyScene && (() => {
@@ -634,7 +671,7 @@ export function BattleScreen() {
             return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
               style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
               {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:
-                <img className="t-choreo-actor" src={performer.attackSprite||performer.sprite} alt="" />}
+                <img className="t-choreo-actor" src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
             </div>;
           })}
           {presentation.primaryFx.map(effect=>{
