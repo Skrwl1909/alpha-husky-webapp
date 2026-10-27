@@ -1,0 +1,144 @@
+/* Player-first mission clarity — presentation-only.
+   No new overlays, hit regions, rewards, targeting, or combat state. */
+#tacticalOpsRoot .t-deployment .t-training-overview {
+  grid-template-columns: minmax(0, 1fr);
+}
+#tacticalOpsRoot .t-training-overview .t-deploy-summary-main {
+  position: relative;
+  min-width: 0;
+  padding: clamp(13px, 3vw, 20px);
+  border: 1px solid rgba(108, 218, 235, .57);
+  border-left: 3px solid #83deeb;
+  border-radius: 9px;
+  background: linear-gradient(135deg, rgba(11, 42, 55, .97), rgba(5, 19, 32, .97));
+  box-shadow: inset 0 1px 0 rgba(218, 250, 255, .1), 0 14px 32px rgba(0, 0, 0, .27);
+  overflow: hidden;
+}
+#tacticalOpsRoot .t-training-overview .t-deploy-summary-main::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  background: linear-gradient(90deg, #8ae6ec, rgba(138, 230, 236, 0));
+  pointer-events: none;
+}
+#tacticalOpsRoot .t-training-overview .t-kicker {
+  color: #9de7ef;
+  font-weight: 850;
+  letter-spacing: .12em;
+}
+#tacticalOpsRoot .t-training-overview .t-deploy-summary-main > strong {
+  color: #f0fbff;
+  font-size: clamp(17px, 4.3vw, 23px);
+  line-height: 1.22;
+  letter-spacing: .015em;
+  text-wrap: balance;
+}
+#tacticalOpsRoot .t-training-steps {
+  list-style: none;
+  display: grid;
+  gap: 9px;
+  padding: 0;
+  margin: 15px 0 0;
+  counter-reset: none;
+}
+#tacticalOpsRoot .t-training-steps li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 11px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 12px;
+  background: rgba(4, 19, 31, .72);
+  border: 1px solid rgba(122, 210, 229, .24);
+  border-radius: 7px;
+}
+#tacticalOpsRoot .t-training-steps li:first-child {
+  border-color: rgba(112, 219, 238, .48);
+  background: linear-gradient(90deg, rgba(25, 81, 96, .42), rgba(5, 24, 37, .82));
+}
+#tacticalOpsRoot .t-training-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  background: rgba(129, 224, 238, .12);
+  color: #b7f3f6;
+  font: 800 13px/1 var(--t-font-sans);
+  border: 1px solid rgba(145, 224, 239, .27);
+}
+#tacticalOpsRoot .t-training-steps li:last-child > span {
+  color: #f3d19a;
+  border-color: rgba(240, 196, 129, .28);
+  background: rgba(240, 196, 129, .1);
+}
+#tacticalOpsRoot .t-training-steps li > p {
+  margin: 0;
+  color: #e2f1f6;
+  font: 500 clamp(13px, 3.4vw, 15px)/1.45 var(--t-font-sans);
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+#tacticalOpsRoot .t-deploy-summary-main .t-mission-extra {
+  margin-top: 11px;
+  padding: 0 10px;
+  border: 1px solid rgba(125, 201, 221, .26);
+  border-radius: 6px;
+  background: rgba(4, 18, 30, .62);
+}
+#tacticalOpsRoot .t-mission-extra > summary {
+  min-height: 44px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #d7eff6;
+  font: 800 11px/1.4 var(--t-font-sans);
+  letter-spacing: .045em;
+}
+#tacticalOpsRoot .t-mission-extra > summary > span {
+  color: #9ecdd9;
+  font-size: 10px;
+}
+#tacticalOpsRoot .t-mission-extra[open] > summary {
+  border-bottom: 1px solid rgba(125, 201, 221, .19);
+}
+#tacticalOpsRoot .t-deploy-summary-main .t-mission-extra > p,
+#tacticalOpsRoot .t-deploy-summary-main .t-mission-extra > small {
+  display: block;
+  margin: 9px 0;
+  color: #bfdbe5;
+  font: 500 12px/1.5 var(--t-font-sans);
+  letter-spacing: 0;
+}
+#tacticalOpsRoot .t-mission-extra > summary:focus-visible {
+  outline: 2px solid #a4eaf4;
+  outline-offset: 3px;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip.is-training {
+  border-color: rgba(126, 226, 238, .74);
+  background: linear-gradient(145deg, #143849, #0a2534);
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail .t-obj-chip.is-training .t-objective-summary {
+  color: #a2f0f0;
+  font-weight: 800;
+  letter-spacing: .01em;
+}
+#tacticalOpsRoot .t-battle.is-foundation-training[data-decision="READ"] .t-command-cue {
+  border-left-color: #9be8ef;
+  background: linear-gradient(90deg, rgba(4, 24, 35, .82), rgba(4, 24, 35, 0));
+  text-shadow: 0 1px 3px #030b13;
+}
+#tacticalOpsRoot .t-battle.is-foundation-training[data-decision="READ"] .t-command-cue strong {
+  color: #c7f7f9;
+}
+@media (max-width: 380px) {
+  #tacticalOpsRoot .t-training-steps li { padding: 10px 8px; gap: 8px; }
+  #tacticalOpsRoot .t-training-overview .t-deploy-summary-main { padding: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-training-overview *,
+  #tacticalOpsRoot .t-mission-extra { animation: none !important; transition: none !important; }
+}
