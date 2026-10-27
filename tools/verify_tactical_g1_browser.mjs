@@ -41,7 +41,12 @@ try{
    await page.getByText('Specialization',{exact:true}).click();
    assert(await page.getByRole('button',{name:/STEADY HAND/}).isDisabled());assert(await page.getByRole('button',{name:'SILENT SHELTER',exact:true}).isDisabled());
   } else if(mode==='brief'){
-   await page.getByLabel('Build fit').waitFor();assert(await page.getByText(/BUILD FIT:/).isVisible());
+   await page.locator('details.t-mission-extra').first().waitFor();
+   const tactics=page.locator('details.t-mission-extra').filter({hasText:'SQUAD TACTICS'});
+   assert.equal(await tactics.count(),1,'Real mission retains optional squad guidance');
+   assert(await tactics.locator('summary').isVisible(),'Optional squad guidance can be opened');
+   await tactics.locator('summary').click();
+   assert(await tactics.getByText(/ALPHA:|SHADOW:|CNC:/).first().isVisible(),'Real build notes remain accessible');
   } else {
    await page.getByLabel('Why your build mattered').waitFor();assert(await page.getByText('SHADOW: GUARD prevented 8 damage.').isVisible());
    await page.screenshot({path:out+'/'+width+'-results-observed.png',fullPage:true});
