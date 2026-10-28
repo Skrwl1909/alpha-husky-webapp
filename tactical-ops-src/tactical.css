@@ -5058,3 +5058,57 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-consequence-guarded{color:#c9e5ff;border-color:rgba(124,193,248,.78);}
 @keyframes t-consequence-rise{0%{opacity:0;translate:0 6px;scale:.86;}18%{opacity:1;scale:1.06;}65%{opacity:.98;}100%{opacity:0;translate:0 -24px;scale:.98;}}
 @media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-consequence{animation:none;opacity:1;}}
+
+/* Threat Telegraph V2 — low-occlusion Blackglass projection, scoped to announced VNext intents.
+   Drawn beneath characters and tap targets; no gameplay or hit-area changes. */
+#tacticalOpsRoot .t-battle .t-threat-tile-v2 {
+  z-index:16;
+  width:var(--cell-touch-w);
+  height:var(--cell-touch-h);
+  aspect-ratio:auto;
+  border:1px solid rgba(255,154,146,.46);
+  border-radius:5px;
+  background:radial-gradient(ellipse at center,rgba(220,57,73,.075),rgba(245,72,79,.015) 68%,transparent);
+  box-shadow:inset 0 0 0 1px rgba(255,128,132,.065),0 0 9px rgba(224,70,75,.13);
+  pointer-events:none;
+  animation:none;
+}
+#tacticalOpsRoot .t-threat-tile-v2 .t-threat-corner {
+  position:absolute; width:8px; height:8px;
+  border-color:#ffb4aa; border-style:solid;
+  filter:drop-shadow(0 0 3px rgba(255,99,99,.35));
+}
+#tacticalOpsRoot .t-threat-tile-v2 .t-threat-corner.tl {top:-1px;left:-1px;border-width:2px 0 0 2px}
+#tacticalOpsRoot .t-threat-tile-v2 .t-threat-corner.tr {top:-1px;right:-1px;border-width:2px 2px 0 0}
+#tacticalOpsRoot .t-threat-tile-v2 .t-threat-corner.bl {bottom:-1px;left:-1px;border-width:0 0 2px 2px}
+#tacticalOpsRoot .t-threat-tile-v2 .t-threat-corner.br {bottom:-1px;right:-1px;border-width:0 2px 2px 0}
+#tacticalOpsRoot .t-threat-tile-v2 > span {
+  position:absolute; top:-7px;right:-7px;min-width:15px;height:15px;
+  display:grid;place-items:center;padding:0 3px;
+  color:#fff1e6;background:#642b34;border:1px solid #ffa3a0;
+  border-radius:4px;font:800 10px/1 var(--t-font-sans);
+  box-shadow:0 1px 5px #0009;
+}
+#tacticalOpsRoot .t-threat-tethers {
+  position:absolute;inset:0;width:100%;height:100%;z-index:15;
+  overflow:visible;pointer-events:none;
+}
+#tacticalOpsRoot .t-threat-tether-halo {
+  fill:none;stroke:rgba(255,91,102,.16);stroke-width:.65;
+  vector-effect:non-scaling-stroke;
+}
+#tacticalOpsRoot .t-threat-tether-core {
+  fill:none;stroke:rgba(255,172,157,.67);stroke-width:1;
+  vector-effect:non-scaling-stroke;stroke-dasharray:3 5;
+}
+#tacticalOpsRoot .t-threat-tether-end {fill:#ffc0a6;opacity:.68}
+@media(prefers-reduced-motion:no-preference) {
+  #tacticalOpsRoot .t-threat-tile-v2 {animation:t-threat-v2-breathe 2.4s ease-in-out infinite}
+  #tacticalOpsRoot .t-threat-tether-core {animation:t-threat-v2-trace 4s linear infinite}
+  @keyframes t-threat-v2-breathe {50%{border-color:rgba(255,183,161,.8);box-shadow:0 0 11px rgba(229,68,78,.21)}}
+  @keyframes t-threat-v2-trace {to{stroke-dashoffset:-32}}
+}
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-threat-tile-v2,
+  #tacticalOpsRoot .t-threat-tether-core {animation:none!important}
+}
