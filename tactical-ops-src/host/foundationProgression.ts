@@ -460,7 +460,7 @@ export async function startOperationMission(
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
-  if (typeof value.runId !== "string" || typeof value.missionId !== "string") {
+  if (typeof value.runId !== "string" || !value.runId || value.missionId !== missionId) {
     throw new FoundationProgressionError("invalid_progression_response");
   }
   const responseSquadIds = Array.isArray(value.squadIds) && value.squadIds.every((id) => typeof id === "string")
@@ -469,7 +469,7 @@ export async function startOperationMission(
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && !fieldContext) throw new FoundationProgressionError("invalid_progression_response");
   const rulesContract = parseRunRulesContract(value.rulesContract);
-  if (rulesContract && rulesContract.missionId !== value.missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
+  if (rulesContract && rulesContract.missionId !== missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
   return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
 }
 
