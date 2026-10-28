@@ -896,18 +896,25 @@ export const useBattleStore = create<Store>((set, get) => {
           set({ busy: true, ticker: "Preparing operation run…", progressionError: null });
           void (async () => {
             try {
+              // Preserve the immutable rules of an accepted legacy run, even after earning RECON Intel.
+              const existing = mission.activity === "FIELD_OP"
+                ? persisted.progression.fieldOps?.activeMissionRun
+                : persisted.progression.operations?.[mission.operationId]?.activeMissionRun;
+              const requestedRuleset = persisted.chapterMode ? TACTICAL_VNEXT_RULESET
+                : existing ? existing.rulesContract?.rulesetVersion
+                : persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined;
               const started = await startOperationMission(
                 createFoundationRequestId(persisted.chapterMode?"chapter-start":"mission-start"),
                 persisted.progression.revision,
                 mission.missionId,
                 squadIds,
                 mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach, ...(persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
-                persisted.chapterMode?TACTICAL_VNEXT_RULESET:(() => { const active = mission.activity === "FIELD_OP" ? persisted.progression.fieldOps?.activeMissionRun : persisted.progression.operations?.[mission.operationId]?.activeMissionRun; return active ? active.rulesContract?.rulesetVersion : persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined; })(),
+                requestedRuleset,
                 persisted.chapterMode,
                 !persisted.chapterMode && mission.operationId===DEAD_RELAY.operationId &&
                    persisted.progression.tacticalChapter?.status==="COMPLETED" &&
                    !persisted.progression.tacticalChapter.intelConsumedByRunId &&
-                   persisted.progression.vnextStartAvailable ? 1:undefined,
+                   requestedRuleset === TACTICAL_VNEXT_RULESET ? 1:undefined,
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
