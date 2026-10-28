@@ -16,6 +16,9 @@ try{
   if(mode==='wait')await new Promise(r=>release=r);
   if(mode==='network')throw Error('offline fixture');
   if(mode==='stale')return {ok:false,code:'stale_revision',details:{state:structuredClone(canonical)}};
+  // Real index.html host rejects 409 with a nested response body.
+  if(mode==='http409')throw Object.assign(new Error('Conflict'),{status:409,data:{ok:false,code:'stale_revision',details:{state:structuredClone(canonical)}}});
+  if(mode==='http-no-effect')throw Object.assign(new Error('Conflict'),{status:409,data:{ok:false,code:'growth_no_effect'}});
   if(idempotency.has(body.requestId))return idempotency.get(body.requestId);
   assert.equal(body.expectedRevision,canonical.revision);
   const h=canonical.playerGrowth.heroes.find(h=>h.heroId===body.heroId);
@@ -31,7 +34,7 @@ try{
  mode='ok';release();await pending;assert.equal(store.getState().progression.playerGrowth.spentPoints,1);
  const reloaded=await loadFoundationProgression();assert.equal(reloaded.playerGrowth.heroes[2].ranks['u03-mend'],1);assert.equal(reloaded.playerGrowth.version,2);
  const before=canonical.revision;await window.apiPost(calls[0].path,calls[0].body);assert.equal(canonical.revision,before,'Fixture idempotent response; not proof of real backend');
- for(const failure of ['network','stale']){await reset();mode=failure;await store.getState().upgradeGrowth('alpha','vanguard','alpha-strike',1);assert.equal(store.getState().progression.playerGrowth.spentPoints,0);assert(store.getState().progressionError);assert(!store.getState().progressionCommitPending);}
+ for(const failure of ['network','stale','http409','http-no-effect']){await reset();mode=failure;await store.getState().upgradeGrowth('alpha','vanguard','alpha-strike',1);assert.equal(store.getState().progression.playerGrowth.spentPoints,0);assert(store.getState().progressionError);assert(!store.getState().progressionCommitPending);if(failure==='stale'||failure==='http409')assert.match(store.getState().progressionError,/stale_revision/);if(failure==='http-no-effect')assert.match(store.getState().progressionError,/growth_no_effect/);}
  await reset();store.setState({progression:{...store.getState().progression,playerGrowth:undefined}});await store.getState().upgradeGrowth('alpha','vanguard','alpha-strike',1);assert.equal(calls.length,0);
  await reset();await store.getState().upgradeGrowth('alpha','vanguard','alpha-strike',1);await store.getState().respecGrowth('alpha');
  const used=store.getState().progression.playerGrowth.heroes[0];assert(used.respecUsed);assert.deepEqual(used.ranks,{});assert.equal(store.getState().progression.playerGrowth.spentPoints,0);

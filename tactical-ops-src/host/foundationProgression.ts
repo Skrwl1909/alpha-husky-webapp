@@ -385,9 +385,17 @@ async function request(path: string, body: Record<string, unknown> = {}): Promis
   try {
     raw = await post(path, body);
   } catch (error) {
-    const body = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
-    const details = body.details as Record<string, unknown> | undefined;
-    throw new FoundationProgressionError(String(body.code || "progression_request_failed"), parseState(details?.state));
+    // apiPostRaw wraps non-2xx responses as { status, data: responseBody }.
+    const failure = error && typeof error === "object" ? (error as Record<string, unknown>) : {};
+    const response = failure.data && typeof failure.data === "object" && !Array.isArray(failure.data)
+      ? failure.data as Record<string, unknown> : failure;
+    const details = response.details && typeof response.details === "object" && !Array.isArray(response.details)
+      ? response.details as Record<string, unknown> : null;
+    const rawCode = typeof response.code === "string" ? response.code : "";
+    const status = Number(failure.status);
+    const code = /^[a-z][a-z0-9_]{0,63}$/i.test(rawCode) ? rawCode
+      : Number.isInteger(status) && status >= 400 && status <= 599 ? `http_${status}` : "progression_request_failed";
+    throw new FoundationProgressionError(code, parseState(details?.state));
   }
   if (!raw || typeof raw !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const response = raw as Record<string, unknown>;
