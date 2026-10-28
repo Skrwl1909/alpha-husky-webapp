@@ -662,7 +662,10 @@ export const useBattleStore = create<Store>((set, get) => {
       } catch (error) {
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
         if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
-        set({ progressionError: "Skillbook choice was not saved. Check your points or refresh and retry." });
+        const code = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
+        // A lost response does not prove whether the server committed the purchase.
+        // Never retry automatically with a new requestId.
+        set({ progressionError: `Skillbook upgrade not confirmed (${code}). Refresh to check your saved rank before trying again.` });
       } finally { set({ progressionCommitPending: false }); }
     },
     respecGrowth: async (heroId) => {
