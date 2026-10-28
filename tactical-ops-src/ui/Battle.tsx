@@ -585,9 +585,27 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
-          {threats.flatMap((threat) => threat.impactTiles.map((cell, i) => {
+          {/* Purely visual threat projection. SVG uses the same percentage field coordinates as tokens. */}
+          {threats.length > 0 ? <svg className="t-threat-tethers" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            {threats.map((threat, index) => {
+              const enemy = units.find(u => u.id === threat.enemyId && !u.defeated);
+              const tiles = threat.impactTiles;
+              if (!enemy || !tiles.length) return null;
+              const from = fieldPercent(enemy.c, enemy.r);
+              const destination = threat.targetTile ?? (threat.targetUnitId ? units.find(u => u.id === threat.targetUnitId) : null) ??
+                { c: tiles.reduce((sum, tile) => sum + tile.c, 0) / tiles.length, r: tiles.reduce((sum, tile) => sum + tile.r, 0) / tiles.length };
+              const to = fieldPercent(destination.c, destination.r);
+              if (from.x === to.x && from.y === to.y) return null;
+              return <g key={threat.id} className="t-threat-tether" data-threat-index={index + 1}>
+                <line className="t-threat-tether-halo" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+                <line className="t-threat-tether-core" x1={from.x} y1={from.y} x2={to.x} y2={to.y} />
+                <circle className="t-threat-tether-end" cx={to.x} cy={to.y} r=".35" />
+              </g>;
+            })}
+          </svg> : null}
+          {threats.flatMap((threat, index) => threat.impactTiles.map((cell, i) => {
             const pos = fieldPercent(cell.c, cell.r);
-            return <div key={threat.id + ":" + i} className="t-threat-tile" style={{ left: pos.x + "%", top: pos.y + "%", ...cellTouchStyle(cell.r, GRID_COLS, GRID_ROWS) } as CSSProperties} aria-hidden="true"><span>!</span></div>;
+            return <div key={threat.id + ":" + i} className="t-threat-tile t-threat-tile-v2" data-threat-index={index + 1} style={{ left: pos.x + "%", top: pos.y + "%", ...cellTouchStyle(cell.r, GRID_COLS, GRID_ROWS) } as CSSProperties} aria-hidden="true"><i className="t-threat-corner tl" /><i className="t-threat-corner tr" /><i className="t-threat-corner bl" /><i className="t-threat-corner br" /><span>{index + 1}</span></div>;
           }))}
           {presentation.sources.map(source => {
             const unit = units.find(u => u.id === source.id); if (!unit) return null;
