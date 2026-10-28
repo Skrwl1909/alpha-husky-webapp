@@ -1,0 +1,374 @@
+{
+  "cases": 40,
+  "identicalFieldRects": 40,
+  "identicalDockHeights": 40,
+  "identicalCharacterRectsAndLoadStates": 40,
+  "beforeClippedObjectiveCases": 6,
+  "afterClippedObjectiveCases": 0,
+  "beforeClippedRecoveryCases": 24,
+  "afterClippedRecoveryCases": 0,
+  "duplicateObjectiveBefore": 24,
+  "duplicateObjectiveAfter": 0,
+  "details": [
+    {
+      "label": "320x568-vnext-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-vnext-intercept",
+      "beforeObjectiveClipped": true,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-vnext-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-vnext-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-vnext-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-legacy-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-legacy-intercept",
+      "beforeObjectiveClipped": true,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-legacy-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-legacy-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "320x568-legacy-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-vnext-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-vnext-intercept",
+      "beforeObjectiveClipped": true,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-vnext-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-vnext-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-vnext-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-legacy-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-legacy-intercept",
+      "beforeObjectiveClipped": true,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-legacy-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-legacy-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "360x780-legacy-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-vnext-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-vnext-intercept",
+      "beforeObjectiveClipped": true,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-vnext-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-vnext-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-vnext-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-legacy-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-legacy-intercept",
+      "beforeObjectiveClipped": true,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-legacy-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-legacy-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "390x844-legacy-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-vnext-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-vnext-intercept",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-vnext-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-vnext-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-vnext-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-legacy-hold",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-legacy-intercept",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": false,
+      "afterRecoverClipped": false,
+      "duplicateBefore": false,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-legacy-recover",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-legacy-recover-jammed",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    },
+    {
+      "label": "430x932-legacy-recover-distant",
+      "beforeObjectiveClipped": false,
+      "afterObjectiveClipped": false,
+      "beforeRecoverClipped": true,
+      "afterRecoverClipped": false,
+      "duplicateBefore": true,
+      "duplicateAfter": false
+    }
+  ]
+}

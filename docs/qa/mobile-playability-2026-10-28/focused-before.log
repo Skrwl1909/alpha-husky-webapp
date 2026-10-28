@@ -1,0 +1,2 @@
+10:48:38 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+PASS mobile playability before: 40 cases, both grids, four widths, host insets, objective/command ink bounds, inputs, art loading and engine readiness.

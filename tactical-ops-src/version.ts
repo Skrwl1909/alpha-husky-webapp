@@ -1,3 +1,3 @@
-/** PR #206 release: threat projection + tether; source and canonical production IIFE synchronized. */
-export const VERSION = "tactical_ops.js v3.6.7-vnext-run-integrity";
-export const CACHE_KEY = "tops-3.6.7-vnext-run-integrity";
+/** Mobile objective/RECOVER readability; accepted combat rules are unchanged. */
+export const VERSION = "tactical_ops.js v3.6.8-mobile-objective-readability";
+export const CACHE_KEY = "tops-3.6.8-mobile-objective-readability";

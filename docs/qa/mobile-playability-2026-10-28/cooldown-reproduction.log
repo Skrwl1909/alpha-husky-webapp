@@ -1,0 +1,16 @@
+11:00:49 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: 320x568-vnext-recover clipped cooldown card
+    at file:///workspace/scratch/f7fef81ee4a4/alpha-husky-webapp/tools/verify_tactical_mobile_playability.mjs:101:31 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: false,
+  expected: true,
+  operator: '==',
+  diff: 'simple'
+}
+
+Node.js v24.22.1

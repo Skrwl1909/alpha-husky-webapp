@@ -14,6 +14,7 @@ on:
       - 'tactical-ops-src/tactical.css'
       - 'tools/fixtures/battlefield-p5.tsx'
       - 'tools/verify_tactical_battlefield_p5*.mjs'
+      - 'tools/verify_tactical_mobile_playability.mjs'
       - 'tools/verify_tactical_mission_clarity.mjs'
       - 'tools/verify_tactical_alpha_directional_browser.mjs'
       - 'images/tactical_ops/alpha_directional/**'
@@ -40,9 +41,14 @@ jobs:
       - run: node tools/verify_tactical_alpha_directional_browser.mjs
         env:
           CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - run: node tools/verify_tactical_mobile_playability.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: battlefield-p5-browser-evidence
-          path: artifacts/battlefield-p5
+          path: |
+            artifacts/battlefield-p5
+            artifacts/mobile-playability
           if-no-files-found: ignore
