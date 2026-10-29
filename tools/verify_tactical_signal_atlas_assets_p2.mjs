@@ -32,5 +32,5 @@ assert(model.includes("emblemSrc: string") && ui.includes("src={s.emblemSrc}"),"
 for(const key of ["assault","command","pursuit","control","line","support"]) assert(model.includes("SIGNAL_ATLAS_SECTOR_EMBLEMS."+key),"Missing live mapping: "+key);
 assert(css.includes("atlas_relay_chamber.webp") && css.includes("P2 FROZEN RELAY ASSET INTEGRATION"),"Atlas background skin");
 assert(ui.includes("await upgrade(") && ui.includes("await respec("),"Canonical store transactions required");
-assert(classic.includes("isSignalAtlasBetaAllowed"),"Opt-in beta gate preserved");
-console.log("PASS Signal Atlas P2: 19 runtime assets, art mapping, crest fallback, beta gate (device QA separate)");
+assert(classic.includes('<SignalAtlas onClose={onClose} />') && !classic.includes("BetaAllowed"),"Official Atlas entry requires no beta gate");
+console.log("PASS Signal Atlas P2: 19 runtime assets, art mapping, crest fallback, official entry (device QA separate)");

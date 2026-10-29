@@ -1,0 +1,6 @@
+{
+  "bundleSha256": "5c1e00bd143cbe7d74f6e44b6bb6f0f671ca8b55365dd918545e0dd7271fea36",
+  "deterministicRebuild": true,
+  "syntax": "PASS",
+  "version": "3.6.9-official-signal-atlas"
+}

@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import{createServer}from'vite';
 globalThis.window={location:{search:''},localStorage:{getItem:()=>null,setItem:()=>{}},S:{}};
-const server=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom'});
+const server=await createServer({configFile:false,resolve:{preserveSymlinks:true},ssr:{external:['react','react-dom','zustand']},server:{middlewareMode:true,hmr:false},appType:'custom'});
 try{
  const {useBattleStore:store}=await server.ssrLoadModule('/tactical-ops-src/store/battleStore.ts');
  const {loadFoundationProgression}=await server.ssrLoadModule('/tactical-ops-src/host/foundationProgression.ts');

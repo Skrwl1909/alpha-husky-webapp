@@ -505,10 +505,10 @@ function WarTable() {
         </div> : null}
         {deckTab === "squad" ? <div className="t-command-pane" aria-label="Character progression and mastery">
         <div className="t-premium-squad-switch" role="group" aria-label="Squad progression view">
-          <button type="button" aria-pressed={squadView === "skillbook"} className={squadView === "skillbook" ? "is-selected" : ""} onClick={() => setSquadView("skillbook")}>CHARACTER SKILLBOOK</button>
+          <button type="button" aria-pressed={squadView === "skillbook"} className={squadView === "skillbook" ? "is-selected" : ""} onClick={() => setSquadView("skillbook")}>SIGNAL ATLAS</button>
           <button type="button" aria-pressed={squadView === "mastery"} className={squadView === "mastery" ? "is-selected" : ""} onClick={() => setSquadView("mastery")}>PACK MASTERY</button>
         </div>
-        {squadView === "skillbook" ? <SkillbookPanel /> : <PackMasteryPanel />}
+        {squadView === "skillbook" ? <SkillbookPanel onClose={() => setDeckTab("command")} /> : <PackMasteryPanel />}
 
 
         </div> : null}

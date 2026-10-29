@@ -4,6 +4,7 @@ on:
     paths:
       - 'tactical-ops-src/**'
       - 'tools/verify_tactical_g1*.mjs'
+      - 'tools/verify_tactical_signal_atlas*.mjs'
       - 'tools/simulate_tactical_s2_full_combat.mjs'
       - 'package.json'
       - '.github/workflows/tactical-g1-fieldcraft.yml'
@@ -29,6 +30,8 @@ jobs:
           node tools/verify_tactical_s3_power_proof.mjs
           node tools/verify_tactical_s3_combat_proof.mjs
           node tools/verify_tactical_signal_atlas_v2.mjs
+          node tools/verify_tactical_signal_atlas_assets_p2.mjs
+          node tools/verify_tactical_signal_atlas_p3.mjs
           node tools/verify_tactical_ops_vnext_scheduler.mjs
           node tools/simulate_tactical_s2_full_combat.mjs
       - run: npm run build:tactical-ops
@@ -41,6 +44,7 @@ jobs:
           npm install --no-save --package-lock=false playwright@1.62.1
           npx playwright install --with-deps chromium
           npm run verify:tactical-ops:g1:browser
+          node tools/verify_tactical_signal_atlas_default_browser.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

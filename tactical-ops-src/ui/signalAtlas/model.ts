@@ -46,7 +46,9 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
   if (rank===2 && current<1) return { ...base, state:"needs-rank-one", reason:"Record Rank I of this skill first." };
   if (hero.discipline && hero.discipline!==path) return { ...base, state:"different-discipline", reason:"Another discipline is saved. A one-time respec may change it." };
   const changes = nextSkillChanges(skillId,rank,hero,path,baseSkill);
-  if (!changes.length) return { ...base, changes, state:"no-effect", reason:"This upgrade produces no effective battle change. Purchase disabled pending balance review." };
+  if (!changes.length) return { ...base, changes, state:"no-effect", reason:skillId==="u03-mend"
+    ? "MEND is already at its minimum cooldown in this build. This rank adds no combat effect and cannot cost a point."
+    : "This rank adds no combat effect to the current build. No point can be spent." };
   if (points<1) return { ...base, changes, state:"no-points", reason:"Earn a first-clear point before purchasing." };
   return { ...base, changes, state:"available", reason:"Eligible for a server-recorded purchase of 1 point." };
 }
