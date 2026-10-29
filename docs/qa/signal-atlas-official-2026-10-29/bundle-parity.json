@@ -1,0 +1,9 @@
+{
+  "bundleSha256": "1066bb096bda15181fff469f099f14ea648c55e7b7ff91cfe97d6fe56cbce73f",
+  "testedBundleCommit": "5c5a00326257d6814a72955ec42c918b5d2d4e02",
+  "sourceIifeBrowserParity": "PASS: 18 scenario groups",
+  "localWindowsBundleSha256": "5c1e00bd143cbe7d74f6e44b6bb6f0f671ca8b55365dd918545e0dd7271fea36",
+  "deterministicLocalRebuild": true,
+  "syntax": "PASS",
+  "version": "3.6.9-official-signal-atlas"
+}

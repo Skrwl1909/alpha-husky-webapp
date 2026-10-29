@@ -29,12 +29,13 @@ try {
     heroes: persisted.heroes.map(({heroId,discipline,ranks})=>({heroId,discipline,ranks}))
   });
   assert.equal(run.heroes[0].discipline, "vanguard");
-  const ui = readFileSync("tactical-ops-src/ui/Skillbook.tsx", "utf8");
+  const entry = readFileSync("tactical-ops-src/ui/Skillbook.tsx", "utf8");
+  const ui = readFileSync("tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx", "utf8");
   const app = readFileSync("tactical-ops-src/ui/App.tsx", "utf8");
   const store = readFileSync("tactical-ops-src/store/battleStore.ts", "utf8");
   assert(ui.includes("upgradeGrowth") && ui.includes("respecGrowth"), "both authenticated actions required");
-  assert(ui.includes("CONFIRM UPGRADE") && ui.includes("CONFIRM RESET"));
-  assert(app.includes("<SkillbookPanel />"), "Skillbook must be accessible from War Table");
+  assert(ui.includes("CONFIRM SKILL UPGRADE") && ui.includes("CONFIRM ONE-TIME RESET"));
+  assert(entry.includes('<SignalAtlas onClose={onClose} />') && app.includes("<SkillbookPanel onClose="), "Official Atlas Skillbook must be accessible from War Table");
   assert(app.includes("t-growth-result") && app.includes("campaignMission && recordedCampaignResult") && app.includes("fieldOp && recordedFieldResult") && app.includes("matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId)") && app.includes("matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId)"), "Skillbook points must require a run-and-mission matching server receipt");
   assert(store.includes("upgradePlayerGrowth(") && store.includes("respecPlayerGrowth("));
   const t = readFileSync("tactical-ops-src/combat/battle.ts", "utf8");

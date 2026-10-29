@@ -9,6 +9,7 @@ const root = join(fileURLToPath(new URL("..", import.meta.url)));
 const mapping = readFileSync(join(root, "tactical-ops-src/ui/tacticalActionIcons.ts"), "utf8");
 const battle = readFileSync(join(root, "tactical-ops-src/ui/Battle.tsx"), "utf8");
 const skillbook = readFileSync(join(root, "tactical-ops-src/ui/Skillbook.tsx"), "utf8");
+const atlas = readFileSync(join(root, "tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx"), "utf8");
 const css = readFileSync(join(root, "tactical-ops-src/tactical.css"), "utf8");
 
 const assetIds = [
@@ -42,7 +43,7 @@ assert.ok(battle.includes("tacticalActionImageForSkill(sk.id)"), "Dock skill ico
 assert.ok(battle.includes('tacticalActionImageForCommand("recover")'), "Recover icon binding");
 assert.ok(battle.includes('tacticalActionImageForCommand("skip")'), "Skip icon binding");
 assert.ok(battle.includes('classList.add("has-icon-error")'), "Image load fallback");
-assert.ok(skillbook.includes("tacticalActionImageForSkill(id)"), "Skillbook icon binding");
+assert.ok(skillbook.includes('<SignalAtlas onClose={onClose} />') && atlas.includes("tacticalActionImageForSkill(skillId)"), "Official Skillbook icon binding");
 assert.ok(css.includes('action_system_move.png'), "Movement marker icon binding");
 assert.ok(css.includes("pointer-events: none;"), "Icon art must not intercept input");
 console.log("verify_tactical_ops_action_icons: 14 PNG + skill mapping + presentation wiring PASS");

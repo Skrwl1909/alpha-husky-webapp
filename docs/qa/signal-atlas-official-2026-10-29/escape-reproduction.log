@@ -1,0 +1,36 @@
+11:33:33 [vite] (client) Re-optimizing dependencies because vite config has changed
+11:33:36 [vite] (client) [optimizer] scanning dependencies...
+11:33:38 [vite] (client) [optimizer] bundling dependencies...
+PASS official route {"runtime":"source","width":320,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"source","width":320,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"source","width":360,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"source","width":360,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"source","width":390,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"source","width":390,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"source","width":430,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"source","width":430,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"bundle","width":320,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"bundle","width":320,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"bundle","width":360,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"bundle","width":360,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"bundle","width":390,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"bundle","width":390,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+PASS official route {"runtime":"bundle","width":430,"growth":1,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":true}
+PASS official route {"runtime":"bundle","width":430,"growth":2,"version":"tactical_ops.js v3.6.9-official-signal-atlas","onlySkillbook":true,"mastery":true,"closeToCommand":true,"noEffectBlocked":false}
+node:internal/modules/run_main:122
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Escape inside confirmation must not close Tactical Ops
+
+0 !== 1
+
+    at file:///K:/ALPHA_WORKSPACE/ALPHA_FRONTEND_CLEAN/tools/verify_tactical_signal_atlas_default_browser.mjs:104:10 {
+  generatedMessage: false,
+  code: 'ERR_ASSERTION',
+  actual: 0,
+  expected: 1,
+  operator: 'strictEqual'
+}
+
+Node.js v22.14.0

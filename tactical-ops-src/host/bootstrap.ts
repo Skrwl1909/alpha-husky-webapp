@@ -227,6 +227,8 @@ function unlockScroll(): void {
 
 function onKey(e: KeyboardEvent): void {
   if (!M.isOpen || e.key !== "Escape") return;
+  // The Atlas confirmation owns Escape before the surrounding host can close.
+  if (document.querySelector('.tsa-dialog[aria-modal="true"]')) return;
   const t = useBattleStore.getState();
   if (t.screen === "battle" && t.battle.mode === "targeting") {
     t.cancel();
