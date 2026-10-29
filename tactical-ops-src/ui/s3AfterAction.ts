@@ -1,6 +1,7 @@
 import type { FieldResult } from "../data/fieldOps";
 import type { FoundationProgressionState, CampaignResult } from "../host/foundationProgression";
 import { getMissionDef } from "../data/operations";
+import { commandPurpose } from "./returnPurpose";
 import { nextFieldMission } from "./missionPurpose";
 
 /** Read-only S3 consequence proof. Server receipt, never player-side reward calculation. */
@@ -10,7 +11,7 @@ export type AfterActionProof = { label: string; detail: string; source: "SERVER_
 export function confirmedConsequence(field: FieldResult | null, campaign: CampaignResult | null, progression: FoundationProgressionState | null): AfterActionProof | null {
   if (field) {
     if (field.regionalApplied && field.pressureBefore !== field.pressureAfter) {
-      const delay = field.pressureAfter < 2 ? "Relevant reinforcements now arrive one round later." : "Reinforcements remain on schedule.";
+      const delay = field.pressureAfter < 2 ? "New relevant Field Ops use a one-round reinforcement delay; already accepted runs keep their original timing." : "Reinforcements remain on schedule.";
       return { label: "SIGNAL PRESSURE CHANGED", detail: `Pressure ${field.pressureBefore} → ${field.pressureAfter}. ${delay}`, source: "SERVER_RECEIPT" };
     }
     if (field.advancedUnlocked) return { label: "ADVANCED DIRECTIVES UNLOCKED", detail: "A new tactical challenge is available at the War Table.", source: "SERVER_RECEIPT" };
@@ -33,7 +34,7 @@ export function confirmedReturnAction(field: FieldResult | null, campaign: Campa
   const run = field || campaign;
   if (run && !run.victory) return { title: "TRY A DIFFERENT TACTIC", reason: "Review the mission objective and change your squad or route. No clear reward was recorded.", missionId: run.missionId };
   if (field) {
-    const next = nextFieldMission(progression.fieldOps, field.missionId);
+    const next = commandPurpose(progression).primary || nextFieldMission(progression.fieldOps, field.missionId);
     const mission = getMissionDef(next.missionId);
     return { title: mission?.name || "WAR TABLE", reason: next.reason, missionId: mission?.missionId || null };
   }

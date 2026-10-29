@@ -76,6 +76,7 @@ function parseFieldResult(raw: unknown): FieldResult | null {
   if (!Array.isArray(value.unlockedApproaches) || !value.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
   return {
     ...value,
+    rewardAmountsAvailable: Number.isInteger(value.xpGranted) && Number.isInteger(value.bonesGranted),
     xpGranted: Number.isInteger(value.xpGranted) ? Number(value.xpGranted) : 0,
     bonesGranted: Number.isInteger(value.bonesGranted) ? Number(value.bonesGranted) : 0,
   };

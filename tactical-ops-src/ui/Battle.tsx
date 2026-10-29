@@ -21,7 +21,7 @@ import type { PlayerIdentity } from "../host/identity";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
-import { missionLiveProgress, objectiveDirective } from "./missionPurpose";
+import { missionLiveProgress, objectiveDirective, recoverGuidance } from "./missionPurpose";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
@@ -384,7 +384,7 @@ function ObjectiveChip() {
   const body =
     objective?.type === "RECOVER"
       ? jammed
-        ? "Even rounds only"
+        ? recoverGuidance(battle).action
         : "Reach the relay and recover"
       : rulesText;
   const extras = [
@@ -399,7 +399,7 @@ function ObjectiveChip() {
       : mission?.challenge?.type === "TURN_LIMIT"
         ? mission.challenge.limit
         : null;
-  const detail = training ? trainingCue?.copy || trainingEncounter?.teaching || "" : `${directive.action}${body ? ` ${body}` : ""}${extras ? ` · ${extras}` : ""}`;
+  const detail = training ? trainingCue?.copy || trainingEncounter?.teaching || "" : `${directive.action}${body && objective?.type !== "RECOVER" ? ` ${body}` : ""}${extras ? ` · ${extras}` : ""}`;
   // Keep the task distinct from its live state in the fixed mobile HUD card.
   // The longer objective and rules remain available in the existing details.
   const heading = !training && objective?.type === "RECOVER"
@@ -491,7 +491,7 @@ function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBatt
           type="button"
           className={`t-act t-act-obj kind-${RECOVER_PRESENTATION.archetype} fx-${RECOVER_PRESENTATION.effectClass} ${recoverReady ? "on" : "cooling"}`}
           disabled={!allyTurn || !recoverReady}
-          aria-label={recoverReady && allyTurn ? "Recover. Complete objective, consumes action." : !recoverSignalOpen(battle) ? "Recover unavailable. Signal jammed." : "Recover unavailable. Move within relay range on your turn."}
+          aria-label={recoverReady && allyTurn ? "Recover. Complete objective, consumes action." : `Recover unavailable. ${recoverGuidance(battle).action}`}
           onClick={() => {
             unlockAudio();
             selectRecover();
@@ -500,7 +500,7 @@ function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBatt
           <ActionArt src={tacticalActionImageForCommand("recover")} archetype={RECOVER_PRESENTATION.archetype} />
           <span className="slot">OBJ</span>
           <span className="name">RECOVER</span>
-          <span className="meta">{!allyTurn ? "WAIT" : recoverReady ? "READY" : !recoverSignalOpen(battle) ? "JAMMED" : "GET CLOSER"}</span>
+          <span className="meta">{!allyTurn ? "WAIT" : recoverReady ? "READY" : !recoverSignalOpen(battle) ? `ROUND ${Math.ceil(battle.round / (battle.directive?.recoverEveryRounds || 1)) * (battle.directive?.recoverEveryRounds || 1)}` : "GET CLOSER"}</span>
         </button>
       ) : null}
     </div>

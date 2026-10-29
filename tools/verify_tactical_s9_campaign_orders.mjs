@@ -16,7 +16,7 @@ try {
  p.fieldOps.activeMissionRun=null;p.fieldOps.commander.unlockedDirectiveTiers=["standard","advanced"];
  assert.equal(orders(p).find(x=>x.id==="advanced").missionId,"field-rearguard");
  p.fieldOps.board.cycleId=43;assert.equal(orders(p).find(x=>x.id==="front").missionId,"field-relay-hold");
- const app=readFileSync("tactical-ops-src/ui/App.tsx","utf8");assert(app.includes("tacticalCampaignOrders(progression)"));assert(app.includes("t-campaign-orders"));
+ const app=readFileSync("tactical-ops-src/ui/App.tsx","utf8");assert(app.includes("commandPurpose(progression)"));assert(app.includes("data-primary-purpose"));assert(!app.includes("campaignOrders.map("),"Command renders one deduplicated decision hierarchy");
  assert(!readFileSync("tactical-ops-src/ui/tacticalCampaignOrders.ts","utf8").includes("localStorage"));
  console.log("PASS S9: story, rotation, challenges, accepted run, advanced gating, career truth, no local fake progression");
 }finally{await server.close()}

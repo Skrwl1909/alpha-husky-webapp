@@ -84,7 +84,7 @@ try{
         assert.notEqual(m.objective[0].text,m.objective[1].text,label+' duplicate objective/status');
       }
       // Paired evidence at every requested width plus both accepted grids at 320px.
-      if(scene==='recover' || (w===320&&scene==='hold') || (w===360&&!legacy&&scene==='intercept'))
+      if(scene==='recover' || scene==='recover-jammed' || (w===320&&scene==='hold') || (w===360&&!legacy&&scene==='intercept'))
         await page.screenshot({path:`${out}/${label}.png`});
       if(scene==='recover' || scene==='recover-jammed'){
         const recover=page.getByRole('button',{name:/^Recover/});
@@ -101,6 +101,7 @@ try{
           if(phase==='after') assert([...cooling.skillNames,...cooling.skillStates].every(t=>!t.clipped),label+' clipped cooldown card');
         }
         const expanded=await measure();
+        if(scene==='recover-jammed' && w===390 && !legacy) await page.screenshot({path:`${out}/${label}-window-detail.png`});
         assert.deepEqual(expanded.field,before.field,label+' objective details moved board');
         assert.deepEqual(expanded.dock,before.dock,label+' objective details moved dock');
         await page.locator('.t-obj-chip').click();

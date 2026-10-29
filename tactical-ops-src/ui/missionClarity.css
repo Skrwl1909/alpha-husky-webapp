@@ -142,3 +142,17 @@
   #tacticalOpsRoot .t-training-overview *,
   #tacticalOpsRoot .t-mission-extra { animation: none !important; transition: none !important; }
 }
+
+/* Player purpose uses the existing Command surfaces and natural mobile flow. */
+#tacticalOpsRoot .t-purpose-alternatives {display:grid;gap:12px;margin:16px 0;min-width:0}
+#tacticalOpsRoot .t-purpose-alternatives article {border-top:1px solid #315266;padding:14px 0;min-width:0}
+#tacticalOpsRoot .t-purpose-alternatives h3 {margin:6px 0;font-size:16px}
+#tacticalOpsRoot .t-purpose-alternatives p,
+#tacticalOpsRoot .t-purpose-memory p,
+#tacticalOpsRoot .t-purpose-result p {font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-purpose-memory {margin:16px 0;padding:14px 0;border-top:1px solid #315266;min-width:0}
+#tacticalOpsRoot .t-purpose-result b {display:block;color:var(--t-accent);font-size:11px;letter-spacing:.08em}
+#tacticalOpsRoot .t-purpose-alternatives .t-btn,
+#tacticalOpsRoot .t-purpose-memory .t-btn {min-height:44px;max-width:100%;white-space:normal}
+#tacticalOpsRoot .t-command-mission-feature .t-wt-reward-chips {display:flex;flex-wrap:wrap;overflow:visible}
+#tacticalOpsRoot .t-command-mission-feature .t-wt-reward-chips span {min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere}
