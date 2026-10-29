@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "previousHttpRequests": 79,
+  "previousDiagnosticsRequests": 67,
+  "frontendCoreUnchangedFrom": "fb284197752d1ae32a819c1e24b2e45f223605b7",
+  "unchangedPaths": [
+    "tactical-ops-src/combat",
+    "tactical-ops-src/data/operations.ts",
+    "tactical-ops-src/data/playerGrowth.ts",
+    "tactical-ops-src/store/battleStore.ts",
+    "tactical-ops-src/host/foundationProgression.ts"
+  ],
+  "backendHashesUnchanged": true,
+  "previousHttpEvidenceSha256": "277c7a50380ed952a724707e6d7bb6715f7a271efcdf5ac198a1f45f5b933eac",
+  "previousDiagnosticsEvidenceSha256": "91394370f583a5b41022b48366d0ac353f9042ccd7bd02ecbbf9618ae0aaf139",
+  "reused": [
+    "mission start/resume/continue",
+    "receipt idempotency and reload",
+    "Pack Mastery",
+    "RECON Intel exactly once",
+    "canonical resolver and growth rejection paths"
+  ]
+}

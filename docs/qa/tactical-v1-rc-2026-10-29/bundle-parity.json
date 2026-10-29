@@ -1,0 +1,6 @@
+{
+  "localBundleSha256": "4db383565ab7a8037df0ab4151177d26ea649ebe7c72c030986af7b4c2c08b13",
+  "deterministicLocalRebuild": true,
+  "version": "3.6.10-v1-release-candidate",
+  "sourceIifeBrowserGate": "PASS 38 scenario groups"
+}

@@ -1,10 +1,11 @@
 /** Official route + production-IIFE parity. Real UI/store, synthetic transport only. */
 import assert from 'node:assert/strict';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createServer} from 'vite';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const out=process.env.ATLAS_DEFAULT_OUT||'artifacts/signal-atlas-official/default-route';
 mkdirSync(out,{recursive:true});
+const expectedVersion=readFileSync('tactical-ops-src/version.ts','utf8').match(/VERSION\s*=\s*"([^"]+)"/)[1];
 const entry=`
 const params=new URLSearchParams(location.search),version=Number(params.get('growth')||1);
 let canonical={version:1,foundationStage:'completed',completed:true,revision:10,activeRunId:null,
@@ -16,9 +17,23 @@ let canonical={version:1,foundationStage:'completed',completed:true,revision:10,
  heroes:['alpha','ally-02','ally-03'].map(heroId=>({heroId,discipline:null,ranks:{},respecUsed:false}))},
  packMastery:Object.fromEntries(['ally-02','ally-03'].map(id=>[id,{progress:8,stage:3,selected:'A',unlockedOptions:['A','B']}]))};
 const calls=[],receipts=new Map();let mode='ok';
-window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical)};
+window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical),active:kind=>{
+ canonical.activeRunId=null;delete canonical.fieldOps;delete canonical.chapterActiveMission;delete canonical.tacticalChapter;
+ canonical.operations['broken-signal'].activeMissionRun=null;delete canonical.operations['dead-relay'];
+ canonical.playerGrowth.heroes[0]={heroId:'alpha',discipline:'vanguard',ranks:{'alpha-strike':1},respecUsed:false};
+ canonical.playerGrowth.spentPoints=1;canonical.revision++;
+ const run={runId:'synthetic-accepted',missionId:'dead-relay-courier',squadIds:['alpha']};
+ if(kind==='foundation')canonical.activeRunId=run.runId;
+ if(kind==='campaign')canonical.operations['dead-relay']={status:'active',missions:{'dead-relay-courier':'available'},activeMissionRun:run,lastCompletedMissionRunId:null};
+ if(kind==='field')canonical.fieldOps={records:{},activeMissionRun:{...run,missionId:'field-relay-hold'},lastCompletedMissionRunId:null};
+ if(kind==='chapter'){
+  canonical.tacticalChapter={version:1,chapterId:'edge-relay',status:'ACTIVE',doctrine:'RECON',revision:0,completedMissionIds:[],activeRunId:run.runId,intelEffect:'NONE',intelConsumedByRunId:null,lastReceiptId:null};
+  canonical.chapterActiveMission={...run,missionId:'field-relay-recovery',chapterContext:{version:1,chapterId:'edge-relay',doctrine:'RECON',stageIndex:0},
+   rulesContract:{rulesetVersion:'tactical-intent-vnext.0',missionId:'field-relay-recovery',missionRevision:1,combatProfileVersion:3,masterySnapshotVersion:1,rewardPolicyVersion:1,source:'BACKEND_SNAPSHOT'}};
+ }
+}};
 window.apiPost=async(path,body={})=>{
- calls.push({path,body});if(path.endsWith('/state'))return {ok:true,data:structuredClone(canonical)};
+ calls.push({path,body});if(path.endsWith('/state')){if(mode==='refresh-network')throw Error('synthetic refresh failure');return {ok:true,data:structuredClone(canonical)};}
  if(!['/webapp/tactical-foundation/growth/upgrade','/webapp/tactical-foundation/growth/respec'].includes(path))throw Error('unexpected fixture request '+path);
  await new Promise(resolve=>setTimeout(resolve,250));
  if(mode==='network')throw Error('synthetic disconnected before commit');
@@ -73,7 +88,7 @@ try{
   await load(runtime,width,growth);await layout();
   assert.equal(await page.locator('.tsa-root').count(),1);
   const version=await page.evaluate(()=>window.__AH_TACTICAL_OPS_VER__);
-  assert.equal(version,'tactical_ops.js v3.6.9-official-signal-atlas');
+  assert.equal(version,expectedVersion);
   await page.getByRole('button',{name:'PACK MASTERY',exact:true}).click();
   assert.equal(await page.locator('.tsa-root').count(),0);
   await page.locator('.t-pack-mastery').waitFor();
@@ -106,6 +121,8 @@ try{
    await page.evaluate(mode=>fixture.mode(mode),mode);
    await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).click();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();
    await page.getByRole('alert').filter({hasText:code}).first().waitFor();
+   assert.equal(await page.getByRole('alert').filter({hasText:code}).count(),1,'one readable error, not duplicated in the War Table header');
+   assert.equal(await page.locator('.t-wt-error').count(),0);
    assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),0);
    assert.equal(await page.locator('.tsa-feedback.success').count(),0);
   }
@@ -118,10 +135,55 @@ try{
   await page.getByText(/This hero's one-time reset was used/).waitFor();
   assert(await page.getByRole('button',{name:'ONE-TIME RESET USED',exact:true}).isDisabled());
   assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),0);
+  await page.evaluate(()=>fixture.mode('refresh-network'));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.getByRole('alert').filter({hasText:'progression_request_failed'}).waitFor();
+  assert.equal(await page.getByRole('alert').count(),1,'refresh failures remain readable after local success feedback');
+  assert.equal(await page.locator('.tsa-feedback.success,.t-wt-error').count(),0);
+  await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
+  assert.equal(await page.locator('.t-wt-error[role="alert"]').count(),1,'global error resumes when Atlas is closed');
+  await page.evaluate(()=>fixture.mode('ok'));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.getByRole('alert').waitFor({state:'detached'});
+  await page.getByRole('button',{name:'03 SQUAD',exact:true}).click();
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.tsa-root').count(),0,'Escape outside confirmation retains the host close behavior');
   assert.equal(await page.evaluate(()=>window.TacticalOps.getState().open),false);
   results.push({runtime,dialogEscape:true,hostEscape:true,canonicalFailureCodes:true,noRetry:true,canonicalPurchase:true,oneTimeRespec:true});
+ }
+ // One active-run family per requested width, in both saved Growth contracts and runtimes.
+ for(const runtime of ['source','bundle'])for(const [width,kind] of [[320,'foundation'],[360,'campaign'],[390,'field'],[430,'chapter']])for(const growth of [1,2]){
+  await load(runtime,width,growth);await page.evaluate(kind=>fixture.active(kind),kind);
+  await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.getByText('ACTIVE RUN · COMPLETE CURRENT MISSION',{exact:true}).waitFor();
+  const frozen=await page.evaluate(()=>JSON.stringify(fixture.state()));
+  await page.getByRole('button',{name:/Open ASSAULT/}).click();
+  await page.getByRole('button',{name:/STRIKE rank 2, active-run:/}).click();
+  assert(await page.getByRole('button',{name:'COMPLETE CURRENT MISSION',exact:true}).isDisabled());
+  assert(await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).isDisabled());
+  assert.equal(await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).count(),0);
+  assert.equal(await page.evaluate(()=>fixture.calls.filter(c=>/growth\/(upgrade|respec)$/.test(c.path)).length),0);
+  assert.equal(await page.evaluate(()=>JSON.stringify(fixture.state())),frozen,'locked inspection changes no accepted snapshot or points');
+  await layout();
+  if(growth===1)await page.screenshot({path:out+'/'+runtime+'-'+width+'-active-'+kind+'.png'});
+  await page.evaluate(()=>fixture.active(null));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).waitFor();
+  assert(await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).isEnabled());
+  results.push({runtime,width,growth,activeRun:kind,upgradeBlocked:true,respecBlocked:true,noRequests:true,refreshUnlock:true});
+ }
+ for(const runtime of ['source','bundle'])for(const action of ['upgrade','respec']){
+  await load(runtime,390,2);
+  if(action==='respec'){await page.evaluate(()=>fixture.active(null));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();}
+  await page.getByRole('button',{name:/Open ASSAULT/}).click();
+  if(action==='upgrade'){await page.getByRole('button',{name:/STRIKE rank 1,/}).click();await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).click();}
+  else await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).click();
+  await page.getByRole('dialog').waitFor();
+  // Model a background canonical refresh while the modal blocks pointer input.
+  await page.evaluate(()=>{fixture.active('field');document.querySelector('button[aria-label="Refresh Tactical Ops"]').click();});
+  await page.getByRole('dialog').getByText(/ACTIVE RUN/).waitFor();
+  assert(await page.getByRole('button',{name:'CONFIRM',exact:true}).isDisabled(),'new canonical run invalidates an already-open confirmation');
+  assert(await page.getByRole('dialog').getByText(/ACTIVE RUN/).isVisible());
+  await page.getByRole('button',{name:'CANCEL',exact:true}).click();
+  assert.equal(await page.evaluate(()=>fixture.calls.filter(c=>/growth\/(upgrade|respec)$/.test(c.path)).length),0);
+  results.push({runtime,action,confirmationInvalidatedByCanonicalRun:true});
  }
  assert.deepEqual(errors,[]);
  console.log('PASS official Atlas source/IIFE parity: '+results.length+' scenario groups');

@@ -2,6 +2,13 @@ import { rankChanges } from "../../data/buildPreview";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, resolveGrowthSkill, type Discipline, type HeroGrowth, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
 import { SIGNAL_ATLAS_SECTOR_EMBLEMS } from "./signalAtlasAssets";
+import type { FoundationProgressionState } from "../../host/foundationProgression";
+
+/** Mirrors the backend growth lock using only the canonical public snapshot. */
+export function hasActiveGrowthRun(state: Partial<FoundationProgressionState> | null | undefined): boolean {
+  return Boolean(state?.activeRunId || state?.chapterActiveMission || state?.tacticalChapter?.activeRunId ||
+    state?.fieldOps?.activeMissionRun || Object.values(state?.operations || {}).some(operation=>operation.activeMissionRun));
+}
 
 /** UI-only sector taxonomy: no additional backend progression or unlock conditions. */
 export type AtlasSector = { id: string; title: string; description: string; skillIds: readonly string[]; tone: "cyan" | "amber"; emblemSrc: string };
@@ -29,12 +36,12 @@ export const PATH_EXPLANATIONS: Record<Discipline, string> = {
   sentinel: "PACK SUPPORT also grants a brief GUARD.",
   medic: "MEND cooldown is reduced, to a minimum of one turn.",
 };
-export type NodeState = "base" | "recorded" | "available" | "maxed" | "needs-rank-one" | "no-points" | "different-discipline" | "no-effect" | "unavailable";
+export type NodeState = "base" | "recorded" | "available" | "maxed" | "needs-rank-one" | "no-points" | "different-discipline" | "no-effect" | "unavailable" | "active-run";
 export interface NodeView { id: string; skillId: string; rank: 0|1|2; title: string; state: NodeState; reason: string; changes: string[]; }
 export function nextSkillChanges(skillId: string, rank: 1|2, hero: HeroGrowth, path: Discipline, base?: import("../../combat/types").SkillDef): string[] {
   return rankChanges(base || getSkill(skillId), hero, rank, path);
 }
-export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: HeroGrowth | null, path: Discipline, points: number, baseSkill?: import("../../combat/types").SkillDef): NodeView {
+export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: HeroGrowth | null, path: Discipline, points: number, baseSkill?: import("../../combat/types").SkillDef, activeRun = false): NodeView {
   if (!HERO_SKILLS[heroId].includes(skillId)) throw Error("atlas_invalid_skill");
   const current = hero?.ranks[skillId] || 0;
   const info = rank ? UPGRADES.find(u=>u.skillId===skillId && u.rank===rank) : null;
@@ -43,6 +50,7 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
   if (rank===0) return { ...base, state:"base", reason:"Base action already available. No point required." };
   if (current >= rank) return { ...base, state:rank===2?"maxed":"recorded", reason:"Recorded in the server-owned Skillbook." };
   if (!hero || !info) return { ...base, state:"unavailable", reason:"Awaiting authenticated progression." };
+  if (activeRun) return { ...base, state:"active-run", reason:"Complete the current mission before upgrading or resetting skills. The accepted run keeps its saved build." };
   if (rank===2 && current<1) return { ...base, state:"needs-rank-one", reason:"Record Rank I of this skill first." };
   if (hero.discipline && hero.discipline!==path) return { ...base, state:"different-discipline", reason:"Another discipline is saved. A one-time respec may change it." };
   const changes = nextSkillChanges(skillId,rank,hero,path,baseSkill);
