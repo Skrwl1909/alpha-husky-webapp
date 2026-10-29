@@ -28,5 +28,15 @@
     "command": "node tools/verify_tactical_vnext_player_growth.mjs",
     "exit": 0,
     "output": "PASS: growth trees, ranks, immutable skill resolution, strict snapshot validation\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_command_deck.mjs",
+    "exit": 0,
+    "output": "PASS Command Deck source invariants: War Table and Brief tabs, saved actions, sticky navigation and deploy, version\r\nPASS Command Deck premium UX: compact command and exclusive squad progression views\r\nPASS Command Deck completion UX invariants\r\nPASS Mobile Mission Brief action dock in document flow\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_ops_action_icons.mjs",
+    "exit": 0,
+    "output": "verify_tactical_ops_action_icons: 14 PNG + skill mapping + presentation wiring PASS\r\n"
   }
 ]

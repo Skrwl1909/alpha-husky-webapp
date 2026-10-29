@@ -13,7 +13,7 @@ for (const id of ["command","missions","squad","archive"]) {
 for (const id of ["mission","squad","loadout","intel"]) {
   assert(brief.includes('briefTab === "'+id+'"'), "Mission Brief tab "+id);
 }
-for (const feature of ["<SkillbookPanel />", "<PackMasteryPanel />", "openOperationBrief", "BATTLEFIELD_LAB_KEY"]) {
+for (const feature of ["<SkillbookPanel onClose=", "<PackMasteryPanel />", "openOperationBrief", "BATTLEFIELD_LAB_KEY"]) {
   assert(war.includes(feature), "War Table functionality "+feature);
 }
 for (const feature of ["onClick={deploy}", "onClick={backToHub}", "selectKodaSidegrade", "selectShadowSidegrade", "selectedApproach", "selectedDirectiveTier", "readyCounters", "resuming ? savedRun?.packMastery"]) {
@@ -34,7 +34,8 @@ const mastery = readFileSync("tactical-ops-src/ui/PackMastery.tsx", "utf8");
 assert(war.includes('squadView === "skillbook"') && war.includes('squadView === "mastery"'), "Exclusive Squad views");
 assert(war.includes('setDeckTab("missions")'), "Front summary goes to Missions");
 assert(!war.includes('t-wt-front-row'), "Command no longer duplicates full Front list");
-assert(skillbook.includes('UNIT_DEFS[id].portrait'), "Skillbook roster includes authored character portraits");
+const atlas = readFileSync("tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx", "utf8");
+assert(skillbook.includes('<SignalAtlas onClose={onClose} />') && atlas.includes('UNIT_DEFS[id].portrait'), "Official Skillbook roster includes authored character portraits");
 assert(mastery.includes("t-premium-mastery-roster") && mastery.includes("selectedId"), "Mastery shows one companion at a time");
 assert(css.includes("t-premium-front-link") && css.includes("t-premium-squad-switch"), "Compact Command and Squad UI styling");
 console.log("PASS Command Deck premium UX: compact command and exclusive squad progression views");

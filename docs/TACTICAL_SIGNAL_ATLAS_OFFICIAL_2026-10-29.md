@@ -16,6 +16,7 @@ The new production-bootstrap regression reproduced one integration defect: the h
 | V1/V2 MEND eligibility: both disciplines, Mastery none/A/B, unowned/owned R1 | PASS, 24 combinations |
 | Existing G1 transactions | PASS: actual store/parser against synthetic transport; double-tap suppression, stale/non-2xx/network rejection, missing progression, reset and mastery locks |
 | Existing VNext Skillbook wire integration and player-growth checks | PASS |
+| Existing Command Deck navigation/portraits and action-icon checks, updated to follow the official Atlas wrapper | PASS |
 | Existing Atlas P3 responsive browser runner | PASS, 17 scenario groups; 320/360/390/430px, all heroes/sectors, ownership states, pending locks, confirmation focus, failure handling, zero effect, art fallback and safe-area checks |
 | New official route/source-IIFE parity runner | PASS, 18 scenario groups: four widths × both growth versions × both runtimes, plus source/IIFE action cases |
 | Production build, deterministic rebuild and JavaScript syntax | PASS |
@@ -26,6 +27,8 @@ The new browser runner uses the real production bootstrap, TacticalApp, host par
 The existing Atlas browser runner now enters through the official `SkillbookPanel` instead of bypassing it. Retired beta/legacy assertions were replaced with default-route assertions. The two SSR/store runners explicitly externalize React/Zustand and preserve dependency paths to avoid Windows test-environment inlining/spawn failures. Production store/HTTP and backend code were not modified.
 
 CI includes the official-route runner and existing asset/presentation checks in the Tactical G1 workflow. Local PASS does not claim a hosted-CI verdict.
+
+The repository's release workflow regenerated the production IIFE on Linux at `5c5a00326257d6814a72955ec42c918b5d2d4e02`. Only the generated bundle changed. The full 18-group source/IIFE browser parity gate was rerun against that exact artifact and passed. The evidence records its SHA-256 separately from the deterministic Windows build. Initial hosted checks caught the expected pre-sync bundle difference and a Command Deck assertion still targeting the removed legacy panel; that assertion and the related icon assertion now follow Atlas.
 
 ## Evidence
 
@@ -45,12 +48,16 @@ node tools/verify_tactical_signal_atlas_v2.mjs
 node tools/verify_tactical_g1_transactions.mjs
 node tools/verify_tactical_vnext_skillbook_integration.mjs
 node tools/verify_tactical_vnext_player_growth.mjs
+node tools/verify_tactical_command_deck.mjs
+node tools/verify_tactical_ops_action_icons.mjs
 npm run build:tactical-ops
 node --check js/tactical_ops.js
 node tools/verify_tactical_signal_atlas_p3_browser.mjs
 node tools/verify_tactical_signal_atlas_default_browser.mjs
 git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
 ```
+
+The final Git diff check is the Linux release-runner gate. Windows rebuild bytes are recorded separately and need not match the CI-generated IIFE; runtime parity is checked in both builds.
 
 ## Remaining release acceptance
 
