@@ -40,6 +40,22 @@ try {
   }
   assert.equal(atlas.getNodeView("alpha","alpha-strike",1,{...alpha,discipline:"howlkeeper"},"vanguard",2).state,"different-discipline");
   const r1={...alpha,discipline:"vanguard",ranks:{"alpha-strike":1}};
+  for(const version of [1,2])for(const state of [
+    {activeRunId:'foundation'},
+    {operations:{'broken-signal':{activeMissionRun:null},'dead-relay':{activeMissionRun:{runId:'campaign'}}}},
+    {fieldOps:{activeMissionRun:{runId:'field'}}},
+    {chapterActiveMission:{runId:'chapter'}},
+    {tacticalChapter:{activeRunId:'chapter'}},
+  ]){
+    const frozen=JSON.stringify(state);
+    assert(atlas.hasActiveGrowthRun(state));
+    const hero={...r1,rulesVersion:version};
+    assert.equal(atlas.getNodeView('alpha','alpha-strike',2,hero,'vanguard',5,undefined,atlas.hasActiveGrowthRun(state)).state,'active-run');
+    assert.equal(atlas.getNodeView('alpha','alpha-strike',1,hero,'vanguard',5,undefined,true).state,'recorded');
+    assert.equal(JSON.stringify(state),frozen,'eligibility never changes the accepted run');
+  }
+  assert.equal(atlas.hasActiveGrowthRun(null),false);
+  assert.equal(atlas.hasActiveGrowthRun({activeRunId:null,operations:{'broken-signal':{activeMissionRun:null}},fieldOps:{activeMissionRun:null}}),false);
   assert.equal(atlas.getNodeView("alpha","alpha-strike",1,r1,"vanguard",0).state,"recorded");
   assert.equal(atlas.getNodeView("alpha","alpha-strike",2,r1,"vanguard",2).state,"available");
   assert.deepEqual(atlas.nextSkillChanges("alpha-strike",2,r1,"vanguard"),["RANGE 2 → 3"]);

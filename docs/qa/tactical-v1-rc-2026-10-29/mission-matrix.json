@@ -1,0 +1,153 @@
+{
+  "mode": "VNext Lab engine only",
+  "missions": 12,
+  "runs": 136,
+  "victories": 136,
+  "byMission": {
+    "broken-signal-breach": {
+      "runs": 4,
+      "win": 4,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 16,
+      "counters": 13,
+      "roundMin": 4,
+      "roundMax": 6,
+      "dualWinsDifferent": 2
+    },
+    "broken-signal-recover": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 41,
+      "counters": 33,
+      "roundMin": 2,
+      "roundMax": 10,
+      "dualWinsDifferent": 6
+    },
+    "broken-signal-commander": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 83,
+      "counters": 60,
+      "roundMin": 3,
+      "roundMax": 8,
+      "dualWinsDifferent": 6
+    },
+    "field-relay-recovery": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 36,
+      "counters": 32,
+      "roundMin": 4,
+      "roundMax": 8,
+      "dualWinsDifferent": 6
+    },
+    "field-relay-hold": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 80,
+      "counters": 51,
+      "roundMin": 5,
+      "roundMax": 13,
+      "dualWinsDifferent": 6
+    },
+    "field-squad-survival": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 58,
+      "counters": 45,
+      "roundMin": 5,
+      "roundMax": 5,
+      "dualWinsDifferent": 6
+    },
+    "field-relay-intercept": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 53,
+      "counters": 13,
+      "roundMin": 2,
+      "roundMax": 7,
+      "dualWinsDifferent": 6
+    },
+    "field-isolated-hold": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 12,
+      "counters": 6,
+      "roundMin": 4,
+      "roundMax": 7,
+      "dualWinsDifferent": 6
+    },
+    "field-rearguard": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 47,
+      "counters": 41,
+      "roundMin": 6,
+      "roundMax": 6,
+      "dualWinsDifferent": 6
+    },
+    "dead-relay-courier": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 25,
+      "counters": 18,
+      "roundMin": 3,
+      "roundMax": 7,
+      "dualWinsDifferent": 6
+    },
+    "dead-relay-hold": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 80,
+      "counters": 51,
+      "roundMin": 5,
+      "roundMax": 13,
+      "dualWinsDifferent": 6
+    },
+    "dead-relay-guardian": {
+      "runs": 12,
+      "win": 12,
+      "loss": 0,
+      "unresolved": 0,
+      "policyStalls": 0,
+      "telegraphs": 76,
+      "counters": 55,
+      "roundMin": 3,
+      "roundMax": 8,
+      "dualWinsDifferent": 6
+    }
+  },
+  "limits": "Controller stalls are defects in scripted policies until isolated. Only two victories with different observed costs demonstrate viable alternatives."
+}

@@ -1,0 +1,162 @@
+{
+  "cases": [
+    {
+      "growthVersion": 1,
+      "grid": [
+        8,
+        5
+      ],
+      "runId": "mission_82ec87f9bcfa4eb89e3b25e35a412a9a",
+      "savedRank": 1,
+      "frozenGrowthRevision": 9,
+      "baseRange": 1,
+      "savedRange": 2,
+      "targetDistance": 2,
+      "unrankedRejected": true,
+      "rankedDamageApplied": true,
+      "resumeSnapshotUnchanged": true,
+      "physicalDeviceProof": false
+    },
+    {
+      "growthVersion": 2,
+      "grid": [
+        10,
+        7
+      ],
+      "runId": "mission_1aab98e306bf42fb8677e6e94084a53e",
+      "savedRank": 1,
+      "frozenGrowthRevision": 9,
+      "baseRange": 1,
+      "savedRange": 2,
+      "targetDistance": 2,
+      "unrankedRejected": true,
+      "rankedDamageApplied": true,
+      "resumeSnapshotUnchanged": true,
+      "physicalDeviceProof": false
+    }
+  ],
+  "requests": [
+    {
+      "label": "legacy",
+      "path": "/webapp/tactical-foundation/state",
+      "body": {},
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "legacy",
+      "path": "/webapp/tactical-foundation/growth/upgrade",
+      "body": {
+        "requestId": "strike-buy",
+        "expectedRevision": 8,
+        "heroId": "alpha",
+        "discipline": "vanguard",
+        "skillId": "alpha-strike",
+        "rank": 1
+      },
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "legacy",
+      "path": "/webapp/tactical-foundation/state",
+      "body": {},
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "legacy",
+      "path": "/webapp/tactical-foundation/mission/start",
+      "body": {
+        "requestId": "strike-new-run",
+        "expectedRevision": 9,
+        "missionId": "broken-signal-breach"
+      },
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "legacy",
+      "path": "/webapp/tactical-foundation/mission/start",
+      "body": {
+        "requestId": "strike-resume",
+        "expectedRevision": 10,
+        "missionId": "broken-signal-breach",
+        "squadIds": []
+      },
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "vnext",
+      "path": "/webapp/tactical-foundation/state",
+      "body": {},
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "vnext",
+      "path": "/webapp/tactical-foundation/growth/upgrade",
+      "body": {
+        "requestId": "strike-buy",
+        "expectedRevision": 8,
+        "heroId": "alpha",
+        "discipline": "vanguard",
+        "skillId": "alpha-strike",
+        "rank": 1
+      },
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "vnext",
+      "path": "/webapp/tactical-foundation/state",
+      "body": {},
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "vnext",
+      "path": "/webapp/tactical-foundation/mission/start",
+      "body": {
+        "requestId": "strike-new-run",
+        "expectedRevision": 9,
+        "missionId": "broken-signal-breach",
+        "rulesetVersion": "tactical-intent-vnext.0"
+      },
+      "status": 200,
+      "code": null
+    },
+    {
+      "label": "vnext",
+      "path": "/webapp/tactical-foundation/mission/start",
+      "body": {
+        "requestId": "strike-resume",
+        "expectedRevision": 10,
+        "missionId": "broken-signal-breach",
+        "squadIds": [],
+        "rulesetVersion": "tactical-intent-vnext.0"
+      },
+      "status": 200,
+      "code": null
+    }
+  ],
+  "limits": "Real isolated HTTP and deterministic engine targeting; synthetic authentication, no physical device.",
+  "status": "PASS",
+  "storageIsolation": {
+    "root": "disposable temporary directory",
+    "blocked": [],
+    "playerFileReads": 12,
+    "temporaryWrites": 25,
+    "existingDirectoryChecks": 7,
+    "legacyStoreTripwires": true,
+    "guardInstalledBeforeBackendImports": true
+  },
+  "authentication": "synthetic mapping; real HTTP routes/store",
+  "backendPayload": {
+    "tactical_ops_foundation.py": "66877d1fd53276385d75dd192d8e45eeafba1186929dd6c39082d4cec67ab4cb",
+    "webapp_tactical_foundation.py": "6230f0e2c51d30f910ad545671718fcba4206476114dd54b3f55526d98319d09",
+    "tactical_player_growth.py": "9341c92d9933171cf3028f340915ccc0f7332d4840fce54a7e4453b5bf8767bc"
+  },
+  "temporaryStorageRemoved": true
+}

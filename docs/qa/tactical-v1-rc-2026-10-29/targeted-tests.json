@@ -1,0 +1,37 @@
+[
+  {
+    "command": "node tools/verify_tactical_signal_atlas_v2.mjs",
+    "exit": 0,
+    "output": "14:07:40 [vite] (client) Re-optimizing dependencies because vite config has changed\r\n14:07:42 [vite] (client) [optimizer] scanning dependencies...\r\nPASS SIGNAL ATLAS V2 (React SSR): 3 heroes, 6 live UI sectors, 9 canonical skills, 18 ranks, all receipt/availability states, zero-effect gate, 50 demo-node layout, real store wiring\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_g1_transactions.mjs",
+    "exit": 0,
+    "output": "PASS G1 transactions: actual store/host receipt + reload; pending duplicate suppression; mocked stale/network; missing growth; one-time reset; chapter mastery lock; capped A/B. Server idempotency remains live-QA HOLD.\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_accepted_foundation_grid.mjs",
+    "exit": 0,
+    "output": "14:07:49 [vite] (client) Re-optimizing dependencies because vite config has changed\r\n14:07:50 [vite] (client) [optimizer] scanning dependencies...\r\nPASS: 10x7 accepted backend contract, 8x5 legacy fallback, Foundation data boundary\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_run_contract_wire.mjs",
+    "exit": 0,
+    "output": "14:07:53 [vite] (client) [optimizer] scanning dependencies...\r\nPASS: mocked mission-start acceptance, mismatched response rejection, 10x7 -> 8x5 -> 10x7 same-session rules, no global enable or backend writes\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_vnext_skillbook_integration.mjs",
+    "exit": 0,
+    "output": "PASS Growth: backend record, run snapshot, authored skills, Skillbook read/save/respec wiring\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_ops_failure_recording.mjs",
+    "exit": 0,
+    "output": "TAP version 13\r\n# Subtest: Field Op defeat records the result once\r\nok 1 - Field Op defeat records the result once\r\n  ---\r\n  duration_ms: 3.3315\r\n  ...\r\n# Subtest: Dead Relay failure must not record a Field Op\r\nok 2 - Dead Relay failure must not record a Field Op\r\n  ---\r\n  duration_ms: 0.3007\r\n  ...\r\n# Subtest: ordinary mission defeat remains on defeat screen\r\nok 3 - ordinary mission defeat remains on defeat screen\r\n  ---\r\n  duration_ms: 0.3235\r\n  ...\r\n# Subtest: victory is unaffected\r\nok 4 - victory is unaffected\r\n  ---\r\n  duration_ms: 0.289\r\n  ...\r\n# Subtest: stale generation cannot auto-record\r\nok 5 - stale generation cannot auto-record\r\n  ---\r\n  duration_ms: 0.4831\r\n  ...\r\n# Subtest: production bundle has the guard and valid JavaScript\r\nok 6 - production bundle has the guard and valid JavaScript\r\n  ---\r\n  duration_ms: 33.2891\r\n  ...\r\n1..6\r\n# tests 6\r\n# suites 0\r\n# pass 6\r\n# fail 0\r\n# cancelled 0\r\n# skipped 0\r\n# todo 0\r\n# duration_ms 56.0697\r\n"
+  },
+  {
+    "command": "node tools/verify_tactical_signal_atlas_p3.mjs",
+    "exit": 0,
+    "output": "PASS Signal Atlas P3: 13 integrated runtime references; asset existence, receipt guards, dialog containment, state labels, fallbacks\r\n"
+  }
+]

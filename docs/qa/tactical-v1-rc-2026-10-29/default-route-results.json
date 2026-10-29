@@ -1,0 +1,365 @@
+{
+  "browser": "156.0.8078.73",
+  "results": [
+    {
+      "runtime": "source",
+      "width": 320,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "source",
+      "width": 320,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "source",
+      "width": 360,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "source",
+      "width": 360,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "source",
+      "width": 390,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "source",
+      "width": 390,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "source",
+      "width": 430,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "source",
+      "width": 430,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "bundle",
+      "width": 320,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 320,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "bundle",
+      "width": 360,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 360,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "bundle",
+      "width": 390,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 390,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "bundle",
+      "width": 430,
+      "growth": 1,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 430,
+      "growth": 2,
+      "version": "tactical_ops.js v3.6.10-v1-release-candidate",
+      "onlySkillbook": true,
+      "mastery": true,
+      "closeToCommand": true,
+      "noEffectBlocked": false
+    },
+    {
+      "runtime": "source",
+      "dialogEscape": true,
+      "hostEscape": true,
+      "canonicalFailureCodes": true,
+      "noRetry": true,
+      "canonicalPurchase": true,
+      "oneTimeRespec": true
+    },
+    {
+      "runtime": "bundle",
+      "dialogEscape": true,
+      "hostEscape": true,
+      "canonicalFailureCodes": true,
+      "noRetry": true,
+      "canonicalPurchase": true,
+      "oneTimeRespec": true
+    },
+    {
+      "runtime": "source",
+      "width": 320,
+      "growth": 1,
+      "activeRun": "foundation",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 320,
+      "growth": 2,
+      "activeRun": "foundation",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 360,
+      "growth": 1,
+      "activeRun": "campaign",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 360,
+      "growth": 2,
+      "activeRun": "campaign",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 390,
+      "growth": 1,
+      "activeRun": "field",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 390,
+      "growth": 2,
+      "activeRun": "field",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 430,
+      "growth": 1,
+      "activeRun": "chapter",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "width": 430,
+      "growth": 2,
+      "activeRun": "chapter",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 320,
+      "growth": 1,
+      "activeRun": "foundation",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 320,
+      "growth": 2,
+      "activeRun": "foundation",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 360,
+      "growth": 1,
+      "activeRun": "campaign",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 360,
+      "growth": 2,
+      "activeRun": "campaign",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 390,
+      "growth": 1,
+      "activeRun": "field",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 390,
+      "growth": 2,
+      "activeRun": "field",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 430,
+      "growth": 1,
+      "activeRun": "chapter",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "bundle",
+      "width": 430,
+      "growth": 2,
+      "activeRun": "chapter",
+      "upgradeBlocked": true,
+      "respecBlocked": true,
+      "noRequests": true,
+      "refreshUnlock": true
+    },
+    {
+      "runtime": "source",
+      "action": "upgrade",
+      "confirmationInvalidatedByCanonicalRun": true
+    },
+    {
+      "runtime": "source",
+      "action": "respec",
+      "confirmationInvalidatedByCanonicalRun": true
+    },
+    {
+      "runtime": "bundle",
+      "action": "upgrade",
+      "confirmationInvalidatedByCanonicalRun": true
+    },
+    {
+      "runtime": "bundle",
+      "action": "respec",
+      "confirmationInvalidatedByCanonicalRun": true
+    }
+  ],
+  "errors": [],
+  "limits": "Real production bootstrap, UI, parser and store; synthetic transport responses. No backend or physical-device acceptance."
+}

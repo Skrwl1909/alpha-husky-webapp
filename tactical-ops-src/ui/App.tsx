@@ -196,6 +196,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
 function WarTable() {
   const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
   const [squadView, setSquadView] = useState<"skillbook" | "mastery">("skillbook");
+  const atlasVisible = deckTab === "squad" && squadView === "skillbook";
   const [selectedFieldOp, setSelectedFieldOp] = useState<string | null>(null);
   const progression = useBattleStore((s) => s.progression);
   const openOperationBrief = useBattleStore((s) => s.openOperationBrief);
@@ -303,7 +304,7 @@ function WarTable() {
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
             <h1 className="t-title t-wt-title">TACTICAL OPS</h1>
             <p className="t-wt-intro">Your next move starts here.</p>
-            {progressionError ? <p className="t-wt-error">{progressionError}</p> : null}
+            {progressionError && !atlasVisible ? <p className="t-wt-error" role="alert">{progressionError}</p> : null}
             {missionFirstClear ? <p className="t-wt-highlight">{firstClearMessage}</p> : null}
           </div>
           <button className="t-wt-refresh" type="button" disabled={loading} onClick={() => void refresh()} aria-label="Refresh Tactical Ops">
