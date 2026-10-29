@@ -1,0 +1,82 @@
+[
+  {
+    "script": "verify_tactical_mission_clarity",
+    "exit": 0,
+    "seconds": 0.08
+  },
+  {
+    "script": "verify_tactical_battlefield_p5",
+    "exit": 0,
+    "seconds": 0.74
+  },
+  {
+    "script": "verify_tactical_ops_ios_field_hud",
+    "exit": 0,
+    "seconds": 0.11
+  },
+  {
+    "script": "verify_tactical_ops_results_status_layout",
+    "exit": 0,
+    "seconds": 0.09
+  },
+  {
+    "script": "verify_tactical_battlefield_shell_closure",
+    "exit": 0,
+    "seconds": 0.14
+  },
+  {
+    "script": "verify_tactical_battlefield_visual_closure",
+    "exit": 0,
+    "seconds": 0.07
+  },
+  {
+    "script": "verify_tactical_visual_cohesion",
+    "exit": 0,
+    "seconds": 0.48
+  },
+  {
+    "script": "verify_tactical_vnext_run_contract_wire",
+    "exit": 0,
+    "seconds": 0.91
+  },
+  {
+    "script": "verify_tactical_accepted_foundation_grid",
+    "exit": 0,
+    "seconds": 1.41
+  },
+  {
+    "script": "verify_tactical_ops_vnext_scheduler",
+    "exit": 0,
+    "seconds": 0.72
+  },
+  {
+    "script": "verify_tactical_vnext_counterplay",
+    "exit": 0,
+    "seconds": 0.78
+  },
+  {
+    "script": "verify_tactical_combat_consequences",
+    "exit": 0,
+    "seconds": 1.33
+  },
+  {
+    "script": "verify_tactical_signal_atlas_p3",
+    "exit": 0,
+    "seconds": 0.09
+  },
+  {
+    "script": "verify_tactical_g1_fieldcraft",
+    "exit": 0,
+    "seconds": 0.92
+  },
+  {
+    "script": "verify_tactical_g1_transactions",
+    "exit": 0,
+    "seconds": 1.02
+  },
+  {
+    "script": "simulate_tactical_s2_full_combat",
+    "exit": 0,
+    "seconds": 1.4
+  }
+]

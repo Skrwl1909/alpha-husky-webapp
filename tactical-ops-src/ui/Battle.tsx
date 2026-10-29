@@ -400,10 +400,19 @@ function ObjectiveChip() {
         ? mission.challenge.limit
         : null;
   const detail = training ? trainingCue?.copy || trainingEncounter?.teaching || "" : `${directive.action}${body ? ` ${body}` : ""}${extras ? ` · ${extras}` : ""}`;
+  // Keep the task distinct from its live state in the fixed mobile HUD card.
+  // The longer objective and rules remain available in the existing details.
+  const heading = !training && objective?.type === "RECOVER"
+    ? objective.completed ? "RELAY RECOVERED" : "RECOVER RELAY"
+    : !training && objective?.type === "INTERCEPT" ? "INTERCEPT COURIER" : liveGoal || title;
+  const summary = training ? trainingCue?.title || "DEFEAT HOSTILES"
+    : objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE"
+    : objective?.type === "INTERCEPT" ? liveGoal === "COURIER STOPPED" ? liveGoal : "BEFORE THE EXIT"
+    : directive.status;
   return (
     <button type="button" className={`t-obj-chip t-hud-card ${training ? "is-training" : ""} ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? detail + " Tap to close details." : (trainingCue?.title || directive.status) + ". Tap for details."}`}>
-      <strong>{liveGoal || title}</strong>
-      <span className="t-objective-summary">{training ? trainingCue?.title || "DEFEAT HOSTILES" : objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE" : directive.status}</span>
+      <strong>{heading}</strong>
+      <span className="t-objective-summary">{summary}</span>
       <span className="t-objective-detail">{detail}</span>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
@@ -745,7 +754,7 @@ export function BattleScreen() {
           ) : null}
         </div>
       </div>
-      <footer className="t-dock">
+      <footer className={`t-dock${objective?.type === "RECOVER" && !objective.completed ? " has-recovery" : ""}`}>
         <button
           type="button"
           className="t-icon-btn"

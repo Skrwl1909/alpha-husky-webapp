@@ -1,0 +1,6754 @@
+{
+  "phase": "after",
+  "browser": "153.0.8010.0",
+  "results": [
+    {
+      "label": "320x568-v1",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 444
+      },
+      "dock": {
+        "x": 0,
+        "y": 496,
+        "width": 320,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 99.6875,
+          "y": 145.4375,
+          "width": 27.34375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 63.2265625,
+          "y": 203.15625,
+          "width": 28.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 96.1484375,
+          "y": 203.15625,
+          "width": 28.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 129.0546875,
+          "y": 203.15625,
+          "width": 28.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 23.109375,
+          "y": 260.875,
+          "width": 30.5625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 57.859375,
+          "y": 260.875,
+          "width": 30.5625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 92.59375,
+          "y": 260.875,
+          "width": 30.5625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 15.9140625,
+          "y": 318.59375,
+          "width": 32.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 52.4765625,
+          "y": 318.59375,
+          "width": 32.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 8.703125,
+          "y": 376.3125,
+          "width": 33.78125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 127.34375,
+          "y": 260.875,
+          "width": 30.5625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.828125,
+          "y": 260.875,
+          "width": 30.5625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 89.0546875,
+          "y": 318.59375,
+          "width": 32.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 125.6171875,
+          "y": 318.59375,
+          "width": 32.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 47.109375,
+          "y": 376.3125,
+          "width": 33.78125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 85.5,
+          "y": 376.3125,
+          "width": 33.78125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 498,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 498,
+          "width": 68.71875,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 122.625,
+          "y": 498,
+          "width": 68.734375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 193.265625,
+          "y": 498,
+          "width": 68.734375,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 265,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "320x568-hold",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 444
+      },
+      "dock": {
+        "x": 0,
+        "y": 496,
+        "width": 320,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 88.9140625,
+          "y": 150.5078125,
+          "width": 21.265625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 60.9921875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 86.1171875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 111.2421875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 31.1875,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 57.265625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 83.34375,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 26.5078125,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 53.5390625,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 21.8203125,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 109.40625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 161.5625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 80.5546875,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 107.5703125,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 49.7890625,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 77.7578125,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 498,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 498,
+          "width": 68.71875,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 122.625,
+          "y": 498,
+          "width": 68.734375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 193.265625,
+          "y": 498,
+          "width": 68.734375,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 265,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "320x568-intercept",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 444
+      },
+      "dock": {
+        "x": 0,
+        "y": 496,
+        "width": 320,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 88.9140625,
+          "y": 150.5078125,
+          "width": 21.265625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 60.9921875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 86.1171875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 111.2421875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 31.1875,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 57.265625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 83.34375,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 26.5078125,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 53.5390625,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 21.8203125,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 109.40625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 161.5625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 80.5546875,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 107.5703125,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 49.7890625,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 77.7578125,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 498,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 498,
+          "width": 68.71875,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 122.625,
+          "y": 498,
+          "width": 68.734375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 193.265625,
+          "y": 498,
+          "width": 68.734375,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 265,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "320x568-recover",
+      "viewport": {
+        "width": 320,
+        "height": 568
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 320,
+        "height": 444
+      },
+      "dock": {
+        "x": 0,
+        "y": 496,
+        "width": 320,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 88.9140625,
+          "y": 150.5078125,
+          "width": 21.265625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 60.9921875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 86.1171875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 111.2421875,
+          "y": 188.9765625,
+          "width": 22.109375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 31.1875,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 57.265625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 83.34375,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 26.5078125,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 53.5390625,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 21.8203125,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 109.40625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 161.5625,
+          "y": 227.4609375,
+          "width": 22.9375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 80.5546875,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 107.5703125,
+          "y": 265.9453125,
+          "width": 23.765625,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 49.7890625,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 77.7578125,
+          "y": 304.4296875,
+          "width": 24.609375,
+          "height": 33.859375,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 498,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 51,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 101,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 151,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 201,
+          "y": 497,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 271,
+          "y": 498,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-v1",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 656
+      },
+      "dock": {
+        "x": 0,
+        "y": 708,
+        "width": 360,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 112.1484375,
+          "y": 200.546875,
+          "width": 30.765625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 71.1328125,
+          "y": 285.828125,
+          "width": 32.578125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 108.1640625,
+          "y": 285.828125,
+          "width": 32.578125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 145.1953125,
+          "y": 285.828125,
+          "width": 32.578125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 25.9921875,
+          "y": 371.109375,
+          "width": 34.390625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 65.0859375,
+          "y": 371.109375,
+          "width": 34.390625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 104.1640625,
+          "y": 371.109375,
+          "width": 34.390625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 17.8984375,
+          "y": 456.390625,
+          "width": 36.203125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 59.0390625,
+          "y": 456.390625,
+          "width": 36.203125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 9.7890625,
+          "y": 541.671875,
+          "width": 38.015625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 143.2578125,
+          "y": 371.109375,
+          "width": 34.390625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 221.4296875,
+          "y": 371.109375,
+          "width": 34.390625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 100.1796875,
+          "y": 456.390625,
+          "width": 36.203125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 141.3203125,
+          "y": 456.390625,
+          "width": 36.203125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 52.9921875,
+          "y": 541.671875,
+          "width": 38.015625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 96.1796875,
+          "y": 541.671875,
+          "width": 38.015625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 710,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 135.96875,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 219.9375,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 305,
+          "y": 710,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-hold",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 656
+      },
+      "dock": {
+        "x": 0,
+        "y": 708,
+        "width": 360,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 100.0390625,
+          "y": 200.546875,
+          "width": 23.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 68.6328125,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 96.8984375,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 125.1640625,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 35.09375,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 64.421875,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 93.75,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 29.8125,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 60.21875,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 24.546875,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 123.09375,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 181.75,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 90.625,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 121.015625,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 56.015625,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 87.484375,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 710,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 135.96875,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 219.9375,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 305,
+          "y": 710,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-intercept",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 656
+      },
+      "dock": {
+        "x": 0,
+        "y": 708,
+        "width": 360,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 100.0390625,
+          "y": 200.546875,
+          "width": 23.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 68.6328125,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 96.8984375,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 125.1640625,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 35.09375,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 64.421875,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 93.75,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 29.8125,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 60.21875,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 24.546875,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 123.09375,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 181.75,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 90.625,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 121.015625,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 56.015625,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 87.484375,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 710,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 135.96875,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 219.9375,
+          "y": 710,
+          "width": 82.0625,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 305,
+          "y": 710,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "360x780-recover",
+      "viewport": {
+        "width": 360,
+        "height": 780
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 360,
+        "height": 656
+      },
+      "dock": {
+        "x": 0,
+        "y": 708,
+        "width": 360,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 360,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 100.0390625,
+          "y": 200.546875,
+          "width": 23.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 68.6328125,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 96.8984375,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 125.1640625,
+          "y": 257.40625,
+          "width": 24.859375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 35.09375,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 64.421875,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 93.75,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 29.8125,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 60.21875,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 24.546875,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 123.09375,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 181.75,
+          "y": 314.265625,
+          "width": 25.8125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 90.625,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 121.015625,
+          "y": 371.109375,
+          "width": 26.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 56.015625,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 87.484375,
+          "y": 427.96875,
+          "width": 27.6875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 710,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 51,
+          "y": 710,
+          "width": 61.328125,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 114.328125,
+          "y": 710,
+          "width": 61.34375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 177.671875,
+          "y": 710,
+          "width": 61.328125,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 241,
+          "y": 709,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 311,
+          "y": 710,
+          "width": 48,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-v1",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 720
+      },
+      "dock": {
+        "x": 0,
+        "y": 772,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 121.4921875,
+          "y": 217.1875,
+          "width": 33.328125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 77.0546875,
+          "y": 310.796875,
+          "width": 35.296875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 117.1796875,
+          "y": 310.796875,
+          "width": 35.296875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 157.2890625,
+          "y": 310.796875,
+          "width": 35.296875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 28.171875,
+          "y": 404.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 70.515625,
+          "y": 404.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 112.859375,
+          "y": 404.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 19.390625,
+          "y": 498,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 63.953125,
+          "y": 498,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 10.6015625,
+          "y": 591.59375,
+          "width": 41.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 155.203125,
+          "y": 404.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 239.875,
+          "y": 404.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 108.53125,
+          "y": 498,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 153.09375,
+          "y": 498,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 57.4140625,
+          "y": 591.59375,
+          "width": 41.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 104.2109375,
+          "y": 591.59375,
+          "width": 41.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 774,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 774,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 774,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-hold",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 720
+      },
+      "dock": {
+        "x": 0,
+        "y": 772,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 217.1875,
+          "width": 25.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 774,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 774,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 774,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-intercept",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 720
+      },
+      "dock": {
+        "x": 0,
+        "y": 772,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 217.1875,
+          "width": 25.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 774,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 774,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 774,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x844-recover",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 720
+      },
+      "dock": {
+        "x": 0,
+        "y": 772,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 217.1875,
+          "width": 25.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 774,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 51,
+          "y": 774,
+          "width": 71.328125,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 124.328125,
+          "y": 774,
+          "width": 71.34375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 197.671875,
+          "y": 774,
+          "width": 71.328125,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 271,
+          "y": 773,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 341,
+          "y": 774,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-v1",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 808
+      },
+      "dock": {
+        "x": 0,
+        "y": 860,
+        "width": 430,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 133.953125,
+          "y": 240.078125,
+          "width": 36.75,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 84.96875,
+          "y": 345.109375,
+          "width": 38.90625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 129.203125,
+          "y": 345.109375,
+          "width": 38.90625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 173.421875,
+          "y": 345.109375,
+          "width": 38.90625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 31.0546875,
+          "y": 450.15625,
+          "width": 41.078125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 77.7421875,
+          "y": 450.15625,
+          "width": 41.078125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 124.4296875,
+          "y": 450.15625,
+          "width": 41.078125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 21.3828125,
+          "y": 555.1875,
+          "width": 43.234375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 70.5234375,
+          "y": 555.1875,
+          "width": 43.234375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 12.390625,
+          "y": 660.234375,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 171.1171875,
+          "y": 450.15625,
+          "width": 41.078125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 264.4765625,
+          "y": 450.15625,
+          "width": 41.078125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 119.6640625,
+          "y": 555.1875,
+          "width": 43.234375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 168.8046875,
+          "y": 555.1875,
+          "width": 43.234375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 64,
+          "y": 660.234375,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 115.59375,
+          "y": 660.234375,
+          "width": 44,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 862,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 159.625,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 267.25,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 375,
+          "y": 862,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-hold",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 808
+      },
+      "dock": {
+        "x": 0,
+        "y": 860,
+        "width": 430,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 119.4765625,
+          "y": 240.078125,
+          "width": 28.578125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 81.9765625,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 115.7265625,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 149.4921875,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 41.9140625,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 76.9453125,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 111.9921875,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 35.6171875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 71.9296875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 29.328125,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 147.0234375,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 217.1015625,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 108.2421875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 144.5546875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 66.90625,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 104.5,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 862,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 159.625,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 267.25,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 375,
+          "y": 862,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-intercept",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 808
+      },
+      "dock": {
+        "x": 0,
+        "y": 860,
+        "width": 430,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 119.4765625,
+          "y": 240.078125,
+          "width": 28.578125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 81.9765625,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 115.7265625,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 149.4921875,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 41.9140625,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 76.9453125,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 111.9921875,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 35.6171875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 71.9296875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 29.328125,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 147.0234375,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 217.1015625,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 108.2421875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 144.5546875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 66.90625,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 104.5,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 862,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 159.625,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 267.25,
+          "y": 862,
+          "width": 104.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 375,
+          "y": 862,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "430x932-recover",
+      "viewport": {
+        "width": 430,
+        "height": 932
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 430,
+        "height": 808
+      },
+      "dock": {
+        "x": 0,
+        "y": 860,
+        "width": 430,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 430,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 119.4765625,
+          "y": 240.078125,
+          "width": 28.578125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 81.9765625,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 115.7265625,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 149.4921875,
+          "y": 310.09375,
+          "width": 29.703125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 41.9140625,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 76.9453125,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 111.9921875,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 35.6171875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 71.9296875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 29.328125,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 147.0234375,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 217.1015625,
+          "y": 380.125,
+          "width": 30.828125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 108.2421875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 144.5546875,
+          "y": 450.15625,
+          "width": 31.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 66.90625,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 104.5,
+          "y": 520.171875,
+          "width": 33.0625,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 862,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 51,
+          "y": 862,
+          "width": 84.65625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 137.65625,
+          "y": 862,
+          "width": 84.671875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 224.328125,
+          "y": 862,
+          "width": 84.671875,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 311,
+          "y": 861,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 381,
+          "y": 862,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-v1",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 276
+      },
+      "dock": {
+        "x": 0,
+        "y": 328,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 121.4921875,
+          "y": 107.96875,
+          "width": 33.328125,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 77.0546875,
+          "y": 143.84375,
+          "width": 35.296875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 117.1796875,
+          "y": 143.84375,
+          "width": 35.296875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 157.2890625,
+          "y": 143.84375,
+          "width": 35.296875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 28.171875,
+          "y": 179.734375,
+          "width": 37.25,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 70.515625,
+          "y": 179.734375,
+          "width": 37.25,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 112.859375,
+          "y": 179.734375,
+          "width": 37.25,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 19.390625,
+          "y": 215.609375,
+          "width": 39.21875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 63.953125,
+          "y": 215.609375,
+          "width": 39.21875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 10.6015625,
+          "y": 251.484375,
+          "width": 41.171875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 155.203125,
+          "y": 179.734375,
+          "width": 37.25,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 239.875,
+          "y": 179.734375,
+          "width": 37.25,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 108.53125,
+          "y": 215.609375,
+          "width": 39.21875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 153.09375,
+          "y": 215.609375,
+          "width": 39.21875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 57.4140625,
+          "y": 251.484375,
+          "width": 41.171875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 104.2109375,
+          "y": 251.484375,
+          "width": 41.171875,
+          "height": 31.5625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 330,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 330,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 330,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 330,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 330,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-hold",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 276
+      },
+      "dock": {
+        "x": 0,
+        "y": 328,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 113.2265625,
+          "width": 25.921875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 330,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 330,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 330,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 330,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 330,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-intercept",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 276
+      },
+      "dock": {
+        "x": 0,
+        "y": 328,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 113.2265625,
+          "width": 25.921875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 330,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 330,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 330,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 330,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 330,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x400-recover",
+      "viewport": {
+        "width": 390,
+        "height": 400
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 276
+      },
+      "dock": {
+        "x": 0,
+        "y": 328,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 113.2265625,
+          "width": 25.921875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 137.1484375,
+          "width": 26.9375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 161.0703125,
+          "width": 27.953125,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 184.9921875,
+          "width": 28.96875,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 208.9140625,
+          "width": 29.984375,
+          "height": 21.046875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 330,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 51,
+          "y": 330,
+          "width": 71.328125,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 124.328125,
+          "y": 330,
+          "width": 71.34375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 197.671875,
+          "y": 330,
+          "width": 71.328125,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 271,
+          "y": 329,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 341,
+          "y": 330,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-v1",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 520
+      },
+      "dock": {
+        "x": 0,
+        "y": 604,
+        "width": 390,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 121.4921875,
+          "y": 197.1875,
+          "width": 33.328125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 77.0546875,
+          "y": 264.796875,
+          "width": 35.296875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 117.1796875,
+          "y": 264.796875,
+          "width": 35.296875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 157.2890625,
+          "y": 264.796875,
+          "width": 35.296875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 28.171875,
+          "y": 332.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 70.515625,
+          "y": 332.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 112.859375,
+          "y": 332.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 19.390625,
+          "y": 400,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 63.953125,
+          "y": 400,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 10.6015625,
+          "y": 467.59375,
+          "width": 41.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 155.203125,
+          "y": 332.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 239.875,
+          "y": 332.390625,
+          "width": 37.25,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 108.53125,
+          "y": 400,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 153.09375,
+          "y": 400,
+          "width": 39.21875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 57.4140625,
+          "y": 467.59375,
+          "width": 41.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 104.2109375,
+          "y": 467.59375,
+          "width": 41.171875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 606,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 53,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.625,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.25,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 334,
+          "y": 606,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-hold",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 520
+      },
+      "dock": {
+        "x": 0,
+        "y": 604,
+        "width": 390,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 199.359375,
+          "width": 25.921875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 606,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 53,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.625,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.25,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 334,
+          "y": 606,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-intercept",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 520
+      },
+      "dock": {
+        "x": 0,
+        "y": 604,
+        "width": 390,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 199.359375,
+          "width": 25.921875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 606,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 53,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.625,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.25,
+          "y": 606,
+          "width": 90.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 334,
+          "y": 606,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "390x700-insets-recover",
+      "viewport": {
+        "width": 390,
+        "height": 700
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 390,
+        "height": 520
+      },
+      "dock": {
+        "x": 0,
+        "y": 604,
+        "width": 390,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 199.359375,
+          "width": 25.921875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 244.4375,
+          "width": 26.9375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 289.5,
+          "width": 27.953125,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 334.5625,
+          "width": 28.96875,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 379.625,
+          "width": 29.984375,
+          "height": 39.65625,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 606,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 606,
+          "width": 70.65625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 124.65625,
+          "y": 606,
+          "width": 70.671875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 197.328125,
+          "y": 606,
+          "width": 70.671875,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 270,
+          "y": 605,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 340,
+          "y": 606,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-v1",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 180
+      },
+      "dock": {
+        "x": 0,
+        "y": 264,
+        "width": 780,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 254.328125,
+          "y": 120.5078125,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 167.421875,
+          "y": 143.8984375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 247.65625,
+          "y": 143.8984375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 327.875,
+          "y": 143.8984375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 71.59375,
+          "y": 167.3046875,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 156.28125,
+          "y": 167.3046875,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 240.96875,
+          "y": 167.3046875,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 56,
+          "y": 190.7109375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 145.140625,
+          "y": 190.7109375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 40.390625,
+          "y": 214.1015625,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 325.65625,
+          "y": 167.3046875,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 495.015625,
+          "y": 167.3046875,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 234.28125,
+          "y": 190.7109375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 323.421875,
+          "y": 190.7109375,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 134,
+          "y": 214.1015625,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 227.59375,
+          "y": 214.1015625,
+          "width": 44,
+          "height": 20.578125,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 266,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 53,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 276.625,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 500.25,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 724,
+          "y": 266,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-hold",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 180
+      },
+      "dock": {
+        "x": 0,
+        "y": 264,
+        "width": 780,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 220.65625,
+          "y": 123.9375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 153.640625,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 214.875,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 276.125,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 82,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 145.546875,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 209.109375,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 71.59375,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 137.453125,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 61.1875,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 272.65625,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 399.765625,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 203.328125,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 269.1875,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 129.375,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 197.546875,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 266,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 53,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 276.625,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 500.25,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 724,
+          "y": 266,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-intercept",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 180
+      },
+      "dock": {
+        "x": 0,
+        "y": 264,
+        "width": 780,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 220.65625,
+          "y": 123.9375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 153.640625,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 214.875,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 276.125,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 82,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 145.546875,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 209.109375,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 71.59375,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 137.453125,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 61.1875,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 272.65625,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 399.765625,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 203.328125,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 269.1875,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 129.375,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 197.546875,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "INTERCEPT COURIER",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 266,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 53,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 276.625,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 500.25,
+          "y": 266,
+          "width": 220.75,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 724,
+          "y": 266,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "780x360-insets-recover",
+      "viewport": {
+        "width": 780,
+        "height": 360
+      },
+      "board": {
+        "x": 0,
+        "y": 84,
+        "width": 780,
+        "height": 180
+      },
+      "dock": {
+        "x": 0,
+        "y": 264,
+        "width": 780,
+        "height": 96
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 780,
+        "height": 84
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 220.65625,
+          "y": 123.9375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 153.640625,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 214.875,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 276.125,
+          "y": 139.53125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 82,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 145.546875,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 209.109375,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 71.59375,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 137.453125,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 61.1875,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 272.65625,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 399.765625,
+          "y": 155.140625,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 203.328125,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 269.1875,
+          "y": 170.734375,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 129.375,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 197.546875,
+          "y": 186.328125,
+          "width": 44,
+          "height": 13.71875,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "RECOVER RELAY",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 6,
+          "y": 266,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 54,
+          "y": 266,
+          "width": 199.328125,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 255.328125,
+          "y": 266,
+          "width": 199.34375,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 456.671875,
+          "y": 266,
+          "width": 199.328125,
+          "height": 60
+        },
+        {
+          "label": "Recover. Complete objective, consumes action.",
+          "x": 658,
+          "y": 265,
+          "width": 68,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 730,
+          "y": 266,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "idle-frame-sample",
+      "timing": {
+        "samples": 39,
+        "medianMs": 16.699999999999932,
+        "p95Ms": 16.700000000000045,
+        "maxMs": 16.799999999999955
+      }
+    },
+    {
+      "label": "fx-frame-sample",
+      "timing": {
+        "samples": 39,
+        "medianMs": 16.700000000000045,
+        "p95Ms": 16.800000000000182,
+        "maxMs": 16.800000000000182
+      }
+    },
+    {
+      "label": "target-mode",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 720
+      },
+      "dock": {
+        "x": 0,
+        "y": 772,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP. Legal target",
+          "x": 133.3515625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit is-legal-target"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP. Legal target",
+          "x": 131.109375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit is-legal-target"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Cancel targeting",
+          "x": 5,
+          "y": 774,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. CANCEL. Melee hit. Range 1.",
+          "x": 52,
+          "y": 773,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 774,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "expanded-hud",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "board": {
+        "x": 0,
+        "y": 52,
+        "width": 390,
+        "height": 720
+      },
+      "dock": {
+        "x": 0,
+        "y": 772,
+        "width": 390,
+        "height": 72
+      },
+      "hud": {
+        "x": 0,
+        "y": 0,
+        "width": 390,
+        "height": 52
+      },
+      "hits": [
+        {
+          "label": "Move to 2,0",
+          "x": 108.3671875,
+          "y": 217.1875,
+          "width": 25.921875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,1",
+          "x": 74.34375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,1",
+          "x": 104.96875,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 3,1",
+          "x": 135.59375,
+          "y": 279.59375,
+          "width": 26.9375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,2",
+          "x": 38.0234375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,2",
+          "x": 69.7890625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 2,2",
+          "x": 101.5703125,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,3",
+          "x": 32.3125,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 1,3",
+          "x": 65.234375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "Move to 0,4",
+          "x": 26.6015625,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-cell move"
+        },
+        {
+          "label": "HOUND DISRUPTOR. 65/65 HP",
+          "x": 133.3515625,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND MK-2. 68/68 HP",
+          "x": 196.8984375,
+          "y": 342,
+          "width": 27.953125,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "ALPHA. 108/120 HP",
+          "x": 98.171875,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "HOUND BULWARK. 92/92 HP",
+          "x": 131.109375,
+          "y": 404.390625,
+          "width": 28.96875,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "CNC. 84/96 HP",
+          "x": 60.6953125,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        },
+        {
+          "label": "SHADOW. 88/100 HP",
+          "x": 94.7734375,
+          "y": 466.796875,
+          "width": 29.984375,
+          "height": 44,
+          "centerHit": true,
+          "coveredBy": "t-hit t-unit-hit"
+        }
+      ],
+      "overlaps": [],
+      "missedCenters": 0,
+      "text": [
+        {
+          "text": "ALPHA",
+          "size": "11px"
+        },
+        {
+          "text": "108/120",
+          "size": "11px"
+        },
+        {
+          "text": "HOLD 1/3",
+          "size": "11px"
+        }
+      ],
+      "dockButtons": [
+        {
+          "label": "Mute",
+          "x": 5,
+          "y": 774,
+          "width": 44,
+          "height": 44
+        },
+        {
+          "label": "A1 STRIKE. READY. Melee hit. Range 1.",
+          "x": 52,
+          "y": 773.9403686523438,
+          "width": 91.40625,
+          "height": 60
+        },
+        {
+          "label": "A2 REND. READY. Heavy melee hit. Applies Bleed for 2 turns.",
+          "x": 146.28125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "A3 HOWL. READY. Squad pressure. Nearby allies gain ATK and SPD for 2 turns.",
+          "x": 240.578125,
+          "y": 774,
+          "width": 91.421875,
+          "height": 60
+        },
+        {
+          "label": "Skip",
+          "x": 335,
+          "y": 774,
+          "width": 54,
+          "height": 60
+        }
+      ],
+      "overflow": false
+    },
+    {
+      "label": "acceptance",
+      "checks": [
+        "Expanded HUD stable and retained; close/reopen/cancel",
+        "V1 8x5: stale VNext threat hidden",
+        "VNext multiple plans: target+hazard coexist, one engine-invalidated, one retained through busy then engine-resolved",
+        "RECOVER jammed/open/legal activation",
+        "Cooldown, no target, cancel and invalid coordinate leave action intact",
+        "Engine-confirmed READ → TARGET → REACT → RESOLVE capture and large target path",
+        "Actual production store target pointer, synchronous busy lock, duplicate touch rejected: alpha-strike",
+        "Real movement coordinates, board cancel, skip",
+        "Legal interrupt capability vs nonqualifying doctrine",
+        "SHADOW positive restoration vs no-op heal, no false success",
+        "Real WARDEN GUARD status, neutral caption without unsupported prevention amount",
+        "Alpha down/allies alive and real PET portrait failure fallback",
+        "Enemy turn lockout and engine-owned reinforcement marker lifetime",
+        "Victory/loss lockout; reduced motion/forced colors/large host text and mute roundtrip"
+      ]
+    }
+  ],
+  "errors": [],
+  "limits": "Chromium headless touch emulation; deterministic engine fixtures, no physical-device or live-server evidence."
+}

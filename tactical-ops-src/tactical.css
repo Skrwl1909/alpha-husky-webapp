@@ -4915,14 +4915,19 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-dock {grid-template-columns:44px minmax(0,1fr) 50px;gap:3px;padding-top:2px;padding-left:max(5px,var(--ah-safe-left,0px));padding-right:max(5px,var(--ah-safe-right,0px))}
 #tacticalOpsRoot .t-battle .t-icon-btn {width:44px;min-width:44px;height:44px;min-height:44px}
 #tacticalOpsRoot .t-battle .t-actions {min-height:60px}
+/* Four equal cards clipped RECOVER at 320px. Reserve its label width while
+   retaining the 60px dock and at least 44px for each of the three skill inputs. */
+#tacticalOpsRoot .t-battle .t-actions.has-obj {gap:2px}
+#tacticalOpsRoot .t-battle .t-actions.has-obj .t-act-obj {flex:0 0 68px}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-dock.has-recovery {grid-template-columns:44px minmax(0,1fr) 44px;gap:2px}
 #tacticalOpsRoot .t-battle .t-enemy-command {height:60px;min-height:60px;max-height:60px}
-#tacticalOpsRoot .t-battle .t-act {height:60px;min-height:60px;padding:7px 1px 3px;gap:1px}
-#tacticalOpsRoot .t-battle .t-act .name {font-size:10px;line-height:12px;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#tacticalOpsRoot .t-battle .t-act .meta {font-size:10px;line-height:12px;letter-spacing:0;color:#d0e5ec}
-#tacticalOpsRoot .t-battle .t-act .slot {font-size:9px;line-height:10px;letter-spacing:0}
+#tacticalOpsRoot .t-battle .t-act {height:60px;min-height:60px;padding:6px 1px 2px;gap:1px}
+#tacticalOpsRoot .t-battle .t-act .name {flex-shrink:0;font-size:10px;line-height:12px;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#tacticalOpsRoot .t-battle .t-act .meta {flex-shrink:0;margin-top:0;font-size:10px;line-height:12px;letter-spacing:0;color:#d0e5ec}
+#tacticalOpsRoot .t-battle .t-act .slot {position:absolute;font-size:9px;line-height:10px;letter-spacing:0}
 #tacticalOpsRoot .t-battle .t-act-art {width:24px;height:24px;flex:0 0 24px;margin:0 auto}
 #tacticalOpsRoot .t-battle .t-act.on {outline:1px solid #c1e9f1;outline-offset:-3px}
-#tacticalOpsRoot .t-battle .t-act .cd {font-size:11px}
+#tacticalOpsRoot .t-battle .t-act .cd {position:absolute;font-size:11px}
 #tacticalOpsRoot .t-battle .t-skip {min-width:44px;padding-inline:2px;font-size:11px;letter-spacing:0}
 #tacticalOpsRoot .t-cancel-label {font:400 24px/22px var(--t-font-sans)}
 #tacticalOpsRoot .t-cancel-label small {display:block;font:700 9px/10px var(--t-font-sans)}

@@ -1,0 +1,6 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> build:tactical-ops
+> node tools/build_tactical_ops.mjs
+
+build_tactical_ops: wrote js/tactical_ops.js (tactical_ops.js v3.6.8-mobile-objective-readability)
