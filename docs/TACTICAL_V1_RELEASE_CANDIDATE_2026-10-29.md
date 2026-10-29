@@ -24,6 +24,8 @@ While Atlas is open it is the single progression-error presenter. The War Table 
 
 The reused HTTP evidence covers mission/start/resume/continue, receipt replay/idempotency and disk reload, Pack Mastery, RECON Intel consumed once, canonical account resolution and growth rejection paths. A hash-checked reuse record identifies the prior evidence and unchanged source paths. It was not rerun as a large audit. The new STRIKE proof uses temporary users/ledger defaults, failing aggregate-store tripwires and a filesystem audit guard; no real authentication or accounts. Both purchases and accepted snapshots were independently read from temporary player JSON files, then the server and temporary storage were cleaned up.
 
+The repository release workflow regenerated the Linux IIFE at `251cc22bd542d1425ab99d561dd57061d17b892f`; source and tests were unchanged. That exact bundle passed 22 focused source/IIFE browser groups covering purchase/reset errors, refresh, all active-run families at the four widths, and confirmation invalidation. See [CI-bundle results](qa/tactical-v1-rc-2026-10-29/ci-bundle-results.json) and [both bundle hashes](qa/tactical-v1-rc-2026-10-29/bundle-parity.json). The Windows build was deterministic locally; its bytes are not assumed identical to Linux output.
+
 The private HTTP proof driver remains in the local release checkpoint; public evidence contains only synthetic requests/results. No private backend source was copied into the frontend repository. The backend, authenticated transport, transaction store, combat formulas and existing mission definitions are unchanged. No global Growth V2 activation, new gameplay, merge, deployment or production writes.
 
 ## Evidence
