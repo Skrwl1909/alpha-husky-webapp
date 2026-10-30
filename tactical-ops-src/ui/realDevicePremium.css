@@ -1,0 +1,109 @@
+/* DEPTH 01.1 — AAA clarity pass from real Android/Telegram playtest.
+   Presentation only: no accepted-run, combat, reward or backend mutation. */
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-hero-v29{
+  min-height:172px; padding:62px 16px 17px;
+  border-bottom:1px solid rgba(124,223,243,.58);
+  background:linear-gradient(120deg,#07111c,#0b2839);
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-hero-copy{
+  padding-top:0; max-width:100%; min-width:0;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-hero-copy .t-title{
+  font-size:clamp(24px,6.2vw,35px); line-height:1.08; letter-spacing:.035em;
+  text-shadow:0 3px 14px #000d;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-hero-copy p{
+  color:#dff6fc; font-size:clamp(12px,3.3vw,15px); line-height:1.4;
+  max-width:44ch; overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-command-nav{
+  position:relative; top:auto; z-index:2; margin:10px 0 12px;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-command-nav button{
+  min-height:55px;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-command-pane,
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-main,
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-card{
+  min-width:0; overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-main > strong{
+  font-size:clamp(17px,4vw,21px);line-height:1.3;letter-spacing:.005em;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-card strong{
+  font-size:clamp(12px,3.1vw,15px);line-height:1.35;overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-card small{
+  font-size:clamp(11px,2.9vw,13px);line-height:1.4;
+}
+#tacticalOpsRoot .t-lockdown-rule{
+  display:grid;gap:6px;margin:12px 0 4px;padding:14px 15px;
+  border:1px solid rgba(245,197,115,.64);border-left:4px solid #f2c67d;border-radius:7px;
+  background:linear-gradient(105deg,rgba(80,50,23,.52),rgba(9,30,43,.92));
+  box-shadow:inset 0 1px rgba(255,234,198,.08);
+}
+#tacticalOpsRoot .t-lockdown-rule strong{
+  font-size:clamp(13px,3.5vw,16px);letter-spacing:.08em;color:#ffe6b4;
+}
+#tacticalOpsRoot .t-lockdown-rule span{
+  font-size:clamp(12px,3.2vw,14px);line-height:1.5;color:#e3eefa;
+}
+#tacticalOpsRoot .t-deployment .t-codex-slot{padding:11px;min-width:0}
+#tacticalOpsRoot .t-deployment .t-codex-slot strong{font-size:clamp(11px,3vw,13px);line-height:1.35}
+#tacticalOpsRoot .t-deployment .t-codex-slot small{font-size:clamp(11px,2.9vw,12px);line-height:1.45}
+#tacticalOpsRoot .t-deployment .t-codex-counter b{font-size:12px}
+#tacticalOpsRoot .t-deployment .t-codex-counter small{font-size:11px}
+#tacticalOpsRoot .t-results .t-lockdown-achievement{
+  display:grid;gap:7px;margin:19px 0 10px;padding:16px 17px;
+  border:1px solid rgba(121,230,215,.65);border-left:4px solid #8de1cb;
+  border-radius:8px;background:linear-gradient(135deg,rgba(17,65,63,.7),rgba(8,28,43,.93));
+  box-shadow:0 8px 32px #0005,inset 0 1px #d5fff01c;
+}
+#tacticalOpsRoot .t-results .t-lockdown-achievement strong{
+  color:#edfff7;font-size:clamp(17px,4.5vw,22px);line-height:1.18;letter-spacing:.025em;
+}
+#tacticalOpsRoot .t-results .t-lockdown-achievement>span:last-child{
+  font-size:13px;color:#b9e7dc;line-height:1.45;
+}
+#tacticalOpsRoot .t-results .t-outcome-hero h2{
+  overflow-wrap:anywhere;text-wrap:balance;
+}
+#tacticalOpsRoot .t-results .t-purpose-result{
+  display:grid;gap:8px;min-width:0;
+}
+#tacticalOpsRoot .t-results .t-purpose-result p{
+  margin:0;padding:11px 12px;border:1px solid rgba(100,181,204,.24);
+  border-radius:6px;background:rgba(9,27,39,.55);line-height:1.55;overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .t-results .t-purpose-result b{margin-bottom:5px}
+#tacticalOpsRoot .t-results .t-result-actions{
+  position:static!important;inset:auto!important;transform:none!important;
+  z-index:auto!important;margin:17px 0 0;padding:15px 0 max(18px,env(safe-area-inset-bottom,0px));
+  background:linear-gradient(180deg,rgba(10,29,41,.65),rgba(6,16,25,.95));
+  border-top:1px solid rgba(106,202,227,.35);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;
+}
+#tacticalOpsRoot .t-results .t-result-actions .t-btn{
+  min-width:0;max-width:100%;min-height:51px;white-space:normal;
+  overflow-wrap:anywhere;font-size:clamp(11px,2.9vw,13px);line-height:1.35;
+  padding:11px 8px;letter-spacing:.03em;
+}
+#tacticalOpsRoot .t-results .t-result-actions .t-btn:only-child{grid-column:1/-1}
+#tacticalOpsRoot .t-results-overlay .t-results{
+  box-sizing:border-box;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding-bottom:max(22px,env(safe-area-inset-bottom,0px));
+}
+@media(max-width:430px){
+  #tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-hero-v29{min-height:172px;padding-top:61px}
+  #tacticalOpsRoot .t-deployment.t-premium-ux .t-command-nav button>strong{font-size:10px}
+  #tacticalOpsRoot .t-deployment .t-codex-slots{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  #tacticalOpsRoot .t-deployment .t-codex-slot{padding:10px}
+  #tacticalOpsRoot .t-results .t-result-actions{grid-template-columns:minmax(0,1fr)}
+  #tacticalOpsRoot .t-results .t-result-actions .t-btn{width:100%}
+}
+@media(min-width:431px) and (max-width:620px){
+  #tacticalOpsRoot .t-deployment .t-codex-slots{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+  #tacticalOpsRoot .t-lockdown-achievement,#tacticalOpsRoot .t-lockdown-rule{animation:none!important}
+}

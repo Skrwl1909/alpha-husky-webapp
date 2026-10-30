@@ -75,7 +75,7 @@ const ROLE_LABEL: Record<string, string> = {
 function objectiveHeadline(mission: NonNullable<ReturnType<typeof getMissionDef>>) {
   const objective = mission.objective;
   if (objective?.type === "INTERCEPT") return "Stop the courier before the south-east exit.";
-  if (objective?.type === "HOLD") return `Control the relay · ${objective.duration} consecutive round changes.`;
+  if (objective?.type === "HOLD") return objective.holderRadius === 0 ? `OCCUPY THE EXACT RELAY TILE · ${objective.duration} consecutive round changes.` : `Control the relay area · ${objective.duration} consecutive round changes.`;
   if (objective?.type === "SURVIVE") return `Keep the full squad standing · ${objective.duration} rounds.`;
   if (mission.objectiveType === "RECOVER") return "Reach the relay. Use RECOVER.";
   if (mission.objectiveType === "BOSS") return mission.operationId === DEAD_RELAY.operationId ? "Defeat the DEAD RELAY GUARDIAN." : "Defeat the SIGNAL COMMANDER.";
@@ -181,18 +181,18 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
   const meaning = fieldResultPurpose(result);
   return <section className="t-field-feedback" aria-label="Recorded Field Op result">
     {unlock ? <div className="t-unlock"><span className="t-kicker">UNLOCKED</span><strong>{unlock}</strong></div> : null}
-    {result.firstLockdownClear ? <p data-lockdown-completion="true"><b>{result.lockdownFirstClear ? 'FIRST LOCKDOWN CLEAR RECORDED' : 'LOCKDOWN COMPLETION RECORDED'}</b> · Saved permanently.</p> : null}
-    {result.masteryChallenge ? <p><b>RELAY MASTERY · 1/1</b> · Permanent access preserved.</p> : <>
+    {result.firstLockdownClear ? <div className="t-lockdown-achievement" data-lockdown-completion="true" role="status"><span className="t-kicker">PERMANENT FIELD RECORD</span><strong>{result.lockdownFirstClear ? 'FIRST LOCKDOWN CLEAR RECORDED' : 'LOCKDOWN COMPLETION RECORDED'}</strong><span>Saved permanently · Relay Mastery 1/1</span></div> : null}
+    {result.masteryChallenge ? !result.firstLockdownClear ? <p><b>RELAY MASTERY · 1/1</b> · Permanent access preserved.</p> : null : <>
     <div className="t-progress-heading"><div><span className="t-kicker">COMMANDER</span><strong>RANK {result.rankBefore !== result.rankAfter ? `${result.rankBefore} → ` : ""}{result.rankAfter}</strong></div><b>+{result.progressEarned}<small>PROGRESS</small></b></div>
     <progress className="t-progress" aria-label="Commander progress" value={Math.min(result.progressAfter, target)} max={target} />
     <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? "CERTIFIED · ALL CURRENT COMMAND TOOLS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
     </>}
-    {result.victory && result.progressEarned === 0 ? <div className="t-mission-strip"><span>{result.masteryChallenge ? 'LOCKDOWN COMPLETE · OPTIONAL' : 'CLEAR SECURED · REPLAY'}</span><span>+0 COMMANDER</span></div> : null}
+    {result.victory && result.progressEarned === 0 && !result.masteryChallenge ? <div className="t-mission-strip"><span>CLEAR SECURED · REPLAY</span><span>+0 COMMANDER</span></div> : null}
     {result.victory && result.firstCycleSecure === false && result.progressEarned > 0 ? <div className="t-mission-strip"><span>CLEAR ALREADY SECURED</span><span>CHALLENGE +{result.challengeBonus} COMMANDER</span></div> : null}
-    <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? (result.challengeBonus ? `CHALLENGE MET · +${result.challengeBonus} COMMANDER` : "CHALLENGE ✓") : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.firstCycleAdvanced ? " · SECURED TODAY" : result.victory ? " · REPLAY" : " · FAILED"}</span> : null}</div>
+    {!result.masteryChallenge ? <div className="t-mission-strip"><span>{result.legacyReport ? "CHALLENGE UNMEASURED" : result.challengeSuccess ? (result.challengeBonus ? `CHALLENGE MET · +${result.challengeBonus} COMMANDER` : "CHALLENGE ✓") : "CHALLENGE NOT MET"}</span>{result.directiveTier === "advanced" ? <span>ADVANCED · {directiveSetLabel(result.directiveSet)}{result.firstCycleAdvanced ? " · SECURED TODAY" : result.victory ? " · REPLAY" : " · FAILED"}</span> : null}</div> : null}
     <p className="t-player-result-meaning">{recordedResultMeaning(result)}</p>
     <div className="t-purpose-result" aria-label="Earned and changed">
-      <p><b>EARNED</b> {meaning.earned}</p><p><b>ELIGIBILITY</b> {meaning.exhausted}</p>
+      <p><b>{result.masteryChallenge ? 'RECORD' : 'EARNED'}</b> {meaning.earned}</p><p><b>{result.masteryChallenge ? 'STATUS' : 'ELIGIBILITY'}</b> {meaning.exhausted}</p>
       <p><b>WHAT CHANGED</b> {meaning.changed}</p><p><b>NEXT BATTLE</b> {meaning.future}</p>
     </div>
     {result.challengeSuccess && !result.challengeBonus ? <small>{result.firstCycleChallenge === false ? "Challenge bonus already earned this rotation." : "No new challenge bonus recorded."}</small> : null}
@@ -714,13 +714,14 @@ function Brief() {
 
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className="t-deploy-summary-main">
-            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : "OBJECTIVE"}</div>
+            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? "LOCKDOWN · EXACT TILE CONTROL" : "OBJECTIVE"}</div>
             <strong>{purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
               </ol>
             ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
+            {fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>ONE ALLY ON THE CENTER TILE</strong><span>Adjacent allies do not count. Clear nearby hostiles and maintain control for 3 round changes before round 7.</span></div> : null}
             {purpose ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
@@ -1071,7 +1072,7 @@ function Results() {
         <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
           <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
           <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
+          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
           {sessionVictory ? (
             <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
