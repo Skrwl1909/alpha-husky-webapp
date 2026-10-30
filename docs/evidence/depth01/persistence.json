@@ -1,0 +1,147 @@
+{
+  "source": "loopback HTTP, temporary strict JSON store; synthetic identity; exact accepted-run engine reports",
+  "trace": [
+    {
+      "route": "state",
+      "status": 401,
+      "revision": null,
+      "idempotent": false
+    },
+    {
+      "route": "state",
+      "status": 200,
+      "revision": 8,
+      "idempotent": false
+    },
+    {
+      "route": "mission/start",
+      "status": 200,
+      "revision": 9,
+      "idempotent": false
+    },
+    {
+      "route": "mission/continue",
+      "status": 200,
+      "revision": 10,
+      "idempotent": false
+    },
+    {
+      "route": "mission/continue",
+      "status": 200,
+      "revision": 10,
+      "idempotent": true
+    },
+    {
+      "route": "mission/continue",
+      "status": 409,
+      "revision": null,
+      "idempotent": false
+    },
+    {
+      "route": "state",
+      "status": 200,
+      "revision": 10,
+      "idempotent": false
+    },
+    {
+      "route": "mission/start",
+      "status": 409,
+      "revision": null,
+      "idempotent": false
+    },
+    {
+      "route": "mission/start",
+      "status": 200,
+      "revision": 11,
+      "idempotent": false
+    },
+    {
+      "route": "mission/start",
+      "status": 200,
+      "revision": 11,
+      "idempotent": true
+    },
+    {
+      "route": "state",
+      "status": 200,
+      "revision": 11,
+      "idempotent": false
+    },
+    {
+      "route": "mission/continue",
+      "status": 200,
+      "revision": 12,
+      "idempotent": false
+    },
+    {
+      "route": "mission/continue",
+      "status": 200,
+      "revision": 12,
+      "idempotent": true
+    },
+    {
+      "route": "state",
+      "status": 200,
+      "revision": 12,
+      "idempotent": false
+    }
+  ],
+  "combat": [
+    {
+      "context": {
+        "cycleId": 2,
+        "pressure": 3,
+        "approach": "standard",
+        "reportVersion": 3,
+        "directiveTier": "advanced",
+        "directiveSet": "attrition"
+      },
+      "stats": {
+        "hp": 120,
+        "atk": 28,
+        "def": 12,
+        "spd": 14
+      },
+      "skillRanks": 12,
+      "outcome": "victory",
+      "rounds": 7,
+      "report": {
+        "victory": true,
+        "objectiveComplete": true,
+        "turns": 7,
+        "healingActions": 0,
+        "squadStanding": 3,
+        "squadDeployed": 3
+      }
+    },
+    {
+      "context": {
+        "cycleId": 2,
+        "pressure": 2,
+        "approach": "standard",
+        "reportVersion": 4,
+        "directiveTier": "advanced",
+        "directiveSet": "pursuit",
+        "masteryChallenge": "relay-lockdown-v1"
+      },
+      "stats": {
+        "hp": 120,
+        "atk": 28,
+        "def": 12,
+        "spd": 14
+      },
+      "skillRanks": 12,
+      "outcome": "victory",
+      "rounds": 5,
+      "report": {
+        "victory": true,
+        "objectiveComplete": true,
+        "turns": 5,
+        "healingActions": 0,
+        "squadStanding": 3,
+        "squadDeployed": 3,
+        "masteryChallenge": "relay-lockdown-v1"
+      }
+    }
+  ]
+}

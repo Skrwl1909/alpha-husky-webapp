@@ -98,6 +98,7 @@ interface UiBattle {
   selectedSquadIds: string[];
   selectedApproach: DeploymentApproach;
   selectedDirectiveTier: DirectiveTier;
+  selectedMasteryChallenge: "relay-lockdown-v1" | null;
   currentFieldContext: FieldContext | null;
   fieldResult: FieldResult | null;
   campaignResult: CampaignResult | null;
@@ -167,7 +168,7 @@ interface Store extends UiBattle {
   saveChapterResult: () => Promise<void>;
   chooseDoctrine: () => Promise<void>;
   openChapterBrief: () => void;
-  openOperationBrief: (missionId: string) => void;
+  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1") => void;
   activeRulesetVersion: string | null;
   backToHub: () => void;
   deploy: () => void;
@@ -586,6 +587,7 @@ export const useBattleStore = create<Store>((set, get) => {
     selectedSquadIds: [],
     selectedApproach: "standard",
     selectedDirectiveTier: "standard",
+    selectedMasteryChallenge: null,
     currentFieldContext: null,
     fieldResult: null,
     campaignResult: null,
@@ -702,6 +704,7 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     selectDirectiveTier: (tier) => {
       const current = get();
+      if (current.selectedMasteryChallenge) return;
       if (current.screen !== "brief" || current.busy || current.progressionCommitPending || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" || !current.progression?.fieldOps?.commander?.unlockedDirectiveTiers?.includes(tier)) return;
       set({ selectedDirectiveTier: tier });
     },
@@ -734,7 +737,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({progressionError:"Saved chapter run could not be restored. Refresh Tactical Ops."});return;
       }
       const currentSquad=active?.squadIds||["alpha","ally-02","ally-03"];
-      set({screen:"brief",chapterMode:true,selectedMissionId:missionId,selectedSquadIds:currentSquad,
+      set({screen:"brief",chapterMode:true,selectedMasteryChallenge:null,selectedMissionId:missionId,selectedSquadIds:currentSquad,
         selectedApproach:active?.fieldContext?.approach||"standard",
         selectedDirectiveTier:active?.fieldContext?.directiveTier||"standard",
         currentCampaignContext:null,chapterResult:null,campaignResult:null,fieldResult:null,progressionError:null});
@@ -774,6 +777,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (current.fieldResult?.runId === current.currentRunKey && current.fieldResult.missionId === current.selectedMissionId) return;
       const report = fieldReport(current.battle);
       if (!report) return;
+      if (current.currentFieldContext?.masteryChallenge) report.masteryChallenge = current.currentFieldContext.masteryChallenge;
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
@@ -836,10 +840,11 @@ export const useBattleStore = create<Store>((set, get) => {
       sfx("ui");
       set({ screen: "brief", identity: identityCache(resolvePlayerIdentity()) });
     },
-    openOperationBrief: (missionId) => {
+    openOperationBrief: (missionId, masteryChallenge) => {
       const current = get();
       const mission = getMissionDef(missionId);
-      if (mission?.activity === "FIELD_OP" && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
+      if (masteryChallenge && (missionId !== "field-relay-hold" || current.progression?.fieldOps?.masteryPath?.unlockedChallenge !== masteryChallenge)) return;
+      if (mission?.activity === "FIELD_OP" && !masteryChallenge && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
         set({ screen: "war-table", progressionError: "That Field Op is no longer active. Choose one of the current three missions.", selectedMissionId: null });
         return;
       }
@@ -847,10 +852,14 @@ export const useBattleStore = create<Store>((set, get) => {
       if (!current.foundationCompleted || !mission || !status || status === "locked") return;
       sfx("ui");
       const active = mission.activity === "FIELD_OP" ? current.progression?.fieldOps?.activeMissionRun : current.progression?.operations?.[mission.operationId]?.activeMissionRun;
+      if (masteryChallenge && active && active.fieldContext?.masteryChallenge !== masteryChallenge) {
+        set({ progressionError: "Finish your accepted Field Op before starting Relay Lockdown." }); return;
+      }
+      set({ selectedMasteryChallenge: active?.missionId === missionId ? active.fieldContext?.masteryChallenge || null : masteryChallenge || null });
       const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
       const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, current.progression?.equippedPet)
         ? [...savedSquad] : ["alpha", "ally-02", "ally-03"];
-      set({ screen: "brief", chapterMode:false, currentChapterIntel:null, selectedMissionId: missionId, campaignResult: null, currentCampaignContext: active?.campaignContext || null, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
+      set({ screen: "brief", chapterMode:false, currentChapterIntel:null, selectedMissionId: missionId, campaignResult: null, currentCampaignContext: active?.campaignContext || null, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : masteryChallenge ? "advanced" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
       const current = get();
@@ -908,7 +917,9 @@ export const useBattleStore = create<Store>((set, get) => {
                 persisted.progression.revision,
                 mission.missionId,
                 squadIds,
-                mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach, ...(persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
+                mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach,
+                  ...(persisted.selectedMasteryChallenge ? { reportVersion: 4, directiveTier: "advanced" as const, masteryChallenge: persisted.selectedMasteryChallenge }
+                    : persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
                 requestedRuleset,
                 persisted.chapterMode,
                 !persisted.chapterMode && mission.operationId===DEAD_RELAY.operationId &&
@@ -1224,7 +1235,7 @@ export const useBattleStore = create<Store>((set, get) => {
         if (s.progressionCommitPending) return;
         get().backToHub();
         if (replayAfter && s.selectedMissionId) {
-          get().openOperationBrief(s.selectedMissionId);
+          get().openOperationBrief(s.selectedMissionId, s.selectedMasteryChallenge || undefined);
           get().selectDirectiveTier(s.selectedDirectiveTier);
           get().selectApproach(s.selectedApproach);
         }

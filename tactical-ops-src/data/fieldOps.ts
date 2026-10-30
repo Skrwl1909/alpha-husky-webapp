@@ -4,7 +4,14 @@ import type { MasteryChange } from "./packMastery";
 export type DeploymentApproach = "standard" | "south";
 export type DirectiveTier = "standard" | "advanced";
 export type DirectiveSet = "pursuit" | "attrition";
+export const MASTERY_CHALLENGE = "relay-lockdown-v1" as const;
+export interface MasteryPath {
+  version: 1;
+  accomplishment: { missionId: "field-relay-hold" | "field-isolated-hold"; evidence: "SERVER_ADVANCED_HOLD" } | null;
+  unlockedChallenge: typeof MASTERY_CHALLENGE | null;
+}
 export interface FieldContext {
+  masteryChallenge?: typeof MASTERY_CHALLENGE;
   cycleId: number;
   pressure: number;
   approach: DeploymentApproach;
@@ -19,6 +26,7 @@ export interface MissionChallenge {
   required?: string[];
 }
 export interface FieldReport {
+  masteryChallenge?: typeof MASTERY_CHALLENGE;
   failureReason?: "TARGET_ESCAPED" | "DEADLINE";
   victory: boolean;
   objectiveComplete: boolean;
@@ -28,6 +36,8 @@ export interface FieldReport {
   squadDeployed: number;
 }
 export interface FieldResult {
+  masteryChallenge?: typeof MASTERY_CHALLENGE;
+  masteryUnlocked?: boolean;
   directiveTier?: DirectiveTier;
   directiveSet?: DirectiveSet;
   advancedFirstClear?: boolean;

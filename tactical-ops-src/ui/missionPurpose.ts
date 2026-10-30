@@ -8,7 +8,7 @@ import type { FieldOpsProgression } from "../host/foundationProgression";
 /** Presentation of canonical rules, never a source of new rewards or saved progress. */
 export function missionGoal(m: MissionDef): string {
   const o = m.objective;
-  if (o?.type === "HOLD") return `Control the relay for ${o.duration} consecutive round changes. Enemies inside the zone reset control.`;
+  if (o?.type === "HOLD") return o.holderRadius === 0 ? `Keep an ally ON the relay tile for ${o.duration} consecutive round changes by round 6. Enemies within 1 orthogonal cell reset control.` : `Control the relay for ${o.duration} consecutive round changes. Enemies inside the zone reset control.`;
   if (o?.type === "SURVIVE") return `Keep every deployed squad member alive through ${o.duration} rounds. Eliminating enemies does not end the timer.`;
   if (o?.type === "INTERCEPT") return "Defeat the courier before it reaches the marked exit. Other hostiles do not need to be eliminated.";
   if (m.objectiveType === "RECOVER") return "Move an ally within its RECOVER range (normally 1 orthogonal cell) of the relay and use RECOVER on its turn before spending its action.";
@@ -27,6 +27,7 @@ export interface MissionRewardTruth {
   copy: string;
 }
 export function missionRewardTruth(m: MissionDef, field: FieldOpsProgression | undefined): MissionRewardTruth {
+  if (m.objective?.type === 'HOLD' && m.objective.holderRadius === 0) return { clear:'NOT_APPLICABLE', challenge:'NOT_APPLICABLE', commander:'CERTIFIED', copy:'Optional unlocked challenge. No currency, Commander points, growth points, Pack Mastery or regional rewards.' };
   if (m.activity !== "FIELD_OP") return { clear:"NOT_APPLICABLE", challenge:"NOT_APPLICABLE", commander:"UNKNOWN", copy:"Campaign progress is recorded by the server." };
   if (!field?.board || !field.commander) return { clear:"UNKNOWN", challenge:"UNKNOWN", commander:"UNKNOWN", copy:"Refresh to check this rotation's confirmed rewards." };
   const row = field.records?.[m.missionId];
@@ -57,7 +58,7 @@ export function objectiveDirective(b: BattleState): { status: string; action: st
     if (holdControlled(b)) return { status:"CONTROLLED", action:"Keep an ally in the relay zone through the next round change.", progress:o.progress, total:o.duration };
     const inZone = b.units.filter(u => !u.defeated && Math.abs(u.c-o.terminal.c)+Math.abs(u.r-o.terminal.r) <= (o.radius ?? 0));
     if (inZone.some(u => u.team === "enemy")) return { status:"CONTESTED", action:"Remove enemies from the marked relay zone.", progress:o.progress, total:o.duration };
-    return { status:"OCCUPY RELAY", action:"Move a living ally into the marked HOLD zone.", progress:o.progress, total:o.duration };
+    return { status:"OCCUPY RELAY", action:o.holderRadius === 0 ? "Move a living ally ON the relay tile; adjacent allies do not hold it." : "Move a living ally into the marked HOLD zone.", progress:o.progress, total:o.duration };
   }
   if (o?.type === "SURVIVE") return { status:"KEEP SQUAD ALIVE", action:`Hold formation until round ${o.duration + 1} begins.`, progress:o.progress, total:o.duration };
   if (o?.type === "INTERCEPT") return { status:"STOP COURIER", action:`Defeat the courier before exit column ${o.exit.c + 1}, row ${o.exit.r + 1}. Block its route or focus attacks; patrol kills are optional.`, progress:null, total:null };
@@ -96,6 +97,13 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
   const base = context ? missionForContext(m, context) : m;
   const resolved = { ...base, directive: missionBattleRules(base, false, context).directive || undefined };
   const oldCycle = accepted && acceptedRun?.fieldContext?.cycleId != null && field?.board && acceptedRun.fieldContext.cycleId !== field.board.cycleId;
+  if (context?.masteryChallenge) return {
+    missionId: m.missionId, objectiveText: missionGoal(resolved), failConditionText: missionFailure(resolved),
+    tacticalThreat: 'One ally must anchor the exact tile. Clear adjacent contesters while support recharges slowly; evading off the relay resets control.',
+    nextConsequence: 'Relay Mastery stays permanently unlocked. A confirmed challenge result is saved without base Field Op or progression rewards.',
+    rewardEligibility: missionRewardTruth(resolved,field), rewardClearText:'OPTIONAL TACTICAL CHALLENGE', rewardChallengeText:'NO PROGRESSION REWARD',
+    nextAction:{missionId:m.missionId,reason:'Try another holder or squad after recording the result.'},
+    source:accepted?'ACCEPTED_RUN_AND_BACKEND_STATE':'MISSION_DEFINITION_ONLY' };
   const reward: MissionRewardTruth = oldCycle ? { clear:"UNKNOWN", challenge:"UNKNOWN", commander:field?.commander?.rank === 3 ? "CERTIFIED" : "UNKNOWN", copy:"Accepted run from an earlier rotation. Reward eligibility comes from its receipt; this run does not secure the current rotation." } : missionRewardTruth(resolved, field);
   const clearText = reward.clear === "SECURED" ? "CLEAR SECURED" : reward.clear === "UNKNOWN" ? "STATUS UNAVAILABLE" :
     reward.clear === "NOT_APPLICABLE" ? "CAMPAIGN RECORD" : reward.commander === "CERTIFIED" ? "FIRST CLEAR AVAILABLE" : "+2 COMMANDER IF ELIGIBLE";

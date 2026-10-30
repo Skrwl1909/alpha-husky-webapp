@@ -16,7 +16,8 @@ export function holdControlled(state: BattleState): boolean {
   const objective = state.objective;
   if (objective?.type !== "HOLD" || !objective.terminal) return false;
   const inArea = state.units.filter((u) => !u.defeated && Math.abs(u.c - objective.terminal!.c) + Math.abs(u.r - objective.terminal!.r) <= (objective.radius ?? 0));
-  return inArea.some((u) => u.team === "ally") && !inArea.some((u) => u.team === "enemy");
+  return inArea.some((u) => u.team === "ally" &&
+    Math.abs(u.c - objective.terminal!.c) + Math.abs(u.r - objective.terminal!.r) <= (objective.holderRadius ?? objective.radius ?? 0)) && !inArea.some((u) => u.team === "enemy");
 }
 
 /** Round-boundary progress, with HOLD reset immediately when control is lost. */
@@ -42,7 +43,7 @@ export function resolveTimedObjective(state: BattleState): { state: BattleState;
 export function missionHud(state: BattleState): string {
   const objective = state.objective;
   const rule = state.directive;
-  const progress = objective?.type === "HOLD" ? `HOLD ${objective.progress}/${objective.duration} · ${holdControlled(state) ? "CONTROLLED" : "OCCUPY / CLEAR AREA"}`
+  const progress = objective?.type === "HOLD" ? `HOLD ${objective.progress}/${objective.duration} · ${holdControlled(state) ? "CONTROLLED" : objective.holderRadius === 0 ? "OCCUPY RELAY TILE / CLEAR ADJACENT ENEMIES" : "OCCUPY / CLEAR AREA"}`
     : objective?.type === "SURVIVE" ? `SURVIVE ${objective.progress}/${objective.duration} · ALL SQUAD MUST STAND`
     : rule?.recoverEveryRounds ? `RECOVER · SIGNAL ${recoverSignalOpen(state) ? "OPEN" : "JAMMED — EVEN ROUNDS ONLY"}` : "";
   const conditions = [rule?.reinforcement && state.reinforcement ? `HOUND · ${state.reinforcement.spawned ? "ARRIVED" : `ROUND ${state.reinforcement.triggerRound}`}` : "",

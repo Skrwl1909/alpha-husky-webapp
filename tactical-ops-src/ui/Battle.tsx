@@ -623,7 +623,9 @@ export function BattleScreen() {
           })}
           {objective?.type === "HOLD" && objective.terminal ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) })).filter((cell) => Math.abs(cell.c - objective.terminal!.c) + Math.abs(cell.r - objective.terminal!.r) <= (objective.radius ?? 0)).map((cell) => {
             const pos = fieldPercent(cell.c, cell.r);
-            return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Hold area">HOLD</div>;
+            const anchor = objective.holderRadius === 0;
+            const center = cell.c === objective.terminal!.c && cell.r === objective.terminal!.r;
+            return <div key={`hold-${cell.c}-${cell.r}`} className="t-hold-cell" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{anchor && !center ? "CLEAR" : "HOLD"}</div>;
           }) : null}
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
