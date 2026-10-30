@@ -84,6 +84,30 @@
       "status": 200,
       "revision": 12,
       "idempotent": false
+    },
+    {
+      "route": "state",
+      "status": 200,
+      "revision": 12,
+      "idempotent": false
+    },
+    {
+      "route": "mission/start",
+      "status": 200,
+      "revision": 13,
+      "idempotent": false
+    },
+    {
+      "route": "mission/continue",
+      "status": 200,
+      "revision": 14,
+      "idempotent": false
+    },
+    {
+      "route": "state",
+      "status": 200,
+      "revision": 14,
+      "idempotent": false
     }
   ],
   "combat": [
@@ -142,6 +166,53 @@
         "squadDeployed": 3,
         "masteryChallenge": "relay-lockdown-v1"
       }
+    },
+    {
+      "context": {
+        "cycleId": 3,
+        "pressure": 2,
+        "approach": "standard",
+        "reportVersion": 4,
+        "directiveTier": "advanced",
+        "directiveSet": "pursuit",
+        "masteryChallenge": "relay-lockdown-v1"
+      },
+      "stats": {
+        "hp": 120,
+        "atk": 28,
+        "def": 12,
+        "spd": 14
+      },
+      "skillRanks": 12,
+      "outcome": "victory",
+      "rounds": 5,
+      "report": {
+        "victory": true,
+        "objectiveComplete": true,
+        "turns": 5,
+        "healingActions": 0,
+        "squadStanding": 3,
+        "squadDeployed": 3,
+        "masteryChallenge": "relay-lockdown-v1"
+      }
     }
-  ]
+  ],
+  "completion": {
+    "firstLockdownClear": {
+      "runId": "field_c2adc26ba9b1450489c186c2fe614b1c",
+      "cycleId": 2,
+      "recordedAt": 1788912120
+    },
+    "afterReplay": {
+      "runId": "field_c2adc26ba9b1450489c186c2fe614b1c",
+      "cycleId": 2,
+      "recordedAt": 1788912120
+    },
+    "replayFirstClear": false,
+    "replayRewards": {
+      "xpGranted": 0,
+      "bonesGranted": 0,
+      "progressEarned": 0
+    }
+  }
 }

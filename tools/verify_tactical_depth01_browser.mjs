@@ -10,17 +10,20 @@ import{missionForContext,getMissionDef,missionBattleRules,missionSpawnsForSquad}
 import{createBattle,advanceToNext}from'/tactical-ops-src/combat/battle.ts';import{selectAcceptedBattleRules}from'/tactical-ops-src/combat/types.ts';import{selectAcceptedIntentRules}from'/tactical-ops-src/combat/intentContract.ts';
 const style=document.createElement('style');style.textContent=TACTICAL_CSS;document.head.append(style);
 const q=new URLSearchParams(location.search),profile=q.get('profile'),mode=q.get('mode')||'command';
-const legacy=q.get('legacy')==='1',unlocked=['unlocked','resume','completed','failed'].includes(profile);
+const legacy=q.get('legacy')==='1',unlocked=['unlocked','resume','completed','failed','replayed','failed-after-clear','legacy-win'].includes(profile),hasClear=['completed','replayed','failed-after-clear'].includes(profile),lost=['failed','failed-after-clear'].includes(profile);
 const ids=['field-relay-intercept','field-isolated-hold','field-rearguard'];
 const records=Object.fromEntries([...ids,'field-relay-hold'].map(missionId=>[missionId,{missionId,completed:true,clearCount:5,lastClearCycle:3,lastChallengeCycle:3,lastAdvancedCycle:null}]));
 const context={cycleId:2,pressure:2,reportVersion:4,approach:'standard',directiveTier:'advanced',directiveSet:'pursuit',masteryChallenge:'relay-lockdown-v1'};
-const accepted=profile==='resume'?{runId:'field-depth01',missionId:'field-relay-hold',squadIds:['alpha','ally-02','ally-03'],fieldContext:context}:null;
-const result={runId:'field-depth01',missionId:'field-relay-hold',victory:profile!=='failed',cycleId:2,challengeSuccess:true,challengeBonus:0,progressEarned:0,progressBefore:20,progressAfter:20,rankBefore:3,rankAfter:3,pressureBefore:1,pressureAfter:1,regionalApplied:false,unlockedApproaches:[],legacyReport:false,recordedAt:1,xpGranted:0,bonesGranted:0,masteryChanges:[],masteryChallenge:'relay-lockdown-v1',...(profile==='failed'?{failureReason:'DEADLINE'}:{})};
-const path={version:1,accomplishment:unlocked?{missionId:'field-isolated-hold',evidence:'SERVER_ADVANCED_HOLD'}:null,unlockedChallenge:unlocked?'relay-lockdown-v1':null};
+const accepted=profile==='resume'?{runId:'field_depth01',missionId:'field-relay-hold',squadIds:['alpha','ally-02','ally-03'],fieldContext:context}:null;
+const result={runId:'field_depth01',missionId:'field-relay-hold',victory:!lost,cycleId:2,challengeSuccess:true,challengeBonus:0,progressEarned:0,progressBefore:20,progressAfter:20,rankBefore:3,rankAfter:3,pressureBefore:1,pressureAfter:1,regionalApplied:false,unlockedApproaches:[],legacyReport:false,recordedAt:1,xpGranted:0,bonesGranted:0,masteryChanges:[],masteryChallenge:'relay-lockdown-v1',...(lost?{failureReason:'DEADLINE'}:{})};
+const firstClear={runId:'field_first',cycleId:1,recordedAt:1};
+if(profile==='completed')Object.assign(firstClear,{runId:'field_depth01',cycleId:2});
+if(hasClear)Object.assign(result,{firstLockdownClear:firstClear,lockdownFirstClear:profile==='completed'});
+const path={firstLockdownClear:hasClear?firstClear:null,version:1,accomplishment:unlocked?{missionId:'field-isolated-hold',evidence:'SERVER_ADVANCED_HOLD'}:null,unlockedChallenge:unlocked?'relay-lockdown-v1':null};
 const progression={version:1,revision:10,completed:true,foundationStage:'completed',activeRunId:null,operations:{'broken-signal':{status:'cleared',missions:{}},'dead-relay':{status:'cleared',missions:{}}},fieldOps:{board:{cycleId:3,nextRotationAt:Math.floor(Date.now()/1000)+86400,activeMissionIds:ids,reportVersion:3,directiveSet:'attrition'},commander:{rank:profile==='fresh'?1:3,progress:profile==='fresh'?0:20,nextRankAt:profile==='fresh'?6:null,unlockedApproaches:['standard','south'],unlockedDirectiveTiers:profile==='fresh'?['standard']:['standard','advanced']},records,activeMissionRun:accepted,region:{pressure:1,cycleId:3},lastResult:unlocked?result:null,...(profile==='old-backend'?{}:{masteryPath:path})},packMastery:{},vnextStartAvailable:!legacy};
 store.setState({progression,screen:'war-table',foundationCompleted:true,progressionStatus:'ready',progressionCommitPending:false,progressionError:null});
 if(mode==='brief'||mode==='battle')store.getState().openOperationBrief(unlocked?'field-relay-hold':'field-isolated-hold',unlocked?'relay-lockdown-v1':undefined);
-if(mode==='results')store.setState({screen:'results',selectedMissionId:'field-relay-hold',selectedMasteryChallenge:'relay-lockdown-v1',selectedDirectiveTier:'advanced',selectedSquadIds:['alpha','ally-02','ally-03'],currentRunKey:'field-depth01',fieldResult:result,battle:{...store.getState().battle,outcome:result.victory?'victory':'defeat',results:{victory:result.victory,turns:result.victory?5:7,hostilesEliminated:2,squadStanding:3,squadDeployed:3,damageTaken:20,bonesRecovered:0,objectiveComplete:result.victory}}});
+if(mode==='results')store.setState({screen:'results',selectedMissionId:'field-relay-hold',selectedMasteryChallenge:'relay-lockdown-v1',selectedDirectiveTier:'advanced',selectedSquadIds:['alpha','ally-02','ally-03'],currentRunKey:'field_depth01',fieldResult:result,battle:{...store.getState().battle,outcome:result.victory?'victory':'defeat',results:{victory:result.victory,turns:result.victory?5:7,hostilesEliminated:2,squadStanding:3,squadDeployed:3,damageTaken:20,bonesRecovered:0,objectiveComplete:result.victory}}});
 if(mode==='battle'){
  const contract=legacy?null:{rulesetVersion:'tactical-intent-vnext.0'};selectAcceptedBattleRules(contract);selectAcceptedIntentRules(contract);
  const m=missionForContext(getMissionDef('field-relay-hold'),context),rules=missionBattleRules(m,false,context);
@@ -33,16 +36,18 @@ const server=await createServer({configFile:false,cacheDir:'node_modules/.vite-d
 }],server:{host:'127.0.0.1',port:0}});
 await server.listen();const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});
 const cases=[];
+const hasClearForTest=p=>['completed','replayed','failed-after-clear'].includes(p);
 try{
  for(const [width,height] of [[320,568],[360,780],[390,844],[430,932]]){
-  for(const profile of ['fresh','locked','unlocked','resume','completed','failed','old-backend']){
-   for(const mode of ['command',...(profile==='unlocked'||profile==='resume'?['brief']:[]),...(profile==='completed'||profile==='failed'?['results']:[])]){
+  for(const profile of ['fresh','locked','unlocked','resume','completed','failed','old-backend','replayed','failed-after-clear','legacy-win']){
+   for(const mode of ['command',...(profile==='unlocked'||profile==='resume'?['brief']:[]),...(['completed','failed','replayed','failed-after-clear','legacy-win'].includes(profile)?['results']:[])]){
     const page=await browser.newPage({viewport:{width,height},hasTouch:true,reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto('http://127.0.0.1:'+server.httpServer.address().port+'/depth01-fixture?profile='+profile+'&mode='+mode);
     await page.locator('.t-shell').waitFor();await page.evaluate(()=>document.fonts.ready);
     assert.deepEqual(errors,[]);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile overflow');
     await page.screenshot({path:out+'/'+width+'-'+profile+'-'+mode+'.png',fullPage:true});
     if(mode==='command'){
+     assert.equal(await page.locator('[data-lockdown-completion]').count(),hasClearForTest(profile)?1:0,'War Table uses persistent proof only');
      assert.equal(await page.locator('[data-primary-purpose]').count(),1);
      const ids=await page.locator('[data-purpose-mission]').evaluateAll(es=>es.map(e=>e.dataset.purposeMission));assert.equal(ids.length,new Set(ids).size,'duplicate recommendations');
      if(profile==='locked')assert.match(await page.locator('[data-primary-purpose]').innerText(),/RELAY MASTERY · 0\/1/);
@@ -60,6 +65,9 @@ try{
      assert(!/\+2 COMMANDER|\+1 COMMANDER/.test(await page.getByLabel('Mission overview',{exact:true}).innerText()));
     }
     if(mode==='results'){
+     assert.equal(await page.locator('[data-lockdown-completion]').count(),hasClearForTest(profile)?1:0,'Results require server completion proof');
+     if(profile==='completed')assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/FIRST LOCKDOWN CLEAR RECORDED/);
+     if(profile==='replayed'||profile==='failed-after-clear')assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/LOCKDOWN COMPLETION RECORDED/);
      assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/No currency, Commander or Pack Mastery progress/);
      await page.getByRole('button',{name:'Replay / Squad',exact:true}).click();
      assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMasteryChallenge),'relay-lockdown-v1','replay retains optional variant outside rotation');

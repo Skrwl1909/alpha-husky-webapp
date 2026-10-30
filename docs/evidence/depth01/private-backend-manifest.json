@@ -2,11 +2,13 @@
   {
     "file": "tactical_field_ops.py",
     "baselineSHA256": "7fbc4b92cf21a509f39e6abf7f2ce30d64a4ad77661610ea83ca7a45a9c17a1a",
-    "candidateSHA256": "63ad63d089d7818b7c6b734a11358987b5c2131105c01a5c55464c66142730ff"
+    "candidateSHA256": "875e8699933c0da02cea4f37d540c477912e2763e16165fa9021a914aafc7f79",
+    "previousCandidateSHA256": "63ad63d089d7818b7c6b734a11358987b5c2131105c01a5c55464c66142730ff"
   },
   {
     "file": "tactical_ops_foundation.py",
     "baselineSHA256": "66877d1fd53276385d75dd192d8e45eeafba1186929dd6c39082d4cec67ab4cb",
-    "candidateSHA256": "377ca69cf65222334126045c6fb928ea24a6a03963856af563b61510cb2308f0"
+    "candidateSHA256": "377ca69cf65222334126045c6fb928ea24a6a03963856af563b61510cb2308f0",
+    "previousCandidateSHA256": "377ca69cf65222334126045c6fb928ea24a6a03963856af563b61510cb2308f0"
   }
 ]

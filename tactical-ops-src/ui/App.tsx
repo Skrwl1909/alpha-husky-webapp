@@ -181,6 +181,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
   const meaning = fieldResultPurpose(result);
   return <section className="t-field-feedback" aria-label="Recorded Field Op result">
     {unlock ? <div className="t-unlock"><span className="t-kicker">UNLOCKED</span><strong>{unlock}</strong></div> : null}
+    {result.firstLockdownClear ? <p data-lockdown-completion="true"><b>{result.lockdownFirstClear ? 'FIRST LOCKDOWN CLEAR RECORDED' : 'LOCKDOWN COMPLETION RECORDED'}</b> · Saved permanently.</p> : null}
     {result.masteryChallenge ? <p><b>RELAY MASTERY · 1/1</b> · Permanent access preserved.</p> : <>
     <div className="t-progress-heading"><div><span className="t-kicker">COMMANDER</span><strong>RANK {result.rankBefore !== result.rankAfter ? `${result.rankBefore} → ` : ""}{result.rankAfter}</strong></div><b>+{result.progressEarned}<small>PROGRESS</small></b></div>
     <progress className="t-progress" aria-label="Commander progress" value={Math.min(result.progressAfter, target)} max={target} />
@@ -355,7 +356,7 @@ function WarTable() {
                 <span className={recommendedChallenge ? "is-earned" : ""}>
                   {primaryPurpose?.chapter ? "NO FIELD BONUS PROMISED" : recommendedPurpose?.rewardChallengeText}
                 </span>
-                <span>{primaryPurpose?.masteryChallenge ? "RELAY MASTERY COMPLETE · 1/1" : primaryPurpose?.chapter ? "Intel follows confirmed chapter completion" : recommendedPurpose?.rewardEligibility.clear === "SECURED" && recommendedPurpose?.rewardEligibility.challenge === "SECURED" ? "No new rotation bonus promised" : "Eligible clears / challenges can add Mastery"}</span>
+                <span>{primaryPurpose?.masteryChallenge ? field?.masteryPath?.firstLockdownClear ? "LOCKDOWN COMPLETION RECORDED" : "RELAY MASTERY COMPLETE · 1/1" : primaryPurpose?.chapter ? "Intel follows confirmed chapter completion" : recommendedPurpose?.rewardEligibility.clear === "SECURED" && recommendedPurpose?.rewardEligibility.challenge === "SECURED" ? "No new rotation bonus promised" : "Eligible clears / challenges can add Mastery"}</span>
               </div>
             </div>
             <div className="t-wt-feature-cta">
@@ -381,6 +382,7 @@ function WarTable() {
         <section className="t-purpose-memory" aria-label="Saved progress and squad opportunity">
           <span className="t-kicker">YOUR PACK · SAVED PROGRESS</span>
           {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Advanced HOLD recorded. Relay Lockdown permanently unlocked.' : field.commander?.rank === 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
+          {field?.masteryPath?.firstLockdownClear ? <p data-lockdown-completion="true">RELAY LOCKDOWN · COMPLETION RECORDED · Your first recorded clear is saved across rotations and replays.</p> : null}
           {campaignCareer ? <p>{campaignCareer.missions} Field secures · {campaignCareer.challenges} challenges · {campaignCareer.advanced} Advanced clears · {campaignCareer.fronts} fronts secured</p> : null}
           {field?.lastResult ? <p>Last recorded mission: {getMissionDef(field.lastResult.missionId)?.name || field.lastResult.missionId}. {fieldResultPurpose(field.lastResult).changed}</p> : <p>No previous Field Op receipt available.</p>}
           {(() => { const proof = ["ally-02", "ally-03", ...(progression?.equippedPet ? [`pet:${progression.equippedPet.id}`] : [])].map(id => savedMasteryProof(id, progression || {}, progression?.equippedPet)).find(Boolean); return proof ? <p>{proof.subject}: {proof.changes[0]}. Compare your saved specialization before deploying.</p> : <p>Review saved abilities and squad roles before your next mission.</p>; })()}

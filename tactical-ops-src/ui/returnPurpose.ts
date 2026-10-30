@@ -24,7 +24,12 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
   const candidates: PurposeAction[] = [];
   if (!primary && f?.masteryPath && f.commander?.rank === 3 && b?.reportVersion === 3) {
     if (f.masteryPath.unlockedChallenge) {
-      primary = { ...action('field-relay-hold', 'RELAY MASTERY · 1/1', 'Relay Mastery recorded. Relay Lockdown is permanently available: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No progression or currency rewards; try a different squad after a win.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
+      const recorded = Boolean(f.masteryPath.firstLockdownClear);
+      const canRecord = f.masteryPath.firstLockdownClear !== undefined;
+      primary = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', recorded
+        ? 'Your first recorded Relay Lockdown clear is saved permanently. Try another holder or squad for optional practice; no further unlock or reward is promised.'
+        : canRecord ? 'Relay Mastery recorded. Win Relay Lockdown to save its first completion: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.'
+        : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
     } else {
       const id = b.activeMissionIds.find(id => ['field-relay-hold','field-isolated-hold'].includes(id));
       if (id) primary = action(id, 'RELAY MASTERY · 0/1', 'Win this Advanced HOLD to record Relay Mastery and permanently unlock Relay Lockdown. Standard clears and aggregate Advanced totals do not qualify. The next challenge pins the holder to the relay tile under a deadline and slower support.', 'advanced');
@@ -61,8 +66,8 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
 export function fieldResultPurpose(r: FieldResult): { earned: string; exhausted: string; changed: string; future: string } {
   if (r.masteryChallenge) return {
     earned: 'Optional challenge result recorded. No currency, Commander or Pack Mastery progress.',
-    exhausted: r.victory ? 'Relay Lockdown completed. Relay Mastery remains 1/1.' : 'Relay Lockdown failed. Your permanent unlock is preserved.',
-    changed: 'No regional change. This challenge does not secure the base Field Op.',
+    exhausted: r.victory ? r.lockdownFirstClear ? 'First recorded Relay Lockdown clear saved permanently.' : 'This Relay Lockdown attempt completed. Relay Mastery remains 1/1.' : 'Relay Lockdown failed. Your permanent unlock is preserved.',
+    changed: r.firstLockdownClear ? 'Lockdown completion is permanently recorded. No regional change or additional unlock.' : 'No permanent Lockdown completion confirmed by this receipt. No regional change.',
     future: r.victory ? 'Try a different holder or squad in Relay Lockdown; no additional progression reward.' : 'Keep an ally on the exact relay tile and clear adjacent contesters before round 7.' };
   const earned = r.rewardAmountsAvailable === false ? `Character reward amounts unavailable · ${r.progressEarned} Commander points recorded` : `${r.xpGranted} EXP · ${r.bonesGranted} Bones · ${r.progressEarned} Commander points recorded`;
   const exhausted = !r.victory ? 'No clear recorded. No victory bonus earned.'

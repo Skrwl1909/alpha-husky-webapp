@@ -24,6 +24,18 @@ try{
  parsed=await host.loadFoundationProgression();
  const action=purpose.commandPurpose(parsed).primary;
  assert.equal(action.masteryChallenge,'relay-lockdown-v1');assert(!ids.includes(action.missionId),'unlock is playable outside rotation');
+ assert.equal(parsed.fieldOps.masteryPath.firstLockdownClear,undefined,'old backend has no invented completion capability');
+ assert(!/save its first completion/.test(purpose.commandPurpose(parsed).primary.reason));
+ const firstClear={runId:'field_first',cycleId:0,recordedAt:100};
+ response={ok:true,data:{...state,fieldOps:{...field,masteryPath:{...path,firstLockdownClear:firstClear}}}};
+ const completed=await host.loadFoundationProgression();
+ assert.deepEqual(completed.fieldOps.masteryPath.firstLockdownClear,firstClear);
+ assert.match(purpose.commandPurpose(completed).primary.title,/COMPLETED/);
+ assert.match(purpose.commandPurpose(completed).primary.reason,/practice/);
+ for(const bad of [{...firstClear,recordedAt:true},{...firstClear,runId:'other'}, {...firstClear,extra:1}]){
+  response={ok:true,data:{...state,fieldOps:{...field,masteryPath:{...path,firstLockdownClear:bad}}}};
+  await assert.rejects(()=>host.loadFoundationProgression(),'malformed permanent proof fails closed');
+ }
  const run={runId:'field-accepted',missionId:'field-relay-hold',squadIds:['alpha','ally-02','ally-03'],fieldContext:context};
  response={ok:true,data:state,run};
  const accepted=await host.startOperationMission('test-start',5,'field-relay-hold',run.squadIds,{...context,cycleId:1});
@@ -41,5 +53,19 @@ try{
  const receipt={masteryChallenge:'relay-lockdown-v1',victory:true};
  assert.match(purpose.fieldResultPurpose(receipt).earned,/No currency/);
  assert.match(purpose.fieldResultPurpose(receipt).future,/different holder or squad/);
+ assert.match(purpose.fieldResultPurpose(receipt).changed,/No permanent Lockdown completion confirmed/);
+ const first={...receipt,lockdownFirstClear:true,firstLockdownClear:firstClear};
+ assert.match(purpose.fieldResultPurpose(first).exhausted,/First recorded/);
+ assert.match(purpose.fieldResultPurpose({...first,victory:false,lockdownFirstClear:false}).changed,/permanently recorded/);
+ const wireReceipt={...receipt,runId:'field_first',missionId:'field-relay-hold',challengeSuccess:true,regionalApplied:false,
+   cycleId:0,challengeBonus:0,progressEarned:0,progressBefore:12,progressAfter:12,rankBefore:3,rankAfter:3,
+   pressureBefore:2,pressureAfter:2,recordedAt:100,unlockedApproaches:[],lockdownFirstClear:true,firstLockdownClear:firstClear};
+ response={ok:true,data:state,fieldResult:wireReceipt};
+ assert.deepEqual((await host.continueOperationMission('save',5,'field_first')).fieldResult.firstLockdownClear,firstClear);
+ for(const broken of [{...wireReceipt,victory:false},{...wireReceipt,runId:'field_different'},
+   {...wireReceipt,firstLockdownClear:{...firstClear,recordedAt:true}}]){
+   response={ok:true,data:state,fieldResult:broken};
+   assert.equal((await host.continueOperationMission('bad',5,'field_first')).fieldResult,null,'invalid receipt cannot confirm completion');
+ }
  console.log('PASS DEPTH01: current goal, specific proof only, persistent unlock, previous rotation, downgrade/malformed rejection, legacy defaults and truthful results');
 }finally{await vite.close();}

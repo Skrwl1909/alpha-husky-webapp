@@ -1,7 +1,7 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
 import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
-import { MASTERY_CHALLENGE, type MasteryPath } from "../data/fieldOps";
+import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "../data/fieldOps";
 import type { CampaignContext, ChapterIntel } from "../data/operations";
 import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
@@ -82,6 +82,10 @@ function parseFieldResult(raw: unknown): FieldResult | null {
   if (typeof value.runId !== "string" || typeof value.missionId !== "string" || typeof value.victory !== "boolean" || typeof value.challengeSuccess !== "boolean" || typeof value.regionalApplied !== "boolean") return null;
   if (![value.cycleId, value.challengeBonus, value.progressEarned, value.progressBefore, value.progressAfter, value.rankBefore, value.rankAfter, value.pressureBefore, value.pressureAfter, value.recordedAt].every(Number.isInteger)) return null;
   if (!Array.isArray(value.unlockedApproaches) || !value.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
+  if (value.firstLockdownClear != null && (!parseFirstLockdownClear(value.firstLockdownClear) || value.masteryChallenge !== MASTERY_CHALLENGE)) return null;
+  if (value.lockdownFirstClear != null && (typeof value.lockdownFirstClear !== "boolean" || value.masteryChallenge !== MASTERY_CHALLENGE)) return null;
+  if (value.lockdownFirstClear === true && (!value.victory || value.firstLockdownClear?.runId !== value.runId ||
+      value.firstLockdownClear?.cycleId !== value.cycleId || value.firstLockdownClear?.recordedAt !== value.recordedAt)) return null;
   return {
     ...value,
     rewardAmountsAvailable: Number.isInteger(value.xpGranted) && Number.isInteger(value.bonesGranted),
@@ -243,7 +247,9 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       if (path.version !== 1 || (path.accomplishment !== null &&
           (!["field-relay-hold", "field-isolated-hold"].includes(path.accomplishment?.missionId) || path.accomplishment?.evidence !== "SERVER_ADVANCED_HOLD")) ||
           path.unlockedChallenge !== (path.accomplishment ? MASTERY_CHALLENGE : null)) return null;
-      state.fieldOps.masteryPath = path;
+      const firstLockdownClear = parseFirstLockdownClear(path.firstLockdownClear);
+      if (path.firstLockdownClear != null && (!firstLockdownClear || !path.accomplishment)) return null;
+      state.fieldOps.masteryPath = { ...path, ...(Object.prototype.hasOwnProperty.call(path, "firstLockdownClear") ? { firstLockdownClear } : {}) };
     }
     if (field.board != null || field.commander != null || field.region != null) {
       const board = field.board as NonNullable<FieldOpsProgression["board"]>;
