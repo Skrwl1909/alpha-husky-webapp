@@ -4,7 +4,23 @@ import type { MasteryChange } from "./packMastery";
 export type DeploymentApproach = "standard" | "south";
 export type DirectiveTier = "standard" | "advanced";
 export type DirectiveSet = "pursuit" | "attrition";
+export const MASTERY_CHALLENGE = "relay-lockdown-v1" as const;
+export interface FirstLockdownClear { runId: string; cycleId: number; recordedAt: number }
+export function parseFirstLockdownClear(raw: unknown): FirstLockdownClear | null {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const x = raw as FirstLockdownClear;
+  return Object.keys(x).length === 3 && typeof x.runId === "string" && x.runId.startsWith("field_") &&
+    x.runId.length > 6 && x.runId.length <= 128 && Number.isSafeInteger(x.cycleId) &&
+    Number.isSafeInteger(x.recordedAt) && x.recordedAt >= 0 ? {runId:x.runId,cycleId:x.cycleId,recordedAt:x.recordedAt} : null;
+}
+export interface MasteryPath {
+  version: 1;
+  accomplishment: { missionId: "field-relay-hold" | "field-isolated-hold"; evidence: "SERVER_ADVANCED_HOLD" } | null;
+  unlockedChallenge: typeof MASTERY_CHALLENGE | null;
+  firstLockdownClear?: FirstLockdownClear | null;
+}
 export interface FieldContext {
+  masteryChallenge?: typeof MASTERY_CHALLENGE;
   cycleId: number;
   pressure: number;
   approach: DeploymentApproach;
@@ -19,6 +35,7 @@ export interface MissionChallenge {
   required?: string[];
 }
 export interface FieldReport {
+  masteryChallenge?: typeof MASTERY_CHALLENGE;
   failureReason?: "TARGET_ESCAPED" | "DEADLINE";
   victory: boolean;
   objectiveComplete: boolean;
@@ -28,6 +45,10 @@ export interface FieldReport {
   squadDeployed: number;
 }
 export interface FieldResult {
+  lockdownFirstClear?: boolean;
+  firstLockdownClear?: FirstLockdownClear | null;
+  masteryChallenge?: typeof MASTERY_CHALLENGE;
+  masteryUnlocked?: boolean;
   directiveTier?: DirectiveTier;
   directiveSet?: DirectiveSet;
   advancedFirstClear?: boolean;

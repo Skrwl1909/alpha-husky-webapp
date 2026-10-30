@@ -188,6 +188,8 @@ export interface TimedObjective {
   duration: number;
   terminal?: Cell;
   radius?: number;
+  /** Optional stricter allied occupancy; enemy contesting keeps radius. Legacy omitted. */
+  holderRadius?: number;
   progress: number;
   checkedRound: number;
 }

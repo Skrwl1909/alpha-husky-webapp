@@ -278,6 +278,14 @@ MISSION_DEFS["field-relay-intercept"] = {
 };
 
 export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>): MissionDef {
+  if (context?.reportVersion === 4 && context.masteryChallenge === "relay-lockdown-v1") {
+    if (mission.missionId !== "field-relay-hold") throw Error("invalid_mastery_mission");
+    return { ...mission, name: "RELAY LOCKDOWN",
+      briefCopy: "Keep one ally ON the relay tile for 3 consecutive round changes by the end of round 6. Any enemy within 1 orthogonal cell contests it and resets progress. Support recharges 1 personal turn slower; one HOUND arrives in round 2. Decide who anchors the tile and who clears the approaches.",
+      objective: { type: "HOLD", terminal: { c: 3, r: 2 }, radius: 1, holderRadius: 0, duration: 3, progress: 0, checkedRound: 1 },
+      squadHint: "Anchor ALPHA with SHADOW protection while CNC clears the approach, or trade SHADOW sustain for PET mobility and control. The holder cannot evade off the tile without resetting progress.",
+      resultsCopy: "Optional Relay Lockdown result recorded. Relay Mastery remains unlocked; no currency, Commander or Pack Mastery rewards." };
+  }
   return mission.missionId === "field-relay-intercept" && context?.reportVersion != null && context.reportVersion < 3 ? LEGACY_RELAY_INTERCEPT : mission;
 }
 
