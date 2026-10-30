@@ -31,7 +31,7 @@ try {
  assert.notEqual(next.state.outcome,"defeat");
  const field=readFileSync("tactical-ops-src/ui/App.tsx","utf8");
  const view=readFileSync("tactical-ops-src/ui/Battle.tsx","utf8");
- assert(field.includes("nextFieldMission(field)")&&field.includes("FIELD OPS SECURED")&&field.includes("t-wt-next-op"),"one actionable next mission with rotation progress");
+ assert(field.includes("commandPurpose(progression)")&&field.includes("FIELD OPS SECURED")&&field.includes("t-wt-next-op"),"one actionable next mission with rotation progress");
  assert(!field.includes('className="t-player-route" aria-label="Your next tactical goal"'),"do not duplicate recommended mission on phone");
  assert(field.includes("OPERATION {activeMissionIds.indexOf"),"mission identity");
  assert(field.includes("t-player-result-meaning"),"results progression explanation");

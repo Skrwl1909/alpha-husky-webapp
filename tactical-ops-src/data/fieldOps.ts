@@ -56,6 +56,8 @@ export interface FieldResult {
   unlockedApproaches: DeploymentApproach[];
   legacyReport: boolean;
   recordedAt: number;
+  /** False when an older receipt omitted character reward amounts. */
+  rewardAmountsAvailable?: boolean;
   xpGranted: number;
   bonesGranted: number;
 }

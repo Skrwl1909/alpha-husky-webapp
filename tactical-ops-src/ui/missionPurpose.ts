@@ -1,6 +1,7 @@
 import type { BattleState } from "../combat/types";
 import { holdControlled, recoverSignalOpen } from "../combat/missionRules";
-import { getMissionDef, missionForContext, type MissionDef } from "../data/operations";
+import { getMissionDef, missionForContext, missionBattleRules, type MissionDef } from "../data/operations";
+import type { FieldContext } from "../data/fieldOps";
 import type { FieldResult } from "../data/fieldOps";
 import type { FieldOpsProgression } from "../host/foundationProgression";
 
@@ -9,16 +10,15 @@ export function missionGoal(m: MissionDef): string {
   const o = m.objective;
   if (o?.type === "HOLD") return `Control the relay for ${o.duration} consecutive round changes. Enemies inside the zone reset control.`;
   if (o?.type === "SURVIVE") return `Keep every deployed squad member alive through ${o.duration} rounds. Eliminating enemies does not end the timer.`;
-  if (o?.type === "INTERCEPT") return "Stop the courier before it reaches the exit.";
-  if (m.objectiveType === "RECOVER") return "Reach the relay and activate RECOVER when the signal is open.";
+  if (o?.type === "INTERCEPT") return "Defeat the courier before it reaches the marked exit. Other hostiles do not need to be eliminated.";
+  if (m.objectiveType === "RECOVER") return "Move an ally within its RECOVER range (normally 1 orthogonal cell) of the relay and use RECOVER on its turn before spending its action.";
   if (m.objectiveType === "BOSS") return "Defeat the marked commander. Other enemies are not the objective.";
   return "Eliminate every hostile.";
 }
 export function missionFailure(m: MissionDef): string {
-  if (m.objectiveType === "INTERCEPT") return "The courier escapes or the entire squad falls.";
-  if (m.objectiveType === "SURVIVE") return "Any deployed squad member falls.";
-  if (m.directive?.maxRounds) return `The mission deadline (round ${m.directive.maxRounds}) expires or the squad falls.`;
-  return "The entire squad falls; mission-specific deadlines also apply where shown.";
+  const failure = m.objectiveType === "INTERCEPT" ? "The courier reaches the exit or the entire squad falls."
+    : m.objectiveType === "SURVIVE" ? "Any deployed squad member falls." : "The entire squad falls.";
+  return failure + (m.directive?.maxRounds ? ` Complete by the end of round ${m.directive.maxRounds}; round ${m.directive.maxRounds + 1} starts with mission failure.` : "");
 }
 export interface MissionRewardTruth {
   clear: "AVAILABLE" | "SECURED" | "NOT_APPLICABLE" | "UNKNOWN";
@@ -60,8 +60,8 @@ export function objectiveDirective(b: BattleState): { status: string; action: st
     return { status:"OCCUPY RELAY", action:"Move a living ally into the marked HOLD zone.", progress:o.progress, total:o.duration };
   }
   if (o?.type === "SURVIVE") return { status:"KEEP SQUAD ALIVE", action:`Hold formation until round ${o.duration + 1} begins.`, progress:o.progress, total:o.duration };
-  if (o?.type === "INTERCEPT") return { status:"STOP COURIER", action:"Block, slow or eliminate the courier before the exit.", progress:null, total:null };
-  if (o?.type === "RECOVER") return { status:recoverSignalOpen(b) ? "SIGNAL OPEN" : "SIGNAL JAMMED", action:recoverSignalOpen(b) ? "Get within range and use RECOVER." : "Prepare position; wait for the signal window.", progress:null, total:null };
+  if (o?.type === "INTERCEPT") return { status:"STOP COURIER", action:`Defeat the courier before exit column ${o.exit.c + 1}, row ${o.exit.r + 1}. Block its route or focus attacks; patrol kills are optional.`, progress:null, total:null };
+  if (o?.type === "RECOVER") return recoverGuidance(b);
   if (o?.type === "BOSS") return { status:"DEFEAT COMMANDER", action:"Defeat the marked commander. Ignore remaining patrol if safe.", progress:null, total:null };
   return { status:"CLEAR HOSTILES", action:"Eliminate the hostile squad.", progress:null, total:null };
 }
@@ -79,9 +79,8 @@ export type MissionPurposeView = {
 };
 export function nextFieldMission(field: FieldOpsProgression | undefined, currentMissionId?: string): { missionId: string | null; reason: string } {
   const board = field?.board;
+  if (field?.activeMissionRun && getMissionDef(field.activeMissionRun.missionId)) return { missionId:field.activeMissionRun.missionId, reason:"Resume your accepted mission under its original conditions; the battle restarts at round 1." };
   if (!board?.activeMissionIds?.length) return { missionId:null, reason:"Refresh the War Table to see the next mission." };
-  const pending = field?.activeMissionRun;
-  if (pending && board.activeMissionIds.includes(pending.missionId)) return { missionId:pending.missionId, reason:"Resume your accepted mission under its original conditions." };
   const nextClear = board.activeMissionIds.find(id => field?.records?.[id]?.lastClearCycle !== board.cycleId);
   if (nextClear) return { missionId:nextClear, reason:"Secure another Field Op to advance the current front." };
   const nextChallenge = board.activeMissionIds.find(id => {
@@ -91,11 +90,13 @@ export function nextFieldMission(field: FieldOpsProgression | undefined, current
   if (nextChallenge) return { missionId:nextChallenge, reason:"All Field Ops secured. An optional challenge is still open." };
   return { missionId:currentMissionId && board.activeMissionIds.includes(currentMissionId) ? currentMissionId : board.activeMissionIds[0], reason:"Front secured. Replay to practice tactics or return after the next rotation; no new Commander reward is promised." };
 }
-export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgression, acceptedRun?: { missionId: string; fieldContext?: { reportVersion: number } } | null, lastResult?: FieldResult | null): MissionPurposeView {
+export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgression, acceptedRun?: { missionId: string; fieldContext?: Partial<FieldContext> & { reportVersion: number } } | null, lastResult?: FieldResult | null, previewContext?: Partial<FieldContext>): MissionPurposeView {
   const accepted = acceptedRun?.missionId === m.missionId;
-  const reportVersion = accepted ? acceptedRun?.fieldContext?.reportVersion : field?.board?.reportVersion;
-  const resolved = reportVersion ? missionForContext(m, { reportVersion }) : m;
-  const reward = missionRewardTruth(resolved, field);
+  const context = accepted ? acceptedRun?.fieldContext : previewContext || (field?.board ? { reportVersion:field.board.reportVersion || 2 } : undefined);
+  const base = context ? missionForContext(m, context) : m;
+  const resolved = { ...base, directive: missionBattleRules(base, false, context).directive || undefined };
+  const oldCycle = accepted && acceptedRun?.fieldContext?.cycleId != null && field?.board && acceptedRun.fieldContext.cycleId !== field.board.cycleId;
+  const reward: MissionRewardTruth = oldCycle ? { clear:"UNKNOWN", challenge:"UNKNOWN", commander:field?.commander?.rank === 3 ? "CERTIFIED" : "UNKNOWN", copy:"Accepted run from an earlier rotation. Reward eligibility comes from its receipt; this run does not secure the current rotation." } : missionRewardTruth(resolved, field);
   const clearText = reward.clear === "SECURED" ? "CLEAR SECURED" : reward.clear === "UNKNOWN" ? "STATUS UNAVAILABLE" :
     reward.clear === "NOT_APPLICABLE" ? "CAMPAIGN RECORD" : reward.commander === "CERTIFIED" ? "FIRST CLEAR AVAILABLE" : "+2 COMMANDER IF ELIGIBLE";
   const challengeText = reward.challenge === "SECURED" ? "CHALLENGE SECURED" : reward.challenge === "UNKNOWN" ? "STATUS UNAVAILABLE" :
@@ -107,7 +108,7 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
     : resolved.resultsCopy;
   return {
     missionId:resolved.missionId,
-    objectiveText:missionGoal(resolved),
+    objectiveText:missionGoal(resolved) + (resolved.objectiveType === "RECOVER" && resolved.directive?.recoverEveryRounds ? ` Signal opens on rounds divisible by ${resolved.directive.recoverEveryRounds} (${resolved.directive.recoverEveryRounds}, ${resolved.directive.recoverEveryRounds * 2}, …).` : ""),
     failConditionText:missionFailure(resolved),
     tacticalThreat:resolved.directive?.copy || resolved.squadHint || "Use positioning, skills and enemy ranges to control the encounter.",
     nextConsequence:consequence,
@@ -123,4 +124,21 @@ export function recordedResultMeaning(result: FieldResult): string {
   if (result.rankAfter >= 3) return `COMMANDER CERTIFIED · ${result.progressEarned} POINTS RECORDED IN HISTORY. NO HIGHER COMMANDER RANK.`;
   if (result.progressEarned > 0) return "COMMANDER PROGRESS RECORDED. YOUR NEXT CERTIFICATION MILESTONE IS CLOSER.";
   return "NO NEW COMMANDER PROGRESS ON THIS CLEAR. CHECK UNFINISHED CHALLENGES OR REPLAY FOR PRACTICE.";
+}
+
+/** Same orthogonal distance, range and action requirements as canRecover. */
+export function recoverGuidance(b: BattleState): { status: string; action: string; progress: null; total: null } {
+  const o = b.objective;
+  if (o?.type !== "RECOVER") return { status:"NO RELAY", action:"", progress:null, total:null };
+  if (o.completed) return { status:"OBJECTIVE COMPLETE", action:"Signal recovered.", progress:null, total:null };
+  const every = b.directive?.recoverEveryRounds || 1;
+  const next = Math.ceil(b.round / every) * every;
+  const open = recoverSignalOpen(b);
+  const actor = b.units.find(u => u.id === b.activeId);
+  const ally = actor?.team === "ally" && !actor.defeated;
+  const range = ally ? actor.recoverRange || 1 : 1;
+  const distance = ally ? Math.abs(actor.c-o.terminal.c)+Math.abs(actor.r-o.terminal.r) : null;
+  const timing = open ? `Signal open for round ${b.round}.` : `Opens round ${next}; every ${every} rounds.`;
+  const position = distance === null ? "Wait for a living ally's turn." : `Relay distance ${distance}; range ${range} (orthogonal). ${distance > range ? actor!.hasMoved ? "Move spent; use support or SKIP, then approach next turn." : "MOVE closer, then RECOVER." : actor!.hasActed ? "Action spent; wait for this ally's next turn." : "Use RECOVER before acting."}`;
+  return { status:open ? "SIGNAL OPEN" : `OPENS ROUND ${next}`, action:`${timing} ${position}`, progress:null, total:null };
 }
