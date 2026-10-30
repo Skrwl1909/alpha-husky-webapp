@@ -1,0 +1,11 @@
+{
+  "sourceCommit": "c5a506ef98a88a9ca344eb916700cefb2dace2d9",
+  "canonicalBuildCommit": "ffed15528b7d8092055ef73b2e96f7c755b69cda",
+  "buildWorkflow": "https://github.com/Skrwl1909/alpha-husky-webapp/actions/runs/41046628377",
+  "version": "3.6.12-depth01",
+  "files": {
+    "js/tactical_ops.js": "93230ce3d946b4122714a6ae4ed75e92c027bedbc5a6a12c1b9291b027829944",
+    "js/boot_loaders.js": "471425203b81d2b9fce4a22b098c1b76f19b164d421e4523d9a9082b61a002d2"
+  },
+  "note": "Canonical CI-generated runtime retained unchanged. Final hosted verification is recorded on the PR after this evidence commit."
+}
