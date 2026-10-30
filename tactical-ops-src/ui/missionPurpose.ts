@@ -128,6 +128,7 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
   };
 }
 export function recordedResultMeaning(result: FieldResult): string {
+  if (result.masteryChallenge) return result.victory ? "RELAY LOCKDOWN RECORDED. RELAY MASTERY COMPLETE · 1/1." : "LOCKDOWN ATTEMPT RECORDED. YOUR PERMANENT ACCESS IS PRESERVED.";
   if (!result.victory) return "MISSION FAILED. No clear recorded. Regroup and retry.";
   if (result.rankAfter >= 3) return `COMMANDER CERTIFIED · ${result.progressEarned} POINTS RECORDED IN HISTORY. NO HIGHER COMMANDER RANK.`;
   if (result.progressEarned > 0) return "COMMANDER PROGRESS RECORDED. YOUR NEXT CERTIFICATION MILESTONE IS CLOSER.";

@@ -1039,7 +1039,9 @@ function Results() {
   const activeRulesetVersion = useBattleStore((s) => s.activeRulesetVersion);
   const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
-  const mission = getMissionDef(selectedMissionId);
+  const resultBaseMission = getMissionDef(selectedMissionId);
+  const confirmedVariant = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId)?.masteryChallenge;
+  const mission = resultBaseMission && confirmedVariant ? missionForContext(resultBaseMission,{reportVersion:4,masteryChallenge:confirmedVariant}) : resultBaseMission;
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const resultNext = commandPurpose(progression).primary;

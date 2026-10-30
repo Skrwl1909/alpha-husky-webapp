@@ -250,8 +250,9 @@ try {
   for(const grid of ["10x7","8x5"]){
     const contract=grid==="10x7"?{rulesetVersion:"tactical-intent-vnext.0"}:null;
     types.selectAcceptedBattleRules(contract);intents.selectAcceptedIntentRules(contract);
-    for(const build of [builds[1],builds[2]]) for(const squad of variants.slice(0,2)) for(const policy of ["tempo","control","evade","adjacent"]){
-      const row=fullRun(ops.missionForContext(base,context),squad,profile(build),policy);results.push({grid,...row});
+    for(const build of [builds[1],builds[2]]) for(const squad of variants) for(const developed of [false,true]) for(const policy of ["tempo","control","evade","adjacent"]){
+      const pp=profile(build);if(developed){pp.alpha={hp:138,atk:39,def:21,spd:16};pp.pet={hp:91,atk:25,def:11,spd:15};}
+      const row=fullRun(ops.missionForContext(base,context),squad,pp,policy);results.push({grid,developed,...row});
     }
   }
   types.selectAcceptedBattleRules({rulesetVersion:"tactical-intent-vnext.0"});intents.selectAcceptedIntentRules({rulesetVersion:"tactical-intent-vnext.0"});

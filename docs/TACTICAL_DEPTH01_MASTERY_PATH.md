@@ -18,7 +18,7 @@ Baseline: `a24dc6a9aae39dbb700a205f5ebfb9bdabe37173`, merged PR #212. One perman
 
 ## Tactical proof
 
-Focused real-engine matrix: **32 battles, 24 wins / 8 defeats**, two lineups, two builds, four policies, both 8×5 and accepted 10×7. All resolve. Twelve total purchased skill ranks; no impossible 18-point account fixture.
+Focused real-engine matrix: **96 battles, 66 wins / 30 defeats**, all three legal lineups, base/developed stat profiles, two builds, four policies, both 8×5 and accepted 10×7. All resolve. Twelve total purchased skill ranks; no impossible 18-point account fixture.
 
 Concrete 10×7 examples with unchanged base combat stats:
 
@@ -51,12 +51,22 @@ Private backend: only `tactical_field_ops.py` and `tactical_ops_foundation.py` c
 - Canonical IIFE/cache: `3.6.12-depth01`. Dedicated hosted workflow runs contracts, real engine, mobile cases and deterministic bundle parity; private backend testing remains local.
 - Unchanged broader regression evidence remains in merged PR #212. Physical-device verification is not inferred from Chromium.
 
-Read: Evergreen Architecture V1 §§28–30, local Long-Term Gameplay & Retention Blueprint (26 October), Campaign P0/P1 Blueprint (10 October), PR #212 design/QA contracts. The separately named Meaningful Gameplay Blueprint V1, Depth & Progression Working Note and Campaign & Progression Architecture V1 were not located by those names in the supplied checkpoint directory; exact-source reconciliation remains open. The current explicit DEPTH 01 request defines this implementation's scope.
+All four original design authorities were read from the owner-supplied `PROJECT_CHECKPOINTS/ALPHA_TACTICAL_OPS_ORIGINAL_BLUEPRINTS.zip`:
+
+| Authority | DEPTH 01 mapping |
+| --- | --- |
+| Meaningful Gameplay Blueprint V1 S2 | Exact tile versus contested area; three legal squads, base/developed profiles; actual successful interrupts and failed evasion; no HP inflation. Unchanged twelve-mission proof is reused from PR #212. |
+| Meaningful Gameplay Blueprint V1 S3 | Existing Mastery/Growth before/after proof; one persistent unlock with receipt/reload evidence; truthful no-reward practice and one next action. No invented world consequence. |
+| Evergreen Architecture V1 §§28–30 | Existing Pack progression matters in a following encounter; one economical config variant, one optional HOLD parameter; no independent framework. |
+| Depth & Progression Working Note §§4–6, 9–10 | Real companion trade-offs, existing saved upgrades survive sessions and change next-run play. No new trees, currencies or token dependency. |
+| Campaign & Progression Architecture V1 §§7, 9, 13–16, 21 | Configured content over current core; one save source; once-only unlock; defeat preserves progress; existing War Table / Brief / Results, portrait-first. |
+
+The related October long-term and campaign blueprints and PR #212 contracts were also reviewed. The Working Note's historical phase-start/device gates are not asserted complete here; the current explicit DEPTH 01 request authorizes this focused local implementation, while physical-device/production acceptance remains open.
 
 ## Manual release gates — HOLD
 
 1. Owner confirms the two VPS baseline hashes and runtime destination against the private manifest; review/deploy the private backend and paired frontend manually. No automatic merge, VPS access or deployment occurred.
-2. Confirm the exact named design-source files above, and reconcile any additional S2/S3 requirements.
+2. Complete S2/S3 human comprehension and real-device acceptance; the exact design-source reconciliation is complete.
 3. Physical S26 Ultra Telegram / standalone Android and iPhone: locked → unlock → minimize/reopen → battle → save/reconnect, expired rotation, touch/scroll/safe areas, failure and offline save retry. Check both old accepted 8×5 and new 10×7 runs.
 4. A developed Rank 3 player can explain current objective, qualifying proof, permanent option, exact-tile difference and the next honest action without coaching. No claim of long-term retention.
 5. Do not roll either client or backend back to a version that cannot read active v4 runs. Finish/drain those runs with this pair first; retain user data and receipts. See private handoff for backups, order, verification and rollback constraints.
