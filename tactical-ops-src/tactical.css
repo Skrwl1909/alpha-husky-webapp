@@ -5147,3 +5147,5 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 @media(prefers-reduced-motion:reduce) {
   #tacticalOpsRoot .t-battle .t-target-reticle {animation:none!important;opacity:1}
 }
+
+.t-lockdown-plan-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.t-lockdown-plan-grid button{min-width:0;display:flex;flex-direction:column;gap:6px;text-align:left;color:inherit;background:#091723;border:1px solid #415565;border-radius:10px;padding:12px;font:inherit;white-space:normal;overflow-wrap:anywhere}.t-lockdown-plan-grid button[aria-pressed="true"]{border-color:#e9b665;background:#23221c}.t-lockdown-plan-grid button:disabled{opacity:.8}.t-lockdown-plan-grid span{font-size:12px;line-height:1.45}.t-lockdown-plans small{display:block;margin-top:8px}@media(max-width:430px){.t-lockdown-plan-grid{grid-template-columns:1fr}}

@@ -190,6 +190,8 @@ export interface TimedObjective {
   radius?: number;
   /** Optional stricter allied occupancy; enemy contesting keeps radius. Legacy omitted. */
   holderRadius?: number;
+  /** Crosslink samples control only at round changes, then moves the relay. */
+  relayRoute?: Cell[];
   progress: number;
   checkedRound: number;
 }

@@ -8,6 +8,7 @@ import type { FieldOpsProgression } from "../host/foundationProgression";
 /** Presentation of canonical rules, never a source of new rewards or saved progress. */
 export function missionGoal(m: MissionDef): string {
   const o = m.objective;
+  if (o?.type === "HOLD" && o.relayRoute) return "Occupy north, east, then south at consecutive round changes. Moving between checkpoints is allowed; missing one resets to north. Finish by round 6.";
   if (o?.type === "HOLD") return o.holderRadius === 0 ? `Keep an ally ON the relay tile for ${o.duration} consecutive round changes by round 6. Enemies within 1 orthogonal cell reset control.` : `Control the relay for ${o.duration} consecutive round changes. Enemies inside the zone reset control.`;
   if (o?.type === "SURVIVE") return `Keep every deployed squad member alive through ${o.duration} rounds. Eliminating enemies does not end the timer.`;
   if (o?.type === "INTERCEPT") return "Defeat the courier before it reaches the marked exit. Other hostiles do not need to be eliminated.";
@@ -42,6 +43,7 @@ export function missionRewardTruth(m: MissionDef, field: FieldOpsProgression | u
 }
 export function missionLiveProgress(b: BattleState): string {
   const o = b.objective;
+  if (o?.type === "HOLD" && o.relayRoute) return `CROSSLINK ${o.progress}/${o.duration}`;
   if (o?.type === "HOLD") return `HOLD ${o.progress}/${o.duration}`;
   if (o?.type === "SURVIVE") return `SURVIVE ${o.progress}/${o.duration}`;
   if (o?.type === "INTERCEPT") {
@@ -54,6 +56,7 @@ export function missionLiveProgress(b: BattleState): string {
 }
 export function objectiveDirective(b: BattleState): { status: string; action: string; progress: number | null; total: number | null } {
   const o = b.objective;
+  if (o?.type === "HOLD" && o.relayRoute) return { status: `RELAY ${Math.min(o.progress + 1, 3)} · ${["NORTH", "EAST", "SOUTH"][Math.min(o.progress, 2)]}`, action: `Occupy relay ${Math.min(o.progress + 1, 3)} at ${o.terminal!.c + 1},${o.terminal!.r + 1} and clear adjacent enemies before the next round change.`, progress:o.progress, total:o.duration };
   if (o?.type === "HOLD") {
     if (holdControlled(b)) return { status:"CONTROLLED", action:"Keep an ally in the relay zone through the next round change.", progress:o.progress, total:o.duration };
     const inZone = b.units.filter(u => !u.defeated && Math.abs(u.c-o.terminal.c)+Math.abs(u.r-o.terminal.r) <= (o.radius ?? 0));
@@ -99,7 +102,7 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
   const oldCycle = accepted && acceptedRun?.fieldContext?.cycleId != null && field?.board && acceptedRun.fieldContext.cycleId !== field.board.cycleId;
   if (context?.masteryChallenge) return {
     missionId: m.missionId, objectiveText: missionGoal(resolved), failConditionText: missionFailure(resolved),
-    tacticalThreat: 'One ally must anchor the exact tile. Clear adjacent contesters while support recharges slowly; evading off the relay resets control.',
+    tacticalThreat: context.lockdownPlan === 'crosslink' ? 'Clear the next relay and move or hand off the holder before each round change. Support recharges normally.' : 'One ally must anchor the exact tile. Clear adjacent contesters while support recharges slowly; evading off the relay resets control.',
     nextConsequence: 'Relay Mastery stays permanently unlocked. A confirmed challenge result is saved without base Field Op or progression rewards.',
     rewardEligibility: missionRewardTruth(resolved,field), rewardClearText:'OPTIONAL TACTICAL CHALLENGE', rewardChallengeText:'NO PROGRESSION REWARD',
     nextAction:{missionId:m.missionId,reason:'Try another holder or squad after recording the result.'},

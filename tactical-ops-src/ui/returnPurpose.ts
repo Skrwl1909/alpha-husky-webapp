@@ -26,7 +26,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     if (f.masteryPath.unlockedChallenge) {
       const recorded = Boolean(f.masteryPath.firstLockdownClear);
       const canRecord = f.masteryPath.firstLockdownClear !== undefined;
-      primary = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', recorded
+      primary = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', f.lockdownPlansAvailable ? 'Choose Anchor to defend one tile with slower support, or Crosslink to rotate north, east, then south with normal support. Optional practice; no currency or progression rewards.' : recorded
         ? 'Your first recorded Relay Lockdown clear is saved permanently. Try another holder or squad for optional practice; no further unlock or reward is promised.'
         : canRecord ? 'Relay Mastery recorded. Win Relay Lockdown to save its first completion: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.'
         : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
@@ -64,6 +64,11 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
 
 /** Only canonical receipt fields justify an earned or changed claim. */
 export function fieldResultPurpose(r: FieldResult): { earned: string; exhausted: string; changed: string; future: string } {
+  if (r.lockdownPlan) return {
+    earned: `Server accepted ${r.lockdownPlan === 'anchor' ? 'Anchor' : 'Crosslink'} · ${r.victory ? 'objective completed' : 'attempt failed'}. No currency, Commander or Pack Mastery progress.`,
+    exhausted: 'Optional practice; permanent Relay Mastery access preserved.',
+    changed: 'Accepted plan recorded; no regional change.',
+    future: r.lockdownPlan === 'anchor' ? 'Try Crosslink: rotate between three relay checkpoints with normal support recharge.' : 'Try Anchor: hold one tile with slower support recharge.' };
   if (r.masteryChallenge) return {
     earned: 'Optional challenge result recorded. No currency, Commander or Pack Mastery progress.',
     exhausted: r.victory ? r.lockdownFirstClear ? 'First recorded Relay Lockdown clear saved permanently.' : 'This Relay Lockdown attempt completed. Relay Mastery remains 1/1.' : 'Relay Lockdown failed. Your permanent unlock is preserved.',

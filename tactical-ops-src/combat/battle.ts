@@ -124,7 +124,7 @@ export function createBattle(
     healingActions: 0,
     hostilesEliminated: 0,
     results: null,
-    objective: objective ? (() => { const o = structuredClone(objective); if(o.type==="RECOVER" || o.type==="HOLD"){if(o.terminal)o.terminal=previewPoint(o.terminal);} if(o.type==="INTERCEPT")o.exit=previewPoint(o.exit); return o; })() : null,
+    objective: objective ? (() => { const o = structuredClone(objective); if(o.type==="RECOVER" || o.type==="HOLD"){if(o.terminal)o.terminal=previewPoint(o.terminal); if(o.type==="HOLD" && o.relayRoute)o.relayRoute=o.relayRoute.map(previewPoint);} if(o.type==="INTERCEPT")o.exit=previewPoint(o.exit); return o; })() : null,
     reinforcement: reinforcement ? { ...reinforcement, spawn: { ...reinforcement.spawn, ...previewPoint(reinforcement.spawn) } } : null,
     signalCarrierId,
     directive: directive ? structuredClone(directive) : null,

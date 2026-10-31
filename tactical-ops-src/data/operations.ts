@@ -278,6 +278,16 @@ MISSION_DEFS["field-relay-intercept"] = {
 };
 
 export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>): MissionDef {
+  if (context?.reportVersion === 5 && context.masteryChallenge === "relay-lockdown-v1") {
+    if (mission.missionId !== "field-relay-hold" || !["anchor", "crosslink"].includes(context.lockdownPlan!)) throw Error("invalid_lockdown_plan");
+    const anchor = missionForContext(mission, { ...context, reportVersion: 4 });
+    if (context.lockdownPlan === "anchor") return { ...anchor, name: "RELAY LOCKDOWN · ANCHOR" };
+    const relayRoute = [{ c: 3, r: 1 }, { c: 4, r: 2 }, { c: 3, r: 3 }];
+    return { ...anchor, name: "RELAY LOCKDOWN · CROSSLINK",
+      briefCopy: "Occupy the north, east, then south relay tiles at three consecutive round changes. Clear adjacent enemies at each checkpoint. Miss one and the sequence resets to north. Moving between checkpoints does not reset progress. Finish by round 6; normal support recharge.",
+      objective: { type: "HOLD", terminal: relayRoute[0], relayRoute, radius: 1, holderRadius: 0, duration: 3, progress: 0, checkedRound: 1 },
+      squadHint: "ALPHA rotates while CNC clears the next relay. Bring SHADOW for healing, or PET for slows and mobility. No specific sidegrade required." };
+  }
   if (context?.reportVersion === 4 && context.masteryChallenge === "relay-lockdown-v1") {
     if (mission.missionId !== "field-relay-hold") throw Error("invalid_mastery_mission");
     return { ...mission, name: "RELAY LOCKDOWN",

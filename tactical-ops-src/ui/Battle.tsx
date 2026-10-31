@@ -375,7 +375,7 @@ function ObjectiveChip() {
       : objective?.type === "SURVIVE"
         ? "Survive"
         : objective?.type === "HOLD"
-          ? "Hold"
+          ? objective.relayRoute ? "Crosslink" : "Hold"
           : objective?.type === "INTERCEPT"
             ? "Intercept"
             : objective?.type === "BOSS"
@@ -625,7 +625,7 @@ export function BattleScreen() {
             const pos = fieldPercent(cell.c, cell.r);
             const anchor = objective.holderRadius === 0;
             const center = cell.c === objective.terminal!.c && cell.r === objective.terminal!.r;
-            return <div key={`hold-${cell.c}-${cell.r}`} className={`t-hold-cell ${anchor ? center ? "is-lockdown-anchor" : "is-contest-zone" : "is-hold-area"}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{anchor && !center ? "" : "HOLD"}</div>;
+            return <div key={`hold-${cell.c}-${cell.r}`} className={`t-hold-cell ${anchor ? center ? "is-lockdown-anchor" : "is-contest-zone" : "is-hold-area"}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{anchor && !center ? "" : objective.relayRoute ? `R${Math.min(objective.progress + 1, 3)}` : "HOLD"}</div>;
           }) : null}
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
