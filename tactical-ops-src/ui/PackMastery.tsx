@@ -2,6 +2,7 @@ import { useBattleStore } from "../store/battleStore";
 import { masteryDef, masteryRecord, companionRunLocked, type PackMastery, type MasteryChange } from "../data/packMastery";
 import { UNIT_DEFS } from "../data/units";
 import { portraitFallback } from "./PlayerIdentity";
+import { VETERAN_OPTIONS, veteranRequirement } from "../data/veteran";
 import { useState } from "react";
 import { savedMasteryProof, alternateMasteryProof } from "./s3PowerProof";
 
@@ -67,7 +68,7 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
             ? compactEffect(def.trained)
             : m.stage < 3
               ? "Choose a specialization"
-              : "All mastery options unlocked";
+              : "Foundation options unlocked";
 
           return (
             <article key={id} className="t-mastery-row t-mastery-premium-row t-mastery-card-v29" data-mastery-companion={id}>
@@ -89,6 +90,15 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                   <progress className="t-progress" aria-label={`${def.name} mastery`} value={m.progress} max={8} />
                 </div>
 
+                {m.veteran && m.progress===8 ? <div className="t-growth-delta" data-veteran-mastery={id}>
+                  <strong>8/8 FOUNDATION COMPLETE → VETERAN {m.veteran.credits}/12</strong>
+                  <progress className="t-progress" value={m.veteran.credits} max={12} aria-label="Veteran Mastery" />
+                  <small>{veteranRequirement(m.veteran,id==="ally-03"?"SHADOW":id.startsWith("pet:")?"PET":"CNC")}</small>
+                  <small>{m.veteran.lastCycle===progression?.fieldOps?.board?.cycleId ? "This rotation's credit is recorded. Your next eligible rotation can add one." : "Next: win an Advanced eligible objective with this companion and all three allies standing."}</small>
+                  <b>{VETERAN_OPTIONS[id==="ally-03"?"SHADOW":id.startsWith("pet:")?"PET":"CNC"].name}</b>
+                  <small>{VETERAN_OPTIONS[id==="ally-03"?"SHADOW":id.startsWith("pet:")?"PET":"CNC"].copy}</small>
+                  {m.stage===4 ? <button type="button" className="t-btn" disabled={pending||locked} aria-pressed={m.veteran.enabled} onClick={()=>void select(id,m.veteran!.enabled?"VETERAN_OFF":"VETERAN_ON")}>{m.veteran.enabled?"VETERAN OPTION ON · DISABLE":"ENABLE VETERAN OPTION"}</button> : <small>Unlock: 12 eligible rotation credits across both objective families. Participation, not verified skill-use proof.</small>}
+                </div> : null}
                 <div className="t-mastery-now-next">
                   <div>
                     <span className="t-kicker">Active</span>
@@ -97,13 +107,13 @@ export function PackMasteryPanel({ snapshot }: { snapshot?: PackMastery }) {
                   </div>
                   <div>
                     <span className="t-kicker">Next</span>
-                    <strong>{nextAt ? `AT ${nextAt} MASTERY` : "ALL PATHS UNLOCKED"}</strong>
+                    <strong>{nextAt ? `AT ${nextAt} MASTERY` : "FOUNDATION COMPLETE"}</strong>
                     <small>{nextCopy}</small>
                   </div>
                 </div>
 
                 {m.stage >= 2 ? <p><small>TRAINED · {def.trained.name}: {def.trained.copy}</small></p> : null}
-                {m.stage === 3 ? <div className="t-growth-delta" aria-label="Saved versus alternate Mastery"><small>{snapshot ? "FROZEN" : "SAVED"} {m.selected} → ALTERNATE {m.selected === "A" ? "B" : "A"}</small>{alternate.length ? alternate.map(row => <b key={row}>{row}</b>) : <small>{snapshot ? "This run uses its frozen A/B. Compare alternatives in the War Table." : "No additional effective change in this composition."}</small>}<small>{id === "ally-02" ? "INTERCEPT: recharge sooner or keep control longer." : id === "ally-03" ? "HOLD: compare MEND timing against healing-free, disruption-safe shelter. MEDIC + STEADY HAND in V2 adds 8 base healing at the cooldown floor." : "RECOVER / INTERCEPT: choose objective mobility or HAMSTRING reach."} 8/8 is complete; experiment between runs without earning extra XP.</small></div> : null}
+                {m.stage >= 3 ? <div className="t-growth-delta" aria-label="Saved versus alternate Mastery"><small>{snapshot ? "FROZEN" : "SAVED"} {m.selected} → ALTERNATE {m.selected === "A" ? "B" : "A"}</small>{alternate.length ? alternate.map(row => <b key={row}>{row}</b>) : <small>{snapshot ? "This run uses its frozen A/B. Compare alternatives in the War Table." : "No additional effective change in this composition."}</small>}<small>{id === "ally-02" ? "INTERCEPT: recharge sooner or keep control longer." : id === "ally-03" ? "HOLD: compare MEND timing against healing-free, disruption-safe shelter. MEDIC + STEADY HAND in V2 adds 8 base healing at the cooldown floor." : "RECOVER / INTERCEPT: choose objective mobility or HAMSTRING reach."} Foundation 8/8 is complete. Veteran progress and its optional role capability appear below when supported by the server.</small></div> : null}
                 {proof ? <div className="t-growth-delta" aria-label="Saved Pack Mastery power proof"><small>POWER PROOF · {proof.comparison}</small>{proof.changes.map(change => <b key={change}>{change}</b>)}</div> : null}
                 <details className="t-detail t-mastery-detail">
                   <summary>{m.stage >= 3 ? "Specialization" : "Ability details"}</summary>
@@ -153,6 +163,7 @@ export function MasteryFeedback({ changes, victory }: { changes?: MasteryChange[
       <progress className="t-progress" aria-label={`${def.name} mastery`} value={change.progress} max={8} />
       {change.beforeStage < 2 && change.stage >= 2 ? <div className="t-mastery-unlock"><strong>AWAKENED · {def.trained.name}</strong><p>{def.trained.copy}</p></div> : null}
       {change.newOptions.length ? <div className="t-mastery-unlock is-signature"><strong>SIGNATURE EVOLUTION · 8/8</strong><p>{def.options.A.name} / {def.options.B.name}</p><p>Specializations unlocked. Choose outside an active run.</p></div> : null}
+      {change.veteran ? <p data-veteran-delta={change.unitId}>VETERAN {change.veteran.before} → {change.veteran.after}/12 · {change.veteran.unlocked ? "OPTION UNLOCKED" : change.veteran.reason.replaceAll("_"," ").toLowerCase()}</p> : null}
       {!change.gained && change.progress < 8 ? <small>{victory ? "Award already earned. Try another mission or challenge." : "Clear a Field Op to progress."}</small> : null}
     </div>;
   })}</section>;

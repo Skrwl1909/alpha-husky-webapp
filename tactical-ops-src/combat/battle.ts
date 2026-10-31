@@ -327,6 +327,7 @@ export function canRecover(state: BattleState): boolean {
   const actor = state.units.find((u) => u.id === state.activeId);
   const objective = state.objective;
   if (!objective || objective.type !== "RECOVER" || objective.completed || !actor || actor.team !== "ally" || actor.defeated || actor.hasActed) return false;
+  if (objective.squadExtractionRadius != null && (state.units.filter(u=>u.team==="ally").length!==3 || state.units.some(u=>u.team==="ally" && (u.defeated || Math.abs(u.c-objective.terminal.c)+Math.abs(u.r-objective.terminal.r)>objective.squadExtractionRadius!)))) return false;
   return recoverSignalOpen(state) && Math.abs(actor.c - objective.terminal.c) + Math.abs(actor.r - objective.terminal.r) <= (actor.recoverRange || 1);
 }
 

@@ -1,0 +1,44 @@
+name: Progression Depth V2
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'tools/verify_progression_v2*.mjs'
+      - 'tools/verify_tactical_depth01_combat.mjs'
+      - 'tools/fixtures/progression-v2.json'
+      - 'tools/fixtures/progression-v2-extraction.json'
+      - '.github/workflows/progression-v2.yml'
+permissions:
+  contents: read
+jobs:
+  veteran-foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Veteran contracts, role effects and encounter traces
+        run: |
+          node tools/verify_progression_v2.mjs
+          node tools/verify_progression_v2_effects.mjs
+          node tools/verify_progression_v2_combat.mjs
+      - name: Production bundle parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - name: Mobile goals, unlock, results, frozen resume and old backend
+        run: node tools/verify_progression_v2_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: progression-v2-evidence
+          path: artifacts/progression-v2
+          if-no-files-found: error

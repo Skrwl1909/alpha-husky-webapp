@@ -53,6 +53,7 @@ export function missionHud(state: BattleState): string {
   const progress = objective?.type === "HOLD" && objective.relayRoute ? `CROSSLINK ${objective.progress}/3 · RELAY ${Math.min(objective.progress + 1, 3)} AT ${objective.terminal!.c + 1},${objective.terminal!.r + 1} · ${holdControlled(state) ? "READY FOR ROUND CHANGE" : "OCCUPY TILE / CLEAR ADJACENT ENEMIES"}`
     : objective?.type === "HOLD" ? `HOLD ${objective.progress}/${objective.duration} · ${holdControlled(state) ? "CONTROLLED" : objective.holderRadius === 0 ? "OCCUPY RELAY TILE / CLEAR ADJACENT ENEMIES" : "OCCUPY / CLEAR AREA"}`
     : objective?.type === "SURVIVE" ? `SURVIVE ${objective.progress}/${objective.duration} · ALL SQUAD MUST STAND`
+    : objective?.type === "RECOVER" && objective.squadExtractionRadius != null ? `PACK EXTRACTION · ${state.units.filter(u=>u.team==="ally"&&!u.defeated&&Math.abs(u.c-objective.terminal.c)+Math.abs(u.r-objective.terminal.r)<=objective.squadExtractionRadius!).length}/3 IN RANGE · EVEN ROUNDS ONLY`
     : rule?.recoverEveryRounds ? `RECOVER · SIGNAL ${recoverSignalOpen(state) ? "OPEN" : "JAMMED — EVEN ROUNDS ONLY"}` : "";
   const conditions = [rule?.reinforcement && state.reinforcement ? `HOUND · ${state.reinforcement.spawned ? "ARRIVED" : `ROUND ${state.reinforcement.triggerRound}`}` : "",
     rule?.supportCooldownExtra ? `SUPPORT COOLDOWNS +${rule.supportCooldownExtra}` : "",

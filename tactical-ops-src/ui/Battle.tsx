@@ -403,7 +403,7 @@ function ObjectiveChip() {
   // Keep the task distinct from its live state in the fixed mobile HUD card.
   // The longer objective and rules remain available in the existing details.
   const heading = !training && objective?.type === "RECOVER"
-    ? objective.completed ? "RELAY RECOVERED" : "RECOVER RELAY"
+    ? objective.completed ? "RELAY RECOVERED" : objective.squadExtractionRadius!=null ? "PACK EXTRACTION" : "RECOVER RELAY"
     : !training && objective?.type === "INTERCEPT" ? "INTERCEPT COURIER" : liveGoal || title;
   const summary = training ? trainingCue?.title || "DEFEAT HOSTILES"
     : objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE"

@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createServer} from 'vite';
+let response;
+globalThis.window={location:{search:''},localStorage:{getItem:()=>null},apiPost:async()=>structuredClone(response)};
+const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom'});
+try{
+ const [host,mastery,ops]=await Promise.all(['/tactical-ops-src/host/foundationProgression.ts','/tactical-ops-src/data/packMastery.ts','/tactical-ops-src/data/operations.ts'].map(p=>vite.ssrLoadModule(p)));
+ const state=JSON.parse(readFileSync('tools/fixtures/progression-v2.json','utf8'));
+ response={ok:true,data:state};const parsed=await host.loadFoundationProgression();assert.equal(parsed.fieldOps.veteranCareer.credits,1);
+ const old=structuredClone(state);delete old.fieldOps.veteranProgressionAvailable;delete old.fieldOps.veteranCareer;for(const r of Object.values(old.packMastery))delete r.veteran;
+ response={ok:true,data:old};const fallback=await host.loadFoundationProgression();assert.equal(fallback.fieldOps.veteranCareer,undefined);assert.equal(fallback.packMastery['ally-02'].veteran,undefined);
+ const advanced=structuredClone(state);advanced.fieldOps.veteranCareer={version:1,credits:12,missionIds:['field-relay-recovery','field-relay-intercept','field-relay-hold','field-squad-survival'],lastCycle:30,enabled:false};advanced.fieldOps.commander.rank=4;
+ response={ok:true,data:advanced};assert.equal((await host.loadFoundationProgression()).fieldOps.commander.rank,4);
+ delete advanced.fieldOps.veteranProgressionAvailable;response={ok:true,data:advanced};await assert.rejects(()=>host.loadFoundationProgression(),'rank 4 must be capability-gated');
+ const ctx={reportVersion:6,progressionVersion:2,veteranChallenge:'pack-extraction-v1',cycleId:30,pressure:2,approach:'standard',directiveTier:'advanced',directiveSet:'pursuit'};
+ const run={runId:'field_synthetic',missionId:'field-relay-recovery',squadIds:['alpha','ally-02','ally-03'],fieldContext:ctx,packMastery:state.packMastery};
+ response={ok:true,data:state,run};assert.equal((await host.startOperationMission('test',8,run.missionId,run.squadIds,ctx,undefined,false,undefined,2)).run.fieldContext.veteranChallenge,'pack-extraction-v1');
+ response={ok:true,data:state,run:{...run,fieldContext:{...ctx,progressionVersion:undefined}}};await assert.rejects(()=>host.startOperationMission('test',8,run.missionId,run.squadIds,ctx));
+ response={ok:true,data:state,run:{...run,fieldContext:{...ctx,masteryChallenge:'relay-lockdown-v1'}}};await assert.rejects(()=>host.startOperationMission('test',8,run.missionId,run.squadIds,ctx));
+ const raw={progress:8,selected:'B',veteran:{version:1,credits:12,missionIds:['field-relay-hold','field-squad-survival'],lastCycle:30,enabled:false}};
+ const m=mastery.parsePackMastery({'ally-03':raw})['ally-03'];assert.equal(m.stage,4);assert.equal(m.selected,'B');assert.equal(m.veteran.enabled,false);
+ assert.equal(mastery.parsePackMastery({'ally-03':{progress:8,selected:'B'}})['ally-03'].stage,3);
+ const optional=ops.missionForContext(ops.getMissionDef(run.missionId),ctx);assert.equal(optional.objective.squadExtractionRadius,2);
+ const extraction=JSON.parse(readFileSync('tools/fixtures/progression-v2-extraction.json','utf8'));
+ response=extraction;
+ const acceptedPractice=await host.continueOperationMission('test',30,'field_synthetic',true,false,{});
+ assert.equal(acceptedPractice.fieldResult.veteranChallenge,'pack-extraction-v1');
+ assert.equal(acceptedPractice.fieldResult.rewardAmountsAvailable,true);
+ assert.deepEqual([acceptedPractice.fieldResult.xpGranted,acceptedPractice.fieldResult.bonesGranted,acceptedPractice.fieldResult.progressEarned],[0,0,0]);
+ assert.equal((await host.loadFoundationProgression()).fieldOps.lastResult.veteranChallenge,'pack-extraction-v1');
+ console.log('PASS Veteran wire: prior saves, old backend fallback, capability gate, frozen v6 context, unchanged A/B, optional extraction');
+}finally{await vite.close()}

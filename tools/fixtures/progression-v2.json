@@ -1,0 +1,375 @@
+{
+  "build": "tops-2.7.6-first-session-goal-spine-v1-20260913",
+  "vnextStartAvailable": true,
+  "version": 1,
+  "foundationStage": "completed",
+  "completed": true,
+  "revision": 10,
+  "activeRunId": null,
+  "lastCompletedRunId": null,
+  "updatedAt": 1791331320,
+  "packMastery": {
+    "ally-02": {
+      "progress": 8,
+      "stage": 3,
+      "unlockedOptions": [
+        "A",
+        "B"
+      ],
+      "selected": "B",
+      "earned": {
+        "field-relay-recovery": {
+          "clear": 30,
+          "challenge": 30
+        }
+      },
+      "veteran": {
+        "version": 1,
+        "credits": 1,
+        "missionIds": [
+          "field-relay-recovery"
+        ],
+        "lastCycle": 30,
+        "enabled": false
+      }
+    },
+    "ally-03": {
+      "progress": 8,
+      "stage": 3,
+      "unlockedOptions": [
+        "A",
+        "B"
+      ],
+      "selected": "B",
+      "earned": {
+        "field-relay-recovery": {
+          "clear": 30,
+          "challenge": 30
+        }
+      },
+      "veteran": {
+        "version": 1,
+        "credits": 0,
+        "missionIds": [],
+        "lastCycle": null,
+        "enabled": false
+      }
+    }
+  },
+  "playerGrowth": {
+    "version": 1,
+    "earnedPoints": 2,
+    "spentPoints": 0,
+    "claimedFirstClears": [
+      "field-isolated-hold",
+      "field-relay-recovery"
+    ],
+    "heroes": [
+      {
+        "heroId": "alpha",
+        "discipline": null,
+        "ranks": {},
+        "respecUsed": false
+      },
+      {
+        "heroId": "ally-02",
+        "discipline": null,
+        "ranks": {},
+        "respecUsed": false
+      },
+      {
+        "heroId": "ally-03",
+        "discipline": null,
+        "ranks": {},
+        "respecUsed": false
+      }
+    ]
+  },
+  "activeTacticalProfile": null,
+  "playerIdentity": {
+    "tacticalProfile": {
+      "version": 1,
+      "attack": 3,
+      "defense": 3,
+      "hp": 12,
+      "initiative": 1
+    },
+    "displayName": "ALPHA",
+    "level": 150,
+    "skinKey": "default",
+    "skinName": "Default",
+    "portraitUrl": "",
+    "spriteUrl": "",
+    "attackSpriteUrl": ""
+  },
+  "equippedPet": null,
+  "fieldOps": {
+    "records": {
+      "field-relay-recovery": {
+        "missionId": "field-relay-recovery",
+        "completed": true,
+        "clearCount": 1,
+        "lastClearedAt": 1791331320,
+        "squadIds": [
+          "alpha",
+          "ally-02",
+          "ally-03"
+        ],
+        "failCount": 0,
+        "challengeCount": 1,
+        "lastClearCycle": 30,
+        "lastChallengeCycle": 30,
+        "advancedClearCount": 1,
+        "lastAdvancedCycle": 30
+      },
+      "field-relay-hold": {
+        "missionId": "field-relay-hold",
+        "completed": false,
+        "clearCount": 0,
+        "lastClearedAt": 0,
+        "failCount": 0,
+        "challengeCount": 0,
+        "lastClearCycle": null,
+        "lastChallengeCycle": null,
+        "advancedClearCount": 0,
+        "lastAdvancedCycle": null
+      },
+      "field-squad-survival": {
+        "missionId": "field-squad-survival",
+        "completed": false,
+        "clearCount": 0,
+        "lastClearedAt": 0,
+        "failCount": 0,
+        "challengeCount": 0,
+        "lastClearCycle": null,
+        "lastChallengeCycle": null,
+        "advancedClearCount": 0,
+        "lastAdvancedCycle": null
+      },
+      "field-relay-intercept": {
+        "missionId": "field-relay-intercept",
+        "completed": false,
+        "clearCount": 0,
+        "lastClearedAt": 0,
+        "failCount": 0,
+        "challengeCount": 0,
+        "lastClearCycle": null,
+        "lastChallengeCycle": null,
+        "advancedClearCount": 0,
+        "lastAdvancedCycle": null
+      },
+      "field-isolated-hold": {
+        "missionId": "field-isolated-hold",
+        "completed": true,
+        "clearCount": 1,
+        "lastClearedAt": 0,
+        "failCount": 0,
+        "challengeCount": 0,
+        "lastClearCycle": null,
+        "lastChallengeCycle": null,
+        "advancedClearCount": 1,
+        "lastAdvancedCycle": null
+      },
+      "field-rearguard": {
+        "missionId": "field-rearguard",
+        "completed": false,
+        "clearCount": 0,
+        "lastClearedAt": 0,
+        "failCount": 0,
+        "challengeCount": 0,
+        "lastClearCycle": null,
+        "lastChallengeCycle": null,
+        "advancedClearCount": 0,
+        "lastAdvancedCycle": null
+      }
+    },
+    "activeMissionRun": null,
+    "lastCompletedMissionRunId": "field_51c3345be6bf4b5a87d8b87df99e8c86",
+    "loopVersion": 2,
+    "board": {
+      "cycleId": 30,
+      "nextRotationAt": 1791417600,
+      "reportVersion": 3,
+      "directiveSet": "attrition",
+      "activeMissionIds": [
+        "field-relay-recovery",
+        "field-relay-hold",
+        "field-squad-survival"
+      ]
+    },
+    "commander": {
+      "progress": 15,
+      "rank": 3,
+      "nextRankAt": null,
+      "certificationComplete": true,
+      "unlockedDirectiveTiers": [
+        "standard",
+        "advanced"
+      ],
+      "unlockedApproaches": [
+        "standard",
+        "south"
+      ]
+    },
+    "veteranCareer": {
+      "version": 1,
+      "credits": 1,
+      "missionIds": [
+        "field-relay-recovery"
+      ],
+      "lastCycle": 30,
+      "enabled": false
+    },
+    "careerRecord": {
+      "version": 1,
+      "missionSecures": 1,
+      "challenges": 1,
+      "advancedClears": 1,
+      "frontsSecured": 0,
+      "lastSecuredCycle": null
+    },
+    "lastResult": {
+      "runId": "field_synthetic",
+      "missionId": "field-relay-recovery",
+      "victory": true,
+      "cycleId": 30,
+      "challengeSuccess": true,
+      "challengeBonus": 1,
+      "progressEarned": 3,
+      "clearProgressEarned": 2,
+      "firstCycleSecure": true,
+      "firstCycleChallenge": true,
+      "frontJustSecured": false,
+      "progressBefore": 12,
+      "progressAfter": 15,
+      "rankBefore": 3,
+      "rankAfter": 3,
+      "pressureBefore": 3,
+      "pressureAfter": 2,
+      "regionalApplied": true,
+      "unlockedApproaches": [],
+      "legacyReport": false,
+      "recordedAt": 1791331320,
+      "directiveTier": "advanced",
+      "directiveSet": "attrition",
+      "advancedFirstClear": true,
+      "firstCycleAdvanced": true,
+      "advancedUnlocked": false,
+      "masteryUnlocked": false,
+      "veteranCareer": {
+        "before": 0,
+        "after": 1,
+        "reason": "CREDIT_RECORDED",
+        "unlocked": false
+      },
+      "squadStanding": 3,
+      "masteryChanges": [
+        {
+          "unitId": "ally-02",
+          "kind": "CNC",
+          "gained": 0,
+          "beforeStage": 3,
+          "stage": 3,
+          "progress": 8,
+          "newOptions": [],
+          "veteran": {
+            "before": 0,
+            "after": 1,
+            "reason": "CREDIT_RECORDED",
+            "unlocked": false
+          }
+        },
+        {
+          "unitId": "ally-03",
+          "kind": "SHADOW",
+          "gained": 0,
+          "beforeStage": 3,
+          "stage": 3,
+          "progress": 8,
+          "newOptions": [],
+          "veteran": {
+            "before": 0,
+            "after": 0,
+            "reason": "OBJECTIVE_NOT_ELIGIBLE",
+            "unlocked": false
+          }
+        }
+      ],
+      "xpGranted": 8,
+      "bonesGranted": 16
+    },
+    "masteryPath": {
+      "version": 1,
+      "accomplishment": {
+        "missionId": "field-isolated-hold",
+        "evidence": "SERVER_ADVANCED_HOLD"
+      },
+      "unlockedChallenge": "relay-lockdown-v1",
+      "firstLockdownClear": {
+        "runId": "field_prior",
+        "cycleId": 1,
+        "recordedAt": 100
+      }
+    },
+    "rotationProgress": {
+      "cycleId": 30,
+      "securedCount": 1,
+      "total": 3,
+      "clearedMissionIds": [
+        "field-relay-recovery"
+      ],
+      "challengeMissionIds": [
+        "field-relay-recovery"
+      ],
+      "advancedMissionIds": [
+        "field-relay-recovery"
+      ],
+      "frontSecured": false
+    },
+    "region": {
+      "regionId": "broken-signal",
+      "cycleId": 30,
+      "pressure": 2,
+      "label": "HIGH"
+    },
+    "lockdownPlansAvailable": true,
+    "veteranProgressionAvailable": true
+  },
+  "operations": {
+    "broken-signal": {
+      "status": "active",
+      "missions": {
+        "broken-signal-breach": "available",
+        "broken-signal-recover": "locked",
+        "broken-signal-commander": "locked"
+      },
+      "activeMissionRun": null,
+      "lastCompletedMissionRunId": null
+    },
+    "dead-relay": {
+      "status": "active",
+      "missions": {
+        "dead-relay-courier": "locked",
+        "dead-relay-hold": "locked",
+        "dead-relay-guardian": "locked"
+      },
+      "activeMissionRun": null,
+      "lastCompletedMissionRunId": null
+    }
+  },
+  "campaignIntel": {
+    "dead-relay": {
+      "courierTraceAcquired": false
+    }
+  },
+  "intel": {
+    "routingTrace": false,
+    "commanderProfile": false
+  },
+  "archive": {
+    "brokenSignal": false
+  },
+  "nextOperationSlot": null,
+  "kodaSidegrade": null,
+  "shadowSidegrade": null
+}

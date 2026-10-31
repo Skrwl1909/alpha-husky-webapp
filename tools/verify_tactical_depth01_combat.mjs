@@ -96,7 +96,7 @@ try {
   function playAlly(state,policy,stats){
     const actor=state.units.find(u=>u.id===state.activeId),o=state.objective;
     if(!actor||actor.defeated) return state;
-    if(o?.type==="RECOVER" && battle.canRecover(state) && (policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)){
+    if(o?.type==="RECOVER" && battle.canRecover(state) && (policy==="convoy" || policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)){
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
     let preferred=targetPriority(state,actor,policy.startsWith("rotate-")?"control":policy);
@@ -108,7 +108,7 @@ try {
     const remaining=state.units.filter(u=>u.team==="enemy"&&!u.defeated).length;
     const nextHolder=state.units.find(u=>u.team==="ally"&&!u.defeated);
     const wantsObjective=Boolean(oPoint)&&(
-      policy==="tempo" || policy==="adjacent" || (o?.holderRadius===0 || policy==="precise") || remaining===0 || (o?.type==="RECOVER"&&state.round>=3) || (o?.type==="HOLD"&&state.round>=4)
+      policy==="convoy" || policy==="tempo" || policy==="adjacent" || (o?.holderRadius===0 || policy==="precise") || remaining===0 || (o?.type==="RECOVER"&&state.round>=3) || (o?.type==="HOLD"&&state.round>=4)
     ) && (o?.type==="RECOVER" || (actor.id === (policy === "rotate-shadow" ? "ally-03" : "alpha") || actor.id===nextHolder?.id && policy !== "rotate-shadow"));
     // CONTROL wins interceptions by body-blocking the legal courier exit lane
     // while the remainder of the squad suppresses its approach.
@@ -137,7 +137,7 @@ try {
     }
     if(state.outcome!=="ongoing")return state;
     const newActor=state.units.find(u=>u.id===state.activeId);
-    if(o?.type==="RECOVER"&&(policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)&&battle.canRecover(state)){
+    if(o?.type==="RECOVER"&&(policy==="convoy" || policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)&&battle.canRecover(state)){
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
     {
@@ -231,14 +231,33 @@ try {
         stats.roundProgress.push({round:state.round,progress:state.objective.progress,units:state.units.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp})),terminal:state.objective.terminal});
       }
     }
-    return {actions:stats.actions,trace:stats.roundProgress,positions:[...stats.positions],report:{victory:state.results?.victory,objectiveComplete:state.results?.objectiveComplete,turns:state.results?.turns,healingActions:state.healingActions||0,squadStanding:state.results?.squadStanding,squadDeployed:state.results?.squadDeployed,...(state.failureReason?{failureReason:state.failureReason}:{}),...(profile.context?.masteryChallenge?{masteryChallenge:profile.context.masteryChallenge}:{}),...(profile.context?.lockdownPlan?{lockdownPlan:profile.context.lockdownPlan}:{})},build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
+    return {actions:stats.actions,trace:stats.roundProgress,positions:[...stats.positions],report:{victory:state.results?.victory,objectiveComplete:state.results?.objectiveComplete,turns:state.results?.turns,healingActions:state.healingActions||0,squadStanding:state.results?.squadStanding,squadDeployed:state.results?.squadDeployed,...(state.failureReason?{failureReason:state.failureReason}:{}),...(profile.context?.masteryChallenge?{masteryChallenge:profile.context.masteryChallenge}:{}),...(profile.context?.lockdownPlan?{lockdownPlan:profile.context.lockdownPlan}:{}),...(profile.context?.veteranChallenge?{veteranChallenge:profile.context.veteranChallenge}:{})},build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
   }
 
 
   const types=await vite.ssrLoadModule('/tactical-ops-src/combat/types.ts');
   const intents=await vite.ssrLoadModule('/tactical-ops-src/combat/intentContract.ts');
   const missionRules=await vite.ssrLoadModule('/tactical-ops-src/combat/missionRules.ts');
-  if(process.env.DEPTH02_ACCEPTED){
+  if(process.env.PROGRESSION_V2){
+    const base=ops.getMissionDef('field-relay-recovery');
+    const context={cycleId:0,reportVersion:6,progressionVersion:2,pressure:2,approach:'standard',directiveTier:'advanced',directiveSet:'pursuit',veteranChallenge:'pack-extraction-v1'};
+    const rows=[];
+    for(const grid of ['10x7','8x5']){
+      const c=grid==='10x7'?{rulesetVersion:'tactical-intent-vnext.0'}:null;types.selectAcceptedBattleRules(c);intents.selectAcceptedIntentRules(c);
+      for(const squad of variants.slice(0,2))for(const optional of [false,true]){
+        const ctx=optional?context:{...context,reportVersion:3,veteranChallenge:undefined};
+        const row=fullRun(ops.missionForContext(base,ctx),squad,{name:'veteran-foundation',build:builds[2],alpha:{hp:138,atk:39,def:21,spd:16},pet:{hp:91,atk:25,def:11,spd:15},context:ctx},optional?'convoy':'tempo');
+        rows.push({grid,optional,...row});
+      }
+    }
+    mkdirSync('artifacts/progression-v2',{recursive:true});writeFileSync('artifacts/progression-v2/encounters.json',JSON.stringify(rows,null,2));
+    console.log(JSON.stringify(rows.map(({grid,optional,squad,outcome,rounds,moves})=>({grid,optional,squad,outcome,rounds,moves})),null,2));
+    assert(rows.every(r=>r.outcome==='victory'),'both legal squads must extract on both grids');
+    for(const grid of ['10x7','8x5'])for(const squad of variants.slice(0,2)){
+      const pair=rows.filter(r=>r.grid===grid&&r.squad===squad.join('+'));
+      assert(pair[1].moves>pair[0].moves,'whole-squad extraction must change movement');
+    }
+  } else if(process.env.DEPTH02_ACCEPTED){
     const accepted=JSON.parse(readFileSync(process.env.DEPTH02_ACCEPTED,'utf8')),run=accepted.run;
     types.selectAcceptedBattleRules(run.rulesContract||null);intents.selectAcceptedIntentRules(run.rulesContract||null);
     const m=ops.missionForContext(ops.getMissionDef(run.missionId),run.fieldContext);

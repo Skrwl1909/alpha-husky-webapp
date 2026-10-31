@@ -8,6 +8,7 @@ import type { FieldOpsProgression } from "../host/foundationProgression";
 /** Presentation of canonical rules, never a source of new rewards or saved progress. */
 export function missionGoal(m: MissionDef): string {
   const o = m.objective;
+  if (o?.type === "RECOVER" && o.squadExtractionRadius!=null) return "Bring all three allies within 2 orthogonal cells, then RECOVER on an even round by round 6.";
   if (o?.type === "HOLD" && o.relayRoute) return "Occupy north, east, then south at consecutive round changes. Moving between checkpoints is allowed; missing one resets to north. Finish by round 6.";
   if (o?.type === "HOLD") return o.holderRadius === 0 ? `Keep an ally ON the relay tile for ${o.duration} consecutive round changes by round 6. Enemies within 1 orthogonal cell reset control.` : `Control the relay for ${o.duration} consecutive round changes. Enemies inside the zone reset control.`;
   if (o?.type === "SURVIVE") return `Keep every deployed squad member alive through ${o.duration} rounds. Eliminating enemies does not end the timer.`;
@@ -28,6 +29,7 @@ export interface MissionRewardTruth {
   copy: string;
 }
 export function missionRewardTruth(m: MissionDef, field: FieldOpsProgression | undefined): MissionRewardTruth {
+  if (m.objective?.type === "RECOVER" && m.objective.squadExtractionRadius!=null) return {clear:"NOT_APPLICABLE",challenge:"NOT_APPLICABLE",commander:"CERTIFIED",copy:"Optional Veteran practice. No currency or progression rewards."};
   if (m.objective?.type === 'HOLD' && m.objective.holderRadius === 0) return { clear:'NOT_APPLICABLE', challenge:'NOT_APPLICABLE', commander:'CERTIFIED', copy:'Optional unlocked challenge. No currency, Commander points, growth points, Pack Mastery or regional rewards.' };
   if (m.activity !== "FIELD_OP") return { clear:"NOT_APPLICABLE", challenge:"NOT_APPLICABLE", commander:"UNKNOWN", copy:"Campaign progress is recorded by the server." };
   if (!field?.board || !field.commander) return { clear:"UNKNOWN", challenge:"UNKNOWN", commander:"UNKNOWN", copy:"Refresh to check this rotation's confirmed rewards." };
@@ -43,6 +45,7 @@ export function missionRewardTruth(m: MissionDef, field: FieldOpsProgression | u
 }
 export function missionLiveProgress(b: BattleState): string {
   const o = b.objective;
+  if (o?.type === "RECOVER" && o.squadExtractionRadius!=null) return "PACK EXTRACTION · REGROUP ALL 3";
   if (o?.type === "HOLD" && o.relayRoute) return `CROSSLINK ${o.progress}/${o.duration}`;
   if (o?.type === "HOLD") return `HOLD ${o.progress}/${o.duration}`;
   if (o?.type === "SURVIVE") return `SURVIVE ${o.progress}/${o.duration}`;
@@ -56,6 +59,7 @@ export function missionLiveProgress(b: BattleState): string {
 }
 export function objectiveDirective(b: BattleState): { status: string; action: string; progress: number | null; total: number | null } {
   const o = b.objective;
+  if (o?.type === "RECOVER" && o.squadExtractionRadius!=null) return recoverGuidance(b);
   if (o?.type === "HOLD" && o.relayRoute) return { status: `RELAY ${Math.min(o.progress + 1, 3)} · ${["NORTH", "EAST", "SOUTH"][Math.min(o.progress, 2)]}`, action: `Occupy relay ${Math.min(o.progress + 1, 3)} at ${o.terminal!.c + 1},${o.terminal!.r + 1} and clear adjacent enemies before the next round change.`, progress:o.progress, total:o.duration };
   if (o?.type === "HOLD") {
     if (holdControlled(b)) return { status:"CONTROLLED", action:"Keep an ally in the relay zone through the next round change.", progress:o.progress, total:o.duration };
@@ -100,6 +104,12 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
   const base = context ? missionForContext(m, context) : m;
   const resolved = { ...base, directive: missionBattleRules(base, false, context).directive || undefined };
   const oldCycle = accepted && acceptedRun?.fieldContext?.cycleId != null && field?.board && acceptedRun.fieldContext.cycleId !== field.board.cycleId;
+  if (context?.veteranChallenge) return {
+    missionId:m.missionId,objectiveText:missionGoal(resolved),failConditionText:missionFailure(resolved),
+    tacticalThreat:'Move the whole squad. A lone runner cannot extract; protect slower allies until an even-round window.',
+    nextConsequence:'The accepted optional practice result is recorded. No currency, Commander or Pack Mastery awards.',
+    rewardEligibility:missionRewardTruth(resolved,field),rewardClearText:'OPTIONAL VETERAN PRACTICE',rewardChallengeText:'NO PROGRESSION REWARD',
+    nextAction:{missionId:m.missionId,reason:'Return to an eligible Advanced Field Op for progression.'},source:accepted?'ACCEPTED_RUN_AND_BACKEND_STATE':'MISSION_DEFINITION_ONLY'};
   if (context?.masteryChallenge) return {
     missionId: m.missionId, objectiveText: missionGoal(resolved), failConditionText: missionFailure(resolved),
     tacticalThreat: context.lockdownPlan === 'crosslink' ? 'Clear the next relay and move or hand off the holder before each round change. Support recharges normally.' : 'One ally must anchor the exact tile. Clear adjacent contesters while support recharges slowly; evading off the relay resets control.',
@@ -133,6 +143,7 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
 export function recordedResultMeaning(result: FieldResult): string {
   if (result.masteryChallenge) return result.victory ? "RELAY LOCKDOWN RECORDED. RELAY MASTERY COMPLETE · 1/1." : "LOCKDOWN ATTEMPT RECORDED. YOUR PERMANENT ACCESS IS PRESERVED.";
   if (!result.victory) return "MISSION FAILED. No clear recorded. Regroup and retry.";
+  if (result.veteranCareer) return result.veteranCareer.unlocked ? "RANK 4 · VETERAN. PACK EXTRACTION UNLOCKED." : `VETERAN CAREER ${result.veteranCareer.before} → ${result.veteranCareer.after}/12. ${result.veteranCareer.reason.replaceAll("_"," ")}.`;
   if (result.rankAfter >= 3) return `COMMANDER CERTIFIED · ${result.progressEarned} POINTS RECORDED IN HISTORY. NO HIGHER COMMANDER RANK.`;
   if (result.progressEarned > 0) return "COMMANDER PROGRESS RECORDED. YOUR NEXT CERTIFICATION MILESTONE IS CLOSER.";
   return "NO NEW COMMANDER PROGRESS ON THIS CLEAR. CHECK UNFINISHED CHALLENGES OR REPLAY FOR PRACTICE.";
@@ -151,6 +162,8 @@ export function recoverGuidance(b: BattleState): { status: string; action: strin
   const range = ally ? actor.recoverRange || 1 : 1;
   const distance = ally ? Math.abs(actor.c-o.terminal.c)+Math.abs(actor.r-o.terminal.r) : null;
   const timing = open ? `Signal open for round ${b.round}.` : `Opens round ${next}; every ${every} rounds.`;
+  const present = o.squadExtractionRadius==null ? null : b.units.filter(u=>u.team==="ally"&&!u.defeated&&Math.abs(u.c-o.terminal.c)+Math.abs(u.r-o.terminal.r)<=o.squadExtractionRadius!).length;
+  if (present!=null && present<3) return {status:`PACK ${present}/3 AT RELAY`,action:`Move every living squad member within 2 orthogonal cells. ${timing}`,progress:null,total:null};
   const position = distance === null ? "Wait for a living ally's turn." : `Relay distance ${distance}; range ${range} (orthogonal). ${distance > range ? actor!.hasMoved ? "Move spent; use support or SKIP, then approach next turn." : "MOVE closer, then RECOVER." : actor!.hasActed ? "Action spent; wait for this ally's next turn." : "Use RECOVER before acting."}`;
   return { status:open ? "SIGNAL OPEN" : `OPENS ROUND ${next}`, action:`${timing} ${position}`, progress:null, total:null };
 }
