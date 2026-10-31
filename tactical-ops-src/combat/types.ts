@@ -173,6 +173,7 @@ export interface Cell {
 }
 
 export interface RecoverObjective {
+  squadExtractionRadius?: number;
   type: "RECOVER";
   terminal: Cell;
   completed: boolean;

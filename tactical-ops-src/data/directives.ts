@@ -9,6 +9,10 @@ export const ADVANCED_DEADLINES: Record<string, number> = {
 
 /** Validated packages, rather than arbitrary random stacks. No stat multipliers. */
 export function missionDirectives(mission: MissionDef, context?: Partial<FieldContext>): MissionDirective[] {
+  if (context?.veteranChallenge === "pack-extraction-v1") return [
+    {type:"SIGNAL_INTERFERENCE",name:"EXTRACTION WINDOW",recoverEveryRounds:2,copy:"Whole squad within 2 cells. RECOVER on even rounds only."},
+    {type:"NO_SAFE_EXTRACTION",name:"EXTRACTION DEADLINE",maxRounds:6,copy:"Extract by round 6. A fallen or distant squad member prevents extraction."},
+    {type:"REINFORCEMENTS",name:"PURSUIT",copy:"A HOUND closes the east lane in round 2.",reinforcement:{spawn:{defId:"hostile",id:"field-reinforcement",c:7,r:2},triggerRound:2,telegraphed:true,spawned:false}}];
   const conditions = mission.directive ? [structuredClone(mission.directive)] : [];
   if (context && [4, 5].includes(context.reportVersion || 0) && context.masteryChallenge === "relay-lockdown-v1") {
     const deadline: MissionDirective = { type: "NO_SAFE_EXTRACTION", name: "LOCKDOWN WINDOW", maxRounds: 6, copy: "Complete by the end of round 6. Round 7 fails the operation." };

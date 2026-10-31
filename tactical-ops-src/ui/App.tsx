@@ -1,3 +1,4 @@
+import { veteranRequirement } from "../data/veteran";
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
@@ -176,6 +177,7 @@ function RecordedFirstResult({ receipt }: { receipt: FirstResultReceipt }) {
 }
 
 function FieldResultFeedback({ result }: { result: FieldResult }) {
+  if (result.veteranChallenge) return <section className="t-field-feedback" aria-label="Recorded Veteran challenge"><strong>PACK EXTRACTION · {result.victory?"COMPLETE":"FAILED"}</strong><p>Server-accepted optional practice. No currency, Commander, Veteran or Pack Mastery progress.</p><p>Next: return to an eligible Advanced Field Op for progression.</p></section>;
   const unlock = result.masteryUnlocked ? "RELAY MASTERY · RELAY LOCKDOWN UNLOCKED" : result.advancedUnlocked ? "ADVANCED DIRECTIVES" : result.unlockedApproaches.includes("south") ? "SOUTH APPROACH" : null;
   const target = result.rankAfter < 2 ? 6 : 12;
   const meaning = fieldResultPurpose(result);
@@ -186,7 +188,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
     {result.masteryChallenge ? !result.firstLockdownClear ? <p><b>RELAY MASTERY · 1/1</b> · Permanent access preserved.</p> : null : <>
     <div className="t-progress-heading"><div><span className="t-kicker">COMMANDER</span><strong>RANK {result.rankBefore !== result.rankAfter ? `${result.rankBefore} → ` : ""}{result.rankAfter}</strong></div><b>+{result.progressEarned}<small>PROGRESS</small></b></div>
     <progress className="t-progress" aria-label="Commander progress" value={Math.min(result.progressAfter, target)} max={target} />
-    <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? "CERTIFIED · ALL CURRENT COMMAND TOOLS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
+    <div className="t-progress-caption"><span>{result.progressBefore} → {result.progressAfter} TOTAL</span><span>{result.rankAfter >= 3 ? result.veteranCareer ? result.rankAfter===4 ? "RANK 4 · VETERAN" : "CERTIFIED · VETERAN CAREER OPEN" : "CERTIFIED · ALL CURRENT COMMAND TOOLS OPEN" : `${Math.max(0, target - result.progressAfter)} TO RANK ${result.rankAfter + 1}`}</span></div>
     </>}
     {result.victory && result.progressEarned === 0 && !result.masteryChallenge ? <div className="t-mission-strip"><span>CLEAR SECURED · REPLAY</span><span>+0 COMMANDER</span></div> : null}
     {result.victory && result.firstCycleSecure === false && result.progressEarned > 0 ? <div className="t-mission-strip"><span>CLEAR ALREADY SECURED</span><span>CHALLENGE +{result.challengeBonus} COMMANDER</span></div> : null}
@@ -197,6 +199,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
       <p><b>WHAT CHANGED</b> {meaning.changed}</p><p><b>NEXT BATTLE</b> {meaning.future}</p>
     </div>
     {result.challengeSuccess && !result.challengeBonus ? <small>{result.firstCycleChallenge === false ? "Challenge bonus already earned this rotation." : "No new challenge bonus recorded."}</small> : null}
+    {result.veteranCareer ? <p data-veteran-career-delta="true">COMMANDER VETERAN {result.veteranCareer.before} → {result.veteranCareer.after}/12 · {result.veteranCareer.unlocked?"RANK 4 · PACK EXTRACTION UNLOCKED":result.veteranCareer.reason.replaceAll("_"," ").toLowerCase()}</p> : null}
     <MasteryFeedback changes={result.masteryChanges} victory={result.victory} />
   </section>;
 }
@@ -334,6 +337,14 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
+        {field?.veteranProgressionAvailable && commanderRank>=3 ? <section className="t-panel" data-veteran-career="true">
+          <div className="t-kicker">COMMANDER RANK {commanderRank} · VETERAN FOUNDATION</div>
+          <strong>{commanderRank===4?"RANK 4 EARNED · PACK EXTRACTION OPEN":`NEXT: RANK 4 · ${field.veteranCareer?.credits || 0}/12 ROTATION CREDITS`}</strong>
+          <progress className="t-progress" value={field.veteranCareer?.credits||0} max={12} />
+          <p>{veteranRequirement(field.veteranCareer)}</p>
+          <small>{field.veteranCareer?.lastCycle===field.board?.cycleId?"This rotation's credit is recorded. Continue for another companion's eligible goal, or return in a later rotation.":"Next: win a distinct Advanced Field Op. Choose a missing objective family or mission. No daily streak required."}</small>
+          {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>{const s=useBattleStore.getState(), mid=field.board?.activeMissionIds.find(id=>!field.veteranCareer?.missionIds.includes(id))||field.board?.activeMissionIds[0];if(mid){s.openOperationBrief(mid);useBattleStore.getState().selectDirectiveTier("advanced")}}}>PREPARE ADVANCED FIELD OP</button>}
+        </section> : null}
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
@@ -382,7 +393,7 @@ function WarTable() {
         </section> : null}
         <section className="t-purpose-memory t-command-records" aria-label="Permanent records and squad opportunity">
           <span className="t-kicker">PERMANENT FIELD RECORD</span>
-          {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Relay Lockdown permanently unlocked.' : field.commander?.rank === 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
+          {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Relay Lockdown permanently unlocked.' : (field.commander?.rank || 0) >= 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
           {field?.masteryPath?.firstLockdownClear ? <p data-lockdown-completion="true">RELAY LOCKDOWN · FIRST CLEAR RECORDED · Persists across rotations.</p> : null}
           {campaignCareer ? <p>{campaignCareer.missions} Field secures · {campaignCareer.challenges} challenges · {campaignCareer.advanced} Advanced clears · {campaignCareer.fronts} fronts secured</p> : null}
           {field?.lastResult ? <details className="t-command-record-details"><summary>LAST MISSION · {getMissionDef(field.lastResult.missionId)?.name || field.lastResult.missionId}</summary><p>{fieldResultPurpose(field.lastResult).changed}</p></details> : null}
@@ -393,13 +404,13 @@ function WarTable() {
         <section className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail" aria-label="Tactical Ops overview">
           <div className="t-panel t-wt-status-card t-wt-rank-card">
             <span className="t-kicker">Commander</span>
-            <strong>{commanderRank >= 3 ? "RANK 3 · CERTIFIED" : commanderRank ? `RANK ${commanderRank}` : "STATUS UNAVAILABLE"}</strong>
+            <strong>{commanderRank >= 4 ? "RANK 4 · VETERAN" : commanderRank >= 3 ? "RANK 3 · CERTIFIED" : commanderRank ? `RANK ${commanderRank}` : "STATUS UNAVAILABLE"}</strong>
             {commanderTarget ? (
               <>
                 <progress className="t-progress" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
                 <small>{commanderProgress} / {commanderTarget} progress</small>
               </>
-            ) : <small>{commanderRank >= 3 ? "All current command tools unlocked" : "Refresh to confirm Commander progress"}</small>}
+            ) : <small>{commanderRank >= 3 ? field?.veteranProgressionAvailable && commanderRank<4 ? "Certification complete · Veteran career open" : "All current command tools unlocked" : "Refresh to confirm Commander progress"}</small>}
           </div>
           <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
             <span className="t-kicker">Area status</span>
@@ -609,6 +620,7 @@ function Brief() {
   const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const selectedApproach = useBattleStore((s) => s.selectedApproach);
   const selectedDirectiveTier = useBattleStore((s) => s.selectedDirectiveTier);
+  const selectedVeteranChallenge = useBattleStore((s)=>s.selectedVeteranChallenge);
   const selectedLockdownPlan = useBattleStore((s) => s.selectedLockdownPlan);
   const selectLockdownPlan = useBattleStore((s) => s.selectLockdownPlan);
   const selectedMasteryChallenge = useBattleStore((s) => s.selectedMasteryChallenge);
@@ -639,7 +651,7 @@ function Brief() {
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
-  const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
+  const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
   const mission = baseMission ? missionForContext(baseMission, fieldContext) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
@@ -788,7 +800,7 @@ function Brief() {
                   { id: equippedPet ? `pet:${equippedPet.id}` : "pet:unavailable", label: equippedPet ? `PET · ${equippedPet.name}` : "PET", role: equippedPet ? "MOBILITY / CONTROL" : "NO VALID PET EQUIPPED", available: Boolean(equippedPet) },
                 ].map((candidate) => {
                   const selected = selectedSquadIds.includes(candidate.id);
-                  return <button key={candidate.id} type="button" aria-pressed={selected} disabled={busy || Boolean(savedRun?.fieldContext?.lockdownPlan) || kodaSavePending || shadowSavePending || !candidate.available || (!selected && selectedSquadIds.length >= 3)} className={`t-btn ${selected ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => toggleCommanderTeammate(candidate.id)}>{candidate.label}<br /><small>{candidate.role}</small></button>;
+                  return <button key={candidate.id} type="button" aria-pressed={selected} disabled={busy || Boolean(savedRun?.fieldContext?.lockdownPlan) || savedRun?.fieldContext?.progressionVersion===2 || kodaSavePending || shadowSavePending || !candidate.available || (!selected && selectedSquadIds.length >= 3)} className={`t-btn ${selected ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => toggleCommanderTeammate(candidate.id)}>{candidate.label}<br /><small>{candidate.role}</small></button>;
                 })}
               </div>
             </div>
@@ -1053,7 +1065,8 @@ function Results() {
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const resultBaseMission = getMissionDef(selectedMissionId);
   const confirmedVariant = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId)?.masteryChallenge;
-  const mission = resultBaseMission && confirmedVariant ? missionForContext(resultBaseMission,{reportVersion:fieldResult?.lockdownPlan ? 5 : 4,masteryChallenge:confirmedVariant,lockdownPlan:fieldResult?.lockdownPlan}) : resultBaseMission;
+  const veteranReceipt = matchingAfterActionReceipt(fieldResult,currentRunKey,selectedMissionId)?.veteranChallenge;
+  const mission = resultBaseMission && veteranReceipt ? missionForContext(resultBaseMission,{reportVersion:6,veteranChallenge:veteranReceipt}) : resultBaseMission && confirmedVariant ? missionForContext(resultBaseMission,{reportVersion:fieldResult?.lockdownPlan ? 5 : 4,masteryChallenge:confirmedVariant,lockdownPlan:fieldResult?.lockdownPlan}) : resultBaseMission;
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const resultNext = commandPurpose(progression).primary;
