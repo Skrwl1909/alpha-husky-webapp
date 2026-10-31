@@ -1,0 +1,43 @@
+{
+  "scope": "only two exact production URLs; GET requests; no admin access or asset mutation",
+  "assets": [
+    {
+      "url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+      "publicIdFromDeliveryPath": "badges/relay_sentinel_badge",
+      "status": 200,
+      "contentType": "image/webp",
+      "finalURL": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+      "format": "WEBP",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "transparentPixels": 122098,
+      "SHA256": "b959589d257893e4e13f0817786c6d379d87db5f74f1f4bf4162e71ec123bfcb"
+    },
+    {
+      "url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+      "publicIdFromDeliveryPath": "badges/relay_sentinel_badge_256",
+      "status": 200,
+      "contentType": "image/webp",
+      "finalURL": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+      "format": "WEBP",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alphaExtrema": [
+        0,
+        255
+      ],
+      "transparentPixels": 29725,
+      "SHA256": "6458b787f98161f7a66c0afe69a5447dfdd45fa89954aa55a294c228bceae2f7"
+    }
+  ]
+}

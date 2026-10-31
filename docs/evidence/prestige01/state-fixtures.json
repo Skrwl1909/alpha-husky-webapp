@@ -1,0 +1,88 @@
+{
+  "source": "Selected public badge row from isolated real-handler HTTP test; synthetic state, no account or proof identifiers.",
+  "states": {
+    "locked": {
+      "ok": true,
+      "badges": [
+        {
+          "key": "relay_sentinel",
+          "name": "Relay Sentinel",
+          "label": "Relay Sentinel",
+          "owned": false,
+          "isUnknown": false,
+          "displayable": true,
+          "canDisplay": true,
+          "icon": "",
+          "icon_file": "",
+          "iconUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+          "icon_url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+          "emblemUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+          "emblem_url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+          "frameUrl": "",
+          "frame_url": "",
+          "description": "Earned from your first server-recorded Relay Lockdown clear. Cosmetic only; no stat or currency bonus.",
+          "rarity": "rare"
+        }
+      ],
+      "total": 0,
+      "featured_badges": [],
+      "activeBadgeKey": ""
+    },
+    "owned": {
+      "ok": true,
+      "badges": [
+        {
+          "key": "relay_sentinel",
+          "name": "Relay Sentinel",
+          "label": "Relay Sentinel",
+          "owned": true,
+          "isUnknown": false,
+          "displayable": true,
+          "canDisplay": true,
+          "icon": "",
+          "icon_file": "",
+          "iconUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+          "icon_url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+          "emblemUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+          "emblem_url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+          "frameUrl": "",
+          "frame_url": "",
+          "description": "Earned from your first server-recorded Relay Lockdown clear. Cosmetic only; no stat or currency bonus.",
+          "rarity": "rare"
+        }
+      ],
+      "total": 1,
+      "featured_badges": [],
+      "activeBadgeKey": ""
+    },
+    "featured": {
+      "ok": true,
+      "badges": [
+        {
+          "key": "relay_sentinel",
+          "name": "Relay Sentinel",
+          "label": "Relay Sentinel",
+          "owned": true,
+          "isUnknown": false,
+          "displayable": true,
+          "canDisplay": true,
+          "icon": "",
+          "icon_file": "",
+          "iconUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+          "icon_url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge_256.webp",
+          "emblemUrl": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+          "emblem_url": "https://res.cloudinary.com/dnjwvxinh/image/upload/v1793442397/badges/relay_sentinel_badge.webp",
+          "frameUrl": "",
+          "frame_url": "",
+          "description": "Earned from your first server-recorded Relay Lockdown clear. Cosmetic only; no stat or currency bonus.",
+          "rarity": "rare"
+        }
+      ],
+      "total": 1,
+      "featured_badges": [
+        "relay_sentinel"
+      ],
+      "activeBadgeKey": "relay_sentinel"
+    }
+  }
+}

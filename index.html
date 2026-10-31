@@ -8613,7 +8613,7 @@ async function openBadges() {
   }
 
   try {
-    await loadScriptOnce("js/badges.js");
+    await loadScriptOnce("js/badges.js?prestige=relay-sentinel-v1");
   } catch (e) {
     console.warn("Badge Wall script load failed", e);
     try { _tg?.showAlert?.("Failed to load Badge Wall."); } catch (_) {}
