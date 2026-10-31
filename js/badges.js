@@ -642,6 +642,19 @@
         color:rgba(214,232,249,.9);
         padding:9px 10px;
       }
+      #badgeWallBack .ah-bw-detail-art{
+        width:96px;
+        height:96px;
+        margin:0 auto 8px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+      }
+      #badgeWallBack .ah-bw-detail-art img{
+        max-width:100%;
+        max-height:100%;
+        object-fit:contain;
+      }
       #badgeWallBack .ah-bw-detail-name{
         margin:0;
         font-size:12px;
@@ -1494,8 +1507,10 @@
     return String(badge?.badgeType || badge?.badge_type || "").trim().toLowerCase() === "mastery";
   }
 
-  function setBadgeImage(iconWrap, badge, key) {
-    const primary = badgeEmblemSource(badge) || badgeIconSource(badge);
+  function setBadgeImage(iconWrap, badge, key, detail = false) {
+    const primary = detail
+      ? badgeEmblemSource(badge) || badgeIconSource(badge)
+      : badgeIconSource(badge) || badgeEmblemSource(badge);
     const fallbackMark = "?";
 
     clearEl(iconWrap);
@@ -1603,6 +1618,11 @@
     const canFeature = canBadgeBeFeatured(badge);
 
     detailBox.hidden = false;
+    if (badgeEmblemSource(badge) && badgeEmblemSource(badge) !== badgeIconSource(badge)) {
+      const art = newEl("div", "ah-bw-detail-art");
+      setBadgeImage(art, badge, key, true);
+      detailBox.appendChild(art);
+    }
     detailBox.appendChild(newEl("h3", "ah-bw-detail-name", String(badge.name || key || "Unknown Badge")));
 
     const metaBits = [isOwned ? "Owned" : "Locked"];

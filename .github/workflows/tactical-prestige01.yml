@@ -1,0 +1,35 @@
+name: Tactical Prestige 01 Relay Sentinel
+on:
+  pull_request:
+    paths:
+      - 'js/badges.js'
+      - 'index.html'
+      - 'tools/verify_tactical_prestige01.mjs'
+      - 'docs/evidence/prestige01/**'
+      - '.github/workflows/tactical-prestige01.yml'
+permissions:
+  contents: read
+jobs:
+  badge-wall:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false --no-audit --no-fund playwright@1.64.1
+      - name: Shipped script syntax
+        run: |
+          node --check js/badges.js
+          node --check tools/verify_tactical_prestige01.mjs
+      - name: Locked, owned, featured, reconnect and exact production art
+        run: node tools/verify_tactical_prestige01.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-prestige01-evidence
+          path: artifacts/prestige01/browser
+          if-no-files-found: error
