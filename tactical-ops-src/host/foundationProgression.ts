@@ -51,6 +51,7 @@ export interface FoundationProgressionState {
 }
 
 export interface FieldOpsProgression {
+  interceptRevisionAvailable?: 2;
   veteranProgressionAvailable?: boolean;
   veteranCareer?: import("../data/veteran").VeteranProgress;
   lockdownPlansAvailable?: boolean;
@@ -256,6 +257,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     const parsed = parseOperations({ field: { ...field, status: "active", missions: {} } });
     if (!parsed) return null;
     state.fieldOps = { records, activeMissionRun: parsed.field.activeMissionRun, lastCompletedMissionRunId: parsed.field.lastCompletedMissionRunId };
+    if (field.interceptRevisionAvailable === 2) state.fieldOps.interceptRevisionAvailable = 2;
     if (field.veteranProgressionAvailable === true) {
       const veteran = parseVeteran(field.veteranCareer);
       if (!veteran) return null;
@@ -496,9 +498,10 @@ export async function startOperationMission(
   chapterMode = false,
   chapterIntelVersion?: 1,
   masteryVersion?: 2,
+  missionRevision?: 2,
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
   const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/start" : "/webapp/tactical-foundation/mission/start",
-    { requestId, expectedRevision, missionId, ...(masteryVersion ? {masteryVersion} : {}), ...(squadIds ? { squadIds } : {}),
+    { requestId, expectedRevision, missionId, ...(missionRevision ? {missionRevision} : {}), ...(masteryVersion ? {masteryVersion} : {}), ...(squadIds ? { squadIds } : {}),
       ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}),
       ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}) });
   const run = response.run;

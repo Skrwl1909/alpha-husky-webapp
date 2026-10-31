@@ -386,7 +386,8 @@
         "label": "HIGH"
       },
       "lockdownPlansAvailable": true,
-      "veteranProgressionAvailable": true
+      "veteranProgressionAvailable": true,
+      "interceptRevisionAvailable": 2
     },
     "operations": {
       "broken-signal": {
