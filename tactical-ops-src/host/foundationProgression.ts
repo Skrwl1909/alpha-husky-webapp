@@ -1,6 +1,7 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
 import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
+import { parseVeteran } from "../data/veteran";
 import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "../data/fieldOps";
 import type { CampaignContext, ChapterIntel } from "../data/operations";
 import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
@@ -50,6 +51,8 @@ export interface FoundationProgressionState {
 }
 
 export interface FieldOpsProgression {
+  veteranProgressionAvailable?: boolean;
+  veteranCareer?: import("../data/veteran").VeteranProgress;
   lockdownPlansAvailable?: boolean;
   masteryPath?: MasteryPath;
   records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastClearCycle: number | null; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
@@ -66,6 +69,10 @@ export interface FieldOpsProgression {
 function parseFieldContext(raw: unknown): FieldContext | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const value = raw as FieldContext;
+  if (value.reportVersion === 6) {
+    return value.veteranChallenge === "pack-extraction-v1" && value.masteryChallenge == null && value.lockdownPlan == null && value.progressionVersion === 2 && Number.isInteger(value.cycleId) && value.pressure === 2 && ["standard","south"].includes(value.approach) && value.directiveTier === "advanced" && value.directiveSet === "pursuit" ? {...value} : undefined;
+  }
+  if (value.veteranChallenge != null) return undefined;
   if (value.lockdownPlan != null && (value.reportVersion !== 5 || !["anchor", "crosslink"].includes(value.lockdownPlan))) return undefined;
   if (value.reportVersion === 5 && !["anchor", "crosslink"].includes(value.lockdownPlan!)) return undefined;
   if ([4, 5].includes(value.reportVersion)) {
@@ -76,7 +83,7 @@ function parseFieldContext(raw: unknown): FieldContext | undefined {
   if (value.masteryChallenge != null) return undefined;
   if (!Number.isInteger(value.cycleId) || !Number.isInteger(value.pressure) || value.pressure < 0 || value.pressure > 3 || !["standard", "south"].includes(value.approach) || ![1, 2, 3].includes(value.reportVersion)) return undefined;
   if (value.reportVersion === 3 && (!["standard", "advanced"].includes(value.directiveTier!) || !["pursuit", "attrition"].includes(value.directiveSet!))) return undefined;
-  return { cycleId: value.cycleId, pressure: value.pressure, approach: value.approach, reportVersion: value.reportVersion, ...(value.reportVersion === 3 ? { directiveTier: value.directiveTier, directiveSet: value.directiveSet } : {}) };
+  return { cycleId: value.cycleId, pressure: value.pressure, approach: value.approach, reportVersion: value.reportVersion, ...(value.reportVersion === 3 ? { directiveTier: value.directiveTier, directiveSet: value.directiveSet, ...(value.progressionVersion===2 ? {progressionVersion:2 as const} : {}) } : {}) };
 }
 
 function parseFieldResult(raw: unknown): FieldResult | null {
@@ -85,6 +92,7 @@ function parseFieldResult(raw: unknown): FieldResult | null {
   if (typeof value.runId !== "string" || typeof value.missionId !== "string" || typeof value.victory !== "boolean" || typeof value.challengeSuccess !== "boolean" || typeof value.regionalApplied !== "boolean") return null;
   if (![value.cycleId, value.challengeBonus, value.progressEarned, value.progressBefore, value.progressAfter, value.rankBefore, value.rankAfter, value.pressureBefore, value.pressureAfter, value.recordedAt].every(Number.isInteger)) return null;
   if (!Array.isArray(value.unlockedApproaches) || !value.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
+  if (value.veteranChallenge != null && (value.veteranChallenge !== "pack-extraction-v1" || value.missionId !== "field-relay-recovery" || value.masteryChallenge != null || value.progressEarned !== 0 || value.challengeBonus !== 0)) return null;
   if (value.lockdownPlan != null && (value.masteryChallenge !== MASTERY_CHALLENGE || !["anchor", "crosslink"].includes(value.lockdownPlan))) return null;
   if (value.firstLockdownClear != null && (!parseFirstLockdownClear(value.firstLockdownClear) || value.masteryChallenge !== MASTERY_CHALLENGE)) return null;
   if (value.lockdownFirstClear != null && (typeof value.lockdownFirstClear !== "boolean" || value.masteryChallenge !== MASTERY_CHALLENGE)) return null;
@@ -246,6 +254,12 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     const parsed = parseOperations({ field: { ...field, status: "active", missions: {} } });
     if (!parsed) return null;
     state.fieldOps = { records, activeMissionRun: parsed.field.activeMissionRun, lastCompletedMissionRunId: parsed.field.lastCompletedMissionRunId };
+    if (field.veteranProgressionAvailable === true) {
+      const veteran = parseVeteran(field.veteranCareer);
+      if (!veteran) return null;
+      state.fieldOps.veteranProgressionAvailable = true;
+      state.fieldOps.veteranCareer = veteran;
+    }
     if (field.lockdownPlansAvailable === true) state.fieldOps.lockdownPlansAvailable = true;
     if (field.masteryPath != null) {
       const path = field.masteryPath as MasteryPath;
@@ -261,7 +275,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       const commander = field.commander as NonNullable<FieldOpsProgression["commander"]>;
       const region = field.region as NonNullable<FieldOpsProgression["region"]>;
       if (!board || !Number.isInteger(board.cycleId) || !Number.isInteger(board.nextRotationAt) || !Array.isArray(board.activeMissionIds) || board.activeMissionIds.length !== 3 || new Set(board.activeMissionIds).size !== 3 || !board.activeMissionIds.every((id) => typeof id === "string")) return null;
-      if (!commander || ![1, 2, 3].includes(commander.rank) || !Number.isInteger(commander.progress) || commander.progress < 0 || !Array.isArray(commander.unlockedApproaches) || !commander.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
+      if (!commander || ![1, 2, 3, ...(field.veteranProgressionAvailable === true ? [4] : [])].includes(commander.rank) || !Number.isInteger(commander.progress) || commander.progress < 0 || !Array.isArray(commander.unlockedApproaches) || !commander.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
       if (board.reportVersion != null && (board.reportVersion !== 3 || !["pursuit", "attrition"].includes(board.directiveSet!))) return null;
       if (commander.unlockedDirectiveTiers != null && (!Array.isArray(commander.unlockedDirectiveTiers) || !commander.unlockedDirectiveTiers.every((tier) => ["standard", "advanced"].includes(tier)))) return null;
       if (!region || !Number.isInteger(region.pressure) || region.pressure < 0 || region.pressure > 3 || region.cycleId !== board.cycleId) return null;
@@ -387,7 +401,7 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         ? activeValue.squadIds as string[]
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
-      if (activeValue.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && activeValue.missionId !== 'field-relay-hold'))) return null;
+      if (activeValue.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && activeValue.missionId !== 'field-relay-hold') || (fieldContext.veteranChallenge && activeValue.missionId !== 'field-relay-recovery'))) return null;
       const contract = parseRunRulesContract(activeValue.rulesContract);
       if (contract && contract.missionId !== activeValue.missionId) return null;
       activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(activeValue.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}), ...(parseChapterContext(activeValue.chapterContext) ? {chapterContext:parseChapterContext(activeValue.chapterContext)} : {}), ...(parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string) ? {chapterIntel:parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string)} : {}) };
@@ -475,13 +489,14 @@ export async function startOperationMission(
   expectedRevision: number,
   missionId: string,
   squadIds?: string[],
-  fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
+  fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
   rulesetVersion?: string,
   chapterMode = false,
   chapterIntelVersion?: 1,
+  masteryVersion?: 2,
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
   const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/start" : "/webapp/tactical-foundation/mission/start",
-    { requestId, expectedRevision, missionId, ...(squadIds ? { squadIds } : {}),
+    { requestId, expectedRevision, missionId, ...(masteryVersion ? {masteryVersion} : {}), ...(squadIds ? { squadIds } : {}),
       ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}),
       ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}) });
   const run = response.run;
@@ -494,7 +509,8 @@ export async function startOperationMission(
     ? value.squadIds as string[]
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
-  if (value.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && missionId !== 'field-relay-hold'))) throw new FoundationProgressionError("invalid_progression_response");
+  if (value.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && missionId !== 'field-relay-hold') || (fieldContext.veteranChallenge && missionId !== 'field-relay-recovery'))) throw new FoundationProgressionError("invalid_progression_response");
+  if (fieldOptions?.veteranChallenge && fieldContext?.veteranChallenge !== fieldOptions.veteranChallenge) throw new FoundationProgressionError("invalid_progression_response");
   if (fieldOptions?.lockdownPlan && fieldContext?.lockdownPlan !== fieldOptions.lockdownPlan) throw new FoundationProgressionError("invalid_progression_response");
   if (fieldOptions?.masteryChallenge && fieldContext?.masteryChallenge !== fieldOptions.masteryChallenge) throw new FoundationProgressionError("invalid_progression_response");
   const rulesContract = parseRunRulesContract(value.rulesContract);
@@ -549,7 +565,7 @@ export async function respecPlayerGrowth(
     { requestId, expectedRevision, heroId }));
 }
 
-export async function savePackMastery(requestId: string, expectedRevision: number, unitId: string, choice: "A" | "B"): Promise<FoundationProgressionState> {
+export async function savePackMastery(requestId: string, expectedRevision: number, unitId: string, choice: import("../data/packMastery").MasteryChoice): Promise<FoundationProgressionState> {
   return responseState(await request("/webapp/tactical-foundation/pack-mastery", { requestId, expectedRevision, unitId, choice }));
 }
 

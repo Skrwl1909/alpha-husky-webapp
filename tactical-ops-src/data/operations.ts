@@ -278,6 +278,12 @@ MISSION_DEFS["field-relay-intercept"] = {
 };
 
 export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>): MissionDef {
+  if (context?.reportVersion === 6 && context.veteranChallenge === "pack-extraction-v1") {
+    if (mission.missionId !== "field-relay-recovery") throw Error("invalid_veteran_mission");
+    return {...mission,name:"VETERAN · PACK EXTRACTION",briefCopy:"Bring all three squad members within 2 orthogonal cells of the relay, then RECOVER on an even round by round 6. A lone runner cannot extract the pack. No progression or currency rewards.",
+      objective:{type:"RECOVER",terminal:{c:6,r:2},completed:false,squadExtractionRadius:2},challenge:undefined,
+      squadHint:"CNC screens while SHADOW protects the convoy, or use PET mobility and CNC control to regroup. Every deployed unit must reach the extraction area."};
+  }
   if (context?.reportVersion === 5 && context.masteryChallenge === "relay-lockdown-v1") {
     if (mission.missionId !== "field-relay-hold" || !["anchor", "crosslink"].includes(context.lockdownPlan!)) throw Error("invalid_lockdown_plan");
     const anchor = missionForContext(mission, { ...context, reportVersion: 4 });

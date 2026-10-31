@@ -1,10 +1,12 @@
+import { parseVeteran, veteranComplete, type VeteranProgress, type VeteranDelta } from "./veteran";
 import type { SkillDef, SkillSlot } from "../combat/types";
 import { SKILLS } from "./skills";
 import { UNIT_DEFS, type SpawnSpec } from "./units";
 
-export interface MasteryRecord { progress: number; stage: number; unlockedOptions: string[]; selected: "A" | "B" | null }
+export type MasteryChoice = "A" | "B" | "VETERAN_ON" | "VETERAN_OFF";
+export interface MasteryRecord { veteran?: VeteranProgress; progress: number; stage: number; unlockedOptions: string[]; selected: "A" | "B" | null }
 export type PackMastery = Record<string, MasteryRecord>;
-export interface MasteryChange { unitId: string; kind: string; gained: number; beforeStage: number; stage: number; progress: number; newOptions: string[] }
+export interface MasteryChange { veteran?: VeteranDelta; unitId: string; kind: string; gained: number; beforeStage: number; stage: number; progress: number; newOptions: string[] }
 interface Effect { slot?: SkillSlot; range?: number; radius?: number; cooldown?: number; statusDuration?: number; noHealing?: boolean; ignoreDisruption?: boolean; recoverRange?: number; move?: number }
 interface Unlock { name: string; copy: string; effect: Effect }
 export const MASTERY_DEFS: Record<string, { name: string; trained: Unlock; options: Record<"A" | "B", Unlock> }> = {
@@ -30,8 +32,9 @@ export function parsePackMastery(raw: unknown): PackMastery {
     if (!masteryDef(id) || !value || typeof value !== "object") continue;
     const v = value as MasteryRecord;
     const progress = Number.isInteger(v.progress) && v.progress >= 0 ? Math.min(8, v.progress) : 0;
-    const stage = progress >= 8 ? 3 : progress >= 3 ? 2 : 1;
-    result[id] = { progress, stage, unlockedOptions: stage === 3 ? ["A", "B"] : [], selected: stage === 3 ? v.selected === "B" ? "B" : "A" : null };
+    const veteran = parseVeteran(v.veteran);
+    const stage = progress >= 8 && veteranComplete(veteran) ? 4 : progress >= 8 ? 3 : progress >= 3 ? 2 : 1;
+    result[id] = { progress, stage, unlockedOptions: stage >= 3 ? ["A", "B"] : [], selected: stage >= 3 ? v.selected === "B" ? "B" : "A" : null, ...(veteran ? {veteran} : {}) };
   }
   return result;
 }
@@ -43,16 +46,19 @@ export function withPackMastery(spawns: SpawnSpec[], pack?: PackMastery): SpawnS
     if (!config || record.stage < 2) return spawn;
     const def = structuredClone(spawn.unitDef || UNIT_DEFS[spawn.defId]);
     def.combatMastery = { progress: record.progress, stage: record.stage, selected: record.selected };
+    const veteranOn = record.stage === 4 && record.veteran?.enabled === true;
     const unlocks = [config.trained, ...(record.stage >= 3 && record.selected ? [config.options[record.selected]] : [])];
     for (const { effect } of unlocks) {
       if (effect.move) def.move += effect.move;
       if (effect.recoverRange) def.recoverRange = effect.recoverRange;
     }
+    if (veteranOn && config.name === "PET") def.recoverRange = 3;
     def.skillIds = def.skillIds.map((baseId) => {
       const base = SKILLS[baseId];
       const applicable = unlocks.filter(({ effect }) => effect.slot === base.slot);
-      if (!applicable.length) return baseId;
-      const id = `${baseId}:mastery:${config.name}:${record.stage}:${record.selected || "none"}`;
+      const veteranSlot = veteranOn && ((config.name === "PET" && base.slot === "A2") || (config.name !== "PET" && base.slot === "A3"));
+      if (!applicable.length && !veteranSlot) return baseId;
+      const id = `${baseId}:mastery:${config.name}:${record.stage}:${record.selected || "none"}${veteranOn ? ":veteran" : ""}`;
       if (!SKILLS[id]) {
         const skill: SkillDef = structuredClone(base);
         skill.id = id;
@@ -64,6 +70,17 @@ export function withPackMastery(spawns: SpawnSpec[], pack?: PackMastery): SpawnS
           if (effect.ignoreDisruption) skill.ignoreDisruption = true;
           for (const e of skill.effects) if (e.kind === "status" && e.duration) e.duration += effect.statusDuration || 0;
           skill.desc += ` Mastery / ${name}: ${copy}`;
+        }
+        if (veteranSlot) {
+          skill.cooldownMax += 1;
+          if (config.name === "CNC") {
+            skill.targetType = "AREA_RADIUS"; skill.radius = 1; skill.maxRange = Math.max(1,skill.maxRange-1);
+            skill.effects = skill.effects.filter(e=>e.kind!=="damage");
+          } else if (config.name === "SHADOW") {
+            skill.radius = Math.max(1,skill.radius-1);
+            skill.effects = [{kind:"status",status:"GUARD",duration:3,value:.5,on:"aoe_allies"}];
+          }
+          skill.desc += " Veteran option: reduced frequency; role-specific utility.";
         }
         SKILLS[id] = skill;
       }

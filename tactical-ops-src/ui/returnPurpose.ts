@@ -22,7 +22,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     if (id) { primary = action(id, 'CONTINUE THE STORY', id === 'dead-relay-courier' ? 'Defeat the courier to open Hold. An early first win can record Courier Trace for delayed Hold reinforcements.' : id.endsWith('hold') ? 'Control the relay to unlock the Guardian.' : id.endsWith('guardian') ? 'Defeat the Guardian to record The Dead Relay campaign completion.' : id.endsWith('commander') ? 'Defeat the commander to complete Broken Signal.' : 'Complete this story objective to unlock the next campaign mission.'); break; }
   }
   const candidates: PurposeAction[] = [];
-  if (!primary && f?.masteryPath && f.commander?.rank === 3 && b?.reportVersion === 3) {
+  if (!primary && f?.masteryPath && (f.commander?.rank || 0) >= 3 && b?.reportVersion === 3) {
     if (f.masteryPath.unlockedChallenge) {
       const recorded = Boolean(f.masteryPath.firstLockdownClear);
       const canRecord = f.masteryPath.firstLockdownClear !== undefined;
@@ -64,6 +64,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
 
 /** Only canonical receipt fields justify an earned or changed claim. */
 export function fieldResultPurpose(r: FieldResult): { earned: string; exhausted: string; changed: string; future: string } {
+  if (r.veteranChallenge) return {earned:'Optional Veteran practice recorded. No currency or progression.',exhausted:'No eligible progress from practice.',changed:'No regional change.',future:'Return to an eligible Advanced Field Op.'};
   if (r.lockdownPlan) return {
     earned: `Server accepted ${r.lockdownPlan === 'anchor' ? 'Anchor' : 'Crosslink'} · ${r.victory ? 'objective completed' : 'attempt failed'}. No currency, Commander or Pack Mastery progress.`,
     exhausted: 'Optional practice; permanent Relay Mastery access preserved.',
