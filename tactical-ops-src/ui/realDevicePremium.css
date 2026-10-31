@@ -107,3 +107,41 @@
 @media(prefers-reduced-motion:reduce){
   #tacticalOpsRoot .t-lockdown-achievement,#tacticalOpsRoot .t-lockdown-rule{animation:none!important}
 }
+
+/* AAA clarity: concise command history, priority objective and calmer fight layers. */
+#tacticalOpsRoot .t-command-records {display:grid;gap:10px;padding:14px 0;margin:12px 0;border-top:1px solid rgba(110,197,222,.35)}
+#tacticalOpsRoot .t-command-records>p{margin:0;padding:9px 12px;background:rgba(10,29,42,.62);border-left:2px solid rgba(116,212,233,.5);font-size:clamp(12px,3.2vw,14px);line-height:1.5}
+#tacticalOpsRoot .t-command-record-details{border:1px solid rgba(107,173,196,.26);border-radius:6px;padding:0 10px;background:rgba(7,24,36,.58)}
+#tacticalOpsRoot .t-command-record-details summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-size:11px;font-weight:800;letter-spacing:.04em;color:#b7d9e8}
+#tacticalOpsRoot .t-command-record-details p{font-size:12px;line-height:1.5;margin:0 0 11px}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-lockdown-rule{padding:11px 13px;gap:3px;margin:9px 0}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-lockdown-rule strong{font-size:12px}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-lockdown-rule span{font-size:12px}
+#tacticalOpsRoot .t-battle .t-hold-cell.is-contest-zone{
+  background:rgba(48,169,184,.045);border:1px dashed rgba(98,198,220,.25);
+  color:transparent;box-shadow:none;
+}
+#tacticalOpsRoot .t-battle .t-hold-cell.is-lockdown-anchor{
+  background:rgba(37,165,188,.15);border:2px solid rgba(114,222,239,.9);
+  box-shadow:inset 0 0 0 1px rgba(35,111,126,.4),0 0 14px rgba(41,163,181,.18);
+  color:#c8f9ff;font-size:10px;font-weight:900;letter-spacing:.05em;
+}
+#tacticalOpsRoot .t-battle .t-hold-cell.is-hold-area{
+  background:rgba(47,174,200,.10);border-color:rgba(103,210,233,.65);color:#d1f5fa;
+}
+#tacticalOpsRoot .t-battle .t-command-cue {
+  background:linear-gradient(90deg,rgba(6,18,28,.9),rgba(8,19,28,.38));
+  border-left-width:2px;max-width:min(330px,calc(100% - 20px));
+  padding:7px 10px;box-shadow:none;
+}
+#tacticalOpsRoot .t-battle .t-enemy-archetype{
+  background:rgba(13,27,37,.78);border-color:rgba(133,178,195,.4);
+  color:#bbd3dc;box-shadow:none;
+}
+#tacticalOpsRoot .t-battle .t-act.on{
+  border-color:#9de8f5;box-shadow:inset 0 0 0 1px rgba(150,231,248,.35),0 0 12px rgba(57,178,207,.15)
+}
+@media(max-width:430px){
+ #tacticalOpsRoot .t-command-records{gap:7px}
+ #tacticalOpsRoot .t-battle .t-command-cue{max-width:calc(100% - 20px)}
+}

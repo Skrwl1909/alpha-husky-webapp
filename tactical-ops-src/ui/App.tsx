@@ -350,7 +350,7 @@ function WarTable() {
                 <span>{rotationProgress?.securedCount ?? activeMissionIds.filter(id => field?.records[id]?.lastClearCycle === currentCycleId).length}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
                 <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
               </div>
-              <p className="t-player-next-reason">{primaryPurpose?.reason}</p>
+              <p className="t-player-next-reason">{primaryPurpose?.resume ? "Accepted squad and conditions preserved · battle restarts at round 1." : primaryPurpose?.reason}</p>
               <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
                 <span>{primaryPurpose?.chapter ? "CHAPTER RECORD" : recommendedPurpose?.rewardClearText}</span>
                 <span className={recommendedChallenge ? "is-earned" : ""}>
@@ -379,12 +379,12 @@ function WarTable() {
             <button type="button" className="t-btn" disabled={loading} onClick={() => openPurpose(action)}>{action.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}</button>
           </article>)}
         </section> : null}
-        <section className="t-purpose-memory" aria-label="Saved progress and squad opportunity">
-          <span className="t-kicker">YOUR PACK · SAVED PROGRESS</span>
-          {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Advanced HOLD recorded. Relay Lockdown permanently unlocked.' : field.commander?.rank === 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
-          {field?.masteryPath?.firstLockdownClear ? <p data-lockdown-completion="true">RELAY LOCKDOWN · COMPLETION RECORDED · Your first recorded clear is saved across rotations and replays.</p> : null}
+        <section className="t-purpose-memory t-command-records" aria-label="Permanent records and squad opportunity">
+          <span className="t-kicker">PERMANENT FIELD RECORD</span>
+          {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Relay Lockdown permanently unlocked.' : field.commander?.rank === 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
+          {field?.masteryPath?.firstLockdownClear ? <p data-lockdown-completion="true">RELAY LOCKDOWN · FIRST CLEAR RECORDED · Persists across rotations.</p> : null}
           {campaignCareer ? <p>{campaignCareer.missions} Field secures · {campaignCareer.challenges} challenges · {campaignCareer.advanced} Advanced clears · {campaignCareer.fronts} fronts secured</p> : null}
-          {field?.lastResult ? <p>Last recorded mission: {getMissionDef(field.lastResult.missionId)?.name || field.lastResult.missionId}. {fieldResultPurpose(field.lastResult).changed}</p> : <p>No previous Field Op receipt available.</p>}
+          {field?.lastResult ? <details className="t-command-record-details"><summary>LAST MISSION · {getMissionDef(field.lastResult.missionId)?.name || field.lastResult.missionId}</summary><p>{fieldResultPurpose(field.lastResult).changed}</p></details> : null}
           {(() => { const proof = ["ally-02", "ally-03", ...(progression?.equippedPet ? [`pet:${progression.equippedPet.id}`] : [])].map(id => savedMasteryProof(id, progression || {}, progression?.equippedPet)).find(Boolean); return proof ? <p>{proof.subject}: {proof.changes[0]}. Compare your saved specialization before deploying.</p> : <p>Review saved abilities and squad roles before your next mission.</p>; })()}
           <button type="button" className="t-btn" onClick={() => setDeckTab("squad")}>REVIEW SQUAD DEVELOPMENT</button>
         </section>
@@ -715,14 +715,14 @@ function Brief() {
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className="t-deploy-summary-main">
             <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? "LOCKDOWN · EXACT TILE CONTROL" : "OBJECTIVE"}</div>
-            <strong>{purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            <strong>{fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
               </ol>
             ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
-            {fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>ONE ALLY ON THE CENTER TILE</strong><span>Adjacent allies do not count. Clear nearby hostiles and maintain control for 3 round changes before round 7.</span></div> : null}
-            {purpose ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
+            {fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
+            {purpose && !fieldContext.masteryChallenge ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
               {buildNotes.map(row => <p key={row}>{row}</p>)}
