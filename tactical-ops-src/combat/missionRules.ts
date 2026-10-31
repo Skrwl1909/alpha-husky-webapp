@@ -34,6 +34,13 @@ export function resolveTimedObjective(state: BattleState): { state: BattleState;
   const allies = state.units.filter((u) => u.team === "ally");
   if (!allies.some((u) => !u.defeated) || (objective.type === "SURVIVE" && allies.some((u) => u.defeated))) return { state, result: "defeat" };
   const boundary = state.round > objective.checkedRound;
+  if (objective.type === "HOLD" && objective.relayRoute?.length) {
+    if (!boundary) return { state, result: null };
+    const progress = holdControlled(state) ? objective.progress + 1 : 0;
+    const terminal = objective.relayRoute[Math.min(progress, objective.relayRoute.length - 1)];
+    return { state: { ...state, objective: { ...objective, progress, checkedRound: state.round, terminal: { ...terminal } } },
+      result: progress >= objective.duration ? "victory" : null };
+  }
   const progress = objective.type === "SURVIVE" ? state.round - 1
     : !holdControlled(state) ? 0 : objective.progress + (boundary ? 1 : 0);
   const next = { ...state, objective: { ...objective, progress, checkedRound: state.round } };
@@ -43,7 +50,8 @@ export function resolveTimedObjective(state: BattleState): { state: BattleState;
 export function missionHud(state: BattleState): string {
   const objective = state.objective;
   const rule = state.directive;
-  const progress = objective?.type === "HOLD" ? `HOLD ${objective.progress}/${objective.duration} · ${holdControlled(state) ? "CONTROLLED" : objective.holderRadius === 0 ? "OCCUPY RELAY TILE / CLEAR ADJACENT ENEMIES" : "OCCUPY / CLEAR AREA"}`
+  const progress = objective?.type === "HOLD" && objective.relayRoute ? `CROSSLINK ${objective.progress}/3 · RELAY ${Math.min(objective.progress + 1, 3)} AT ${objective.terminal!.c + 1},${objective.terminal!.r + 1} · ${holdControlled(state) ? "READY FOR ROUND CHANGE" : "OCCUPY TILE / CLEAR ADJACENT ENEMIES"}`
+    : objective?.type === "HOLD" ? `HOLD ${objective.progress}/${objective.duration} · ${holdControlled(state) ? "CONTROLLED" : objective.holderRadius === 0 ? "OCCUPY RELAY TILE / CLEAR ADJACENT ENEMIES" : "OCCUPY / CLEAR AREA"}`
     : objective?.type === "SURVIVE" ? `SURVIVE ${objective.progress}/${objective.duration} · ALL SQUAD MUST STAND`
     : rule?.recoverEveryRounds ? `RECOVER · SIGNAL ${recoverSignalOpen(state) ? "OPEN" : "JAMMED — EVEN ROUNDS ONLY"}` : "";
   const conditions = [rule?.reinforcement && state.reinforcement ? `HOUND · ${state.reinforcement.spawned ? "ARRIVED" : `ROUND ${state.reinforcement.triggerRound}`}` : "",

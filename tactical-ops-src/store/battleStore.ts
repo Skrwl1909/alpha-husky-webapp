@@ -98,6 +98,8 @@ interface UiBattle {
   selectedSquadIds: string[];
   selectedApproach: DeploymentApproach;
   selectedDirectiveTier: DirectiveTier;
+  selectedLockdownPlan: import("../data/fieldOps").LockdownPlan;
+  selectLockdownPlan: (plan: import("../data/fieldOps").LockdownPlan) => void;
   selectedMasteryChallenge: "relay-lockdown-v1" | null;
   currentFieldContext: FieldContext | null;
   fieldResult: FieldResult | null;
@@ -587,6 +589,7 @@ export const useBattleStore = create<Store>((set, get) => {
     selectedSquadIds: [],
     selectedApproach: "standard",
     selectedDirectiveTier: "standard",
+    selectedLockdownPlan: "anchor",
     selectedMasteryChallenge: null,
     currentFieldContext: null,
     fieldResult: null,
@@ -702,6 +705,11 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ progressionError: error instanceof FoundationProgressionError && error.code === "mastery_run_active" ? "Finish this companion's committed attempt before changing mastery." : "Mastery option could not be saved. Refresh and retry." });
       } finally { set({ progressionCommitPending: false }); }
     },
+    selectLockdownPlan: (plan) => {
+      const s = get();
+      if (s.screen !== "brief" || s.busy || s.progressionCommitPending || !s.selectedMasteryChallenge || !s.progression?.fieldOps?.lockdownPlansAvailable || s.progression.fieldOps.activeMissionRun || !["anchor", "crosslink"].includes(plan)) return;
+      set({ selectedLockdownPlan: plan });
+    },
     selectDirectiveTier: (tier) => {
       const current = get();
       if (current.selectedMasteryChallenge) return;
@@ -710,6 +718,7 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     selectApproach: (approach) => {
       const current = get();
+      if (current.selectedMasteryChallenge && current.progression?.fieldOps?.activeMissionRun) return;
       if (current.screen !== "brief" || current.busy || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
       if (!current.progression?.fieldOps?.commander?.unlockedApproaches.includes(approach)) return;
       set({ selectedApproach: approach });
@@ -777,6 +786,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (current.fieldResult?.runId === current.currentRunKey && current.fieldResult.missionId === current.selectedMissionId) return;
       const report = fieldReport(current.battle);
       if (!report) return;
+      if (current.currentFieldContext?.lockdownPlan) report.lockdownPlan = current.currentFieldContext.lockdownPlan;
       if (current.currentFieldContext?.masteryChallenge) report.masteryChallenge = current.currentFieldContext.masteryChallenge;
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
@@ -855,7 +865,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (masteryChallenge && active && active.fieldContext?.masteryChallenge !== masteryChallenge) {
         set({ progressionError: "Finish your accepted Field Op before starting Relay Lockdown." }); return;
       }
-      set({ selectedMasteryChallenge: active?.missionId === missionId ? active.fieldContext?.masteryChallenge || null : masteryChallenge || null });
+      set({ selectedLockdownPlan: active?.fieldContext?.lockdownPlan || "anchor", selectedMasteryChallenge: active?.missionId === missionId ? active.fieldContext?.masteryChallenge || null : masteryChallenge || null });
       const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
       const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, current.progression?.equippedPet)
         ? [...savedSquad] : ["alpha", "ally-02", "ally-03"];
@@ -918,7 +928,8 @@ export const useBattleStore = create<Store>((set, get) => {
                 mission.missionId,
                 squadIds,
                 mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach,
-                  ...(persisted.selectedMasteryChallenge ? { reportVersion: 4, directiveTier: "advanced" as const, masteryChallenge: persisted.selectedMasteryChallenge }
+                  ...(persisted.selectedMasteryChallenge ? { reportVersion: persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.reportVersion || (persisted.progression.fieldOps?.lockdownPlansAvailable ? 5 : 4), directiveTier: "advanced" as const, masteryChallenge: persisted.selectedMasteryChallenge,
+                    ...(persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.lockdownPlan ? { lockdownPlan: persisted.progression.fieldOps.activeMissionRun.fieldContext.lockdownPlan } : !persisted.progression.fieldOps?.activeMissionRun && persisted.progression.fieldOps?.lockdownPlansAvailable ? { lockdownPlan: persisted.selectedLockdownPlan } : {}) }
                     : persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
                 requestedRuleset,
                 persisted.chapterMode,
@@ -1175,6 +1186,7 @@ export const useBattleStore = create<Store>((set, get) => {
     selectShadowSidegrade: (choice) => selectTeammateSidegrade("shadow", choice),
     toggleCommanderTeammate: (unitId) => {
       const current = get();
+      if (current.selectedMasteryChallenge && current.progression?.fieldOps?.activeMissionRun?.fieldContext?.lockdownPlan) return;
       if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" && getMissionDef(current.selectedMissionId)?.operationId !== DEAD_RELAY.operationId)) return;
       if (!recoverSpawnsForSquad(["alpha", unitId], current.progression?.equippedPet)) return;
       const companions = current.selectedSquadIds.slice(1);

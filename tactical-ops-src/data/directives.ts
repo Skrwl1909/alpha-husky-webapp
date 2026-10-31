@@ -10,7 +10,9 @@ export const ADVANCED_DEADLINES: Record<string, number> = {
 /** Validated packages, rather than arbitrary random stacks. No stat multipliers. */
 export function missionDirectives(mission: MissionDef, context?: Partial<FieldContext>): MissionDirective[] {
   const conditions = mission.directive ? [structuredClone(mission.directive)] : [];
-  if (context?.reportVersion === 4 && context.masteryChallenge === "relay-lockdown-v1") {
+  if (context && [4, 5].includes(context.reportVersion || 0) && context.masteryChallenge === "relay-lockdown-v1") {
+    const deadline: MissionDirective = { type: "NO_SAFE_EXTRACTION", name: "LOCKDOWN WINDOW", maxRounds: 6, copy: "Complete by the end of round 6. Round 7 fails the operation." };
+    if (context?.lockdownPlan === "crosslink") return [...conditions, deadline];
     return [...conditions,
       { type: "NO_SAFE_EXTRACTION", name: "LOCKDOWN WINDOW", maxRounds: 6, copy: "Complete by the end of round 6. Round 7 fails the operation." },
       { type: "DISRUPTED_SUPPORT", name: "DISRUPTED SUPPORT", supportCooldownExtra: 1,

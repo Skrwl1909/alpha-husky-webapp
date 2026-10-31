@@ -1,3 +1,3 @@
 /** DEPTH 01: one server-owned Relay Mastery path and optional Relay Lockdown. */
-export const VERSION = "tactical_ops.js v3.6.16-aaa-clarity";
-export const CACHE_KEY = "tops-3.6.16-aaa-clarity";
+export const VERSION = "tactical_ops.js v3.6.17-depth02-plans";
+export const CACHE_KEY = "tops-3.6.17-depth02-plans";

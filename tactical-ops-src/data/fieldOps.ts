@@ -1,6 +1,11 @@
 import type { BattleState, Cell } from "../combat/types";
 import type { MasteryChange } from "./packMastery";
 
+export type LockdownPlan = "anchor" | "crosslink";
+export const LOCKDOWN_PLANS = {
+  anchor: { name: "ANCHOR", benefit: "One relay tile; keep your defensive formation.", cost: "Healing and allied support recharge 1 personal turn slower.", priority: "Occupy the center tile and clear adjacent enemies immediately." },
+  crosslink: { name: "CROSSLINK", benefit: "Normal healing and allied support recharge.", cost: "Occupy three different relay tiles in sequence at round changes; a missed checkpoint resets the sequence.", priority: "Start north, rotate east, then south. Clear the next relay before moving the holder." },
+} as const;
 export type DeploymentApproach = "standard" | "south";
 export type DirectiveTier = "standard" | "advanced";
 export type DirectiveSet = "pursuit" | "attrition";
@@ -20,6 +25,7 @@ export interface MasteryPath {
   firstLockdownClear?: FirstLockdownClear | null;
 }
 export interface FieldContext {
+  lockdownPlan?: LockdownPlan;
   masteryChallenge?: typeof MASTERY_CHALLENGE;
   cycleId: number;
   pressure: number;
@@ -35,6 +41,7 @@ export interface MissionChallenge {
   required?: string[];
 }
 export interface FieldReport {
+  lockdownPlan?: LockdownPlan;
   masteryChallenge?: typeof MASTERY_CHALLENGE;
   failureReason?: "TARGET_ESCAPED" | "DEADLINE";
   victory: boolean;
@@ -45,6 +52,7 @@ export interface FieldReport {
   squadDeployed: number;
 }
 export interface FieldResult {
+  lockdownPlan?: LockdownPlan;
   lockdownFirstClear?: boolean;
   firstLockdownClear?: FirstLockdownClear | null;
   masteryChallenge?: typeof MASTERY_CHALLENGE;

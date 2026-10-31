@@ -99,13 +99,17 @@ try {
     if(o?.type==="RECOVER" && battle.canRecover(state) && (policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)){
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
-    let preferred=targetPriority(state,actor,policy);
-    const oPoint=o?.type==="HOLD"||o?.type==="RECOVER"?o.terminal:null;
+    let preferred=targetPriority(state,actor,policy.startsWith("rotate-")?"control":policy);
+    const rotating=policy.startsWith('rotate-');
+    const screenEast=rotating && !o?.relayRoute && actor.defId==='ally-02';
+    if(screenEast) preferred=state.units.find(u=>u.id==='field-reinforcement'&&!u.defeated)||preferred;
+    const tacticalPolicy=rotating?'control':policy;
+    const oPoint=policy==='static' ? (o?.relayRoute ? {c:Math.round(o.relayRoute[0].c),r:o.relayRoute[1].r} : o?.terminal) : o?.type==="HOLD"||o?.type==="RECOVER"?o.terminal:null;
     const remaining=state.units.filter(u=>u.team==="enemy"&&!u.defeated).length;
     const nextHolder=state.units.find(u=>u.team==="ally"&&!u.defeated);
     const wantsObjective=Boolean(oPoint)&&(
       policy==="tempo" || policy==="adjacent" || (o?.holderRadius===0 || policy==="precise") || remaining===0 || (o?.type==="RECOVER"&&state.round>=3) || (o?.type==="HOLD"&&state.round>=4)
-    ) && (o?.type==="RECOVER" || (actor.defId==="alpha" || actor.id===nextHolder?.id));
+    ) && (o?.type==="RECOVER" || (actor.id === (policy === "rotate-shadow" ? "ally-03" : "alpha") || actor.id===nextHolder?.id && policy !== "rotate-shadow"));
     // CONTROL wins interceptions by body-blocking the legal courier exit lane
     // while the remainder of the squad suppresses its approach.
     const courier=o?.type==="INTERCEPT"?state.units.find(u=>u.id===o.targetId&&!u.defeated):null;
@@ -115,11 +119,11 @@ try {
     const dist=oPoint?manhattan(actor,oPoint):Infinity;
     const mustHold=o?.type==="HOLD" && dist<=(policy==="adjacent" ? o.radius : policy==="precise" ? 0 : o.holderRadius ?? o.radius) && wantsObjective;
     if(!mustHold && !blocker && (policy==="control" || !wantsObjective) && o?.holderRadius !== 0 && policy!=="precise"){
-      const fired=strike(state,actor,preferred,policy,stats);if(fired)return fired;
+      const fired=strike(state,actor,preferred,tacticalPolicy,stats);if(fired)return fired;
     }
     if(!actor.hasMoved){
       const reachable=move.reachableCells(actor,state.units);
-      const aim=blockDestination || (wantsObjective?oPoint:preferred);
+      const aim=blockDestination || (wantsObjective?oPoint:screenEast && !state.units.find(u=>u.id==='field-reinforcement')?state.reinforcement?.spawn:preferred);
       if(aim){
         const current=(blockDestination||wantsObjective)?manhattan(actor,aim):move.chebyshev(actor,aim);
         const spots=reachable.filter(p=>((blockDestination||wantsObjective)?manhattan(p,aim):move.chebyshev(p,aim))<current);
@@ -137,7 +141,7 @@ try {
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
     {
-      const fired=strike(state,newActor,preferred,policy,stats);if(fired)return fired;
+      const fired=strike(state,newActor,preferred,tacticalPolicy,stats);if(fired)return fired;
     }
     // When a relay is occupied, guarding/healing is legal if a support skill helps,
     // otherwise keep the zone. Skip advances the actual initiative clock.
@@ -156,7 +160,7 @@ try {
     const spec=ops.missionBattleRules(mission,false,profile.context || (mission.activity==="FIELD_OP"?{reportVersion:3,pressure:2,directiveTier:profile.tier||"standard"}:undefined));
     const growth = profile.accepted?.playerGrowth || (!profile.noGrowth ? {version:2,revision:1,heroes:["alpha","ally-02","ally-03"].map((id,i)=>({heroId:id,discipline:profile.build.paths[i],ranks:Object.fromEntries((i===0?["alpha-strike","alpha-rend","alpha-howl"]:i===1?["u02-shot","u02-burst","u02-suppress"]:["u03-tap","u03-mend","u03-pack"]).filter(id=>["alpha-strike","alpha-howl","u02-shot","u02-suppress","u03-mend","u03-pack"].includes(id)).map(id=>[id,2]))}))}:undefined);
     let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive,profile.accepted?.playerGrowth || growth);
-    const stats={lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
+    const stats={lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],actions:[],blocked:0};
     let cycle=scheduler.emptyThreatCycle(),stall=0,previous="",error=null,activations=0;
     for(;activations<MAX_ACTIVATIONS && state.outcome==="ongoing";activations++){
       const advanced=battle.advanceToNext(state);
@@ -180,7 +184,10 @@ try {
         }
         if(state.outcome==="ongoing"){
           stats.pending=cycle.pending;stats.lastAction=null;
+          const before=state, beforeActor=state.units.find(u=>u.id===state.activeId);
           state=playAlly(state,policy,stats);
+          const afterActor=state.units.find(u=>u.id===beforeActor.id);
+          stats.actions.push({round:before.round,actor:beforeActor.id,from:[beforeActor.c,beforeActor.r],to:[afterActor.c,afterActor.r],skill:stats.lastAction?.skill||'skip',target:stats.lastAction?.target||null,objective:before.objective,afterObjective:state.objective});
           const action=stats.lastAction;
           if(g1 && action?.target){const r=scheduler.interruptLockedThreatAfterControl(cycle,action.before,action.after,action.actor,action.target,action.skill,action.events);if(r.interrupted){cycle=r.cycle;stats.interrupts++;}}
         }
@@ -224,14 +231,46 @@ try {
         stats.roundProgress.push({round:state.round,progress:state.objective.progress,units:state.units.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp})),terminal:state.objective.terminal});
       }
     }
-    return {trace:stats.roundProgress,positions:[...stats.positions],report:{victory:state.results?.victory,objectiveComplete:state.results?.objectiveComplete,turns:state.results?.turns,healingActions:state.healingActions||0,squadStanding:state.results?.squadStanding,squadDeployed:state.results?.squadDeployed,...(state.failureReason?{failureReason:state.failureReason}:{}),...(profile.context?.masteryChallenge?{masteryChallenge:profile.context.masteryChallenge}:{})},build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
+    return {actions:stats.actions,trace:stats.roundProgress,positions:[...stats.positions],report:{victory:state.results?.victory,objectiveComplete:state.results?.objectiveComplete,turns:state.results?.turns,healingActions:state.healingActions||0,squadStanding:state.results?.squadStanding,squadDeployed:state.results?.squadDeployed,...(state.failureReason?{failureReason:state.failureReason}:{}),...(profile.context?.masteryChallenge?{masteryChallenge:profile.context.masteryChallenge}:{}),...(profile.context?.lockdownPlan?{lockdownPlan:profile.context.lockdownPlan}:{})},build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
   }
 
 
   const types=await vite.ssrLoadModule('/tactical-ops-src/combat/types.ts');
   const intents=await vite.ssrLoadModule('/tactical-ops-src/combat/intentContract.ts');
   const missionRules=await vite.ssrLoadModule('/tactical-ops-src/combat/missionRules.ts');
-  if(process.env.DEPTH01_ACCEPTED){
+  if(process.env.DEPTH02_ACCEPTED){
+    const accepted=JSON.parse(readFileSync(process.env.DEPTH02_ACCEPTED,'utf8')),run=accepted.run;
+    types.selectAcceptedBattleRules(run.rulesContract||null);intents.selectAcceptedIntentRules(run.rulesContract||null);
+    const m=ops.missionForContext(ops.getMissionDef(run.missionId),run.fieldContext);
+    const row=fullRun(m,run.squadIds,{name:'exact-accepted-snapshot',accepted:run,sidegrades:accepted.data,context:run.fieldContext},'rotate-alpha');
+    writeFileSync(process.env.DEPTH02_ACCEPTED_OUT,JSON.stringify(row,null,2));
+    assert.equal(row.outcome,'victory');console.log('PASS accepted '+run.fieldContext.lockdownPlan+' '+row.rounds);
+  } else if(process.env.DEPTH02){
+    const base=ops.getMissionDef('field-relay-hold');
+    const context={cycleId:0,reportVersion:5,pressure:2,approach:'standard',directiveTier:'advanced',directiveSet:'pursuit',masteryChallenge:'relay-lockdown-v1'};
+    const profile=(ctx)=>({name:'veteran-12-earned-ranks',alpha:{hp:138,atk:39,def:21,spd:16},pet:{hp:91,atk:25,def:11,spd:15},build:builds[2],context:ctx});
+    const results=[];
+    for(const grid of ['10x7','8x5']){
+      const contract=grid==='10x7'?{rulesetVersion:'tactical-intent-vnext.0'}:null;
+      types.selectAcceptedBattleRules(contract);intents.selectAcceptedIntentRules(contract);
+      for(const lockdownPlan of ['anchor','crosslink']) for(const squad of variants.slice(0,2)) for(const policy of (squad===variants[1]?['rotate-alpha','static']:['rotate-alpha'])){
+        const ctx={...context,lockdownPlan};
+        const pp=profile(ctx);if(squad===variants[1])pp.build={...builds[1],signature:"B"};
+        const row=fullRun(ops.missionForContext(base,ctx),squad,pp,policy);
+        results.push({grid,plan:lockdownPlan,...row});
+      }
+    }
+    mkdirSync('artifacts/depth02',{recursive:true});writeFileSync('artifacts/depth02/combat.json',JSON.stringify({runs:results},null,2));
+    console.log(JSON.stringify(results.map(({grid,plan,squad,policy,outcome,rounds,objectiveProgress})=>({grid,plan,squad,policy,outcome,rounds,objectiveProgress})),null,2));
+    if(!process.env.DEPTH02_EXPLORE){
+      for(const grid of ['10x7','8x5']){
+        for(const plan of ['anchor','crosslink']) for(const squad of variants.slice(0,2)) assert.equal(results.find(r=>r.grid===grid&&r.plan===plan&&r.squad===squad.join('+')&&r.policy==='rotate-alpha').outcome,'victory',`${grid} ${plan} ${squad}`);
+        const controlSquad=variants[1].join('+');
+        assert.equal(results.find(r=>r.grid===grid&&r.plan==='anchor'&&r.squad===controlSquad&&r.policy==='static').outcome,'victory');
+        assert.equal(results.find(r=>r.grid===grid&&r.plan==='crosslink'&&r.squad===controlSquad&&r.policy==='static').report.failureReason,'DEADLINE');
+      }
+    }
+  } else if(process.env.DEPTH01_ACCEPTED){
     const accepted=JSON.parse(readFileSync(process.env.DEPTH01_ACCEPTED,'utf8'));
     const run=accepted.run,contract=run.rulesContract||null;
     types.selectAcceptedBattleRules(contract);intents.selectAcceptedIntentRules(contract);

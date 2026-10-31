@@ -1,7 +1,7 @@
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
-import { DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
+import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
@@ -181,6 +181,7 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
   const meaning = fieldResultPurpose(result);
   return <section className="t-field-feedback" aria-label="Recorded Field Op result">
     {unlock ? <div className="t-unlock"><span className="t-kicker">UNLOCKED</span><strong>{unlock}</strong></div> : null}
+    {result.lockdownPlan ? <p data-recorded-plan={result.lockdownPlan}><b>SERVER-ACCEPTED PLAN · {LOCKDOWN_PLANS[result.lockdownPlan].name}</b> · {result.victory ? "Objective completed" : "Attempt failed"}. Next: {result.lockdownPlan === "crosslink" ? "try Anchor to hold one defensive position" : "try Crosslink to rotate between relay checkpoints"}.</p> : null}
     {result.firstLockdownClear ? <div className="t-lockdown-achievement" data-lockdown-completion="true" role="status"><span className="t-kicker">PERMANENT FIELD RECORD</span><strong>{result.lockdownFirstClear ? 'FIRST LOCKDOWN CLEAR RECORDED' : 'LOCKDOWN COMPLETION RECORDED'}</strong><span>Saved permanently · Relay Mastery 1/1</span></div> : null}
     {result.masteryChallenge ? !result.firstLockdownClear ? <p><b>RELAY MASTERY · 1/1</b> · Permanent access preserved.</p> : null : <>
     <div className="t-progress-heading"><div><span className="t-kicker">COMMANDER</span><strong>RANK {result.rankBefore !== result.rankAfter ? `${result.rankBefore} → ` : ""}{result.rankAfter}</strong></div><b>+{result.progressEarned}<small>PROGRESS</small></b></div>
@@ -608,6 +609,8 @@ function Brief() {
   const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const selectedApproach = useBattleStore((s) => s.selectedApproach);
   const selectedDirectiveTier = useBattleStore((s) => s.selectedDirectiveTier);
+  const selectedLockdownPlan = useBattleStore((s) => s.selectedLockdownPlan);
+  const selectLockdownPlan = useBattleStore((s) => s.selectLockdownPlan);
   const selectedMasteryChallenge = useBattleStore((s) => s.selectedMasteryChallenge);
   const selectDirectiveTier = useBattleStore((s) => s.selectDirectiveTier);
   const selectApproach = useBattleStore((s) => s.selectApproach);
@@ -636,7 +639,7 @@ function Brief() {
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
-  const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedMasteryChallenge ? { pressure:2, reportVersion:4, directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
+  const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
   const mission = baseMission ? missionForContext(baseMission, fieldContext) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
@@ -714,14 +717,14 @@ function Brief() {
 
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className="t-deploy-summary-main">
-            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? "LOCKDOWN · EXACT TILE CONTROL" : "OBJECTIVE"}</div>
-            <strong>{fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : "OBJECTIVE"}</div>
+            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
               </ol>
             ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
-            {fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
+            {fieldContext.lockdownPlan === "crosslink" ? <div className="t-lockdown-rule" role="note"><strong>NORTH → EAST → SOUTH</strong><span>Control is checked at round changes. Move between checkpoints; missing one resets to north.</span></div> : fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
             {purpose && !fieldContext.masteryChallenge ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
@@ -785,7 +788,7 @@ function Brief() {
                   { id: equippedPet ? `pet:${equippedPet.id}` : "pet:unavailable", label: equippedPet ? `PET · ${equippedPet.name}` : "PET", role: equippedPet ? "MOBILITY / CONTROL" : "NO VALID PET EQUIPPED", available: Boolean(equippedPet) },
                 ].map((candidate) => {
                   const selected = selectedSquadIds.includes(candidate.id);
-                  return <button key={candidate.id} type="button" aria-pressed={selected} disabled={busy || kodaSavePending || shadowSavePending || !candidate.available || (!selected && selectedSquadIds.length >= 3)} className={`t-btn ${selected ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => toggleCommanderTeammate(candidate.id)}>{candidate.label}<br /><small>{candidate.role}</small></button>;
+                  return <button key={candidate.id} type="button" aria-pressed={selected} disabled={busy || Boolean(savedRun?.fieldContext?.lockdownPlan) || kodaSavePending || shadowSavePending || !candidate.available || (!selected && selectedSquadIds.length >= 3)} className={`t-btn ${selected ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => toggleCommanderTeammate(candidate.id)}>{candidate.label}<br /><small>{candidate.role}</small></button>;
                 })}
               </div>
             </div>
@@ -908,6 +911,12 @@ function Brief() {
 
 
         </div> : null}
+        {selectedMasteryChallenge && ((field?.lockdownPlansAvailable && !resuming) || fieldContext.lockdownPlan) ? <section className="t-panel t-lockdown-plans" aria-label="Deployment plans">
+          <div className="t-kicker">{resuming ? "ACCEPTED PLAN · LOCKED" : "CHOOSE A PLAN · OPTIONAL PRACTICE"}</div>
+          <div className="t-lockdown-plan-grid">{(["anchor", "crosslink"] as const).map(plan => <button type="button" key={plan} data-lockdown-plan={plan} aria-pressed={(fieldContext.lockdownPlan || selectedLockdownPlan) === plan} disabled={busy || resuming} onClick={() => selectLockdownPlan(plan)}>
+            <strong>{LOCKDOWN_PLANS[plan].name}</strong><span><b>Benefit:</b> {LOCKDOWN_PLANS[plan].benefit}</span><span><b>Cost:</b> {LOCKDOWN_PLANS[plan].cost}</span><span><b>Priority:</b> {LOCKDOWN_PLANS[plan].priority}</span>
+          </button>)}</div><small>Plan freezes when the server accepts deployment. No currency or progression reward.</small>
+        </section> : null}
         {briefTab === "intel" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Mission conditions and enemy intelligence">
         {conditions.length || fieldOp ? (
           <section className="t-panel t-deploy-rules">
@@ -926,7 +935,7 @@ function Brief() {
 
             {fieldOp ? <div className="t-deployment-options t-deployment-options-v29">
               {resuming ? <p className="t-deploy-resume">Original conditions are locked for this saved run. Finish it before starting a different challenge.</p> : null}
-              {fieldContext.masteryChallenge ? <p>RELAY MASTERY · 1/1 · Permanent Relay Lockdown access. Fixed pressure, deadline and support conditions.</p> : field?.board?.reportVersion === 3 ? <>
+              {fieldContext.masteryChallenge ? <p>RELAY MASTERY · 1/1 · Permanent Relay Lockdown access. Fixed pressure and deadline; support follows the accepted plan.</p> : field?.board?.reportVersion === 3 ? <>
                 <div className="t-kicker">Directive tier</div>
                 <div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div>
                 <small>{selectedDirectiveTier === "advanced" ? `${directiveSetLabel(fieldContext.directiveSet)} · Advanced clear is recorded.` : "Standard field conditions."}</small>
@@ -1044,7 +1053,7 @@ function Results() {
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const resultBaseMission = getMissionDef(selectedMissionId);
   const confirmedVariant = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId)?.masteryChallenge;
-  const mission = resultBaseMission && confirmedVariant ? missionForContext(resultBaseMission,{reportVersion:4,masteryChallenge:confirmedVariant}) : resultBaseMission;
+  const mission = resultBaseMission && confirmedVariant ? missionForContext(resultBaseMission,{reportVersion:fieldResult?.lockdownPlan ? 5 : 4,masteryChallenge:confirmedVariant,lockdownPlan:fieldResult?.lockdownPlan}) : resultBaseMission;
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const resultNext = commandPurpose(progression).primary;
