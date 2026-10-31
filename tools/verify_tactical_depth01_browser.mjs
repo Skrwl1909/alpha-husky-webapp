@@ -56,12 +56,12 @@ try{
      await page.locator('[data-primary-purpose] button').click();assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
      if(profile==='unlocked'||profile==='resume'){
       assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMasteryChallenge),'relay-lockdown-v1');
-      assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/ON the relay tile/);
+      assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/Hold the exact relay tile/i);assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/Adjacent allies cannot hold/);
       assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/NO PROGRESSION REWARD/);
      }
     }
     if(mode==='brief'){
-     assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/ON the relay tile/);
+     assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/Hold the exact relay tile/i);assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/Adjacent allies cannot hold/);
      assert(!/\+2 COMMANDER|\+1 COMMANDER/.test(await page.getByLabel('Mission overview',{exact:true}).innerText()));
     }
     if(mode==='results'){
