@@ -159,6 +159,7 @@ export function parseRunRulesContract(raw: unknown): RunRulesContract | null {
         .every((k) => Number.isSafeInteger(x[k]) && (x[k] as number) >= 1)) {
     throw new Error("unsupported_run_rules_contract");
   }
+  if (x.missionId === "field-relay-intercept" && ![1,2].includes(x.missionRevision as number)) throw new Error("unsupported_run_rules_contract");
   return Object.freeze({ ...x }) as unknown as RunRulesContract;
 }
 

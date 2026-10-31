@@ -953,7 +953,11 @@ export const useBattleStore = create<Store>((set, get) => {
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
-              const acceptedMission = missionForContext(mission, started.run.fieldContext);
+              const acceptedMission = missionForContext(mission, started.run.fieldContext, started.run.rulesContract?.missionRevision);
+              // Review the server-frozen Intercept formation before the first turn.
+              if (mission.missionId === "field-relay-intercept" && started.run.started) {
+                set({busy:false,screen:"brief",ticker:null});return;
+              }
               const frozenPet = started.run.combatProfileV2?.pet;
               const runPet = frozenPet ? { id: frozenPet.id, name: frozenPet.name, img: frozenPet.img } : started.state.equippedPet;
               const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, runPet, started.run.fieldContext?.approach);

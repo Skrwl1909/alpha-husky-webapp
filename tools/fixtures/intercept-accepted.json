@@ -1,0 +1,557 @@
+{
+  "ok": true,
+  "data": {
+    "build": "tops-2.7.6-first-session-goal-spine-v1-20260913",
+    "vnextStartAvailable": true,
+    "version": 1,
+    "foundationStage": "completed",
+    "completed": true,
+    "revision": 9,
+    "activeRunId": null,
+    "lastCompletedRunId": null,
+    "updatedAt": 1791417720,
+    "packMastery": {
+      "ally-02": {
+        "progress": 8,
+        "stage": 3,
+        "unlockedOptions": [
+          "A",
+          "B"
+        ],
+        "selected": "B",
+        "earned": {},
+        "veteran": {
+          "version": 1,
+          "credits": 0,
+          "missionIds": [],
+          "lastCycle": null,
+          "enabled": false
+        }
+      },
+      "ally-03": {
+        "progress": 8,
+        "stage": 3,
+        "unlockedOptions": [
+          "A",
+          "B"
+        ],
+        "selected": "B",
+        "earned": {},
+        "veteran": {
+          "version": 1,
+          "credits": 0,
+          "missionIds": [],
+          "lastCycle": null,
+          "enabled": false
+        }
+      }
+    },
+    "playerGrowth": {
+      "version": 1,
+      "earnedPoints": 4,
+      "spentPoints": 0,
+      "claimedFirstClears": [
+        "broken-signal-breach",
+        "broken-signal-commander",
+        "broken-signal-recover",
+        "field-isolated-hold"
+      ],
+      "heroes": [
+        {
+          "heroId": "alpha",
+          "discipline": null,
+          "ranks": {},
+          "respecUsed": false
+        },
+        {
+          "heroId": "ally-02",
+          "discipline": null,
+          "ranks": {},
+          "respecUsed": false
+        },
+        {
+          "heroId": "ally-03",
+          "discipline": null,
+          "ranks": {},
+          "respecUsed": false
+        }
+      ]
+    },
+    "activeTacticalProfile": null,
+    "playerIdentity": {
+      "tacticalProfile": {
+        "version": 1,
+        "attack": 3,
+        "defense": 3,
+        "hp": 0,
+        "initiative": 0
+      },
+      "displayName": "ALPHA",
+      "level": 45,
+      "skinKey": "default",
+      "skinName": "Default",
+      "portraitUrl": "",
+      "spriteUrl": "",
+      "attackSpriteUrl": ""
+    },
+    "tacticalChapter": {
+      "version": 1,
+      "chapterId": "edge-relay",
+      "status": "AVAILABLE",
+      "doctrine": null,
+      "revision": 0,
+      "completedMissionIds": [],
+      "activeRunId": null,
+      "intelEffect": "NONE",
+      "intelConsumedByRunId": null,
+      "lastReceiptId": null
+    },
+    "equippedPet": null,
+    "fieldOps": {
+      "records": {
+        "field-relay-recovery": {
+          "missionId": "field-relay-recovery",
+          "completed": false,
+          "clearCount": 0,
+          "lastClearedAt": 0,
+          "failCount": 0,
+          "challengeCount": 0,
+          "lastClearCycle": null,
+          "lastChallengeCycle": null,
+          "advancedClearCount": 0,
+          "lastAdvancedCycle": null
+        },
+        "field-relay-hold": {
+          "missionId": "field-relay-hold",
+          "completed": false,
+          "clearCount": 0,
+          "lastClearedAt": 0,
+          "failCount": 0,
+          "challengeCount": 0,
+          "lastClearCycle": null,
+          "lastChallengeCycle": null,
+          "advancedClearCount": 0,
+          "lastAdvancedCycle": null
+        },
+        "field-squad-survival": {
+          "missionId": "field-squad-survival",
+          "completed": false,
+          "clearCount": 0,
+          "lastClearedAt": 0,
+          "failCount": 0,
+          "challengeCount": 0,
+          "lastClearCycle": null,
+          "lastChallengeCycle": null,
+          "advancedClearCount": 0,
+          "lastAdvancedCycle": null
+        },
+        "field-relay-intercept": {
+          "missionId": "field-relay-intercept",
+          "completed": false,
+          "clearCount": 0,
+          "lastClearedAt": 0,
+          "failCount": 0,
+          "challengeCount": 0,
+          "lastClearCycle": null,
+          "lastChallengeCycle": null,
+          "advancedClearCount": 0,
+          "lastAdvancedCycle": null,
+          "squadIds": [
+            "alpha",
+            "ally-02",
+            "ally-03"
+          ]
+        },
+        "field-isolated-hold": {
+          "missionId": "field-isolated-hold",
+          "completed": true,
+          "clearCount": 1,
+          "lastClearedAt": 0,
+          "failCount": 0,
+          "challengeCount": 0,
+          "lastClearCycle": null,
+          "lastChallengeCycle": null,
+          "advancedClearCount": 1,
+          "lastAdvancedCycle": null
+        },
+        "field-rearguard": {
+          "missionId": "field-rearguard",
+          "completed": false,
+          "clearCount": 0,
+          "lastClearedAt": 0,
+          "failCount": 0,
+          "challengeCount": 0,
+          "lastClearCycle": null,
+          "lastChallengeCycle": null,
+          "advancedClearCount": 0,
+          "lastAdvancedCycle": null
+        }
+      },
+      "activeMissionRun": {
+        "runId": "field_synthetic",
+        "missionId": "field-relay-intercept",
+        "squadIds": [
+          "alpha",
+          "ally-02",
+          "ally-03"
+        ],
+        "packMastery": {
+          "ally-02": {
+            "progress": 8,
+            "stage": 3,
+            "unlockedOptions": [
+              "A",
+              "B"
+            ],
+            "selected": "B",
+            "earned": {},
+            "veteran": {
+              "version": 1,
+              "credits": 0,
+              "missionIds": [],
+              "lastCycle": null,
+              "enabled": false
+            }
+          },
+          "ally-03": {
+            "progress": 8,
+            "stage": 3,
+            "unlockedOptions": [
+              "A",
+              "B"
+            ],
+            "selected": "B",
+            "earned": {},
+            "veteran": {
+              "version": 1,
+              "credits": 0,
+              "missionIds": [],
+              "lastCycle": null,
+              "enabled": false
+            }
+          }
+        },
+        "playerGrowth": {
+          "version": 1,
+          "revision": 8,
+          "heroes": [
+            {
+              "heroId": "alpha",
+              "discipline": null,
+              "ranks": {}
+            },
+            {
+              "heroId": "ally-02",
+              "discipline": null,
+              "ranks": {}
+            },
+            {
+              "heroId": "ally-03",
+              "discipline": null,
+              "ranks": {}
+            }
+          ]
+        },
+        "tacticalProfile": {
+          "version": 1,
+          "attack": 3,
+          "defense": 3,
+          "hp": 0,
+          "initiative": 0
+        },
+        "combatProfileV2": {
+          "version": 2,
+          "mode": "inputs-only",
+          "alpha": {
+            "level": 45,
+            "base": {
+              "strength": 56,
+              "agility": 1,
+              "defense": 34,
+              "vitality": 96,
+              "intelligence": 0,
+              "luck": 0
+            },
+            "gear": {
+              "strength": 0,
+              "agility": 0,
+              "defense": 0,
+              "vitality": 0,
+              "intelligence": 0,
+              "luck": 0
+            }
+          },
+          "pet": null
+        },
+        "combatProfileV3": {
+          "version": 3,
+          "mode": "battle-v1",
+          "alpha": {
+            "hp": 128,
+            "atk": 33,
+            "def": 15,
+            "spd": 15
+          },
+          "pet": null
+        },
+        "rulesContract": {
+          "rulesetVersion": "tactical-intent-vnext.0",
+          "missionId": "field-relay-intercept",
+          "missionRevision": 2,
+          "combatProfileVersion": 3,
+          "masterySnapshotVersion": 1,
+          "rewardPolicyVersion": 1,
+          "source": "BACKEND_SNAPSHOT"
+        },
+        "fieldContext": {
+          "cycleId": 31,
+          "pressure": 3,
+          "approach": "standard",
+          "reportVersion": 3,
+          "directiveTier": "advanced",
+          "directiveSet": "attrition",
+          "progressionVersion": 2,
+          "commanderCertified": true
+        }
+      },
+      "lastCompletedMissionRunId": null,
+      "loopVersion": 2,
+      "board": {
+        "cycleId": 31,
+        "nextRotationAt": 1791504000,
+        "reportVersion": 3,
+        "directiveSet": "attrition",
+        "activeMissionIds": [
+          "field-relay-intercept",
+          "field-isolated-hold",
+          "field-rearguard"
+        ]
+      },
+      "commander": {
+        "progress": 12,
+        "rank": 3,
+        "nextRankAt": null,
+        "certificationComplete": true,
+        "unlockedDirectiveTiers": [
+          "standard",
+          "advanced"
+        ],
+        "unlockedApproaches": [
+          "standard",
+          "south"
+        ]
+      },
+      "veteranCareer": {
+        "version": 1,
+        "credits": 0,
+        "missionIds": [],
+        "lastCycle": null,
+        "enabled": false
+      },
+      "careerRecord": {
+        "version": 1,
+        "missionSecures": 0,
+        "challenges": 0,
+        "advancedClears": 0,
+        "frontsSecured": 0,
+        "lastSecuredCycle": null
+      },
+      "lastResult": null,
+      "masteryPath": {
+        "version": 1,
+        "accomplishment": {
+          "missionId": "field-isolated-hold",
+          "evidence": "SERVER_ADVANCED_HOLD"
+        },
+        "unlockedChallenge": "relay-lockdown-v1",
+        "firstLockdownClear": {
+          "runId": "field_prior",
+          "cycleId": 1,
+          "recordedAt": 100
+        }
+      },
+      "rotationProgress": {
+        "cycleId": 31,
+        "securedCount": 0,
+        "total": 3,
+        "clearedMissionIds": [],
+        "challengeMissionIds": [],
+        "advancedMissionIds": [],
+        "frontSecured": false
+      },
+      "region": {
+        "regionId": "broken-signal",
+        "cycleId": 31,
+        "pressure": 3,
+        "label": "HIGH"
+      },
+      "lockdownPlansAvailable": true,
+      "veteranProgressionAvailable": true
+    },
+    "operations": {
+      "broken-signal": {
+        "status": "cleared",
+        "missions": {
+          "broken-signal-breach": "cleared",
+          "broken-signal-recover": "cleared",
+          "broken-signal-commander": "cleared"
+        },
+        "activeMissionRun": null,
+        "lastCompletedMissionRunId": null
+      },
+      "dead-relay": {
+        "status": "active",
+        "missions": {
+          "dead-relay-courier": "available",
+          "dead-relay-hold": "locked",
+          "dead-relay-guardian": "locked"
+        },
+        "activeMissionRun": null,
+        "lastCompletedMissionRunId": null
+      }
+    },
+    "campaignIntel": {
+      "dead-relay": {
+        "courierTraceAcquired": false
+      }
+    },
+    "intel": {
+      "routingTrace": false,
+      "commanderProfile": false
+    },
+    "archive": {
+      "brokenSignal": true
+    },
+    "nextOperationSlot": "unassigned",
+    "kodaSidegrade": "B",
+    "shadowSidegrade": "B"
+  },
+  "run": {
+    "started": true,
+    "runId": "field_synthetic",
+    "missionId": "field-relay-intercept",
+    "squadIds": [
+      "alpha",
+      "ally-02",
+      "ally-03"
+    ],
+    "packMastery": {
+      "ally-02": {
+        "progress": 8,
+        "stage": 3,
+        "unlockedOptions": [
+          "A",
+          "B"
+        ],
+        "selected": "B",
+        "earned": {},
+        "veteran": {
+          "version": 1,
+          "credits": 0,
+          "missionIds": [],
+          "lastCycle": null,
+          "enabled": false
+        }
+      },
+      "ally-03": {
+        "progress": 8,
+        "stage": 3,
+        "unlockedOptions": [
+          "A",
+          "B"
+        ],
+        "selected": "B",
+        "earned": {},
+        "veteran": {
+          "version": 1,
+          "credits": 0,
+          "missionIds": [],
+          "lastCycle": null,
+          "enabled": false
+        }
+      }
+    },
+    "playerGrowth": {
+      "version": 1,
+      "revision": 8,
+      "heroes": [
+        {
+          "heroId": "alpha",
+          "discipline": null,
+          "ranks": {}
+        },
+        {
+          "heroId": "ally-02",
+          "discipline": null,
+          "ranks": {}
+        },
+        {
+          "heroId": "ally-03",
+          "discipline": null,
+          "ranks": {}
+        }
+      ]
+    },
+    "tacticalProfile": {
+      "version": 1,
+      "attack": 3,
+      "defense": 3,
+      "hp": 0,
+      "initiative": 0
+    },
+    "combatProfileV2": {
+      "version": 2,
+      "mode": "inputs-only",
+      "alpha": {
+        "level": 45,
+        "base": {
+          "strength": 56,
+          "agility": 1,
+          "defense": 34,
+          "vitality": 96,
+          "intelligence": 0,
+          "luck": 0
+        },
+        "gear": {
+          "strength": 0,
+          "agility": 0,
+          "defense": 0,
+          "vitality": 0,
+          "intelligence": 0,
+          "luck": 0
+        }
+      },
+      "pet": null
+    },
+    "combatProfileV3": {
+      "version": 3,
+      "mode": "battle-v1",
+      "alpha": {
+        "hp": 128,
+        "atk": 33,
+        "def": 15,
+        "spd": 15
+      },
+      "pet": null
+    },
+    "rulesContract": {
+      "rulesetVersion": "tactical-intent-vnext.0",
+      "missionId": "field-relay-intercept",
+      "missionRevision": 2,
+      "combatProfileVersion": 3,
+      "masterySnapshotVersion": 1,
+      "rewardPolicyVersion": 1,
+      "source": "BACKEND_SNAPSHOT"
+    },
+    "fieldContext": {
+      "cycleId": 31,
+      "pressure": 3,
+      "approach": "standard",
+      "reportVersion": 3,
+      "directiveTier": "advanced",
+      "directiveSet": "attrition",
+      "progressionVersion": 2,
+      "commanderCertified": true
+    }
+  }
+}

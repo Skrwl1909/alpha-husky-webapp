@@ -142,6 +142,8 @@ export function parseGrowthProgression(raw: unknown, foundationRevision: number)
 export type MissionProgressionStatus = "locked" | "available" | "cleared";
 
 export interface OperationMissionRun {
+  /** Existing start response: first acceptance versus immutable run resume. */
+  started?: boolean;
   /** Absent on all legacy accepted runs; immutable backend-issued VNext rules when available. */
   rulesContract?: RunRulesContract | null;
   tacticalProfile?: TacticalProfile;
@@ -515,7 +517,7 @@ export async function startOperationMission(
   if (fieldOptions?.masteryChallenge && fieldContext?.masteryChallenge !== fieldOptions.masteryChallenge) throw new FoundationProgressionError("invalid_progression_response");
   const rulesContract = parseRunRulesContract(value.rulesContract);
   if (rulesContract && rulesContract.missionId !== missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
-  return { state: responseState(response), run: { runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
+  return { state: responseState(response), run: { started:value.started===true, runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV3") ? { combatProfileV3: parseCombatProfileV3(value.combatProfileV3) } : {}), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
 }
 
 export async function continueOperationMission(

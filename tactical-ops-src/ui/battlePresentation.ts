@@ -46,7 +46,10 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   const actor = battle.units.find(u => u.id === battle.activeId);
   const interactive = !!actor && actor.team === "ally" && !actor.defeated && !actor.hasActed && !busy && battle.outcome === "ongoing";
   const threats = battle.outcome === "ongoing" && input.activeRulesetVersion === TACTICAL_VNEXT_RULESET
-    ? input.threats.filter(t => t.rulesetVersion === TACTICAL_VNEXT_RULESET) : [];
+    ? input.threats.filter(t => t.rulesetVersion === TACTICAL_VNEXT_RULESET).map(t => {
+      const tracked = t.targetUnitId && t.targetTile === null ? battle.units.find(u=>u.id===t.targetUnitId&&!u.defeated) : null;
+      return tracked ? {...t,impactTiles:[{c:tracked.c,r:tracked.r}]} : t;
+    }) : [];
   const danger = new Set(threats.flatMap(t => t.impactTiles.map(c => cellKey(c.c, c.r))));
   const targeting = interactive && battle.mode === "targeting" && !!battle.actionSkillId;
   const skills = actor ? availableSkills(battle, actor) : [];
@@ -73,7 +76,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   let title: string, detail: string;
   if (mode === "REACT") {
     title = `INCOMING ${threats.length}`;
-    detail = targetPrompt || (interruptTargetIds.length ? "Interrupt available · target a marked source" : canReposition ? "Move off striped cells · attack remains locked" : "Striped cells mark the announced attack");
+    detail = targetPrompt || (threats.some(t=>t.targetUnitId&&t.targetTile===null) ? "TRACKING LOCK · break range, interrupt or protect. Sidestepping alone will not cancel." : interruptTargetIds.length ? "Interrupt available · target a marked source" : canReposition ? "Move off striped cells · attack remains locked" : "Striped cells mark the announced attack");
   } else if (mode === "TARGET") {
     title = targetIds.length ? "CHOOSE TARGET" : "NO TARGET";
     detail = targetPrompt!;
