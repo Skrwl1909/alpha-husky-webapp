@@ -1,0 +1,371 @@
+{
+  "state": {
+    "units": [
+      {
+        "id": "alpha",
+        "defId": "alpha",
+        "name": "ALPHA",
+        "team": "ally",
+        "role": "alpha",
+        "hp": 128,
+        "maxHp": 128,
+        "atk": 33,
+        "def": 15,
+        "spd": 15,
+        "move": 3,
+        "c": 2,
+        "r": 1,
+        "statuses": [],
+        "cooldowns": {
+          "alpha-strike": 0,
+          "alpha-rend": 0,
+          "alpha-howl": 0
+        },
+        "meter": 10,
+        "hasMoved": false,
+        "hasActed": false,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/alpha.png",
+        "attackSprite": "/images/tactical_ops/alpha-attack.png",
+        "portrait": "/images/tactical_ops/alpha-portrait.jpg",
+        "skillIds": [
+          "alpha-strike",
+          "alpha-rend",
+          "alpha-howl"
+        ]
+      },
+      {
+        "id": "ally-02",
+        "defId": "ally-02",
+        "name": "CNC",
+        "team": "ally",
+        "role": "skirmisher",
+        "hp": 96,
+        "maxHp": 96,
+        "atk": 22,
+        "def": 8,
+        "spd": 12,
+        "move": 2,
+        "c": 3,
+        "r": 0,
+        "statuses": [],
+        "cooldowns": {
+          "u02-shot": 0,
+          "u02-burst": 3,
+          "u02-pressure-disruptor:mastery:CNC:3:B": 0
+        },
+        "meter": 68,
+        "hasMoved": true,
+        "hasActed": true,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/cnc_map_unit.webp",
+        "portrait": "/images/tactical_ops/cnc_portrait.webp",
+        "skillIds": [
+          "u02-shot",
+          "u02-burst",
+          "u02-pressure-disruptor:mastery:CNC:3:B"
+        ],
+        "combatMastery": {
+          "progress": 8,
+          "stage": 3,
+          "selected": "B"
+        }
+      },
+      {
+        "id": "ally-03",
+        "defId": "ally-03",
+        "name": "SHADOW",
+        "team": "ally",
+        "role": "support",
+        "hp": 100,
+        "maxHp": 100,
+        "atk": 16,
+        "def": 10,
+        "spd": 10,
+        "move": 2,
+        "c": 0,
+        "r": 3,
+        "statuses": [],
+        "cooldowns": {
+          "u03-tap": 0,
+          "u03-mend": 0,
+          "u03-pack-warden:mastery:SHADOW:3:B": 0
+        },
+        "meter": 40,
+        "hasMoved": true,
+        "hasActed": true,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/ally03.png",
+        "portrait": "/images/tactical_ops/ally03.png",
+        "skillIds": [
+          "u03-tap",
+          "u03-mend",
+          "u03-pack-warden:mastery:SHADOW:3:B"
+        ],
+        "combatMastery": {
+          "progress": 8,
+          "stage": 3,
+          "selected": "B"
+        }
+      },
+      {
+        "id": "courier",
+        "archetype": "COURIER",
+        "defId": "signal-courier",
+        "name": "SIGNAL COURIER",
+        "team": "enemy",
+        "role": "hostile",
+        "hp": 68,
+        "maxHp": 68,
+        "atk": 16,
+        "def": 8,
+        "spd": 11,
+        "move": 2,
+        "c": 9,
+        "r": 1,
+        "statuses": [],
+        "cooldowns": {
+          "hostile-strike": 0
+        },
+        "meter": 54,
+        "hasMoved": true,
+        "hasActed": true,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/hound.png",
+        "portrait": "/images/tactical_ops/hound.png",
+        "skillIds": [
+          "hostile-strike"
+        ]
+      },
+      {
+        "id": "h1",
+        "archetype": "BULWARK",
+        "defId": "hostile",
+        "name": "HOUND BULWARK",
+        "team": "enemy",
+        "role": "hostile",
+        "hp": 65,
+        "maxHp": 92,
+        "atk": 16,
+        "def": 13,
+        "spd": 11,
+        "move": 1,
+        "c": 5,
+        "r": 0,
+        "statuses": [
+          {
+            "id": "st-1",
+            "type": "GUARD",
+            "source": "hound-fortify",
+            "duration": 2,
+            "value": 0.5
+          }
+        ],
+        "cooldowns": {
+          "hostile-strike": 0,
+          "hound-fortify": 3
+        },
+        "meter": 54,
+        "hasMoved": false,
+        "hasActed": true,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/hound.png",
+        "portrait": "/images/tactical_ops/hound.png",
+        "skillIds": [
+          "hostile-strike",
+          "hound-fortify"
+        ]
+      },
+      {
+        "id": "h2",
+        "archetype": "MARKSMAN",
+        "defId": "hostile",
+        "name": "HOUND MARKSMAN",
+        "team": "enemy",
+        "role": "hostile",
+        "hp": 60,
+        "maxHp": 60,
+        "atk": 16,
+        "def": 8,
+        "spd": 11,
+        "move": 2,
+        "c": 6,
+        "r": 2,
+        "statuses": [],
+        "cooldowns": {
+          "hound-pulse": 0,
+          "hound-aim": 0
+        },
+        "meter": 54,
+        "hasMoved": false,
+        "hasActed": true,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/hound.png",
+        "portrait": "/images/tactical_ops/hound.png",
+        "skillIds": [
+          "hound-pulse",
+          "hound-aim"
+        ]
+      },
+      {
+        "id": "field-reinforcement",
+        "archetype": "SKIRMISHER",
+        "defId": "hostile",
+        "name": "HOUND SKIRMISHER",
+        "team": "enemy",
+        "role": "hostile",
+        "hp": 58,
+        "maxHp": 58,
+        "atk": 16,
+        "def": 8,
+        "spd": 14,
+        "move": 3,
+        "c": 9,
+        "r": 0,
+        "statuses": [],
+        "cooldowns": {
+          "hostile-strike": 0,
+          "hostile-maul": 0
+        },
+        "meter": 0,
+        "hasMoved": false,
+        "hasActed": false,
+        "defeated": false,
+        "sprite": "/images/tactical_ops/hound.png",
+        "portrait": "/images/tactical_ops/hound.png",
+        "skillIds": [
+          "hostile-strike",
+          "hostile-maul"
+        ]
+      }
+    ],
+    "activeId": "alpha",
+    "inspectId": null,
+    "actionSkillId": null,
+    "mode": "selected",
+    "round": 2,
+    "unitTurn": 7,
+    "actionsLeftInRound": 5,
+    "outcome": "ongoing",
+    "damageTaken": 0,
+    "healingActions": 0,
+    "hostilesEliminated": 0,
+    "results": null,
+    "objective": {
+      "type": "INTERCEPT",
+      "targetId": "courier",
+      "exit": {
+        "c": 9,
+        "r": 6
+      },
+      "screenedEscape": true
+    },
+    "reinforcement": {
+      "spawn": {
+        "defId": "hostile",
+        "id": "field-reinforcement",
+        "c": 9,
+        "r": 0
+      },
+      "triggerRound": 2,
+      "telegraphed": true,
+      "spawned": true
+    },
+    "signalCarrierId": null,
+    "directive": {
+      "type": "COMPOSITE",
+      "name": "REINFORCEMENTS + NO SAFE EXTRACTION",
+      "copy": "One HOUND enters from the north-east in round 2, or round 3 when signal pressure is reduced/clear. The entry uses the nearest free cell if occupied. Complete by the end of round 7. At round 8, the operation fails even if your squad is standing.",
+      "conditions": [
+        {
+          "type": "REINFORCEMENTS",
+          "name": "REINFORCEMENTS",
+          "copy": "One HOUND enters from the north-east in round 2, or round 3 when signal pressure is reduced/clear. The entry uses the nearest free cell if occupied.",
+          "reinforcement": {
+            "spawn": {
+              "defId": "hostile",
+              "id": "field-reinforcement",
+              "c": 7,
+              "r": 0
+            },
+            "triggerRound": 2,
+            "telegraphed": true,
+            "spawned": false
+          }
+        },
+        {
+          "type": "NO_SAFE_EXTRACTION",
+          "name": "NO SAFE EXTRACTION",
+          "maxRounds": 7,
+          "copy": "Complete by the end of round 7. At round 8, the operation fails even if your squad is standing."
+        }
+      ],
+      "recoverEveryRounds": 0,
+      "supportCooldownExtra": 0,
+      "maxRounds": 7,
+      "reinforcement": {
+        "spawn": {
+          "defId": "hostile",
+          "id": "field-reinforcement",
+          "c": 7,
+          "r": 0
+        },
+        "triggerRound": 2,
+        "telegraphed": true,
+        "spawned": false
+      }
+    },
+    "routingTraceAcquired": false,
+    "seed": 1
+  },
+  "cycle": {
+    "pending": [
+      {
+        "plan": {
+          "id": "threat:5:h2:1",
+          "enemyId": "h2",
+          "kind": "ATTACK",
+          "targetUnitId": "alpha",
+          "targetTile": null,
+          "impactTiles": [
+            {
+              "c": 2,
+              "r": 1
+            }
+          ],
+          "predictedEffect": "TARGET LOCK \u00b7 TRACKING \u00b7 RANGE 2\u20134",
+          "warnsOnUnitTurn": 5,
+          "resolvesOnUnitTurn": 6,
+          "responses": [
+            "KILL",
+            "DISRUPT",
+            "REPOSITION",
+            "BLOCK",
+            "PROTECT",
+            "TRADE"
+          ],
+          "fallbackPolicy": "CANCEL",
+          "phase": "WINDUP",
+          "rulesetVersion": "tactical-intent-vnext.0"
+        },
+        "action": {
+          "type": "skill",
+          "skillId": "hound-aim",
+          "targetId": "alpha"
+        }
+      }
+    ],
+    "ledger": [
+      {
+        "type": "threat_announced",
+        "intentId": "threat:5:h2:1",
+        "enemyId": "h2",
+        "unitTurn": 5
+      }
+    ],
+    "sequence": 1,
+    "reactionObserved": {
+      "threat:5:h2:1": true
+    }
+  }
+}

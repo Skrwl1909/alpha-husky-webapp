@@ -1,3 +1,3 @@
-/** DEPTH 01: one server-owned Relay Mastery path and optional Relay Lockdown. */
-export const VERSION = "tactical_ops.js v3.6.18-veteran-foundation";
-export const CACHE_KEY = "tops-3.6.18-veteran-foundation";
+/** Revisioned Relay Intercept: screened escape and readable tracking counterplay. */
+export const VERSION = "tactical_ops.js v3.6.19-intercept-agency";
+export const CACHE_KEY = "tops-3.6.19-intercept-agency";

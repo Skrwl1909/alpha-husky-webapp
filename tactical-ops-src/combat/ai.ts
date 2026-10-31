@@ -110,10 +110,16 @@ function interceptAction(state: BattleState, caster: CombatUnit): AiAction | nul
   if (!caster.hasMoved) {
     const cells = reachableCells(caster, state.units).filter((cell) => (distance.get(key(cell)) ?? Infinity) < (distance.get(key(caster)) ?? Infinity));
     cells.sort((a, b) => (distance.get(key(a)) ?? Infinity) - (distance.get(key(b)) ?? Infinity));
-    if (cells[0]) return { type: "move", to: cells[0] };
+    if (cells[0]) {
+      const blocker = objective.screenedEscape && state.units.find(u=>!u.defeated&&u.team==="ally"&&u.c===objective.exit.c&&u.r===objective.exit.r);
+      const strike = blocker && availableSkills(state,caster).find(s=>s.ready&&s.slot==="A1"&&inSkillRange({...caster,...cells[0]},blocker,s));
+      return {type:"move",to:cells[0],...(strike&&blocker?{then:{type:"skill" as const,skillId:strike.id,targetId:blocker.id}}:{})};
+    }
   }
   const attack = availableSkills(state, caster).find((s) => s.ready && s.slot === "A1");
-  const target = attack && validTargetIds(state.units, caster, attack)[0];
+  const legal = attack ? validTargetIds(state.units,caster,attack) : [];
+  const blocker = objective.screenedEscape && state.units.find(u=>!u.defeated&&u.team==="ally"&&u.c===objective.exit.c&&u.r===objective.exit.r&&legal.includes(u.id));
+  const target = blocker ? blocker.id : legal[0];
   return target ? { type: "skill", skillId: attack!.id, targetId: target } : { type: "skip" };
 }
 

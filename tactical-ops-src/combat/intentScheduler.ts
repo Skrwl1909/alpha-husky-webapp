@@ -70,6 +70,7 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
   // Purely defensive enemy actions do not threaten allied tiles and resolve normally.
   if (definition && (definition.targetType === "SELF" || definition.targetType === "ALLY_AOE")) return null;
   const target = skill?.targetId ? state.units.find(u => u.id === skill.targetId) : null;
+  const tracking = state.objective?.type === "INTERCEPT" && state.objective.screenedEscape === true && action.type === "skill" && definition?.id === "hound-aim" && !!target;
   const anchor = target ? tile(target) : skill?.cell ? tile(skill.cell) : action.type === "move" ? tile(action.to) : tile(enemy);
   const impactTiles: Cell[] = definition && ["AREA_RADIUS", "ENEMY_AOE"].includes(definition.targetType)
     ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) }))
@@ -79,8 +80,8 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
     definition?.targetType === "AREA_RADIUS" || definition?.targetType === "ENEMY_AOE" ? "AREA" : "ATTACK";
   const { plan } = announceIntent({
     id: `threat:${state.unitTurn}:${enemyId}:${sequence}`, enemyId, kind,
-    targetUnitId: target?.id ?? null, targetTile: anchor, impactTiles,
-    predictedEffect: definition ? definition.name : "Enemy attack",
+    targetUnitId: target?.id ?? null, targetTile: tracking ? null : anchor, impactTiles,
+    predictedEffect: tracking ? "TARGET LOCK · TRACKING · RANGE 2–4" : definition ? definition.name : "Enemy attack",
     warnsOnUnitTurn: state.unitTurn, resolvesOnUnitTurn: state.unitTurn + 1,
     responses: ["KILL", "DISRUPT", "REPOSITION", "BLOCK", "PROTECT", "TRADE"],
     fallbackPolicy: "CANCEL",

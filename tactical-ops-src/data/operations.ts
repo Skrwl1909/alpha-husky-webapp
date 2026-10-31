@@ -277,7 +277,14 @@ MISSION_DEFS["field-relay-intercept"] = {
   squadHint: "CNC DISRUPTOR and PET HAMSTRING slow the courier's turns. PET mobility can block its exit; SHADOW protects a forward blocker at the cost of another control unit.",
 };
 
-export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>): MissionDef {
+export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>, missionRevision = 1): MissionDef {
+  if (mission.missionId === "field-relay-intercept" && context?.reportVersion === 3 && missionRevision === 2) {
+    return {...mission,
+      briefCopy:"The courier starts behind its patrol, close to the eastern escape lane. Cut north to slow and focus it, or send a protected blocker south to the exit. Ignoring the runner loses the operation.",
+      objective:{type:"INTERCEPT",targetId:"courier",exit:{c:7,r:4},screenedEscape:true},
+      spawns:[{...mission.spawns![0],c:6,r:0},{...mission.spawns![1],c:4,r:0},{...mission.spawns![2],c:5,r:1}],
+      squadHint:"Pursue north under the marksman's TARGET LOCK, or anchor the exit while the squad controls the courier. TARGET LOCK tracks its marked ally: break firing range, close inside minimum range, interrupt, or protect. A one-cell sidestep alone does not cancel it."};
+  }
   if (context?.reportVersion === 6 && context.veteranChallenge === "pack-extraction-v1") {
     if (mission.missionId !== "field-relay-recovery") throw Error("invalid_veteran_mission");
     return {...mission,name:"VETERAN · PACK EXTRACTION",briefCopy:"Bring all three squad members within 2 orthogonal cells of the relay, then RECOVER on an even round by round 6. A lone runner cannot extract the pack. No progression or currency rewards.",

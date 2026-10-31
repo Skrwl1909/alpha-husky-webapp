@@ -98,10 +98,10 @@ export function nextFieldMission(field: FieldOpsProgression | undefined, current
   if (nextChallenge) return { missionId:nextChallenge, reason:"All Field Ops secured. An optional challenge is still open." };
   return { missionId:currentMissionId && board.activeMissionIds.includes(currentMissionId) ? currentMissionId : board.activeMissionIds[0], reason:"Front secured. Replay to practice tactics or return after the next rotation; no new Commander reward is promised." };
 }
-export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgression, acceptedRun?: { missionId: string; fieldContext?: Partial<FieldContext> & { reportVersion: number } } | null, lastResult?: FieldResult | null, previewContext?: Partial<FieldContext>): MissionPurposeView {
+export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgression, acceptedRun?: { missionId: string; fieldContext?: Partial<FieldContext> & { reportVersion: number }; rulesContract?: {missionRevision:number} | null } | null, lastResult?: FieldResult | null, previewContext?: Partial<FieldContext>): MissionPurposeView {
   const accepted = acceptedRun?.missionId === m.missionId;
   const context = accepted ? acceptedRun?.fieldContext : previewContext || (field?.board ? { reportVersion:field.board.reportVersion || 2 } : undefined);
-  const base = context ? missionForContext(m, context) : m;
+  const base = context ? missionForContext(m, context, accepted ? acceptedRun?.rulesContract?.missionRevision : undefined) : m;
   const resolved = { ...base, directive: missionBattleRules(base, false, context).directive || undefined };
   const oldCycle = accepted && acceptedRun?.fieldContext?.cycleId != null && field?.board && acceptedRun.fieldContext.cycleId !== field.board.cycleId;
   if (context?.veteranChallenge) return {
@@ -131,7 +131,7 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
     missionId:resolved.missionId,
     objectiveText:missionGoal(resolved) + (resolved.objectiveType === "RECOVER" && resolved.directive?.recoverEveryRounds ? ` Signal opens on rounds divisible by ${resolved.directive.recoverEveryRounds} (${resolved.directive.recoverEveryRounds}, ${resolved.directive.recoverEveryRounds * 2}, …).` : ""),
     failConditionText:missionFailure(resolved),
-    tacticalThreat:resolved.directive?.copy || resolved.squadHint || "Use positioning, skills and enemy ranges to control the encounter.",
+    tacticalThreat:resolved.objective?.type==="INTERCEPT" && resolved.objective.screenedEscape ? "Screened courier. TARGET LOCK follows its marked ally (range 2–4). Break range, close in, interrupt or protect." : resolved.directive?.copy || resolved.squadHint || "Use positioning, skills and enemy ranges to control the encounter.",
     nextConsequence:consequence,
     rewardEligibility:reward,
     rewardClearText:clearText,

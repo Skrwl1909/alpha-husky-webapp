@@ -11,7 +11,7 @@ import { savedSidegradeProof } from "./s3PowerProof";
 import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
 import { missionDirectives } from "../data/directives";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { firstSession, type FirstResultReceipt } from "../host/firstSession";
 import { ChevronRight, RotateCcw } from "lucide-react";
 import { useBattleStore } from "../store/battleStore";
@@ -650,9 +650,11 @@ function Brief() {
   const baseMission = getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
+  const briefPane = useRef<HTMLDivElement>(null);
+  useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
-  const mission = baseMission ? missionForContext(baseMission, fieldContext) : null;
+  const mission = baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
@@ -697,7 +699,7 @@ function Brief() {
   return (
     <div className="t-fill">
       <Background dim={0.58} />
-      <div className="t-brief t-deployment t-deployment-v29 t-command-art-shell t-premium-ux">
+      <div ref={briefPane} className="t-brief t-deployment t-deployment-v29 t-command-art-shell t-premium-ux">
         <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
           <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
@@ -738,6 +740,7 @@ function Brief() {
             ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
             {fieldContext.lockdownPlan === "crosslink" ? <div className="t-lockdown-rule" role="note"><strong>NORTH → EAST → SOUTH</strong><span>Control is checked at round changes. Move between checkpoints; missing one resets to north.</span></div> : fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
             {purpose && !fieldContext.masteryChallenge ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
+            {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
               {buildNotes.map(row => <p key={row}>{row}</p>)}
@@ -996,7 +999,7 @@ function Brief() {
         <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
           <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
-            DEPLOY SQUAD
+            {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
             <ChevronRight className="t-ico" />
           </button>
         </div>

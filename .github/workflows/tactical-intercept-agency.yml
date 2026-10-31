@@ -1,0 +1,41 @@
+name: Tactical Intercept Agency
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'tools/verify_tactical_intercept*.mjs'
+      - 'tools/fixtures/intercept-*.json'
+      - '.github/workflows/tactical-intercept-agency.yml'
+permissions:
+  contents: read
+jobs:
+  screened-intercept:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Real encounter strategies, legacy baseline and legal counters
+        run: |
+          node tools/verify_tactical_intercept_agency.mjs
+          node tools/verify_tactical_intercept_counters.mjs
+      - name: Accepted review, tracking and fallback at 320, 390 and 430 pixels
+        run: node tools/verify_tactical_intercept_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Canonical production bundle parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: intercept-agency-evidence
+          path: artifacts/intercept-agency
+          if-no-files-found: error

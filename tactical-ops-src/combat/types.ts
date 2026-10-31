@@ -198,6 +198,8 @@ export interface TimedObjective {
 }
 
 export interface InterceptObjective {
+  /** Encounter revision 2 only; legacy snapshots retain the original escape policy. */
+  screenedEscape?: true;
   type: "INTERCEPT";
   targetId: string;
   exit: Cell;
