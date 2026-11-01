@@ -29,8 +29,8 @@ if(scenario==='mastery'){r.masteryChanges=[{unitId:'ally-02',kind:'clear',gained
 if(scenario==='veteran-mastery'){r.masteryChanges=[{unitId:'ally-02',kind:'clear',gained:0,beforeStage:3,stage:4,progress:8,newOptions:[],veteran:{before:11,after:12,unlocked:true,reason:'unlocked'}}];}
 if(scenario==='campaign'){patch.selectedMissionId='dead-relay-courier';patch.fieldResult=null;}
 if(scenario==='chapter'){patch.chapterMode=true;patch.chapterResult=null;}
-if(scenario.startsWith('lockdown')){patch.selectedMissionId='field-relay-hold';patch.selectedMasteryChallenge='relay-lockdown-v1';patch.currentFieldContext={masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};patch.fieldResult=scenario==='lockdown-pending'?null:{...r,missionId:'field-relay-hold',masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};}
-if(scenario.startsWith('extraction')){patch.selectedVeteranChallenge=true;patch.currentFieldContext={veteranChallenge:'pack-extraction-v1'};patch.fieldResult=scenario==='extraction-pending'?null:{...r,veteranChallenge:'pack-extraction-v1'};}
+if(scenario.startsWith('lockdown')){patch.selectedMissionId='field-relay-hold';patch.selectedMasteryChallenge='relay-lockdown-v1';patch.currentFieldContext={masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};patch.fieldResult=scenario==='lockdown-pending'?null:{...r,missionId:'field-relay-hold',masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};if(scenario==='lockdown-pending')patch.progressionCommitPending=true;}
+if(scenario.startsWith('extraction')){patch.selectedVeteranChallenge=true;patch.currentFieldContext={veteranChallenge:'pack-extraction-v1'};patch.fieldResult=scenario==='extraction-pending'?null:{...r,veteranChallenge:'pack-extraction-v1'};if(scenario==='extraction-pending')patch.progressionCommitPending=true;}
 store.setState(patch);
 window.fixture.calls=[];
 // Retry is observed locally, without calling a server or modifying persistent state.
