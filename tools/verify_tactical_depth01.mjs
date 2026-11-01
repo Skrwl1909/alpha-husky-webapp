@@ -30,8 +30,13 @@ try{
  response={ok:true,data:{...state,fieldOps:{...field,masteryPath:{...path,firstLockdownClear:firstClear}}}};
  const completed=await host.loadFoundationProgression();
  assert.deepEqual(completed.fieldOps.masteryPath.firstLockdownClear,firstClear);
- assert.match(purpose.commandPurpose(completed).primary.title,/COMPLETED/);
- assert.match(purpose.commandPurpose(completed).primary.reason,/practice/);
+ const completedPurpose=purpose.commandPurpose(completed);
+ assert.match(completedPurpose.primary.title,/SECURE A FIELD OP/,'eligible rotation clear outranks recorded practice');
+ assert(ids.includes(completedPurpose.primary.missionId),'next mission must come from the active rotation');
+ const optionalPractice=completedPurpose.alternatives.find(a=>a.title==='RELAY LOCKDOWN · COMPLETED');
+ assert(optionalPractice,'recorded Lockdown must remain accessible as an optional choice');
+ assert.equal(optionalPractice.masteryChallenge,'relay-lockdown-v1');
+ assert.match(optionalPractice.reason,/practice/);
  for(const bad of [{...firstClear,recordedAt:true},{...firstClear,runId:'other'}, {...firstClear,extra:1}]){
   response={ok:true,data:{...state,fieldOps:{...field,masteryPath:{...path,firstLockdownClear:bad}}}};
   await assert.rejects(()=>host.loadFoundationProgression(),'malformed permanent proof fails closed');
