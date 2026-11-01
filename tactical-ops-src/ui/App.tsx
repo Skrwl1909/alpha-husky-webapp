@@ -1,4 +1,4 @@
-import { FieldOpResults } from "./FieldOpResults";
+import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { veteranRequirement } from "../data/veteran";
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
 import { savedMasteryProof } from "./s3PowerProof";
@@ -1131,6 +1131,45 @@ function Results() {
         {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
       </details>
     </FieldOpResults>
+  </div></div>;
+  const specialKind = !chapterMode && fieldOp && (confirmedVariant || veteranReceipt ||
+    selectedMasteryChallenge || selectedVeteranChallenge ||
+    resultFieldContext?.masteryChallenge || resultFieldContext?.lockdownPlan || resultFieldContext?.veteranChallenge)
+    ? (veteranReceipt || selectedVeteranChallenge || resultFieldContext?.veteranChallenge ? "extraction" : "lockdown") : null;
+  if (specialKind) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
+    <SpecialFieldOpResults kind={specialKind} victory={results.victory} missionName={mission?.name || "FIELD OP"}
+      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      failure={fieldFailureCopy(failureReason, mission?.objectiveType || "HOLD")}
+      actions={!recordedFieldResult ?
+        <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
+          onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+          <button type="button" className="t-btn t-btn-primary" onClick={() => {
+            continueOnboarding();
+            if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") openPurposeBrief(resultNext);
+          }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+          <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
+        </>}>
+      <details className="t-detail" data-special-evidence="true"><summary>Full field record &amp; combat evidence</summary>
+        {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p>Progress is not confirmed without a matching server receipt.</p>}
+        {recordedFieldResult && s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal">
+          <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
+          {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
+          <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
+        </section> : null}
+        <PlayerIdentityCard />
+        <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div>
+          <div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div>
+          <div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
+        <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>
+          {buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}
+          <small>Engine-observed on this device only; not persisted progress or extra rewards.</small></section>
+        {acceptedS3Run && s3Moment ? <p>{s3Moment.detail} · Observed in this device session only.</p> : null}
+        {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}</section> : null}
+        {progression?.playerGrowth && recordedFieldResult && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ?
+          <p className="t-special-balance">{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not a reward from this run.</p> : null}
+      </details>
+    </SpecialFieldOpResults>
   </div></div>;
   return (
     <div className="t-fill">
