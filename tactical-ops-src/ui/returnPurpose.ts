@@ -26,10 +26,14 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     if (f.masteryPath.unlockedChallenge) {
       const recorded = Boolean(f.masteryPath.firstLockdownClear);
       const canRecord = f.masteryPath.firstLockdownClear !== undefined;
-      primary = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', f.lockdownPlansAvailable ? 'Choose Anchor to defend one tile with slower support, or Crosslink to rotate north, east, then south with normal support. Optional practice; no currency or progression rewards.' : recorded
+      const lockdown = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', f.lockdownPlansAvailable ? 'Choose Anchor to defend one tile with slower support, or Crosslink to rotate north, east, then south with normal support. Optional practice; no currency or progression rewards.' : recorded
         ? 'Your first recorded Relay Lockdown clear is saved permanently. Try another holder or squad for optional practice; no further unlock or reward is promised.'
         : canRecord ? 'Relay Mastery recorded. Win Relay Lockdown to save its first completion: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.'
         : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
+      // An already recorded, reward-free challenge must not displace eligible rotation progress.
+      // Preserve the finished challenge as a legal optional route when no accepted run exists.
+      if (recorded && b.activeMissionIds.some(id => f.records?.[id]?.lastClearCycle !== b.cycleId)) candidates.push(lockdown);
+      else primary = lockdown;
     } else {
       const id = b.activeMissionIds.find(id => ['field-relay-hold','field-isolated-hold'].includes(id));
       if (id) primary = action(id, 'RELAY MASTERY · 0/1', 'Win this Advanced HOLD to record Relay Mastery and permanently unlock Relay Lockdown. Standard clears and aggregate Advanced totals do not qualify. The next challenge pins the holder to the relay tile under a deadline and slower support.', 'advanced');
@@ -44,8 +48,9 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       if (m.challenge && r?.lastChallengeCycle !== b.cycleId) candidates.push(action(id, 'OPTIONAL CHALLENGE', `${m.challenge.label}. ${r?.lastClearCycle === b.cycleId ? "Clear bonus already secured; an eligible challenge can still add progress." : "An eligible first clear and challenge can record progress this rotation."}`));
       if (f.commander.unlockedDirectiveTiers?.includes('advanced') && r?.lastAdvancedCycle !== b.cycleId) candidates.push(action(id, 'ADVANCED CHALLENGE', 'Face the Advanced conditions shown in the briefing. An accepted clear enters your Advanced record; no extra currency is promised.', 'advanced'));
     }
-    // Prefer unfinished clears, then optional challenges, then Advanced; stable board order within each.
-    const priority = (a: PurposeAction) => a.title === 'SECURE A FIELD OP' ? 0 : a.title === 'OPTIONAL CHALLENGE' ? 1 : 2;
+    // Prefer unfinished clears, then optional challenges, then Advanced; finished optional practice is last.
+    // No accepted run is replaced: saved missions were resolved above.
+    const priority = (a: PurposeAction) => a.title === 'SECURE A FIELD OP' ? 0 : a.title === 'OPTIONAL CHALLENGE' ? 1 : a.title === 'ADVANCED CHALLENGE' ? 2 : 3;
     candidates.sort((a, b) => priority(a) - priority(b));
     primary ||= candidates.shift() || (() => { const n = nextFieldMission(f); return n.missionId ? action(n.missionId, 'PRACTICE WITH YOUR SQUAD', `Current clear and challenge goals are recorded${f.commander?.unlockedDirectiveTiers?.includes('advanced') ? ', including Advanced' : ''}. Try another squad or route for practice; no new rotation bonus or rank is promised.`) : null; })();
   }
