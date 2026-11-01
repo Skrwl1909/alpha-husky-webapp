@@ -1,0 +1,85 @@
+name: Tactical Cinematic Results Visual Acceptance
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'tools/verify_field_op_results_premium.mjs'
+      - '.github/workflows/tactical-cinematic-results.yml'
+permissions:
+  contents: read
+jobs:
+  cinematic-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund --package-lock=false
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Capture exact PR223 production baseline
+        run: |
+          mkdir -p artifacts/baseline
+          git archive 62ebdca0f1985df9a029b4cb43d43fd0497e82b7 tactical-ops-src | tar -x -C artifacts/baseline
+          git show 62ebdca0f1985df9a029b4cb43d43fd0497e82b7:js/tactical_ops.js > artifacts/baseline/tactical_ops.js
+      - name: Before and after production IIFE screenshots and interactions
+        run: |
+          RESULTS_PHASE=before node tools/verify_field_op_results_premium.mjs
+          node tools/verify_field_op_results_premium.mjs
+        env:
+          RESULTS_RUNTIME: production
+          RESULTS_CINEMATIC: '1'
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Legacy variants identical and visual size budget
+        run: |
+          python3 - <<'PY'
+          import gzip,json,subprocess
+          from pathlib import Path
+          before=Path('artifacts/cinematic-results/before-production')
+          after=Path('artifacts/cinematic-results/after-production')
+          legacy=list(before.glob('legacy-*.html'))
+          assert len(legacy)==6
+          for p in legacy:
+            if p.stem in ('legacy-campaign','legacy-chapter'):
+              assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
+            assert (after/f'legacy-{name}.html').exists(),name
+          sizes={}
+          for p in ['tactical-ops-src/ui/fieldOpResults.css','js/tactical_ops.js']:
+            old=subprocess.check_output(['git','show','62ebdca0:'+p]);new=Path(p).read_bytes()
+            sizes[p]={'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new))}
+            assert len(gzip.compress(new))-len(gzip.compress(old))<8192
+          Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
+          print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
+          PY
+      - name: Preview asset origin and production API safety contract
+        run: |
+          node --input-type=module <<'EOF'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const html=readFileSync('index.html','utf8');
+          assert(html.includes('id="alphaAssetBase"'));
+          assert(html.includes('location.hostname.endsWith(".vercel.app")'));
+          assert(html.includes('location.origin + "/"'));
+          assert(html.includes('window.API_BASE = "https://api.alphahusky.win"'));
+          const bundle=readFileSync('js/tactical_ops.js','utf8');
+          assert(bundle.includes('t-special-field-results'));
+          assert(bundle.includes('LOCKDOWN COMPLETION RECORDED'));
+          console.log('PASS: preview-local asset base; explicit production API; special Results compiled');
+          EOF
+      - name: Canonical bundle parity and unchanged contracts
+        run: |
+          node tools/verify_tactical_premium_integration.mjs
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cinematic-results-before-after
+          path: artifacts/cinematic-results
+          if-no-files-found: error

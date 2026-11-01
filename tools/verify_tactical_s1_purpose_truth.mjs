@@ -31,7 +31,30 @@ try {
  const source = p.deriveMissionPresentation(m,field);
  assert.equal(source.rewardEligibility.clear,"SECURED");
  assert(source.nextAction.missionId==="field-relay-hold");
- assert.equal(p.recordedResultMeaning({victory:true,rankAfter:3,progressEarned:2}).includes("NO HIGHER COMMANDER RANK"),true);
+ // Capabilities expose the Veteran path; ordinary points never promise it.
+ for(const capability of [undefined,false,true]) {
+  field.veteranProgressionAvailable=capability;
+  const truth=p.missionRewardTruth(m,field);
+  assert.equal(truth.commander,"CERTIFIED");
+  assert.equal(truth.copy.includes("Rank 4 Veteran career"),capability===true);
+  assert.equal(truth.copy.includes("No further Commander rank"),capability!==true);
+  if(capability===true)assert.match(truth.copy,/not base Commander points/);
+ }
+ field.commander.rank=4;
+ assert.match(p.missionRewardTruth(m,field).copy,/Rank 4 Veteran earned/);
+ const previous=p.deriveMissionPresentation(m,field,{missionId:m.missionId,fieldContext:{cycleId:6}});
+ assert.equal(previous.rewardEligibility.commander,"CERTIFIED");
+ assert.equal(previous.rewardEligibility.clear,"UNKNOWN","old rotation cannot promise current rewards");
+ const receipt={victory:true,rankBefore:3,rankAfter:3,progressEarned:2};
+ assert.match(p.recordedResultMeaning(receipt),/COMMANDER RANK 3.*2 POINTS RECORDED.*NO ADDITIONAL RANK CONFIRMED/);
+ assert.match(p.recordedResultMeaning({...receipt,rankBefore:4,rankAfter:4,progressEarned:0}),/COMMANDER RANK 4.*0 POINTS RECORDED/);
+ assert.match(p.recordedResultMeaning({...receipt,rankAfter:4}),/RANK ADVANCE CONFIRMED/);
+ const career={before:7,after:8,unlocked:false,reason:"eligible_advanced"};
+ assert.match(p.recordedResultMeaning({...receipt,veteranCareer:career}),/VETERAN CAREER 7 → 8\/12/);
+ assert(!p.recordedResultMeaning({...receipt,veteranCareer:career}).includes("UNLOCKED"));
+ assert.match(p.recordedResultMeaning({...receipt,rankAfter:4,veteranCareer:{...career,after:12,unlocked:true}}),/RANK 4.*PACK EXTRACTION UNLOCKED/);
+ assert.match(p.recordedResultMeaning({...receipt,victory:false,veteranCareer:{...career,unlocked:true}}),/MISSION FAILED/);
+ assert.match(p.missionGoal(ops.MISSION_DEFS["field-relay-recovery"]),/relay.*orthogonal cell/);
  const nextBoard={...field,board:{...field.board,activeMissionIds:["field-relay-hold","field-squad-survival"]}};
  assert.equal(p.nextFieldMission(nextBoard).missionId,"field-squad-survival","unfinished mission next");
  const frontDone={...nextBoard,records:{"field-relay-hold":{lastClearCycle:7,lastChallengeCycle:7},"field-squad-survival":{lastClearCycle:7,lastChallengeCycle:7}}};

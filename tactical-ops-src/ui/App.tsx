@@ -1,3 +1,4 @@
+import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { veteranRequirement } from "../data/veteran";
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
 import { savedMasteryProof } from "./s3PowerProof";
@@ -692,6 +693,7 @@ function Brief() {
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
+  const recoverBrief = mission?.objectiveType === "RECOVER";
   const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
@@ -730,16 +732,19 @@ function Brief() {
         {campaignMission ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
-          <div className="t-deploy-summary-main">
-            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : "OBJECTIVE"}</div>
+          <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
+            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : recoverBrief ? "WIN CONDITION · RECOVER THE SIGNAL" : "OBJECTIVE"}</div>
             <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
               </ol>
-            ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
+            ) : <p className={recoverBrief ? "t-recover-failure" : undefined}>{purpose ? <><b>FAIL IF: </b>{purpose.failConditionText}</> : footnote}</p>}
             {fieldContext.lockdownPlan === "crosslink" ? <div className="t-lockdown-rule" role="note"><strong>NORTH → EAST → SOUTH</strong><span>Control is checked at round changes. Move between checkpoints; missing one resets to north.</span></div> : fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
-            {purpose && !fieldContext.masteryChallenge ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
+            {purpose && !fieldContext.masteryChallenge ? recoverBrief ? <details className="t-mission-extra" aria-label="Tactical threats">
+              <summary>TACTICAL THREATS <span>DETAILS +</span></summary>
+              <p>{purpose.tacticalThreat}</p>
+            </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
@@ -1041,6 +1046,9 @@ function Sector() {
 }
 
 function Results() {
+  const resultFieldContext = useBattleStore((s) => s.currentFieldContext);
+  const selectedMasteryChallenge = useBattleStore((s) => s.selectedMasteryChallenge);
+  const selectedVeteranChallenge = useBattleStore((s) => s.selectedVeteranChallenge);
   const failureReason = useBattleStore((s) => s.battle.failureReason);
   const results = useBattleStore((s) => s.battle.results);
   const fieldResult = useBattleStore((s) => s.fieldResult);
@@ -1090,6 +1098,79 @@ function Results() {
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
   const isFirstClear = operationVictory && progression?.operations?.[mission?.operationId || BROKEN_SIGNAL.operationId]?.missions[mission?.missionId || ""] === "available";
+  const ordinaryFieldOp = fieldOp && !chapterMode && !confirmedVariant && !veteranReceipt &&
+    !selectedMasteryChallenge && !selectedVeteranChallenge &&
+    !resultFieldContext?.masteryChallenge && !resultFieldContext?.lockdownPlan && !resultFieldContext?.veteranChallenge;
+  if (ordinaryFieldOp) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
+    <FieldOpResults victory={results.victory} missionName={mission.name}
+      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      failure={fieldFailureCopy(failureReason, mission.objectiveType)} consequence={s3Proof} next={s3Return}
+      actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+        <button type="button" className="t-btn t-btn-primary" onClick={() => {
+          continueOnboarding();
+          if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") openPurposeBrief(resultNext);
+        }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+        <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
+      </>}>
+      {recordedFieldResult ? <details className="t-detail"><summary>Progression & eligibility</summary>
+        <p>{fieldResultPurpose(recordedFieldResult).future}</p>
+        <p>Challenge: {recordedFieldResult.legacyReport ? "Unmeasured in this receipt" : recordedFieldResult.challengeSuccess ? `Met · +${recordedFieldResult.challengeBonus} Commander bonus recorded` : "Not met"}.</p>
+        {recordedFieldResult.directiveTier === "advanced" ? <p>ADVANCED · {directiveSetLabel(recordedFieldResult.directiveSet)} · {recordedFieldResult.firstCycleAdvanced ? "Secured this rotation" : recordedFieldResult.victory ? "Replay recorded" : "Failed attempt recorded"}.</p> : null}
+        {recordedFieldResult.advancedUnlocked ? <p>Advanced directives unlocked.</p> : null}
+        {recordedFieldResult.unlockedApproaches.includes("south") ? <p>South approach unlocked.</p> : null}
+        <MasteryFeedback changes={recordedFieldResult.masteryChanges} victory={recordedFieldResult.victory} />
+        {progression?.playerGrowth && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? <p>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not points earned this run. Open the War Table Skillbook to spend them.</p> : null}
+      </details> : null}
+      <details className="t-detail"><summary>Combat report · this device</summary>
+        <PlayerIdentityCard />
+        <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
+        <p>Challenge objective: {mission.challenge?.label || "No optional challenge"}</p>
+        <section aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. Not persisted progress or extra rewards.</small></section>
+        {acceptedS3Run && s3Moment ? <p>{s3Moment.detail} · Observed in this device session only.</p> : null}
+        {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
+      </details>
+    </FieldOpResults>
+  </div></div>;
+  const specialKind = !chapterMode && fieldOp && (confirmedVariant || veteranReceipt ||
+    selectedMasteryChallenge || selectedVeteranChallenge ||
+    resultFieldContext?.masteryChallenge || resultFieldContext?.lockdownPlan || resultFieldContext?.veteranChallenge)
+    ? (veteranReceipt || selectedVeteranChallenge || resultFieldContext?.veteranChallenge ? "extraction" : "lockdown") : null;
+  if (specialKind) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
+    <SpecialFieldOpResults kind={specialKind} victory={results.victory} missionName={mission?.name || "FIELD OP"}
+      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      failure={fieldFailureCopy(failureReason, mission?.objectiveType || "HOLD")}
+      actions={!recordedFieldResult ?
+        <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
+          onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+          <button type="button" className="t-btn t-btn-primary" onClick={() => {
+            continueOnboarding();
+            if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") openPurposeBrief(resultNext);
+          }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+          <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
+        </>}>
+      <details className="t-detail" data-special-evidence="true"><summary>Full field record &amp; combat evidence</summary>
+        {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p>Progress is not confirmed without a matching server receipt.</p>}
+        {recordedFieldResult && s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal">
+          <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
+          {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
+          <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
+        </section> : null}
+        <PlayerIdentityCard />
+        <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div>
+          <div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div>
+          <div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
+        <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>
+          {buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}
+          <small>Engine-observed on this device only; not persisted progress or extra rewards.</small></section>
+        {acceptedS3Run && s3Moment ? <p>{s3Moment.detail} · Observed in this device session only.</p> : null}
+        {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}</section> : null}
+        {progression?.playerGrowth && recordedFieldResult && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ?
+          <p className="t-special-balance">{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not a reward from this run.</p> : null}
+      </details>
+    </SpecialFieldOpResults>
+  </div></div>;
   return (
     <div className="t-fill">
       <Background dim={0.6} />

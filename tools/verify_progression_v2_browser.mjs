@@ -49,8 +49,14 @@ try{
   }
   if(mode==='brief'||mode==='resume')assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/all three allies/i);
   if(mode==='battle')assert.match(await page.locator('.t-shell').innerText(),/PACK EXTRACTION/);
-  if(mode==='results'){assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/11 → 12/);assert.match(await page.locator('[data-veteran-delta]').innerText(),/OPTION UNLOCKED/)}
-  if(mode==='extraction-results')assert.match(await page.getByLabel('Recorded Veteran challenge',{exact:true}).innerText(),/PACK EXTRACTION · COMPLETE.*No currency, Commander, Veteran or Pack Mastery progress/s);
+  if(mode==='results'){await page.getByText('Progression & eligibility',{exact:true}).click();assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/11 → 12/);assert.match(await page.locator('[data-veteran-delta]').innerText(),/OPTION UNLOCKED/)}
+  if(mode==='extraction-results'){
+   const panel=page.locator('.t-special-field-results[data-special-result="extraction"]');
+   assert.equal(await panel.getAttribute('data-recording'),'confirmed');
+   assert.match(await panel.locator('.t-special-achievement').innerText(),/PACK EXTRACTION RUN RECORDED.*No currency, Commander, Veteran or Pack Mastery progress/s);
+   await panel.locator('.t-fr-details summary').click();
+   assert.match(await page.getByLabel('Recorded Veteran challenge',{exact:true}).innerText(),/PACK EXTRACTION · COMPLETE.*No currency, Commander, Veteran or Pack Mastery progress/s);
+  }
   assert.deepEqual(errors,[]);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'mobile overflow');
   await page.screenshot({path:out+'/'+width+'-'+mode+'.png',fullPage:true});cases.push({width,height,mode});await page.close();
  }

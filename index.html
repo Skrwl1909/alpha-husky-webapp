@@ -1,7 +1,14 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <base href="https://app.alphahusky.win/">
+  <base href="https://app.alphahusky.win/" id="alphaAssetBase">
+  <script>
+    // Vercel branch previews must load their own JS, CSS and images, not production.
+    // Preserve the production base for the Telegram WebApp and packaged Android shell.
+    if (location.protocol === "https:" && (location.hostname.endsWith(".vercel.app") || location.hostname === "localhost")) {
+      document.getElementById("alphaAssetBase").href = location.origin + "/";
+    }
+  </script>
   <link rel="stylesheet" href="css/map_sections_v2.css?v=WEBAPP_VER">
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
