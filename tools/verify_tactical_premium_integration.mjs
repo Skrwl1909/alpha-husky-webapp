@@ -10,11 +10,22 @@ const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops-src/version.ts']);
 const extended='tools/verify_tactical_brief_closure_browser.mjs';
+// Phase 04 deliberately restyles these two ordinary Results leaves. The caller,
+// receipt ownership, every other source and all legacy paths stay pinned.
+const presentationLeaves=new Set(['tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/fieldOpResults.css']);
 const app='tactical-ops-src/ui/App.tsx';
 let preserved=0;
 for(const head of heads)for(const path of changed(head)){
- if(generated.has(path)||path===app||path===extended)continue;
- assert.equal(readFileSync(path,'utf8'),git('show',`${head}:${path}`),`source implementation lost: ${path}`);preserved++;
+ if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path))continue;
+ let source=readFileSync(path,'utf8');
+ if(path==='tools/verify_field_op_results_premium.mjs'){
+  // Only additive, opt-in visual acceptance is permitted. Prove that removing
+  // this block restores every original receipt/interaction assertion verbatim.
+  source=source.replace("const cinematic=process.env.RESULTS_CINEMATIC==='1';\n",'')
+   .replace("const out=`artifacts/${cinematic?'cinematic-results':'field-results'}/${phase}${production?'-production':''}`;","const out=`artifacts/field-results/${phase}${production?'-production':''}`;")
+   .replace(/   if\(cinematic\)\{[\s\S]*?\n   }\n(?=   for\(const b)/,'');
+ }
+ assert.equal(source,git('show',`${head}:${path}`),`source implementation lost: ${path}`);preserved++;
 }
 const temp=mkdtempSync(join(tmpdir(),'alpha-integration-'));
 try{

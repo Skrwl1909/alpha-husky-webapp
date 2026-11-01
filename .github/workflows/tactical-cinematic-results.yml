@@ -1,0 +1,66 @@
+name: Tactical Cinematic Results Visual Acceptance
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'tools/verify_field_op_results_premium.mjs'
+      - '.github/workflows/tactical-cinematic-results.yml'
+permissions:
+  contents: read
+jobs:
+  cinematic-production:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund --package-lock=false
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Capture exact PR223 production baseline
+        run: |
+          mkdir -p artifacts/baseline
+          git archive 62ebdca0f1985df9a029b4cb43d43fd0497e82b7 tactical-ops-src | tar -x -C artifacts/baseline
+          git show 62ebdca0f1985df9a029b4cb43d43fd0497e82b7:js/tactical_ops.js > artifacts/baseline/tactical_ops.js
+      - name: Before and after production IIFE screenshots and interactions
+        run: |
+          RESULTS_PHASE=before node tools/verify_field_op_results_premium.mjs
+          node tools/verify_field_op_results_premium.mjs
+        env:
+          RESULTS_RUNTIME: production
+          RESULTS_CINEMATIC: '1'
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Legacy variants identical and visual size budget
+        run: |
+          python3 - <<'PY'
+          import gzip,json,subprocess
+          from pathlib import Path
+          before=Path('artifacts/cinematic-results/before-production')
+          after=Path('artifacts/cinematic-results/after-production')
+          legacy=list(before.glob('legacy-*.html'))
+          assert len(legacy)==6
+          for p in legacy: assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          sizes={}
+          for p in ['tactical-ops-src/ui/fieldOpResults.css','js/tactical_ops.js']:
+            old=subprocess.check_output(['git','show','62ebdca0:'+p]);new=Path(p).read_bytes()
+            sizes[p]={'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new))}
+            assert len(gzip.compress(new))-len(gzip.compress(old))<8192
+          Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
+          print('PASS: six identical legacy variants; sizes:',sizes)
+          PY
+      - name: Canonical bundle parity and unchanged contracts
+        run: |
+          node tools/verify_tactical_premium_integration.mjs
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cinematic-results-before-after
+          path: artifacts/cinematic-results
+          if-no-files-found: error
