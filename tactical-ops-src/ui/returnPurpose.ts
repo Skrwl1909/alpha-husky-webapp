@@ -64,6 +64,12 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     if (alternatives.length >= 2) break;
     if (!used.has(candidate.missionId)) { alternatives.push(candidate); used.add(candidate.missionId); }
   }
+  // Preserve access to finished Relay Lockdown as a clearly optional third route.
+  // It must never hide the next eligible clear/challenge or an accepted mission.
+  if (!saved && alternatives.length < 3) {
+    const practice = candidates.find(a => a.title === 'RELAY LOCKDOWN · COMPLETED' && !used.has(a.missionId));
+    if (practice) alternatives.push(practice);
+  }
   return { primary, alternatives };
 }
 
