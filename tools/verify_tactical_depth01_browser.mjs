@@ -65,7 +65,13 @@ try{
      assert(!/\+2 COMMANDER|\+1 COMMANDER/.test(await page.getByLabel('Mission overview',{exact:true}).innerText()));
     }
     if(mode==='results'){
-     assert.equal(await page.locator('[data-lockdown-completion]').count(),hasClearForTest(profile)?1:0,'Results require server completion proof');
+     const panel=page.locator('.t-special-field-results[data-special-result="lockdown"]');
+     assert.equal(await panel.getAttribute('data-recording'),'confirmed','Results require matched server receipt');
+     assert.equal(await panel.locator('.t-special-achievement').count(),1);
+     assert.equal(await panel.locator('[data-lockdown-completion]').count(),0,'full details start collapsed');
+     if(hasClearForTest(profile))assert.match(await panel.locator('.t-special-achievement').innerText(),/LOCKDOWN COMPLETION RECORDED/);
+     await panel.locator('.t-fr-details summary').click();
+     assert.equal(await panel.locator('[data-lockdown-completion]').count(),hasClearForTest(profile)?1:0,'permanent completion proof retained in details');
      if(profile==='completed')assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/FIRST LOCKDOWN CLEAR RECORDED/);
      if(profile==='replayed'||profile==='failed-after-clear')assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/LOCKDOWN COMPLETION RECORDED/);
      assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/No currency, Commander or Pack Mastery progress/);
