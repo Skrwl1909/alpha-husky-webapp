@@ -25,6 +25,10 @@
         align-items:flex-start;
         pointer-events:none;
       }
+      /* Tactical Ops owns the viewport: pet shortcuts stay available everywhere else. */
+      body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions{
+        display:none !important;
+      }
       #petQuickActions .pqa-panel,
       #petQuickActions .pqa-toggle,
       #petQuickActions .pqa-action{
