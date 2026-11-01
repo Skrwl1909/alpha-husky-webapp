@@ -1,3 +1,4 @@
+import { FieldOpResults } from "./FieldOpResults";
 import { veteranRequirement } from "../data/veteran";
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
 import { savedMasteryProof } from "./s3PowerProof";
@@ -1041,6 +1042,9 @@ function Sector() {
 }
 
 function Results() {
+  const resultFieldContext = useBattleStore((s) => s.currentFieldContext);
+  const selectedMasteryChallenge = useBattleStore((s) => s.selectedMasteryChallenge);
+  const selectedVeteranChallenge = useBattleStore((s) => s.selectedVeteranChallenge);
   const failureReason = useBattleStore((s) => s.battle.failureReason);
   const results = useBattleStore((s) => s.battle.results);
   const fieldResult = useBattleStore((s) => s.fieldResult);
@@ -1090,6 +1094,40 @@ function Results() {
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
   const isFirstClear = operationVictory && progression?.operations?.[mission?.operationId || BROKEN_SIGNAL.operationId]?.missions[mission?.missionId || ""] === "available";
+  const ordinaryFieldOp = fieldOp && !chapterMode && !confirmedVariant && !veteranReceipt &&
+    !selectedMasteryChallenge && !selectedVeteranChallenge &&
+    !resultFieldContext?.masteryChallenge && !resultFieldContext?.lockdownPlan && !resultFieldContext?.veteranChallenge;
+  if (ordinaryFieldOp) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
+    <FieldOpResults victory={results.victory} missionName={mission.name}
+      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      failure={fieldFailureCopy(failureReason, mission.objectiveType)} consequence={s3Proof} next={s3Return}
+      actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+        <button type="button" className="t-btn t-btn-primary" onClick={() => {
+          continueOnboarding();
+          if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") openPurposeBrief(resultNext);
+        }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
+        <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
+      </>}>
+      {recordedFieldResult ? <details className="t-detail"><summary>Progression & eligibility</summary>
+        <p>{fieldResultPurpose(recordedFieldResult).future}</p>
+        <p>Challenge: {recordedFieldResult.legacyReport ? "Unmeasured in this receipt" : recordedFieldResult.challengeSuccess ? `Met · +${recordedFieldResult.challengeBonus} Commander bonus recorded` : "Not met"}.</p>
+        {recordedFieldResult.directiveTier === "advanced" ? <p>ADVANCED · {directiveSetLabel(recordedFieldResult.directiveSet)} · {recordedFieldResult.firstCycleAdvanced ? "Secured this rotation" : recordedFieldResult.victory ? "Replay recorded" : "Failed attempt recorded"}.</p> : null}
+        {recordedFieldResult.advancedUnlocked ? <p>Advanced directives unlocked.</p> : null}
+        {recordedFieldResult.unlockedApproaches.includes("south") ? <p>South approach unlocked.</p> : null}
+        <MasteryFeedback changes={recordedFieldResult.masteryChanges} victory={recordedFieldResult.victory} />
+        {progression?.playerGrowth && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? <p>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not points earned this run. Open the War Table Skillbook to spend them.</p> : null}
+      </details> : null}
+      <details className="t-detail"><summary>Combat report · this device</summary>
+        <PlayerIdentityCard />
+        <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
+        <p>Challenge objective: {mission.challenge?.label || "No optional challenge"}</p>
+        <section aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. Not persisted progress or extra rewards.</small></section>
+        {acceptedS3Run && s3Moment ? <p>{s3Moment.detail} · Observed in this device session only.</p> : null}
+        {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
+      </details>
+    </FieldOpResults>
+  </div></div>;
   return (
     <div className="t-fill">
       <Background dim={0.6} />

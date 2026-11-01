@@ -1,0 +1,41 @@
+/* Ordinary Field Ops only. All values are static, receipt-confirmed text. */
+#tacticalOpsRoot .t-results.t-field-results{
+  width:min(100%,38rem);max-width:38rem;padding:0 16px max(20px,env(safe-area-inset-bottom,0px));
+  border:1px solid #55798c;border-top:3px solid #a5e8f3;border-radius:4px;
+  background:linear-gradient(150deg,#14242e,#09121b 48%,#0c1923);box-shadow:0 16px 60px #0009;
+  color:var(--t-fg);text-align:left;overflow-y:auto;overflow-x:hidden;scroll-padding-block:14px;
+}
+#tacticalOpsRoot .t-field-results.is-failure{border-top-color:#d18c82}
+#tacticalOpsRoot .t-field-results .t-outcome-hero{margin:0 -16px 14px;padding:23px 16px 18px;min-height:0;border-bottom:1px solid #567285;background:#09141bd9}
+#tacticalOpsRoot .t-field-results .t-results-plate{opacity:.23;object-fit:cover}
+#tacticalOpsRoot .t-field-results .t-outcome-stamp{font-size:10px;letter-spacing:.16em;color:#b8d5df}
+#tacticalOpsRoot .t-field-results .t-outcome-hero .t-kicker{margin-top:9px;color:#b8d5df;font-size:12px}
+#tacticalOpsRoot .t-field-results .t-outcome-hero .t-title{font-size:clamp(28px,7vw,38px);line-height:1.05;margin:6px 0 10px;letter-spacing:.025em;color:#effaff}
+#tacticalOpsRoot .t-field-results p{margin:5px 0 0;line-height:1.5;font-size:13px;color:#bed0db;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-field-results .t-fr-outcome span{color:#9cb3c2}
+#tacticalOpsRoot .t-field-results .t-fr-record{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #517181;background:#0b1d29}
+#tacticalOpsRoot .t-field-results .t-fr-record>svg{width:19px;height:19px;flex:none;color:#badce7}
+#tacticalOpsRoot .t-field-results .t-fr-record strong{font-size:12px;letter-spacing:.08em;color:#d7ebf4}
+#tacticalOpsRoot .t-field-results[data-recording=confirmed] .t-fr-record{border-color:#6faaa5;background:#112c30}
+#tacticalOpsRoot .t-field-results[data-recording=confirmed] .t-fr-record>svg{color:#a6e8d5}
+#tacticalOpsRoot .t-field-results .t-fr-error{padding:10px;border-left:2px solid #d18c82;color:#ffd0c7}
+#tacticalOpsRoot .t-field-results .t-fr-earned{margin-top:19px}
+#tacticalOpsRoot .t-field-results h3{font-size:11px;letter-spacing:.13em;margin:0 0 9px;color:#acc7d6}
+#tacticalOpsRoot .t-field-results .t-fr-rewards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:0;border-block:1px solid #456071}
+#tacticalOpsRoot .t-field-results .t-fr-rewards>div{padding:11px 6px;min-width:0;border-right:1px solid #344c5c}
+#tacticalOpsRoot .t-field-results .t-fr-rewards>div:last-child{border-right:0}
+#tacticalOpsRoot .t-field-results dt{font-size:11px;line-height:1.4;color:#aec6d3;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-field-results .t-fr-rewards dd{margin:5px 0 0;font:700 clamp(16px,4.8vw,23px)/1.25 var(--t-font-display);color:#e1f9ff;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-field-results .t-fr-rank{margin-top:12px;display:flex;flex-wrap:wrap;align-items:baseline;gap:5px 10px}
+#tacticalOpsRoot .t-field-results .t-fr-rank>span{font-size:10px;color:#acc7d6;letter-spacing:.08em}
+#tacticalOpsRoot .t-field-results .t-fr-rank>small{flex-basis:100%;font-size:12px;color:#bed0db}
+#tacticalOpsRoot .t-field-results .t-fr-consequence{margin-top:16px;padding:12px;border-left:2px solid #9ad5e2;background:#172d3980}
+#tacticalOpsRoot .t-field-results .t-fr-consequence>strong,#tacticalOpsRoot .t-field-results .t-fr-next>strong{display:block;margin-top:5px;font-size:16px;line-height:1.3;color:#e4f5fc}
+#tacticalOpsRoot .t-field-results .t-fr-next{padding-top:16px}
+#tacticalOpsRoot .t-field-results .t-result-actions{margin:12px 0 0;grid-template-columns:minmax(0,1fr);background:none;padding:0 0 16px}
+#tacticalOpsRoot .t-field-results .t-fr-details{border-top:1px solid #456071}
+#tacticalOpsRoot .t-field-results .t-fr-details>details{margin:0;border:0;border-bottom:1px solid #344c5c;border-radius:0;background:none;padding:0}
+#tacticalOpsRoot .t-field-results summary{min-height:48px;display:list-item;align-content:center;padding:12px 6px;color:#c8dee9;font-size:13px;line-height:1.5;cursor:pointer;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-field-results details[open]{padding-bottom:12px}
+#tacticalOpsRoot .t-field-results :is(button,summary):focus-visible{outline:2px solid #c6f3ff;outline-offset:-3px}
+#tacticalOpsRoot .t-field-results .t-fr-details .t-panel{margin-top:10px}
