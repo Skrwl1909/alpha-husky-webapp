@@ -6,4 +6,5 @@ import CAMPAIGN_ORDERS_CSS from "./ui/tacticalCampaignOrders.css?raw";
 import CHAPTER_CSS from "./ui/campaignChapter.css?raw";
 import MISSION_CLARITY_CSS from "./ui/missionClarity.css?raw";
 import REAL_DEVICE_PREMIUM_CSS from "./ui/realDevicePremium.css?raw";
-export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS;
+import FIELD_OP_RESULTS_CSS from "./ui/fieldOpResults.css?raw";
+export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS;

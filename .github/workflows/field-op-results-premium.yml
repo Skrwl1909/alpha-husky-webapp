@@ -1,0 +1,57 @@
+name: Field Op Results Premium
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'tools/verify_field_op_results_premium.mjs'
+      - '.github/workflows/field-op-results-premium.yml'
+permissions:
+  contents: read
+jobs:
+  results:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund --package-lock=false
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Existing receipt and progression behavior
+        run: |
+          node tools/verify_tactical_ops_failure_recording.mjs
+          node tools/verify_tactical_s3_after_action.mjs
+          node tools/verify_tactical_s3_consequence_chain.mjs
+          node tools/verify_tactical_purpose_return.mjs
+          node tools/verify_progression_v2.mjs
+      - name: Capture base source without modifying the checkout
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          mkdir -p artifacts/baseline
+          git archive "$BASE_SHA" tactical-ops-src | tar -x -C artifacts/baseline
+          git show "$BASE_SHA:js/tactical_ops.js" > artifacts/baseline/tactical_ops.js
+      - name: Before screenshots
+        run: RESULTS_PHASE=before node tools/verify_field_op_results_premium.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+          RESULTS_RUNTIME: production
+      - name: After screenshots and mobile interaction checks
+        run: node tools/verify_field_op_results_premium.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+          RESULTS_RUNTIME: production
+      - name: Canonical shipped bundle parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: field-op-results-premium-evidence
+          path: artifacts/field-results
+          if-no-files-found: error
