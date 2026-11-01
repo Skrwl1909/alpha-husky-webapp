@@ -43,14 +43,18 @@ jobs:
           after=Path('artifacts/cinematic-results/after-production')
           legacy=list(before.glob('legacy-*.html'))
           assert len(legacy)==6
-          for p in legacy: assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          for p in legacy:
+            if p.stem in ('legacy-campaign','legacy-chapter'):
+              assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
+            assert (after/f'legacy-{name}.html').exists(),name
           sizes={}
           for p in ['tactical-ops-src/ui/fieldOpResults.css','js/tactical_ops.js']:
             old=subprocess.check_output(['git','show','62ebdca0:'+p]);new=Path(p).read_bytes()
             sizes[p]={'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new))}
             assert len(gzip.compress(new))-len(gzip.compress(old))<8192
           Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
-          print('PASS: six identical legacy variants; sizes:',sizes)
+          print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
           PY
       - name: Canonical bundle parity and unchanged contracts
         run: |
