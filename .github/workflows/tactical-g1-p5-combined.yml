@@ -1,0 +1,25 @@
+name: Tactical G1 P5 Combined Gameplay Gate
+on:
+  pull_request:
+    paths:
+      - 'tools/verify_tactical_g1_p5_vertical_proof.mjs'
+      - 'tactical-ops-src/**'
+      - '.github/workflows/tactical-g1-p5-combined.yml'
+permissions:
+  contents: read
+jobs:
+  gameplay-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Versioned growth + genuine decision director + accepted-run wire
+        run: node tools/verify_tactical_g1_p5_vertical_proof.mjs
+      - name: Production IIFE parity
+        run: |
+          npm run build:tactical-ops
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
