@@ -56,6 +56,21 @@ jobs:
           Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
           print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
           PY
+      - name: Preview asset origin and production API safety contract
+        run: |
+          node --input-type=module <<'EOF'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const html=readFileSync('index.html','utf8');
+          assert(html.includes('id="alphaAssetBase"'));
+          assert(html.includes('location.hostname.endsWith(".vercel.app")'));
+          assert(html.includes('location.origin + "/"'));
+          assert(html.includes('window.API_BASE = "https://api.alphahusky.win"'));
+          const bundle=readFileSync('js/tactical_ops.js','utf8');
+          assert(bundle.includes('t-special-field-results'));
+          assert(bundle.includes('LOCKDOWN COMPLETION RECORDED'));
+          console.log('PASS: preview-local asset base; explicit production API; special Results compiled');
+          EOF
       - name: Canonical bundle parity and unchanged contracts
         run: |
           node tools/verify_tactical_premium_integration.mjs
