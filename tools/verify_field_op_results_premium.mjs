@@ -5,7 +5,8 @@ import vm from 'node:vm';
 import {createServer} from 'vite';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const phase=process.env.RESULTS_PHASE||'after',production=process.env.RESULTS_RUNTIME==='production';
-const out=`artifacts/field-results/${phase}${production?'-production':''}`;
+const cinematic=process.env.RESULTS_CINEMATIC==='1';
+const out=`artifacts/${cinematic?'cinematic-results':'field-results'}/${phase}${production?'-production':''}`;
 mkdirSync(out,{recursive:true});
 // Reuse the established canonical-shaped Purpose/Return fixture, not invented game systems.
 const fixtureSource=readFileSync('tools/verify_tactical_purpose_return_browser.mjs','utf8');
@@ -68,6 +69,18 @@ try{
    if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/OPTION UNLOCKED/);
    if(scenario==='failure')assert.match(await page.locator('h2').innerText(),/MISSION LOST/);
    const controls=page.locator('.t-result-actions button');
+   if(cinematic){
+    const hero=panel.locator('.t-results-plate');
+    assert(await hero.evaluate(e=>e.complete&&e.naturalWidth>0),'existing artwork failed to load');
+    assert.equal(await hero.evaluate(e=>getComputedStyle(e).opacity),'1','artwork obscured');
+    assert.equal(await panel.getAttribute('data-milestone'),['rank4','mastery','veteran-mastery'].includes(scenario)?'confirmed':null,'unearned milestone prestige');
+    if(scenario==='rank4')assert.match(await panel.locator('.t-fr-achievement').innerText(),/VETERAN EARNED/);
+    if(scenario==='zero')assert.equal(await panel.locator('.t-fr-achievement').innerText(),'RUN RECORDED');
+    if(width>=390&&['victory','zero','rank4','failure'].includes(scenario)){
+     const r=await controls.first().boundingBox();
+     assert(r.y>=0&&r.y+r.height<=height,'compact primary action below initial viewport');
+    }
+   }
    for(const b of await controls.all()){
     await b.scrollIntoViewIfNeeded();const rect=await b.boundingBox();assert(rect.height>=44&&rect.width>=44,'touch target too small');
     assert(await b.evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===e||e.contains(hit)}),'blocked action');
