@@ -145,3 +145,20 @@
  #tacticalOpsRoot .t-command-records{gap:7px}
  #tacticalOpsRoot .t-battle .t-command-cue{max-width:calc(100% - 20px)}
 }
+
+/* RECOVER: distinguish the action that wins from failure and optional intel. */
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-recover-objective {
+  padding: 14px;
+  border: 1px solid rgba(124,223,243,.4);
+  border-left: 3px solid #83deeb;
+  background: linear-gradient(120deg,rgba(11,42,55,.9),rgba(5,19,32,.9));
+}
+#tacticalOpsRoot .t-recover-objective > .t-kicker {color:#a4eaf4;margin-bottom:8px;}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-recover-objective > strong {
+  display:block;font-size:clamp(16px,4vw,19px);line-height:1.45;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-recover-objective > .t-recover-failure {
+  margin:12px 0 0;padding-top:10px;border-top:1px solid rgba(125,201,221,.22);
+  color:#d6e3eb;font-size:13px;line-height:1.5;
+}
+#tacticalOpsRoot .t-recover-failure > b {color:#f2c67d;font-size:11px;letter-spacing:.04em;}

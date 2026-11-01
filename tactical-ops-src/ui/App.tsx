@@ -692,6 +692,7 @@ function Brief() {
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
+  const recoverBrief = mission?.objectiveType === "RECOVER";
   const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
@@ -730,16 +731,19 @@ function Brief() {
         {campaignMission ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
-          <div className="t-deploy-summary-main">
-            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : "OBJECTIVE"}</div>
+          <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
+            <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : recoverBrief ? "WIN CONDITION · RECOVER THE SIGNAL" : "OBJECTIVE"}</div>
             <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
               </ol>
-            ) : <p>{purpose ? `FAIL IF: ${purpose.failConditionText}` : footnote}</p>}
+            ) : <p className={recoverBrief ? "t-recover-failure" : undefined}>{purpose ? <><b>FAIL IF: </b>{purpose.failConditionText}</> : footnote}</p>}
             {fieldContext.lockdownPlan === "crosslink" ? <div className="t-lockdown-rule" role="note"><strong>NORTH → EAST → SOUTH</strong><span>Control is checked at round changes. Move between checkpoints; missing one resets to north.</span></div> : fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
-            {purpose && !fieldContext.masteryChallenge ? mission?.objectiveType === "RECOVER" ? <details className="t-mission-extra" aria-label="Tactical threats"><summary>TACTICAL THREATS <span>DETAILS</span></summary><p>{purpose.tacticalThreat}</p></details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
+            {purpose && !fieldContext.masteryChallenge ? recoverBrief ? <details className="t-mission-extra" aria-label="Tactical threats">
+              <summary>TACTICAL THREATS <span>DETAILS +</span></summary>
+              <p>{purpose.tacticalThreat}</p>
+            </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>

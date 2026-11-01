@@ -1,0 +1,51 @@
+name: Tactical Brief Premium Closure
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'js/pet_quick_actions.js'
+      - 'tools/verify_tactical_brief_closure_browser.mjs'
+      - 'tools/verify_tactical_s1_purpose_truth.mjs'
+      - '.github/workflows/tactical-brief-closure.yml'
+permissions:
+  contents: read
+jobs:
+  brief-and-pet-mobile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Capability and receipt truth
+        run: |
+          node tools/verify_tactical_s1_purpose_truth.mjs
+          node tools/verify_tactical_purpose_return.mjs
+          node tools/verify_progression_v2.mjs
+      - name: Canonical release parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          node --check js/pet_quick_actions.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - name: Before and after mobile evidence
+        run: |
+          mkdir -p artifacts/baseline
+          git archive 221598b634d3863b4935a008e231ab81b81f9c1b tactical-ops-src | tar -x -C artifacts/baseline
+          BRIEF_PHASE=before node tools/verify_tactical_brief_closure_browser.mjs
+          node tools/verify_tactical_brief_closure_browser.mjs
+          BRIEF_PRODUCTION=1 node tools/verify_tactical_brief_closure_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-brief-closure-evidence
+          path: artifacts/brief-closure
+          if-no-files-found: error
