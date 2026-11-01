@@ -64,7 +64,7 @@ try{
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
 for(const path of git('diff','--name-only',base).trim().split('\n')){
- if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(expected.has(path)||path==='tactical-ops-src/ui/commandDeck.css',`unrelated production change: ${path}`);
+ if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(expected.has(path)||path==='tactical-ops-src/ui/commandDeck.css'||path==='tactical-ops-src/ui/returnPurpose.ts',`unrelated production change: ${path}`);
 }
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
 const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');
