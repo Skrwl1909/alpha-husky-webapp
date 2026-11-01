@@ -91,12 +91,13 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pe
 }) {
   const state = receipt ? "confirmed" : pending ? "pending" : error ? "failed" : "unrecorded";
   const lockdown = kind === "lockdown";
-  const firstRecordedLockdown = lockdown && receipt?.firstLockdownClear === true;
+  const savedLockdownCompletion = lockdown && Boolean(receipt?.firstLockdownClear);
+  const newLockdownMilestone = savedLockdownCompletion && receipt?.lockdownFirstClear === true;
   const plan = receipt?.lockdownPlan === "anchor" ? "ANCHOR" : receipt?.lockdownPlan === "crosslink" ? "CROSSLINK" : null;
   const meaning = receipt ? fieldResultPurpose(receipt) : null;
   return <div className={`t-modal t-panel t-results t-field-results t-special-field-results ${victory ? "is-victory" : "is-failure"}`}
     data-special-result={kind} data-recording={state}
-    data-milestone={firstRecordedLockdown ? "confirmed" : undefined}>
+    data-milestone={newLockdownMilestone ? "confirmed" : undefined}>
     <header className="t-outcome-hero">
       <img className="t-results-plate" src={plate} alt="" aria-hidden="true" />
       <span className="t-outcome-stamp"><span aria-hidden="true">///</span> FIELD OP / AFTER ACTION</span>
@@ -114,10 +115,10 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pe
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
     {receipt ? <>
       <section className="t-special-achievement" aria-label="Server-confirmed special operation result">
-        <span className="t-kicker">{firstRecordedLockdown ? "PERMANENT FIELD RECORD" : "ACCEPTED OPERATION"}</span>
-        <strong>{firstRecordedLockdown ? "LOCKDOWN COMPLETION RECORDED" :
+        <span className="t-kicker">{savedLockdownCompletion ? "PERMANENT FIELD RECORD" : "ACCEPTED OPERATION"}</span>
+        <strong>{savedLockdownCompletion ? "LOCKDOWN COMPLETION RECORDED" :
           lockdown ? "LOCKDOWN RUN RECORDED" : "PACK EXTRACTION RUN RECORDED"}</strong>
-        <p>{firstRecordedLockdown ? "Relay Mastery 1/1 · completion saved permanently." :
+        <p>{savedLockdownCompletion ? newLockdownMilestone ? "Relay Mastery 1/1 · first completion saved permanently." : "Relay Mastery 1/1 · previously recorded completion preserved. No new progression reward." :
           lockdown ? `Optional practice accepted${plan ? ` · ${plan} plan` : ""}. No new currency or progression rewards.` :
           "Optional Veteran practice accepted. No currency, Commander, Veteran or Pack Mastery progress."}</p>
       </section>
