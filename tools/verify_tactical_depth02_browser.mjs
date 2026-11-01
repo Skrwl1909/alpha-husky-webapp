@@ -59,7 +59,13 @@ try{
     assert.equal(await page.getByLabel('Required relay holder tile').count(),1);
     if(plan==='crosslink')assert.match(await page.locator('.t-shell').innerText(),/CROSSLINK 0\/3/);
    }
-   if(mode==='results')assert.match(await page.locator('[data-recorded-plan]').innerText(),new RegExp('SERVER-ACCEPTED PLAN · '+plan.toUpperCase()));
+   if(mode==='results'){
+     const panel=page.locator('.t-special-field-results[data-special-result="lockdown"]');
+     assert.equal(await panel.getAttribute('data-recording'),'confirmed');
+     assert.match(await panel.locator('.t-special-achievement').innerText(),new RegExp(plan.toUpperCase()+' plan'));
+     await panel.locator('.t-fr-details summary').click();
+     assert.match(await panel.locator('[data-recorded-plan]').innerText(),new RegExp('SERVER-ACCEPTED PLAN · '+plan.toUpperCase()));
+    }
    assert.deepEqual(errors,[]);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
    if(mode==='brief'||mode==='resume'){
     const boxes=await page.locator('[data-lockdown-plan]').evaluateAll(es=>es.map(e=>({x:e.getBoundingClientRect().x,y:e.getBoundingClientRect().y,w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,client:e.clientHeight,scroll:e.scrollHeight})));
