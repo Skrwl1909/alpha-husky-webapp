@@ -43,15 +43,34 @@ jobs:
           after=Path('artifacts/cinematic-results/after-production')
           legacy=list(before.glob('legacy-*.html'))
           assert len(legacy)==6
-          for p in legacy: assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          for p in legacy:
+            if p.stem in ('legacy-campaign','legacy-chapter'):
+              assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
+            assert (after/f'legacy-{name}.html').exists(),name
           sizes={}
           for p in ['tactical-ops-src/ui/fieldOpResults.css','js/tactical_ops.js']:
             old=subprocess.check_output(['git','show','62ebdca0:'+p]);new=Path(p).read_bytes()
             sizes[p]={'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new))}
             assert len(gzip.compress(new))-len(gzip.compress(old))<8192
           Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
-          print('PASS: six identical legacy variants; sizes:',sizes)
+          print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
           PY
+      - name: Preview asset origin and production API safety contract
+        run: |
+          node --input-type=module <<'EOF'
+          import {readFileSync} from 'node:fs';
+          import assert from 'node:assert/strict';
+          const html=readFileSync('index.html','utf8');
+          assert(html.includes('id="alphaAssetBase"'));
+          assert(html.includes('location.hostname.endsWith(".vercel.app")'));
+          assert(html.includes('location.origin + "/"'));
+          assert(html.includes('window.API_BASE = "https://api.alphahusky.win"'));
+          const bundle=readFileSync('js/tactical_ops.js','utf8');
+          assert(bundle.includes('t-special-field-results'));
+          assert(bundle.includes('LOCKDOWN COMPLETION RECORDED'));
+          console.log('PASS: preview-local asset base; explicit production API; special Results compiled');
+          EOF
       - name: Canonical bundle parity and unchanged contracts
         run: |
           node tools/verify_tactical_premium_integration.mjs

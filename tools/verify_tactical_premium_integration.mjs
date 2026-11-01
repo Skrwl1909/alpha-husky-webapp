@@ -13,10 +13,11 @@ const extended='tools/verify_tactical_brief_closure_browser.mjs';
 // Phase 04 deliberately restyles these two ordinary Results leaves. The caller,
 // receipt ownership, every other source and all legacy paths stay pinned.
 const presentationLeaves=new Set(['tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/fieldOpResults.css']);
+const updatedBrowserTests=new Set(['tools/verify_field_op_results_premium.mjs','tools/verify_progression_v2_browser.mjs','tools/verify_tactical_depth01_browser.mjs','tools/verify_tactical_depth02_browser.mjs']);
 const app='tactical-ops-src/ui/App.tsx';
 let preserved=0;
 for(const head of heads)for(const path of changed(head)){
- if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path))continue;
+ if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=readFileSync(path,'utf8');
  if(path==='tools/verify_field_op_results_premium.mjs'){
   // Only additive, opt-in visual acceptance is permitted. Prove that removing
@@ -27,11 +28,26 @@ for(const head of heads)for(const path of changed(head)){
  }
  assert.equal(source,git('show',`${head}:${path}`),`source implementation lost: ${path}`);preserved++;
 }
+// Updated special-mode assertions must still exercise the original receipt/CTA matrix.
+const specialTest=readFileSync('tools/verify_field_op_results_premium.mjs','utf8');
+for(const check of ['data-special-result','data-recording','evidence must not auto-open','special primary CTA blocked'])
+ assert(specialTest.includes(check),'missing special result QA: '+check);
+for(const [file,markers] of [
+ ['tools/verify_progression_v2_browser.mjs',['PACK EXTRACTION RUN RECORDED','Recorded Veteran challenge']],
+ ['tools/verify_tactical_depth01_browser.mjs',['data-special-result','data-lockdown-completion']],
+ ['tools/verify_tactical_depth02_browser.mjs',['data-special-result','data-recorded-plan']]
+]){const code=readFileSync(file,'utf8');for(const marker of markers)assert(code.includes(marker),'missing retained browser contract '+file+' '+marker);}
 const temp=mkdtempSync(join(tmpdir(),'alpha-integration-'));
 try{
  for(const [name,ref] of [['ours',heads[0]],['base',base],['theirs',heads[1]]])writeFileSync(join(temp,name),git('show',`${ref}:${app}`));
  const union=git('merge-file','-p',join(temp,'ours'),join(temp,'base'),join(temp,'theirs'));
- assert.equal(readFileSync(app,'utf8'),union,'App must retain the full three-way source merge');
+ // Special Field Op presentation is an additive results-only branch. Reversing it
+ // must restore the exact original integrated App union, including all handlers.
+ const current=readFileSync(app,'utf8');
+ const normalized=current.replace('import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";',
+   'import { FieldOpResults } from "./FieldOpResults";')
+   .replace(/  const specialKind = !chapterMode[\s\S]*?(?=  return \(\n    <div className="t-fill">\n      <Background dim=\{0\.6\} \/>\n      <div className="t-overlay t-results-overlay">)/,'');
+ assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
 for(const path of git('diff','--name-only',base).trim().split('\n')){

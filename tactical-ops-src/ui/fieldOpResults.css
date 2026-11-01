@@ -96,3 +96,19 @@
   #tacticalOpsRoot .t-field-results .t-fr-insignia{width:44px;min-height:54px;font-size:24px}
   #tacticalOpsRoot .t-field-results .t-fr-spotlight{gap:9px}
 }
+
+/* Optional special modes: compact confirmed outcome; full evidence on demand. */
+#tacticalOpsRoot .t-special-field-results .t-outcome-hero{min-height:182px}
+#tacticalOpsRoot .t-special-field-results .t-outcome-hero .t-kicker{margin-top:66px}
+#tacticalOpsRoot .t-special-field-results .t-outcome-hero .t-title{font-size:clamp(23px,6.5vw,33px)}
+#tacticalOpsRoot .t-special-achievement{margin:13px 0 4px;padding:13px 14px;border:1px solid #6d9d9f;background:linear-gradient(120deg,#133136,#091923)}
+#tacticalOpsRoot .t-special-achievement>strong{display:block;margin:6px 0;font:800 clamp(16px,4.5vw,22px)/1.2 var(--t-font-display);color:#e5f7f4}
+#tacticalOpsRoot .t-special-achievement .t-kicker{font-size:10px;letter-spacing:.12em}
+#tacticalOpsRoot .t-special-field-results[data-milestone=confirmed] .t-special-achievement{border-color:#a78d62;background:linear-gradient(120deg,#322c20,#101b22)}
+#tacticalOpsRoot .t-special-field-results[data-milestone=confirmed] .t-special-achievement>strong{color:#f1d7a6}
+#tacticalOpsRoot .t-special-field-results .t-fr-next{padding-top:11px}
+#tacticalOpsRoot .t-special-field-results .t-fr-details{margin-top:2px}
+#tacticalOpsRoot .t-special-field-results .t-fr-details>details>summary{font-weight:700}
+#tacticalOpsRoot .t-special-field-results .t-fr-details>details[open]{padding:12px 0}
+#tacticalOpsRoot .t-special-field-results .t-fr-details .t-field-feedback{margin:6px 0}
+#tacticalOpsRoot .t-special-field-results .t-special-balance{padding:10px;border:1px solid #466877;background:#0c2530}
