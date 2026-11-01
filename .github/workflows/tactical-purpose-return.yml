@@ -23,6 +23,7 @@ jobs:
       - run: npm install --no-save --package-lock=false playwright@1.64.1
       - name: Purpose, truth, objectives, persistence and accepted contracts
         run: |
+          node tools/verify_tactical_command_next_purpose.mjs
           node tools/verify_tactical_purpose_return.mjs
           node tools/verify_tactical_s1_purpose_truth.mjs
           node tools/verify_tactical_s2_objective_ai.mjs
