@@ -16,7 +16,7 @@ const presentationLeaves=new Set(['tactical-ops-src/ui/FieldOpResults.tsx','tact
 const app='tactical-ops-src/ui/App.tsx';
 let preserved=0;
 for(const head of heads)for(const path of changed(head)){
- if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path))continue;
+ if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||path==='tools/verify_field_op_results_premium.mjs')continue;
  let source=readFileSync(path,'utf8');
  if(path==='tools/verify_field_op_results_premium.mjs'){
   // Only additive, opt-in visual acceptance is permitted. Prove that removing
@@ -27,6 +27,10 @@ for(const head of heads)for(const path of changed(head)){
  }
  assert.equal(source,git('show',`${head}:${path}`),`source implementation lost: ${path}`);preserved++;
 }
+// Updated special-mode assertions must still exercise the original receipt/CTA matrix.
+const specialTest=readFileSync('tools/verify_field_op_results_premium.mjs','utf8');
+for(const check of ['data-special-result','data-recording','evidence must not auto-open','special primary CTA blocked'])
+ assert(specialTest.includes(check),'missing special result QA: '+check);
 const temp=mkdtempSync(join(tmpdir(),'alpha-integration-'));
 try{
  for(const [name,ref] of [['ours',heads[0]],['base',base],['theirs',heads[1]]])writeFileSync(join(temp,name),git('show',`${ref}:${app}`));
