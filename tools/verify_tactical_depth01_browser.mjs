@@ -68,7 +68,7 @@ try{
      const panel=page.locator('.t-special-field-results[data-special-result="lockdown"]');
      assert.equal(await panel.getAttribute('data-recording'),'confirmed','Results require matched server receipt');
      assert.equal(await panel.locator('.t-special-achievement').count(),1);
-     assert.equal(await panel.locator('[data-lockdown-completion]').count(),0,'full details start collapsed');
+     assert.equal(await panel.locator('.t-fr-details details').getAttribute('open'),null,'full details start collapsed');
      if(hasClearForTest(profile))assert.match(await panel.locator('.t-special-achievement').innerText(),/LOCKDOWN COMPLETION RECORDED/);
      await panel.locator('.t-fr-details summary').click();
      assert.equal(await panel.locator('[data-lockdown-completion]').count(),hasClearForTest(profile)?1:0,'permanent completion proof retained in details');
