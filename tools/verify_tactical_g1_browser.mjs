@@ -48,6 +48,7 @@ try{
    await tactics.locator('summary').click();
    assert(await tactics.getByText(/ALPHA:|SHADOW:|CNC:/).first().isVisible(),'Real build notes remain accessible');
   } else {
+   await page.getByText('Combat report · this device',{exact:true}).click();
    await page.getByLabel('Why your build mattered').waitFor();assert(await page.getByText('SHADOW: GUARD prevented 8 damage.').isVisible());
    await page.screenshot({path:out+'/'+width+'-results-observed.png',fullPage:true});
    await page.evaluate(()=>fixture.store.setState({currentRunKey:'other-run'}));await page.getByText('No build-specific effect observed in this encounter.').waitFor();

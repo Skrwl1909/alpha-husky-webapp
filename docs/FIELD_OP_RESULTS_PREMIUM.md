@@ -19,15 +19,15 @@ Existing art, typography, palette, icons and navigation are reused. No new asset
 
 ## Verification
 Local, isolated synthetic fixtures, not player records:
-- 126 baseline production-IIFE browser cases: 120 combinations (12 states × 5 viewports × 2 motion preferences), plus six legacy modes.
-- 128 final production-IIFE cases: the same matrix, plus recording transition/keyboard/200% text stress and production close/reopen/scroll/style lifecycle.
-- 126 baseline and 127 final source React/store cases independently.
+- 136 baseline production-IIFE browser cases: 130 combinations (13 states × 5 viewports × 2 motion preferences), plus six legacy modes.
+- 138 final production-IIFE cases: the same matrix, plus recording transition/keyboard/200% text stress and production close/reopen/scroll/style lifecycle.
+- 136 baseline and 137 final source React/store cases independently.
 - Existing Purpose/Return browser suite: 70 account/surface/viewport cases PASS.
 - Fourteen existing focused behavior scripts PASS: result failure, S3 after-action, S3 consequences, S3 power proof, S3 combat proof, Purpose/Return, S1 truth, Progression V2, V2 effects, Results status layout, iOS HUD source contract, mission clarity, Depth01 and Depth02.
 - Syntax and whitespace checks PASS. Canonical build parity is checked by rebuilding the staged generated files and verifying no diff.
 
 Viewports: 320×568, 320×740, 360×780, 390×844, 430×932; normal and reduced motion.
-States: victory, failure, pending, error, stale run, stale mission, unrecorded, zero/replay, missing amounts, Veteran progress, Rank 4 unlock and Mastery gain.
+States: victory, failure, pending, error, stale run, stale mission, unrecorded, zero/replay, missing amounts, Veteran progress, Rank 4 unlock and Mastery/Veteran option unlock.
 Checks include panel/page overflow, visible text width, touch target size, unobstructed action hit centers, native disclosures, retry observation, next/replay/regroup behavior, static footer position and no infinite animations.
 200% text is synthetic CSS font scaling, not a physical Android accessibility-setting test. Source tests and IIFE tests use actual UI/store code with injected isolated states; retry is a local spy. No live API, authentication or persistence is exercised.
 
@@ -36,15 +36,15 @@ The existing package alias for verify:tactical-ops:pack-mastery points to an abs
 ## Measured budget
 | Metric | Before | After | Delta |
 |---|---:|---:|---:|
-| JS bytes | 782,078 | 794,563 | +12,485 |
-| gzip bytes (same local compressor) | 206,783 | 209,458 | +2,675 |
+| JS bytes | 782,078 | 794,657 | +12,579 |
+| gzip bytes (same local compressor) | 206,783 | 209,477 | +2,694 |
 | New source CSS | 0 | 4,358 | +4,358 |
 | Project dependencies | unchanged | unchanged | 0 |
 | New assets / asset URLs | 0 | 0 | 0 |
 
 Both <=5 KiB budgets PASS. gzip values are local compression measurements, not observed HTTP transfer sizes.
 Build version: `3.6.20-field-results-premium`.
-Bundle SHA-256: `2739dae369ed0b91896c9542f585800a2738991d052b278450a825297fa7a19d`.
+Bundle SHA-256: `1f66b68af7f0e4383b57c33f31b634ea23f4ce80c2add00c08e727c9fce48acc`.
 
 ## Changed files
 Production:
@@ -58,6 +58,8 @@ Production:
 
 Verification/documentation:
 - tools/verify_field_op_results_premium.mjs
+- tools/verify_progression_v2_browser.mjs (opens the disclosure before checking its contents)
+- tools/verify_tactical_g1_browser.mjs (opens the Combat report before checking observed/stale proof)
 - .github/workflows/field-op-results-premium.yml
 - docs/FIELD_OP_RESULTS_PREMIUM.md
 

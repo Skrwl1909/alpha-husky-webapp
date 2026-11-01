@@ -25,6 +25,7 @@ if(!['pending','error','stale'].includes(scenario))patch.fieldResult=r;
 if(scenario==='stale-mission')patch.fieldResult={...r,missionId:'field-relay-hold'};
 if(scenario==='unrecorded')patch.fieldResult=null;
 if(scenario==='mastery'){r.masteryChanges=[{unitId:'ally-02',kind:'clear',gained:3,beforeStage:1,stage:2,progress:3,newOptions:[]}];}
+if(scenario==='veteran-mastery'){r.masteryChanges=[{unitId:'ally-02',kind:'clear',gained:0,beforeStage:3,stage:4,progress:8,newOptions:[],veteran:{before:11,after:12,unlocked:true,reason:'unlocked'}}];}
 if(scenario==='campaign'){patch.selectedMissionId='dead-relay-courier';patch.fieldResult=null;}
 if(scenario==='chapter'){patch.chapterMode=true;patch.chapterResult=null;}
 if(scenario.startsWith('lockdown')){patch.selectedMissionId='field-relay-hold';patch.selectedMasteryChallenge='relay-lockdown-v1';patch.currentFieldContext={masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};patch.fieldResult=scenario==='lockdown-pending'?null:{...r,missionId:'field-relay-hold',masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};}
@@ -48,7 +49,7 @@ try{
  const page=await browser.newPage({hasTouch:true});page.on('pageerror',e=>errors.push(e.message));
  // Keep tests isolated from analytics, player APIs and non-asset network services.
  await page.route('**/*',route=>{const u=new URL(route.request().url());return u.hostname==='127.0.0.1'||u.hostname==='res.cloudinary.com'?route.continue():route.abort();});
- for(const [width,height] of [[320,568],[320,740],[360,780],[390,844],[430,932]])for(const motion of ['no-preference','reduce'])for(const scenario of ['victory','failure','pending','error','stale','stale-mission','unrecorded','zero','missing','veteran','rank4','mastery']){
+ for(const [width,height] of [[320,568],[320,740],[360,780],[390,844],[430,932]])for(const motion of ['no-preference','reduce'])for(const scenario of ['victory','failure','pending','error','stale','stale-mission','unrecorded','zero','missing','veteran','rank4','mastery','veteran-mastery']){
   await page.setViewportSize({width,height});await page.emulateMedia({reducedMotion:motion});
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=${scenario}`);
   await page.locator('.t-results').waitFor();await page.evaluate(()=>document.fonts.ready);
@@ -64,6 +65,7 @@ try{
    if(scenario==='zero')assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['+0','+0','+0']);
    if(scenario==='rank4')assert.match(await page.locator('.t-fr-rank').innerText(),/RANK 3 → 4/);
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
+   if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/OPTION UNLOCKED/);
    if(scenario==='failure')assert.match(await page.locator('h2').innerText(),/MISSION LOST/);
    const controls=page.locator('.t-result-actions button');
    for(const b of await controls.all()){
