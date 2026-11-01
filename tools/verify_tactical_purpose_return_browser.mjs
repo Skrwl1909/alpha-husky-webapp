@@ -36,6 +36,19 @@ try{
   }
   if(phase==='after'&&mode==='command') {
     assert(await page.locator('.t-wt-reward-chips span').evaluateAll(es=>es.every(e=>e.scrollWidth<=e.clientWidth+1)),'Clipped reward text');
+    const deck=page.locator('.t-command-deck-v3');
+    assert.equal(await deck.count(),1,'premium command deck mounted');
+    const records=deck.locator('.t-cd-records');
+    assert.equal(await records.count(),1,'permanent field records available');
+    assert.equal(await records.getAttribute('open'),null,'secondary field archive collapsed by default');
+    if(profile!=='unavailable') {
+      const action=deck.locator('[data-primary-purpose] .t-wt-main-cta');
+      assert(await action.isVisible(),'recommended operation CTA visible');
+      await action.scrollIntoViewIfNeeded();
+      const hit=await action.evaluate(e=>{const b=e.getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2;return b.width>=44&&b.height>=44&&document.elementFromPoint(x,y)===e||e.contains(document.elementFromPoint(x,y))});
+      assert(hit,'primary CTA cannot be reached');
+      if(width===390)await page.screenshot({path:`${out}/390-${profile}-command-deck-v3.png`,fullPage:true});
+    }
   }
   if(phase==='after'&&mode==='command'&&profile!=='unavailable'){
    assert.equal(await page.locator('[data-primary-purpose]').count(),1);

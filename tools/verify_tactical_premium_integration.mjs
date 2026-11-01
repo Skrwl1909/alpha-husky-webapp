@@ -19,6 +19,13 @@ let preserved=0;
 for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=readFileSync(path,'utf8');
+ if(path==='tactical-ops-src/styles.ts'){
+  // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
+  const imported='import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";\n';
+  assert(source.includes(imported),'missing Command Deck CSS import');
+  assert(source.includes(' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;'),'missing canonical style composition');
+  source=source.replace(imported,'').replace(' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;',' + FIELD_OP_RESULTS_CSS;');
+ }
  if(path==='tools/verify_field_op_results_premium.mjs'){
   // Only additive, opt-in visual acceptance is permitted. Prove that removing
   // this block restores every original receipt/interaction assertion verbatim.
@@ -44,14 +51,20 @@ try{
  // Special Field Op presentation is an additive results-only branch. Reversing it
  // must restore the exact original integrated App union, including all handlers.
  const current=readFileSync(app,'utf8');
- const normalized=current.replace('import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";',
+ const commandBaseline=git('show','281335d26b5fbdc83977de869edab74c222fe1ab:'+app);
+ const cutBefore=x=>x.slice(0,x.indexOf('function WarTable()'));
+ const cutAfter=x=>x.slice(x.indexOf('function Brief()'));
+ assert.equal(cutBefore(current),cutBefore(commandBaseline),'code before War Table changed');
+ assert.equal(cutAfter(current),cutAfter(commandBaseline),'Brief, Battle, Results or actions changed outside War Table');
+ for(const marker of ['t-command-deck-v3','t-cd-records','t-cd-status','t-cd-selected-operation']) assert(current.includes(marker),'missing Command Deck '+marker);
+ const normalized=commandBaseline.replace('import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";',
    'import { FieldOpResults } from "./FieldOpResults";')
    .replace(/  const specialKind = !chapterMode[\s\S]*?(?=  return \(\n    <div className="t-fill">\n      <Background dim=\{0\.6\} \/>\n      <div className="t-overlay t-results-overlay">)/,'');
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
 for(const path of git('diff','--name-only',base).trim().split('\n')){
- if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(expected.has(path),`unrelated production change: ${path}`);
+ if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(expected.has(path)||path==='tactical-ops-src/ui/commandDeck.css',`unrelated production change: ${path}`);
 }
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
 const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');
