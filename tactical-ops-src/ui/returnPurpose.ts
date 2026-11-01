@@ -32,7 +32,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
         : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
       // An already recorded, reward-free challenge must not displace eligible rotation progress.
       // Preserve the finished challenge as a legal optional route when no accepted run exists.
-      if (recorded && b.activeMissionIds.some(id => f.records?.[id]?.lastClearCycle !== b.cycleId)) candidates.push(lockdown);
+      if (recorded) candidates.push(lockdown);
       else primary = lockdown;
     } else {
       const id = b.activeMissionIds.find(id => ['field-relay-hold','field-isolated-hold'].includes(id));
