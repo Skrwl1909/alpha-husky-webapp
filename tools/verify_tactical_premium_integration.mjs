@@ -19,6 +19,13 @@ let preserved=0;
 for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=readFileSync(path,'utf8');
+ if(path==='tactical-ops-src/styles.ts'){
+  // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
+  const imported='import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";\n';
+  assert(source.includes(imported),'missing Command Deck CSS import');
+  assert(source.includes(' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;'),'missing canonical style composition');
+  source=source.replace(imported,'').replace(' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;',' + FIELD_OP_RESULTS_CSS;');
+ }
  if(path==='tools/verify_field_op_results_premium.mjs'){
   // Only additive, opt-in visual acceptance is permitted. Prove that removing
   // this block restores every original receipt/interaction assertion verbatim.
