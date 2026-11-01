@@ -8,4 +8,5 @@ assert(text.includes("a.title === 'SECURE A FIELD OP' ? 0"),'unfinished Field Op
 assert(text.includes("a.title === 'ADVANCED CHALLENGE' ? 2 : 3"),'finished practice ranks last');
 assert(text.includes('if (!saved) for (const title'),'accepted-run alternatives stay suppressed');
 assert(text.includes("const used = new Set(primary ? [primary.missionId] : []);"),'mission target dedup retained');
+assert(text.includes('if (recorded) candidates.push(lockdown);'),'saved completion keeps practice reachable');
 console.log('PASS: finished optional Lockdown cannot displace eligible rotation progress; no accepted-run changes');
