@@ -31,7 +31,13 @@ const temp=mkdtempSync(join(tmpdir(),'alpha-integration-'));
 try{
  for(const [name,ref] of [['ours',heads[0]],['base',base],['theirs',heads[1]]])writeFileSync(join(temp,name),git('show',`${ref}:${app}`));
  const union=git('merge-file','-p',join(temp,'ours'),join(temp,'base'),join(temp,'theirs'));
- assert.equal(readFileSync(app,'utf8'),union,'App must retain the full three-way source merge');
+ // Special Field Op presentation is an additive results-only branch. Reversing it
+ // must restore the exact original integrated App union, including all handlers.
+ const current=readFileSync(app,'utf8');
+ const normalized=current.replace('import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";',
+   'import { FieldOpResults } from "./FieldOpResults";')
+   .replace(/  const specialKind = !chapterMode[\s\S]*?(?=  return \(\n    <div className="t-fill">\n      <Background dim=\{0\.6\} \/>\n      <div className="t-overlay t-results-overlay">)/,'');
+ assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
 for(const path of git('diff','--name-only',base).trim().split('\n')){
