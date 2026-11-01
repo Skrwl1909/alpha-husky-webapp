@@ -44,6 +44,7 @@ try{
     if(profile!=='unavailable') {
       const action=deck.locator('[data-primary-purpose] .t-wt-main-cta');
       assert(await action.isVisible(),'recommended operation CTA visible');
+      await action.scrollIntoViewIfNeeded();
       const hit=await action.evaluate(e=>{const b=e.getBoundingClientRect(),x=b.left+b.width/2,y=b.top+b.height/2;return b.width>=44&&b.height>=44&&document.elementFromPoint(x,y)===e||e.contains(document.elementFromPoint(x,y))});
       assert(hit,'primary CTA cannot be reached');
       if(width===390)await page.screenshot({path:`${out}/390-${profile}-command-deck-v3.png`,fullPage:true});
