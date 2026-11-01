@@ -13,10 +13,11 @@ const extended='tools/verify_tactical_brief_closure_browser.mjs';
 // Phase 04 deliberately restyles these two ordinary Results leaves. The caller,
 // receipt ownership, every other source and all legacy paths stay pinned.
 const presentationLeaves=new Set(['tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/fieldOpResults.css']);
+const updatedBrowserTests=new Set(['tools/verify_field_op_results_premium.mjs','tools/verify_progression_v2_browser.mjs','tools/verify_tactical_depth01_browser.mjs','tools/verify_tactical_depth02_browser.mjs']);
 const app='tactical-ops-src/ui/App.tsx';
 let preserved=0;
 for(const head of heads)for(const path of changed(head)){
- if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||path==='tools/verify_field_op_results_premium.mjs')continue;
+ if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=readFileSync(path,'utf8');
  if(path==='tools/verify_field_op_results_premium.mjs'){
   // Only additive, opt-in visual acceptance is permitted. Prove that removing
@@ -31,6 +32,11 @@ for(const head of heads)for(const path of changed(head)){
 const specialTest=readFileSync('tools/verify_field_op_results_premium.mjs','utf8');
 for(const check of ['data-special-result','data-recording','evidence must not auto-open','special primary CTA blocked'])
  assert(specialTest.includes(check),'missing special result QA: '+check);
+for(const [file,markers] of [
+ ['tools/verify_progression_v2_browser.mjs',['PACK EXTRACTION RUN RECORDED','Recorded Veteran challenge']],
+ ['tools/verify_tactical_depth01_browser.mjs',['data-special-result','data-lockdown-completion']],
+ ['tools/verify_tactical_depth02_browser.mjs',['data-special-result','data-recorded-plan']]
+]){const code=readFileSync(file,'utf8');for(const marker of markers)assert(code.includes(marker),'missing retained browser contract '+file+' '+marker);}
 const temp=mkdtempSync(join(tmpdir(),'alpha-integration-'));
 try{
  for(const [name,ref] of [['ours',heads[0]],['base',base],['theirs',heads[1]]])writeFileSync(join(temp,name),git('show',`${ref}:${app}`));
