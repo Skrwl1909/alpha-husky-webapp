@@ -309,7 +309,7 @@ function WarTable() {
     <div className="t-fill">
       <Background dim={0.5} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
-      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux" style={{ maxWidth: "64rem" }}>
+      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux t-command-deck-v3" style={{ maxWidth: "64rem" }}>
         <header className="t-panel t-wt-hero t-wt-hero-compact">
           <div className="t-wt-branding">
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
@@ -356,7 +356,7 @@ function WarTable() {
               <span className="t-wt-art-label">{visual.label}</span>
             </div>
             <div className="t-wt-feature-copy">
-              <div className="t-kicker">{primaryPurpose?.title || "NEXT OP"}</div>
+              <div className="t-kicker t-cd-operation-label">COMMAND PRIORITY / {primaryPurpose?.title || "NEXT OP"}</div>
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
               <div className="t-player-route-metrics" aria-label="Next step and rotation progress">
@@ -373,6 +373,7 @@ function WarTable() {
               </div>
             </div>
             <div className="t-wt-feature-cta">
+              <span className="t-cd-action-prompt" aria-hidden="true">SELECT YOUR NEXT MOVE</span>
               <button className="t-btn t-btn-primary t-wt-main-cta t-command-hero-cta" type="button" disabled={loading} onClick={() => primaryPurpose && openPurpose(primaryPurpose)}>
                 {primaryPurpose?.resume ? "RESUME OP" : primaryPurpose?.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}
                 <ChevronRight className="t-ico" />
@@ -392,7 +393,7 @@ function WarTable() {
             <button type="button" className="t-btn" disabled={loading} onClick={() => openPurpose(action)}>{action.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}</button>
           </article>)}
         </section> : null}
-        <section className="t-purpose-memory t-command-records" aria-label="Permanent records and squad opportunity">
+        <details className="t-purpose-memory t-command-records t-cd-records" aria-label="Permanent records and squad opportunity"><summary>FIELD ARCHIVE <span>RECORDS &amp; SQUAD INTEL</span></summary><div className="t-cd-record-body">
           <span className="t-kicker">PERMANENT FIELD RECORD</span>
           {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Relay Lockdown permanently unlocked.' : (field.commander?.rank || 0) >= 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
           {field?.masteryPath?.firstLockdownClear ? <p data-lockdown-completion="true">RELAY LOCKDOWN · FIRST CLEAR RECORDED · Persists across rotations.</p> : null}
@@ -400,9 +401,9 @@ function WarTable() {
           {field?.lastResult ? <details className="t-command-record-details"><summary>LAST MISSION · {getMissionDef(field.lastResult.missionId)?.name || field.lastResult.missionId}</summary><p>{fieldResultPurpose(field.lastResult).changed}</p></details> : null}
           {(() => { const proof = ["ally-02", "ally-03", ...(progression?.equippedPet ? [`pet:${progression.equippedPet.id}`] : [])].map(id => savedMasteryProof(id, progression || {}, progression?.equippedPet)).find(Boolean); return proof ? <p>{proof.subject}: {proof.changes[0]}. Compare your saved specialization before deploying.</p> : <p>Review saved abilities and squad roles before your next mission.</p>; })()}
           <button type="button" className="t-btn" onClick={() => setDeckTab("squad")}>REVIEW SQUAD DEVELOPMENT</button>
-        </section>
+        </div></details>
 
-        <section className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail" aria-label="Tactical Ops overview">
+        <section className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail t-cd-status" aria-label="Tactical Ops overview">
           <div className="t-panel t-wt-status-card t-wt-rank-card">
             <span className="t-kicker">Commander</span>
             <strong>{commanderRank >= 4 ? "RANK 4 · VETERAN" : commanderRank >= 3 ? "RANK 3 · CERTIFIED" : commanderRank ? `RANK ${commanderRank}` : "STATUS UNAVAILABLE"}</strong>
@@ -454,13 +455,13 @@ function WarTable() {
         {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
 
 
-        <section className="t-panel t-wt-section t-wt-current-ops" aria-label="Current Field Ops">
+        <section className="t-panel t-wt-section t-wt-current-ops t-cd-current-ops" aria-label="Current Field Ops">
           <div className="t-wt-section-head">
             <div>
               <div className="t-kicker">This rotation</div>
               <h2 className="t-title">CURRENT FIELD OPS</h2>
             </div>
-            <span>{activeMissionIds.length} ACTIVE</span>
+            <span className="t-cd-live-count">{activeMissionIds.length} ACTIVE</span>
           </div>
           <nav className="t-op-selector" aria-label="Select a Field Op">
             {activeMissionDefs.map((mission, index) => (
@@ -472,7 +473,7 @@ function WarTable() {
               </button>
             ))}
           </nav>
-          <div className="t-wt-mission-list t-op-selected">
+          <div className="t-wt-mission-list t-op-selected t-cd-selected-operation">
             {activeMissionDefs.filter(mission => mission.missionId === (selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0])).map((mission) => {
               const record = field?.records[mission.missionId];
               const securedToday = record?.lastClearCycle === field?.board?.cycleId;
@@ -495,7 +496,7 @@ function WarTable() {
                       <div className="t-wt-mission-state">{securedToday ? "SECURED TODAY" : "AVAILABLE"}</div>
                     </div>
                     <div className="t-player-mission-counter">OPERATION {activeMissionIds.indexOf(mission.missionId) + 1} / {activeMissionIds.length} · {visual.label} · {securedToday ? "CLEARED" : "UNCLEARED"}</div>
-                    <div className="t-wt-mission-meta">
+                    <div className="t-wt-mission-meta" aria-label="Confirmed reward eligibility">
                       <span><b>CLEAR</b> {cardPurpose.rewardClearText}</span>
                       <span className={bonusEarned ? "is-earned" : ""}><b>CHALLENGE</b> {cardPurpose.rewardChallengeText} · {contextualMission.challenge?.label}</span>
                     </div>
