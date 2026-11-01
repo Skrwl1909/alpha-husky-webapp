@@ -141,8 +141,30 @@ try{
  }
  for(const scenario of ['campaign','chapter','lockdown','lockdown-pending','extraction','extraction-pending']){
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=${scenario}`);await page.locator('.t-results').waitFor();
-  assert.equal(await page.locator('.t-field-results').count(),0,scenario+' mode changed');
-  // Byte-for-byte legacy rendered content and class names across phases.
+  const special=['lockdown','lockdown-pending','extraction','extraction-pending'].includes(scenario);
+  if(phase==='after'&&special){
+   const expected=scenario.startsWith('lockdown')?'lockdown':'extraction';
+   const panel=page.locator('.t-special-field-results');
+   assert.equal(await panel.count(),1,scenario+' needs compact special Results');
+   assert.equal(await panel.getAttribute('data-special-result'),expected);
+   assert.equal(await panel.getAttribute('data-recording'),scenario.endsWith('pending')?'pending':'confirmed');
+   assert.equal(await panel.locator('.t-fr-details details').count(),1,'evidence is available but collapsed');
+   assert.equal(await panel.locator('.t-fr-details details').getAttribute('open'),null,'evidence must not auto-open');
+   if(scenario.endsWith('pending')){
+    assert.equal(await panel.getByText('LOCKDOWN COMPLETION RECORDED',{exact:true}).count(),0);
+    assert(await panel.locator('.t-result-actions button').first().isDisabled());
+   }else{
+    const action=panel.locator('.t-result-actions button').first();
+    assert(await action.isVisible());
+    await action.scrollIntoViewIfNeeded();
+    assert(await action.evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===e||e.contains(hit)}),'special primary CTA blocked');
+    await panel.locator('.t-fr-details summary').click();
+    assert(await panel.locator('.t-fr-details details').evaluate(e=>e.open),'special evidence disclosure');
+   }
+  }else if(phase==='after'||!special){
+   assert.equal(await page.locator('.t-field-results').count(),0,scenario+' ordinary Results leaked');
+  }
+  // Campaign and Chapter remain byte-identical; special modes are intentionally redesigned.
   writeFileSync(`${out}/legacy-${scenario}.html`,await page.locator('.t-results').evaluate(e=>e.outerHTML));
   cases.push({scenario,legacy:true});
  }
