@@ -13,7 +13,7 @@ export function missionGoal(m: MissionDef): string {
   if (o?.type === "HOLD") return o.holderRadius === 0 ? `Keep an ally ON the relay tile for ${o.duration} consecutive round changes by round 6. Enemies within 1 orthogonal cell reset control.` : `Control the relay for ${o.duration} consecutive round changes. Enemies inside the zone reset control.`;
   if (o?.type === "SURVIVE") return `Keep every deployed squad member alive through ${o.duration} rounds. Eliminating enemies does not end the timer.`;
   if (o?.type === "INTERCEPT") return "Defeat the courier before it reaches the marked exit. Other hostiles do not need to be eliminated.";
-  if (m.objectiveType === "RECOVER") return "Move an ally within its RECOVER range (normally 1 orthogonal cell) of the relay and use RECOVER on its turn before spending its action.";
+  if (m.objectiveType === "RECOVER") return "Move within RECOVER range (normally 1 cell), then use RECOVER before spending that ally\'s action."
   if (m.objectiveType === "BOSS") return "Defeat the marked commander. Other enemies are not the objective.";
   return "Eliminate every hostile.";
 }
@@ -37,7 +37,7 @@ export function missionRewardTruth(m: MissionDef, field: FieldOpsProgression | u
   const clear = row?.lastClearCycle === field.board.cycleId ? "SECURED" : "AVAILABLE";
   const challenge = !m.challenge ? "NOT_APPLICABLE" : row?.lastChallengeCycle === field.board.cycleId ? "SECURED" : "AVAILABLE";
   const commander = field.commander.rank >= 3 || field.commander.certificationComplete ? "CERTIFIED" : "ACTIVE";
-  const copy = commander === "CERTIFIED" ? "Rank 3 complete. Commander points can still be recorded, but there is no next Commander rank."
+  const copy = commander === "CERTIFIED" ? (field.veteranProgressionAvailable ? (field.commander.rank >= 4 ? "Rank 4 Veteran earned. Base Commander points no longer raise your rank; eligible Advanced rotations can still advance companion Veteran mastery." : "Rank 3 certified. Rank 4 Veteran career advances through eligible Advanced Field Ops across rotations, not base Commander points.") : "Rank 3 certified. No further Commander rank is currently available.")
     : clear === "SECURED" && challenge !== "AVAILABLE" ? "Clear and challenge secured for this rotation."
     : clear === "SECURED" ? "Clear secured; the optional challenge may still award progress."
     : "A first clear and an unfinished challenge can award progress if confirmed by the server.";
@@ -117,7 +117,7 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
     rewardEligibility: missionRewardTruth(resolved,field), rewardClearText:'OPTIONAL TACTICAL CHALLENGE', rewardChallengeText:'NO PROGRESSION REWARD',
     nextAction:{missionId:m.missionId,reason:'Try another holder or squad after recording the result.'},
     source:accepted?'ACCEPTED_RUN_AND_BACKEND_STATE':'MISSION_DEFINITION_ONLY' };
-  const reward: MissionRewardTruth = oldCycle ? { clear:"UNKNOWN", challenge:"UNKNOWN", commander:field?.commander?.rank === 3 ? "CERTIFIED" : "UNKNOWN", copy:"Accepted run from an earlier rotation. Reward eligibility comes from its receipt; this run does not secure the current rotation." } : missionRewardTruth(resolved, field);
+  const reward: MissionRewardTruth = oldCycle ? { clear:"UNKNOWN", challenge:"UNKNOWN", commander:(field?.commander?.rank || 0) >= 3 ? "CERTIFIED" : "UNKNOWN", copy:"Accepted run from an earlier rotation. Reward eligibility comes from its receipt; this run does not secure the current rotation." } : missionRewardTruth(resolved, field);
   const clearText = reward.clear === "SECURED" ? "CLEAR SECURED" : reward.clear === "UNKNOWN" ? "STATUS UNAVAILABLE" :
     reward.clear === "NOT_APPLICABLE" ? "CAMPAIGN RECORD" : reward.commander === "CERTIFIED" ? "FIRST CLEAR AVAILABLE" : "+2 COMMANDER IF ELIGIBLE";
   const challengeText = reward.challenge === "SECURED" ? "CHALLENGE SECURED" : reward.challenge === "UNKNOWN" ? "STATUS UNAVAILABLE" :
@@ -144,7 +144,7 @@ export function recordedResultMeaning(result: FieldResult): string {
   if (result.masteryChallenge) return result.victory ? "RELAY LOCKDOWN RECORDED. RELAY MASTERY COMPLETE · 1/1." : "LOCKDOWN ATTEMPT RECORDED. YOUR PERMANENT ACCESS IS PRESERVED.";
   if (!result.victory) return "MISSION FAILED. No clear recorded. Regroup and retry.";
   if (result.veteranCareer) return result.veteranCareer.unlocked ? "RANK 4 · VETERAN. PACK EXTRACTION UNLOCKED." : `VETERAN CAREER ${result.veteranCareer.before} → ${result.veteranCareer.after}/12. ${result.veteranCareer.reason.replaceAll("_"," ")}.`;
-  if (result.rankAfter >= 3) return `COMMANDER CERTIFIED · ${result.progressEarned} POINTS RECORDED IN HISTORY. NO HIGHER COMMANDER RANK.`;
+  if (result.rankAfter >= 3) return `COMMANDER RANK ${result.rankAfter} · ${result.progressEarned} POINTS RECORDED. ${result.veteranCareer ? "VETERAN CAREER PROGRESS RECORDED." : "NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT."}`;
   if (result.progressEarned > 0) return "COMMANDER PROGRESS RECORDED. YOUR NEXT CERTIFICATION MILESTONE IS CLOSER.";
   return "NO NEW COMMANDER PROGRESS ON THIS CLEAR. CHECK UNFINISHED CHALLENGES OR REPLAY FOR PRACTICE.";
 }
