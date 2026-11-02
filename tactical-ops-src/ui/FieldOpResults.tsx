@@ -55,6 +55,12 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
               <small>{receipt.progressBefore} → {receipt.progressAfter} total points · rank shown by this receipt</small></div>
           </div>
         </div>
+        {receipt.veteranCareer && !receipt.veteranCareer.unlocked ? <div className="t-pi-career" aria-label="Veteran Career progress" data-progress-identity="results">
+          <div className="t-pi-career-head"><span>VETERAN CAREER · TOWARD RANK 4</span><strong>{receipt.veteranCareer.after}/12</strong></div>
+          <div className="t-pi-track" role="progressbar" aria-label="Veteran career credits" aria-valuemin={0} aria-valuemax={12} aria-valuenow={receipt.veteranCareer.after}><span style={{ width: `${Math.min(100, Math.max(0, receipt.veteranCareer.after / 12 * 100))}%` }} /></div>
+          <p>{receipt.veteranCareer.after > receipt.veteranCareer.before ? "ROTATION CREDIT SECURED · Progress toward Rank 4 saved." : "NO NEW ROTATION CREDIT · Try another eligible objective or rotation."}</p>
+          <small>{Math.max(0, 12 - receipt.veteranCareer.after)} credits remaining · Credits require eligible Advanced Field Ops across rotations.</small>
+        </div> : null}
         <dl className="t-fr-rewards">
           <div data-muted={!amountsAvailable || receipt.xpGranted === 0 ? "true" : undefined}><dt>EXP</dt><dd aria-label={amountsAvailable ? undefined : "EXP amount unavailable"}>{amountsAvailable ? `+${receipt.xpGranted}` : "—"}</dd></div>
           <div data-muted={!amountsAvailable || receipt.bonesGranted === 0 ? "true" : undefined}><dt>Bones</dt><dd aria-label={amountsAvailable ? undefined : "Bones amount unavailable"}>{amountsAvailable ? `+${receipt.bonesGranted}` : "—"}</dd></div>
