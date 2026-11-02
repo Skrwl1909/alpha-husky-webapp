@@ -2991,11 +2991,9 @@
 
       : (phantomMode && statusAfter ? `Status: ${statusAfter}` : "");
 
-    const phantomContributionLine = phantomMode && contributionGained > 0
-
-      ? `Your contribution today: +${contributionGained}`
-
-      : "";
+    // baseLine already prints this value. A second line looked like a
+    // second award even though only one server receipt was recorded.
+    const phantomContributionLine = "";
 
     const phantomPackLine = phantomMode && packSupportToday > 0
 
@@ -12206,13 +12204,36 @@
 
 
 
+    document.getElementById("infDonateToggle")?.setAttribute("aria-controls", "infDonateBox");
+    document.getElementById("infDonateToggle")?.setAttribute("aria-expanded", "false");
     document.getElementById("infDonateToggle")?.addEventListener("click", () => {
 
       const box = document.getElementById("infDonateBox");
 
       if (!box) return;
 
-      box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
+      const opening = box.style.display === "none" || !box.style.display;
+      box.style.display = opening ? "block" : "none";
+      const toggle = document.getElementById("infDonateToggle");
+      toggle?.setAttribute("aria-expanded", String(opening));
+      if (opening) {
+        // The action and its form must be contiguous. Avoid scrolling a nested
+        // modal to an invisible form below several unrelated report panels.
+        const orders = document.getElementById("infOpsPanel");
+        if (orders && box.parentElement !== orders) orders.appendChild(box);
+        const card = document.getElementById("influenceCard");
+        const scrollToForm = () => {
+          if (!card || !card.contains(box) || box.style.display === "none") return;
+          const cardTop = card.getBoundingClientRect().top;
+          const boxTop = box.getBoundingClientRect().top;
+          card.scrollTop += boxTop - cardTop - 16;
+          box.querySelector("#infAsset")?.focus({ preventScroll: true });
+        };
+        if (typeof requestAnimationFrame === "function") requestAnimationFrame(scrollToForm);
+        else scrollToForm();
+      } else {
+        toggle?.focus({ preventScroll: true });
+      }
 
     });
 
