@@ -102,3 +102,14 @@
     overflow-wrap: anywhere;
   }
 }
+
+
+/* Progression Identity V1: readable receipt-owned progress, no new mechanics. */
+#tacticalOpsRoot .t-pi-career{margin:12px 0;padding:15px;border:1px solid rgba(94,195,226,.48);border-radius:9px;background:linear-gradient(125deg,rgba(16,52,67,.92),rgba(6,17,27,.96));box-shadow:inset 0 1px 0 rgba(191,238,250,.13)}
+#tacticalOpsRoot .t-pi-career-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;font-size:11px;font-weight:800;letter-spacing:.11em;color:#c1e7f2}
+#tacticalOpsRoot .t-pi-career-head strong{font-size:22px;letter-spacing:0;color:#fff;white-space:nowrap;font-variant-numeric:tabular-nums}
+#tacticalOpsRoot .t-pi-track{height:12px;margin:12px 0 9px;border:1px solid rgba(116,191,213,.5);border-radius:3px;background:repeating-linear-gradient(90deg,rgba(21,48,61,.9) 0,rgba(21,48,61,.9) calc(8.333% - 2px),rgba(2,11,18,.98) calc(8.333% - 2px),rgba(2,11,18,.98) 8.333%);overflow:hidden}
+#tacticalOpsRoot .t-pi-track>span{display:block;height:100%;background:linear-gradient(90deg,#2b92af,#7ce3f7);box-shadow:0 0 12px rgba(86,211,246,.65);transition:width .5s ease-out}
+#tacticalOpsRoot .t-pi-career p{margin:6px 0;font-size:13px;font-weight:700;color:#e3f5fa}
+#tacticalOpsRoot .t-pi-career small{display:block;color:#b3cbd3;font-size:12px;line-height:1.45}
+@media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-pi-track>span{transition:none}}
