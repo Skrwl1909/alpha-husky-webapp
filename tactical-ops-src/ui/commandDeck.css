@@ -113,3 +113,24 @@
 #tacticalOpsRoot .t-pi-career p{margin:6px 0;font-size:13px;font-weight:700;color:#e3f5fa}
 #tacticalOpsRoot .t-pi-career small{display:block;color:#b3cbd3;font-size:12px;line-height:1.45}
 @media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-pi-track>span{transition:none}}
+
+
+/* Commander Progress V2: rank identity and next action, without duplicating the ledger. */
+#tacticalOpsRoot .t-pi-v2-heading{display:flex;align-items:center;gap:13px;padding:4px 0 0}
+#tacticalOpsRoot .t-pi-v2-medal{position:relative;flex:0 0 80px;width:80px;height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;clip-path:polygon(50% 0,93% 21%,93% 75%,50% 100%,7% 75%,7% 21%);background:linear-gradient(140deg,#5d9bab 0%,#142f43 40%,#0b1825 68%,#a2dbe8 100%);filter:drop-shadow(0 2px 5px rgba(51,172,205,.25));color:#f1fcff}
+#tacticalOpsRoot .t-pi-v2-medal:before{content:"";position:absolute;inset:4px;clip-path:inherit;background:linear-gradient(150deg,#1b3b4c,#091522 72%);z-index:-1}
+#tacticalOpsRoot .t-pi-v2-medal-icon{font-size:17px;color:#80d6e9;line-height:1}
+#tacticalOpsRoot .t-pi-v2-medal strong{font-size:34px;line-height:1.05;font-weight:900;font-variant-numeric:tabular-nums}
+#tacticalOpsRoot .t-pi-v2-medal small{font-size:8px;font-weight:900;letter-spacing:.05em}
+#tacticalOpsRoot .t-pi-v2-heading-copy{min-width:0;display:grid;gap:5px}
+#tacticalOpsRoot .t-pi-v2-heading-copy>strong{font-size:clamp(18px,4.5vw,24px);line-height:1.14;color:#f4fbff}
+#tacticalOpsRoot .t-pi-v2-heading-copy>small{font-size:12px;color:#b7d0d8;line-height:1.4}
+#tacticalOpsRoot [data-veteran-career="true"] .t-pi-v2{margin:9px 0;padding:12px 13px}
+#tacticalOpsRoot [data-veteran-career="true"] .t-pi-v2 .t-pi-track{margin:9px 0 7px}
+#tacticalOpsRoot .t-pi-v2-next{padding:8px 11px;border-left:3px solid #5cbcd7;background:rgba(43,109,132,.12)}
+#tacticalOpsRoot .t-pi-v2-next>span{font-size:10px;font-weight:900;letter-spacing:.15em;color:#83d9f1}
+#tacticalOpsRoot .t-pi-v2-next p{margin:4px 0 0;font-size:13px;line-height:1.4;color:#dcecf1}
+#tacticalOpsRoot .t-pi-v2-rules{margin:7px 0 11px;color:#b5cbd4;font-size:12px}
+#tacticalOpsRoot .t-pi-v2-rules summary{cursor:pointer;padding:6px 0;text-decoration:underline;text-underline-offset:3px}
+#tacticalOpsRoot .t-pi-v2-rules p{margin:7px 0;line-height:1.45}
+@media(max-width:380px){#tacticalOpsRoot .t-pi-v2-medal{flex-basis:68px;width:68px;height:80px}#tacticalOpsRoot .t-pi-v2-heading{gap:9px}}
