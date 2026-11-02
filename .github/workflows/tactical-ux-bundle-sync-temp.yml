@@ -1,0 +1,27 @@
+name: UX Polish One-time Bundle Sync
+on:
+  push:
+    branches: [feat/tactical-results-war-table-ux-polish-20261102]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm run build:tactical-ops
+      - name: Commit generated runtime only
+        run: |
+          if git diff --quiet -- js/tactical_ops.js js/boot_loaders.js; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- js/tactical_ops.js js/boot_loaders.js
+          git commit -m "build(tactical): sync UX polish runtime bundle"
+          git push origin HEAD:feat/tactical-results-war-table-ux-polish-20261102
