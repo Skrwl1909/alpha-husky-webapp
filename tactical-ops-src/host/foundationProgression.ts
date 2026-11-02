@@ -28,6 +28,8 @@ export interface FoundationProgressionState {
   playerGrowth?: GrowthProgression;
   version: 1;
   vnextStartAvailable?: boolean;
+  /** New Dead Relay Hold revision requires server-issued capability. */
+  deadRelayHoldRevisionAvailable?: 2;
   foundationStage: FoundationStage;
   completed: boolean;
   revision: number;
@@ -241,6 +243,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     if (!parsedGrowth) return null;
     state.playerGrowth = parsedGrowth;
   }
+  if ((value as Record<string, unknown>).deadRelayHoldRevisionAvailable === 2) state.deadRelayHoldRevisionAvailable = 2;
   if (value.fieldOps && typeof value.fieldOps === "object") {
     const field = value.fieldOps as Record<string, unknown>;
     if (!field.records || typeof field.records !== "object") return null;

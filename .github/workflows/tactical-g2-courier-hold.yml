@@ -1,0 +1,26 @@
+name: Tactical G2 Courier Trace Encounter
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/data/operations.ts'
+      - 'tactical-ops-src/store/battleStore.ts'
+      - 'tactical-ops-src/host/foundationProgression.ts'
+      - 'tactical-ops-src/ui/App.tsx'
+      - 'tools/verify_tactical_g2_courier_hold.mjs'
+      - '.github/workflows/tactical-g2-courier-hold.yml'
+permissions:
+  contents: read
+jobs:
+  g2-encounter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_g2_courier_hold.mjs
+      - run: node tools/verify_tactical_vnext_run_contract_wire.mjs
+      - run: npm run build:tactical-ops
+      - run: git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
