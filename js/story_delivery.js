@@ -888,6 +888,8 @@
       + ".ahs-story-gain{margin-top:8px;font-size:13px;font-weight:900;line-height:1.45;color:#81e5f0;}"
       + ".ahs-story-card.ahs-arrive .ahs-story-gain{animation:ahs-story-gain-reveal .32s ease-out both;}"
       + "@keyframes ahs-story-gain-reveal{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}"
+      + ".ahs-activity-switch{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:12px;color:#9bc5d9;font-size:10px;font-weight:800;letter-spacing:.11em;}"
+      + ".ahs-activity-switch button{min-width:48px;min-height:44px;border:1px solid rgba(145,226,255,.26);border-radius:10px;background:#0c2433;color:#d8f3ff;font-size:24px;cursor:pointer;}"
       + ".ahs-story-go{appearance:none;margin-top:12px;width:100%;padding:11px 12px;border-radius:12px;"
       + "border:1px solid rgba(145,226,255,.24);background:linear-gradient(180deg, rgba(57,122,167,.50), rgba(21,50,73,.84));"
       + "color:#f3f9ff;font-weight:900;letter-spacing:.03em;cursor:pointer;}"
@@ -912,6 +914,33 @@
       .replace(/</g, "&" + "lt;")
       .replace(/>/g, "&" + "gt;")
       .replace(/"/g, "&" + "quot;");
+  }
+
+  // Optional player-directed activity rail. The canonical story/FTUE card always wins
+  // until the return handoff is consumed. This is navigation only, not new rewards.
+  var hubActivityIndex = 0;
+  function hubActivityChoices(scf, inputs) {
+    if (!returnReady || returnPromise || !scf || scf.firstSession || scf.hideHubGoal
+        || scf.lockedBrief || scf.id === "S-TO-DISCOVERY" || !scf.target
+        || scf.nextMove || continuityFrame(inputs, scf)
+        || ONBOARDING_CTA_KINDS[scf.ctaKind]
+        || /^(mission_ready|bloodmoon_live|siege_running)/.test(scf.ctaKind || "")) return [];
+    var options = [{ id: "canonical", title: asText(scf.situation) || "Follow your current lead",
+      detail: asText(scf.why) || asText(scf.nextAction),
+      label: asText(scf.goLabel) || asText(scf.nextAction) || "CONTINUE" }];
+    if (global.Missions && typeof global.Missions.openTacticalOps === "function"
+        && global.Missions.tacticalAccess?.(inputs)) {
+      options.push({ id: "tactical", title: "Lead the Next Operation",
+        detail: "Explore the missions available to your squad.", label: "TACTICAL OPS" });
+    }
+    var facts = global.ContextualDiscovery?.nextMoveFacts?.() || {};
+    if (facts.daily && global.Quests?.open) options.push({ id: "quests",
+      title: "Return to the Quest Board", detail: "Daily activities are waiting to be explored.", label: "QUEST BOARD" });
+    if (facts.forge && global.Forge?.open) options.push({ id: "forge",
+      title: "Strengthen Your Gear", detail: "Your equipped gear has an upgrade available.", label: "OPEN FORGE" });
+    if (facts.skin && global.Skins?.open) options.push({ id: "skins",
+      title: "Change Your Look", detail: "An owned appearance is ready to equip.", label: "OPEN SKINS" });
+    return options;
   }
 
   function renderHub(scf) {
@@ -974,6 +1003,48 @@
       };
       return scf;
     }
+    var choices = hubActivityChoices(scf, gatherInputs());
+    if (choices.length > 1) {
+      hubActivityIndex %= choices.length;
+      var selected = choices[hubActivityIndex];
+      root.innerHTML = '<div class="ahs-story-card ahs-activity-card"><div class="ahs-story-pad">'
+        + '<div class="ahs-story-kicker">YOUR NEXT MOVE <small style="float:right">'
+        + (hubActivityIndex + 1) + '/' + choices.length + '</small></div>'
+        + '<div class="ahs-story-situation">' + esc(selected.title) + '</div>'
+        + '<div class="ahs-story-next">' + esc(selected.detail) + '</div>'
+        + '<button class="ahs-story-go" type="button" data-activity-go>' + esc(selected.label) + '</button>'
+        + '<div class="ahs-activity-switch">'
+        + '<button type="button" data-activity-prev aria-label="Previous activity">‹</button>'
+        + '<span>CHOOSE YOUR TRAIL</span>'
+        + '<button type="button" data-activity-next aria-label="Next activity">›</button>'
+        + '</div><small role="status" data-activity-status></small></div></div>';
+      var rotate = function (delta) {
+        hubActivityIndex = (hubActivityIndex + delta + choices.length) % choices.length;
+        renderHub(scf);
+      };
+      root.querySelector("[data-activity-prev]").onclick = function () { rotate(-1); };
+      root.querySelector("[data-activity-next]").onclick = function () { rotate(1); };
+      var goActivity = root.querySelector("[data-activity-go]");
+      goActivity.onclick = async function () {
+        goActivity.disabled = true;
+        try {
+          if (!await refreshReturn()) throw new Error("State refresh failed");
+          var fresh = resolve(gatherInputs());
+          var available = hubActivityChoices(fresh, gatherInputs());
+          if (!available.some(function (item) { return item.id === selected.id; })) throw new Error("Activity changed");
+          var result = false;
+          if (selected.id === "canonical") result = await global.CTA?.openTarget?.(fresh.target);
+          else if (selected.id === "tactical") result = await global.Missions?.openTacticalOps?.();
+          else result = await global.ContextualDiscovery?.openDestination?.(selected.id);
+          if (result === false) throw new Error("Activity unavailable");
+        } catch (_) {
+          var status = root.querySelector("[data-activity-status]");
+          if (status) status.textContent = "Could not open this activity. Try another trail.";
+        } finally { goActivity.disabled = false; }
+      };
+      return scf;
+    }
+    hubActivityIndex = 0;
     var storyLead = !!continuityFrame(gatherInputs(), scf);
     var go = factionHandoff ? (scf.goLabel || "Pick Faction") : (continuation ? "CONTINUE" : (scf.goLabel || scf.nextAction || "Go"));
     root.innerHTML = ""
