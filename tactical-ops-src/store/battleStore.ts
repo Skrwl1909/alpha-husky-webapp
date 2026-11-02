@@ -954,7 +954,7 @@ export const useBattleStore = create<Store>((set, get) => {
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
-              const acceptedMission = missionForContext(mission, started.run.fieldContext, started.run.rulesContract?.missionRevision);
+              const acceptedMission = missionForContext(mission, started.run.fieldContext, started.run.rulesContract?.missionRevision, started.run.campaignContext);
               // Review the server-frozen Intercept formation before the first turn.
               if (mission.missionId === "field-relay-intercept" && started.run.started) {
                 set({busy:false,screen:"brief",ticker:null});return;
