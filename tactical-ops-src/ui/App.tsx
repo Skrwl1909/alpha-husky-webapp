@@ -341,7 +341,11 @@ function WarTable() {
         {field?.veteranProgressionAvailable && commanderRank>=3 ? <section className="t-panel" data-veteran-career="true">
           <div className="t-kicker">COMMANDER RANK {commanderRank} · VETERAN FOUNDATION</div>
           <strong>{commanderRank===4?"RANK 4 EARNED · PACK EXTRACTION OPEN":`NEXT: RANK 4 · ${field.veteranCareer?.credits || 0}/12 ROTATION CREDITS`}</strong>
-          <progress className="t-progress" value={field.veteranCareer?.credits||0} max={12} />
+          <div className="t-pi-career" data-progress-identity="command" aria-label="Veteran Career toward Rank 4">
+            <div className="t-pi-career-head"><span>VETERAN CAREER · {commanderRank===4?"RANK 4 EARNED":"NEXT: RANK 4"}</span><strong>{field.veteranCareer?.credits || 0}/12</strong></div>
+            <div className="t-pi-track" role="progressbar" aria-label="Veteran career credits" aria-valuemin={0} aria-valuemax={12} aria-valuenow={field.veteranCareer?.credits || 0}><span style={{width:`${Math.min(100,Math.max(0,(field.veteranCareer?.credits||0)/12*100))}%`}} /></div>
+            {commanderRank<4 ? <p>{Math.max(0,12-(field.veteranCareer?.credits||0))} eligible rotation credits until Rank 4</p> : <p>VETERAN RANK SECURED</p>}
+          </div>
           <p>{veteranRequirement(field.veteranCareer)}</p>
           <small>{field.veteranCareer?.lastCycle===field.board?.cycleId?"Rotation credit saved. Try a different eligible objective or companion challenge; this rotation cannot award the same credit twice.":"Win a new Advanced Field Op or complete a missing objective type to progress. No daily streak needed."}</small>
           {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>{const s=useBattleStore.getState(), mid=field.board?.activeMissionIds.find(id=>!field.veteranCareer?.missionIds.includes(id))||field.board?.activeMissionIds[0];if(mid){s.openOperationBrief(mid);useBattleStore.getState().selectDirectiveTier("advanced")}}}>PREPARE ADVANCED FIELD OP</button>}
