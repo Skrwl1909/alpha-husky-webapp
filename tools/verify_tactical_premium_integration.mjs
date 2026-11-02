@@ -69,8 +69,31 @@ try{
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
+// Preserve the original integrated production sources, while explicitly distinguishing
+// later, already-merged main work from this G2 PR. The pinned upstream commit is
+// the reviewed target main of #230; a new main change requires renewed audit.
+const upstream='e85d6dcef087ba47f35b68235a706664be1e521f';
+const g2Runtime=new Set([
+ 'tactical-ops-src/data/operations.ts',
+ 'tactical-ops-src/host/foundationProgression.ts',
+ 'tactical-ops-src/store/battleStore.ts',
+ 'tactical-ops-src/ui/App.tsx',
+ 'js/tactical_ops.js',
+]);
+const mainAlreadyChanged=new Set(git('diff','--name-only',base,upstream).trim().split('\n'));
+// Fail closed on any new production file outside the intended G2 runtime delta.
+for(const path of git('diff','--name-only',upstream,'HEAD').trim().split('\n')){
+ if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))
+  assert(g2Runtime.has(path),`unreviewed G2 production change: ${path}`);
+}
 for(const path of git('diff','--name-only',base).trim().split('\n')){
- if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(expected.has(path)||path==='tactical-ops-src/ui/commandDeck.css'||path==='tactical-ops-src/ui/returnPurpose.ts',`unrelated production change: ${path}`);
+ if(!(path.startsWith('tactical-ops-src/')||path.startsWith('js/')))continue;
+ if(expected.has(path)||path==='tactical-ops-src/ui/commandDeck.css'||path==='tactical-ops-src/ui/returnPurpose.ts'||g2Runtime.has(path))continue;
+ // Existing files such as js/influence.js must match the real reviewed main
+ // byte-for-byte. Do not add a blanket allowlist or turn off provenance checks.
+ assert(mainAlreadyChanged.has(path),`unrelated production change: ${path}`);
+ assert.equal(readFileSync(path,'utf8'),git('show',`${upstream}:${path}`),
+   `pre-existing main source changed by G2: ${path}`);
 }
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
 const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');
