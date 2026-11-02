@@ -66,7 +66,7 @@ try{
    if(scenario==='zero')assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['+0','+0','+0']);
    if(scenario==='rank4')assert.match(await page.locator('.t-fr-rank').innerText(),/RANK 3 → 4/);
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
-   if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/OPTION UNLOCKED/);
+   if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/New option unlocked/i);
    if(scenario==='failure')assert.match(await page.locator('h2').innerText(),/MISSION LOST/);
    const controls=page.locator('.t-result-actions button');
    if(cinematic){
