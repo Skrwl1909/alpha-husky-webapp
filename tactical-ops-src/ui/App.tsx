@@ -339,15 +339,14 @@ function WarTable() {
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
         {field?.veteranProgressionAvailable && commanderRank>=3 ? <section className="t-panel" data-veteran-career="true">
-          <div className="t-kicker">COMMANDER RANK {commanderRank} · VETERAN FOUNDATION</div>
-          <strong>{commanderRank===4?"RANK 4 EARNED · PACK EXTRACTION OPEN":`NEXT: RANK 4 · ${field.veteranCareer?.credits || 0}/12 ROTATION CREDITS`}</strong>
-          <div className="t-pi-career" data-progress-identity="command" aria-label="Veteran Career toward Rank 4">
-            <div className="t-pi-career-head"><span>VETERAN CAREER · {commanderRank===4?"RANK 4 EARNED":"NEXT: RANK 4"}</span><strong>{field.veteranCareer?.credits || 0}/12</strong></div>
+          <div className="t-pi-v2-heading"><span className="t-pi-v2-medal" aria-label={`Commander Rank ${commanderRank}`}><span className="t-pi-v2-medal-icon" aria-hidden="true">✦</span><strong>{commanderRank}</strong><small>COMMANDER</small></span><div className="t-pi-v2-heading-copy"><span className="t-kicker">VETERAN CAREER · COMMANDER RANK {commanderRank}</span><strong>{commanderRank===4?"RANK 4 SECURED":"YOUR PATH TO RANK 4"}</strong><small>{commanderRank===4?"PACK EXTRACTION UNLOCKED":"Earn credits through eligible Advanced Field Ops"}</small></div></div>
+          <div className="t-pi-career t-pi-v2" data-progress-identity="command" aria-label="Veteran Career toward Rank 4">
+            <div className="t-pi-career-head"><span>{commanderRank===4?"VETERAN CAREER COMPLETE":"VETERAN CAREER"}</span><strong>{field.veteranCareer?.credits || 0}/12</strong></div>
             <div className="t-pi-track" role="progressbar" aria-label="Veteran career credits" aria-valuemin={0} aria-valuemax={12} aria-valuenow={field.veteranCareer?.credits || 0}><span style={{width:`${Math.min(100,Math.max(0,(field.veteranCareer?.credits||0)/12*100))}%`}} /></div>
-            {commanderRank<4 ? <p>{Math.max(0,12-(field.veteranCareer?.credits||0))} eligible rotation credits until Rank 4</p> : <p>VETERAN RANK SECURED</p>}
+            <p>{commanderRank===4?"RANK 4 EARNED":`${Math.max(0,12-(field.veteranCareer?.credits||0))} eligible credits to Rank 4`}</p>
           </div>
-          <p>{veteranRequirement(field.veteranCareer)}</p>
-          <small>{field.veteranCareer?.lastCycle===field.board?.cycleId?"Rotation credit saved. Try a different eligible objective or companion challenge; this rotation cannot award the same credit twice.":"Win a new Advanced Field Op or complete a missing objective type to progress. No daily streak needed."}</small>
+          <div className="t-pi-v2-next"><span>NEXT STEP</span><p>{field.veteranCareer?.lastCycle===field.board?.cycleId?"Rotation credit already saved. Try a different eligible objective or companion challenge.":"Complete an eligible Advanced Field Op for Veteran progression."}</p></div>
+          <details className="t-pi-v2-rules"><summary>How Veteran credits work</summary><p>{veteranRequirement(field.veteranCareer)}</p><small>Each eligible rotation credit is recorded only once. Replays do not guarantee new credits.</small></details>
           {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>{const s=useBattleStore.getState(), mid=field.board?.activeMissionIds.find(id=>!field.veteranCareer?.missionIds.includes(id))||field.board?.activeMissionIds[0];if(mid){s.openOperationBrief(mid);useBattleStore.getState().selectDirectiveTier("advanced")}}}>PREPARE ADVANCED FIELD OP</button>}
         </section> : null}
         {recommendedMission ? (() => {
