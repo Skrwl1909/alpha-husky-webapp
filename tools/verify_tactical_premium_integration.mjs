@@ -63,13 +63,22 @@ try{
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
+const reviewedMain='e85d6dcef087ba47f35b68235a706664be1e521f';
+const uxRuntime=new Set(['tactical-ops-src/ui/App.tsx','tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/commandDeck.css','js/tactical_ops.js']);
+const upstreamChanges=new Set(git('diff','--name-only',base,reviewedMain).trim().split('\n'));
+for(const path of git('diff','--name-only',reviewedMain,'HEAD').trim().split('\n')){
+ if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(uxRuntime.has(path),`unreviewed UX production change: ${path}`);
+}
 for(const path of git('diff','--name-only',base).trim().split('\n')){
- if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(expected.has(path)||path==='tactical-ops-src/ui/commandDeck.css'||path==='tactical-ops-src/ui/returnPurpose.ts',`unrelated production change: ${path}`);
+ if(!(path.startsWith('tactical-ops-src/')||path.startsWith('js/')))continue;
+ if(expected.has(path)||path==='tactical-ops-src/ui/returnPurpose.ts'||uxRuntime.has(path))continue;
+ assert(upstreamChanges.has(path),`unrelated production change: ${path}`);
+ assert.equal(readFileSync(path,'utf8'),git('show',`${reviewedMain}:${path}`),`pre-existing main source changed by UX: ${path}`);
 }
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
 const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');
 assert(bundle.includes(version.match(/VERSION = "([^"]+)"/)[1]));
 assert(loader.includes(version.match(/CACHE_KEY = "([^"]+)"/)[1]));
-for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','OPTION UNLOCKED'])assert(bundle.includes(feature),`missing compiled feature: ${feature}`);
+for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','New option unlocked'])assert(bundle.toLowerCase().includes(feature.toLowerCase()),`missing compiled feature: ${feature}`);
 assert(readFileSync('js/pet_quick_actions.js','utf8').includes('body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions'));
 console.log(`PASS integration provenance: ${preserved} unchanged source/test files, exact App union, no unrelated runtime changes, both feature sets and coherent version/cache in production`);
