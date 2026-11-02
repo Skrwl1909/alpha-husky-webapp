@@ -343,7 +343,7 @@ function WarTable() {
           <strong>{commanderRank===4?"RANK 4 EARNED · PACK EXTRACTION OPEN":`NEXT: RANK 4 · ${field.veteranCareer?.credits || 0}/12 ROTATION CREDITS`}</strong>
           <progress className="t-progress" value={field.veteranCareer?.credits||0} max={12} />
           <p>{veteranRequirement(field.veteranCareer)}</p>
-          <small>{field.veteranCareer?.lastCycle===field.board?.cycleId?"This rotation's credit is recorded. Continue for another companion's eligible goal, or return in a later rotation.":"Next: win a distinct Advanced Field Op. Choose a missing objective family or mission. No daily streak required."}</small>
+          <small>{field.veteranCareer?.lastCycle===field.board?.cycleId?"Rotation credit saved. Try a different eligible objective or companion challenge; this rotation cannot award the same credit twice.":"Win a new Advanced Field Op or complete a missing objective type to progress. No daily streak needed."}</small>
           {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>{const s=useBattleStore.getState(), mid=field.board?.activeMissionIds.find(id=>!field.veteranCareer?.missionIds.includes(id))||field.board?.activeMissionIds[0];if(mid){s.openOperationBrief(mid);useBattleStore.getState().selectDirectiveTier("advanced")}}}>PREPARE ADVANCED FIELD OP</button>}
         </section> : null}
         {recommendedMission ? (() => {
