@@ -58,7 +58,7 @@ async function verifyCombinedBattle() {
     ],{shadowSidegrade:'B'});
     function makeBattle(snapshot) {
       let b=battle.createBattle(null,spawns,null,null,null,null,snapshot);
-      return {...b,activeId:'ally-03',mode:'targeting',actionSkillId:'u03-mend',
+      return {...b,unitTurn:3,activeId:'ally-03',mode:'targeting',actionSkillId:'u03-mend',
         units:b.units.map(u=>u.id==='alpha'?{...u,c:4,r:1,hp:20}:
           u.id==='ally-03'?{...u,c:0,r:1}: { ...u,c:6,r:2 })};
     }
