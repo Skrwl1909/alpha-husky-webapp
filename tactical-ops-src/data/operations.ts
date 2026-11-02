@@ -302,7 +302,8 @@ export function courierTraceHoldVariant(mission: MissionDef, revision: number, c
   };
 }
 
-export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>, missionRevision = 1): MissionDef {
+export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>, missionRevision = 1, campaignContext?: CampaignContext | null): MissionDef {
+  if (mission.missionId === "dead-relay-hold") return courierTraceHoldVariant(mission, missionRevision, campaignContext);
   if (mission.missionId === "field-relay-intercept" && context?.reportVersion === 3 && missionRevision === 2) {
     return {...mission,
       briefCopy:"The courier starts behind its patrol, close to the eastern escape lane. Cut north to slow and focus it, or send a protected blocker south to the exit. Ignoring the runner loses the operation.",
