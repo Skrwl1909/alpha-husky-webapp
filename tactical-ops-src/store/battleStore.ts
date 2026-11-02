@@ -951,7 +951,7 @@ export const useBattleStore = create<Store>((set, get) => {
                    requestedRuleset === TACTICAL_VNEXT_RULESET ? 1:undefined,
                 persisted.progression.fieldOps?.veteranProgressionAvailable ? 2 : undefined,
                 (mission.missionId==="field-relay-intercept" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.fieldOps?.interceptRevisionAvailable===2 || (persisted.chapterMode ? persisted.progression.chapterActiveMission?.rulesContract?.missionRevision : existing?.rulesContract?.missionRevision)===2)) ||
-                (mission.missionId==="dead-relay-hold" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.deadRelayHoldRevisionAvailable===2 || existing?.rulesContract?.missionRevision===2)) ? 2 : undefined,
+                (mission.missionId==="dead-relay-hold" && requestedRuleset===TACTICAL_VNEXT_RULESET && ((!existing && persisted.progression.deadRelayHoldRevisionAvailable===2) || existing?.rulesContract?.missionRevision===2)) ? 2 : undefined,
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
