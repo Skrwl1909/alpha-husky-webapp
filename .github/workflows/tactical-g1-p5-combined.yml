@@ -4,6 +4,14 @@ on:
     paths:
       - 'tools/verify_tactical_g1_p5_vertical_proof.mjs'
       - 'tactical-ops-src/**'
+      - 'tools/verify_tactical_g1_fieldcraft.mjs'
+      - 'tools/verify_tactical_g1_transactions.mjs'
+      - 'tools/verify_tactical_battlefield_p5.mjs'
+      - 'tools/verify_tactical_vnext_run_contract_wire.mjs'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/tactical-g1-p5-combined.yml'
 permissions:
   contents: read
