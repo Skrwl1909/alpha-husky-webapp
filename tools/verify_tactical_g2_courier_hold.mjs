@@ -3,9 +3,16 @@ import assert from 'node:assert/strict';
 import { createServer } from 'vite';
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom'});
 try {
-  const {MISSION_DEFS, missionForContext,missionBattleRules,missionSpawnsForSquad}=await vite.ssrLoadModule('/tactical-ops-src/data/operations.ts');
+  const {MISSION_DEFS, missionForContext,missionBattleRules,missionSpawnsForSquad,g2HoldRevisionForRequest}=await vite.ssrLoadModule('/tactical-ops-src/data/operations.ts');
   const {createBattle}=await vite.ssrLoadModule('/tactical-ops-src/combat/battle.ts');
   const types=await vite.ssrLoadModule('/tactical-ops-src/combat/types.ts');
+  const select=g2HoldRevisionForRequest;
+  assert.equal(select('dead-relay-hold','tactical-intent-vnext.0',2,null),2,'new G2 start');
+  assert.equal(select('dead-relay-hold','tactical-intent-vnext.0',2,{rulesContract:{missionRevision:1}}),undefined,'in-flight V1 remains V1');
+  assert.equal(select('dead-relay-hold','tactical-intent-vnext.0',2,{rulesContract:null}),undefined,'legacy accepted run remains unchanged');
+  assert.equal(select('dead-relay-hold','tactical-intent-vnext.0',undefined,{rulesContract:{missionRevision:2}}),2,'saved G2 resumes even without capability');
+  assert.equal(select('dead-relay-hold',undefined,2,null),undefined,'no VNext handshake, no G2');
+  assert.equal(select('dead-relay-guardian','tactical-intent-vnext.0',2,null),undefined,'no other mission revision altered');
   const base=MISSION_DEFS['dead-relay-hold'];
   const intel={version:1,courierTraceAcquired:true};
   const none={version:1,courierTraceAcquired:false};
