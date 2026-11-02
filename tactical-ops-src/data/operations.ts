@@ -277,6 +277,19 @@ MISSION_DEFS["field-relay-intercept"] = {
   squadHint: "CNC DISRUPTOR and PET HAMSTRING slow the courier's turns. PET mobility can block its exit; SHADOW protects a forward blocker at the cost of another control unit.",
 };
 
+/** Only advertise G2 to new VNext runs, or resume an accepted G2 run.
+ * A newly upgraded server MUST NOT rewrite an in-flight legacy/Revision-1 battle. */
+export function g2HoldRevisionForRequest(
+  missionId: string,
+  ruleset: string | null | undefined,
+  available: 2 | undefined,
+  active?: {rulesContract?: { missionRevision: number } | null} | null,
+): 2 | undefined {
+  if (missionId !== "dead-relay-hold" || ruleset !== "tactical-intent-vnext.0") return undefined;
+  if (active) return active.rulesContract?.missionRevision === 2 ? 2 : undefined;
+  return available === 2 ? 2 : undefined;
+}
+
 /** G2: only an explicitly server-issued Dead Relay HOLD revision 2 may turn
  * a frozen campaign Intel decision into a different battlefield problem.
  * Revision 1 (including all accepted runs) remains byte-for-byte unchanged.
