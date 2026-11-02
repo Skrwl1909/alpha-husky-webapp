@@ -277,6 +277,31 @@ MISSION_DEFS["field-relay-intercept"] = {
   squadHint: "CNC DISRUPTOR and PET HAMSTRING slow the courier's turns. PET mobility can block its exit; SHADOW protects a forward blocker at the cost of another control unit.",
 };
 
+/** G2: only an explicitly server-issued Dead Relay HOLD revision 2 may turn
+ * a frozen campaign Intel decision into a different battlefield problem.
+ * Revision 1 (including all accepted runs) remains byte-for-byte unchanged.
+ * Intel shifts the eastern patrol north and makes the delayed HOUND enter
+ * from the southern flank: the player must choose between relay control and
+ * guarding the later entry. No enemy stat/reward changes or new state. */
+export function courierTraceHoldVariant(mission: MissionDef, revision: number, context?: CampaignContext | null): MissionDef {
+  if (mission.missionId !== "dead-relay-hold" || revision !== 2) return mission;
+  if (!context || context.version !== 1 || typeof context.courierTraceAcquired !== "boolean") throw Error("invalid_g2_campaign_context");
+  if (!context.courierTraceAcquired) return { ...mission,
+    briefCopy: "No courier route Intel recorded. Hold the relay through three round changes while an eastern HOUND reinforces in round 2. Secure the relay early or clear the eastern lane first.",
+    squadHint: "Without Intel the round-2 eastern reinforcement pressures the relay. CNC can contest its approach; SHADOW buys time for the holder." };
+  return { ...mission,
+    name: "RELAY UNDER FIRE · TRACED FLANK",
+    briefCopy: "COURIER TRACE: intercepted coordinates exposed a southern HOUND entry. Reinforcement arrives later, in round 3, but the eastern patrol has moved north to threaten your approach. Secure the relay quickly or guard the southern flank before it opens.",
+    spawns: (mission.spawns || []).map(s => s.id === "h1" ? { ...s, c: 5, r: 0 } : { ...s }),
+    directive: mission.directive ? { ...mission.directive,
+      copy: "COURIER TRACE confirmed: a HOUND enters from the south-east in round 3 instead of the eastern round-2 lane. Choose relay control or southern screening.",
+      reinforcement: mission.directive.reinforcement ? { ...mission.directive.reinforcement,
+        triggerRound: 3, spawn: { ...mission.directive.reinforcement.spawn, c: 7, r: 4 } } : undefined,
+    } : undefined,
+    squadHint: "Intel buys one round, but shifts the HOUND to the south. CNC can intercept from the north while PET or SHADOW covers the later southern entry.",
+  };
+}
+
 export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>, missionRevision = 1): MissionDef {
   if (mission.missionId === "field-relay-intercept" && context?.reportVersion === 3 && missionRevision === 2) {
     return {...mission,
