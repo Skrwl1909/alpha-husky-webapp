@@ -55,7 +55,13 @@ try{
  const cutBefore=x=>x.slice(0,x.indexOf('function WarTable()'));
  const cutAfter=x=>x.slice(x.indexOf('function Brief()'));
  assert.equal(cutBefore(current),cutBefore(commandBaseline),'code before War Table changed');
- assert.equal(cutAfter(current),cutAfter(commandBaseline),'Brief, Battle, Results or actions changed outside War Table');
+ // G2 may pass the frozen campaign context into one existing Brief resolver.
+ // Normalize ONLY that exact call when checking historic premium integration; all
+ // other Brief, Battle and Results code must still match the original baseline.
+ const g2BriefCall='missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null)';
+ const baselineBriefCall='missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined)';
+ assert.equal(cutAfter(current).split(g2BriefCall).join(baselineBriefCall),cutAfter(commandBaseline),
+   'Brief, Battle, Results or actions changed beyond the audited G2 accepted-context call');
  for(const marker of ['t-command-deck-v3','t-cd-records','t-cd-status','t-cd-selected-operation']) assert(current.includes(marker),'missing Command Deck '+marker);
  const normalized=commandBaseline.replace('import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";',
    'import { FieldOpResults } from "./FieldOpResults";')
