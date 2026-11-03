@@ -232,7 +232,7 @@
       // Dedicated cache key so Telegram cannot keep the v2.2.1 IIFE
       // even when window.WEBAPP_VER is stale.
       const prev = global.WEBAPP_VER;
-      global.WEBAPP_VER = "tops-3.6.27-g3-opportunity";
+      global.WEBAPP_VER = "tops-3.6.28-g2-courier-g3";
       try {
         await loadScript("js/tactical_ops.js");
       } finally {
