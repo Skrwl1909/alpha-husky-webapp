@@ -4,7 +4,8 @@ import {createServer} from 'vite';
 // Synthetic server-shaped data; no user I/O or production request.
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom'});
 try {
- const {fieldWindow,currentFieldWindow,confirmedWindowChange}=await vite.ssrLoadModule('/tactical-ops-src/data/livingBattlefield.ts');
+ const {fieldWindow,currentFieldWindow}=await vite.ssrLoadModule('/tactical-ops-src/data/livingBattlefield.ts');
+ const {confirmedConsequence}=await vite.ssrLoadModule('/tactical-ops-src/ui/s3AfterAction.ts');
  const {getMissionDef,missionBattleRules}=await vite.ssrLoadModule('/tactical-ops-src/data/operations.ts');
  const examples={ 'field-relay-hold':2,'field-relay-intercept':2,'field-rearguard':3 };
  for(const [id,base] of Object.entries(examples)){
@@ -43,17 +44,18 @@ try {
  assert.equal(fieldWindow(getMissionDef('field-relay-hold'),oldRun)?.actualRound,2,'accepted run keeps original timing');
  assert.deepEqual(oldRun,original,'no mutation of accepted context');
  const receipt={victory:true,regionalApplied:true,pressureBefore:2,pressureAfter:1};
- assert.match(confirmedWindowChange(receipt),/New reinforcement Field Ops delay HOUND by one round/);
- for(const invalid of [null,{...receipt,regionalApplied:false},{...receipt,victory:false},
-   {...receipt,pressureBefore:3,pressureAfter:2},{...receipt,pressureBefore:1,pressureAfter:0}]){
-   assert.equal(confirmedWindowChange(invalid),null,'no unearned world consequence');
- }
- assert.match(confirmedWindowChange({...receipt,pressureBefore:1,pressureAfter:2}),/normal HOUND timing/);
+ const consequence=confirmedConsequence(receipt,null,null);
+ assert.equal(consequence?.label,'SIGNAL PRESSURE CHANGED');
+ assert.match(consequence?.detail||'',/one-round reinforcement delay/,'existing Results already explains the true threshold');
+ assert.equal(confirmedConsequence({...receipt,regionalApplied:false},null,null),null,'no false regional consequence');
+ assert.match(confirmedConsequence({...receipt,pressureBefore:3,pressureAfter:2},null,null)?.detail||'',/remain on schedule/,'3 to 2 is not a delayed HOUND window');
+ assert.equal(confirmedConsequence(null,null,null),null,'no receipt, no world change');
  const app=readFileSync('tactical-ops-src/ui/App.tsx','utf8');
  const results=readFileSync('tactical-ops-src/ui/FieldOpResults.tsx','utf8');
  for(const marker of ['data-g4-world-window','data-g4-command-window','data-g4-mission-window','data-g4-brief-window']){
    assert(app.includes(marker),'missing tactical window UI '+marker);
  }
- assert(results.includes('data-g4-confirmed-window'),'missing receipt-gated result consequence');
+ assert(results.includes('consequence?.detail || meaning?.changed'),'preserve S3 receipt-confirmed consequence in Results');
+ assert(!results.includes('data-g4-confirmed-window'),'do not add duplicate Results copy or push primary CTA below fold');
  console.log('PASS G4 living battlefield: actual combat timing 3 missions x 4 pressures, current/expired boards, accepted-run immutability, receipt-gated threshold, UI wiring');
 } finally {await vite.close();}
