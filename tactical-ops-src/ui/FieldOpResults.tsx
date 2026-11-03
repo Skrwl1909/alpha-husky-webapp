@@ -4,6 +4,7 @@ import type { FieldResult } from "../data/fieldOps";
 import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
 import { veteranReceiptReason } from "../data/progressionOpportunity";
+import { confirmedWindowChange } from "../data/livingBattlefield";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
@@ -76,6 +77,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <span className="t-kicker">WHAT CHANGED</span>
         <strong>{consequence?.label || "FIELD RECORD UPDATED"}</strong>
         <p>{consequence?.detail || meaning?.changed}</p>
+        {confirmedWindowChange(receipt) ? <p data-g4-confirmed-window="true">{confirmedWindowChange(receipt)}</p> : null}
       </section>
     </> : null}
     {receipt && next ? <div className="t-fr-next"><span className="t-kicker">NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason}</p></div> : null}
