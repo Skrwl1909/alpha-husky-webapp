@@ -1,5 +1,5 @@
 import { getMissionDef, missionBattleRules, type MissionDef } from "./operations";
-import type { FieldContext, FieldResult } from "./fieldOps";
+import type { FieldContext } from "./fieldOps";
 
 /** G4 is read-only presentation of the existing accepted-run combat contract.
  * Never modify reinforcements, awards, pressure or persistent state here. */
@@ -33,14 +33,4 @@ export function currentFieldWindow(missionId: string, board: {cycleId:number;nex
   const mission = getMissionDef(missionId);
   return fieldWindow(mission, { cycleId:board.cycleId, pressure:region.pressure,
     reportVersion:board.reportVersion || 2, directiveTier:tier, directiveSet:board.directiveSet });
-}
-
-/** Only an authenticated matching receipt may justify a changed world-window claim. */
-export function confirmedWindowChange(receipt: FieldResult | null | undefined): string | null {
-  if (!receipt?.regionalApplied || !receipt.victory || receipt.pressureBefore === receipt.pressureAfter) return null;
-  if (receipt.pressureBefore >= 2 && receipt.pressureAfter < 2)
-    return "TACTICAL WINDOW OPEN · New reinforcement Field Ops delay HOUND by one round. Already accepted missions keep their original timing.";
-  if (receipt.pressureBefore < 2 && receipt.pressureAfter >= 2)
-    return "TACTICAL WINDOW CLOSED · New reinforcement Field Ops use their normal HOUND timing. Already accepted missions stay unchanged.";
-  return null;
 }
