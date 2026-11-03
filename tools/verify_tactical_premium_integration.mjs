@@ -81,7 +81,8 @@ try{
  assert.equal(actual.replace(newHoldSelector,oldHoldSelector),baselineActual,
   'G2 changed App outside the frozen Hold mission selector');
  const beforeG3=baselineActual.slice(0,baselineActual.indexOf('function WarTable()'))
-  .replace('import { veteranOpportunityView } from "../data/progressionOpportunity";\n','');
+  .replace('import { veteranOpportunityView } from "../data/progressionOpportunity";\n','')
+  .replace('import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";\n','');
  assert.equal(beforeG3, current.slice(0,current.indexOf('function WarTable()')),
   'G3 changed unrelated App declarations or imports');
  const fromSector=x=>x.slice(x.indexOf('function Sector()'));
