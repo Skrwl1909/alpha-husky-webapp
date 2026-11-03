@@ -18,6 +18,8 @@ const approvedG3Sources=new Set([
  'tactical-ops-src/ui/FieldOpResults.tsx',
  'tactical-ops-src/ui/missionPurpose.ts',
  'tactical-ops-src/ui/returnPurpose.ts',
+ 'tools/verify_tactical_s1_purpose_truth.mjs',
+ 'tools/verify_tactical_purpose_return.mjs',
  'tactical-ops-src/version.ts',
  'js/tactical_ops.js',
  'js/boot_loaders.js',
