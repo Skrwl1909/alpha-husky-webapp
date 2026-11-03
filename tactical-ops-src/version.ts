@@ -1,3 +1,3 @@
-/** G2 frozen Courier Trace encounter over G3 server-owned opportunities. Keep IIFE and loader cache in lockstep. */
-export const VERSION = "tactical_ops.js v3.6.28-g2-courier-g3";
-export const CACHE_KEY = "tops-3.6.28-g2-courier-g3";
+/** Tactical G4: combat-resolved Field Ops windows; preserve S3 receipt UX and prior G2/G3 contracts. */
+export const VERSION = "tactical_ops.js v3.6.29-g4-living-field";
+export const CACHE_KEY = "tops-3.6.29-g4-living-field";

@@ -1,0 +1,32 @@
+name: Tactical G4 Living Battlefield
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - 'tools/verify_tactical_g4_living_battlefield.mjs'
+      - '.github/workflows/tactical-g4-living-battlefield.yml'
+permissions:
+  contents: read
+jobs:
+  battlefield-window:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Combat-resolved pressure threshold, accepted runs, and receipt truth
+        run: |
+          node tools/verify_tactical_g4_living_battlefield.mjs
+          node tools/verify_tactical_g3_opportunity.mjs
+          node tools/verify_tactical_s3_after_action.mjs
+          node tools/verify_tactical_vnext_run_contract_wire.mjs
+      - name: Production bundle parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
