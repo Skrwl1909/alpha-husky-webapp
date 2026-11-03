@@ -2,6 +2,7 @@ import { getMissionDef, missionBattleRules, type MissionDef } from "./operations
 import type { FieldContext } from "./fieldOps";
 
 /** G4 is read-only presentation of the existing accepted-run combat contract.
+ * Release invariant: the new-run board never overwrites a saved mission window.
  * Never modify reinforcements, awards, pressure or persistent state here. */
 export type FieldWindow = {
   baseRound: number; actualRound: number; delayed: boolean;
