@@ -6,6 +6,7 @@ import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
+import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
@@ -265,6 +266,7 @@ function WarTable() {
   const remainingToRank = commanderTarget ? Math.max(0, commanderTarget - commanderProgress) : 0;
   const areaPressure = field?.region ? pressureLabel(field.region.pressure) : "UNKNOWN";
   const pressureCopy = field?.region ? pressureEffect(field.region.pressure) : "Refresh to load current field conditions.";
+  const highlightedFieldWindow = activeMissionIds.map(id => ({ id, window: currentFieldWindow(id, field?.board, field?.region) })).find(item => item.window) || null;
   const currentDirective = field?.board?.reportVersion === 3 ? directiveSetLabel(field.board.directiveSet) : null;
   const deadRelayNextMissionId = deadRelay?.activeMissionRun?.missionId || DEAD_RELAY.orderedMissionIds.find((id) => deadRelay?.missions[id] === "available") || null;
   const firstClearMessage = operation?.status === "cleared"
@@ -369,6 +371,7 @@ function WarTable() {
                 <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
               </div>
               <p className="t-player-next-reason">{primaryPurpose?.resume ? "Accepted squad and conditions preserved · battle restarts at round 1." : primaryPurpose?.reason}</p>
+              {primaryPurpose && !primaryPurpose.resume && recommendedMission?.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region)?.text}</p> : null}
               <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
                 <span>{primaryPurpose?.chapter ? "CHAPTER RECORD" : recommendedPurpose?.rewardClearText}</span>
                 <span className={recommendedChallenge ? "is-earned" : ""}>
@@ -423,6 +426,7 @@ function WarTable() {
             <span className="t-kicker">Area status</span>
             <strong>{areaPressure}</strong>
             <small>{pressureCopy}</small>
+            {highlightedFieldWindow ? <small data-g4-world-window="true">{getMissionDef(highlightedFieldWindow.id)?.name} · {highlightedFieldWindow.window?.text}</small> : null}
           </div>
           <div className="t-panel t-wt-status-card">
             <span className="t-kicker">Rotation</span>
@@ -486,6 +490,7 @@ function WarTable() {
               const contextualMission = missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 });
               const visual = missionPresentation(contextualMission);
               const cardPurpose = deriveMissionPresentation(contextualMission, field);
+              const tacticalWindow = currentFieldWindow(mission.missionId, field?.board, field?.region);
               return (
                 <article className={`t-wt-mission-card t-panel t-mission-tone-${visual.tone} ${securedToday ? "is-cleared" : "is-active"}`} key={mission.missionId}>
                   <div className="t-wt-mission-art">
@@ -501,6 +506,7 @@ function WarTable() {
                       <div className="t-wt-mission-state">{securedToday ? "SECURED TODAY" : "AVAILABLE"}</div>
                     </div>
                     <div className="t-player-mission-counter">OPERATION {activeMissionIds.indexOf(mission.missionId) + 1} / {activeMissionIds.length} · {visual.label} · {securedToday ? "CLEARED" : "UNCLEARED"}</div>
+                    {tacticalWindow ? <p className="t-brief-purpose-meta" data-g4-mission-window="true">{tacticalWindow.text}</p> : null}
                     <div className="t-wt-mission-meta" aria-label="Confirmed reward eligibility">
                       <span><b>CLEAR</b> {cardPurpose.rewardClearText}</span>
                       <span className={bonusEarned ? "is-earned" : ""}><b>CHALLENGE</b> {cardPurpose.rewardChallengeText} · {contextualMission.challenge?.label}</span>
@@ -664,6 +670,7 @@ function Brief() {
   const mission = baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
+  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region) : null;
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
@@ -780,6 +787,7 @@ function Brief() {
                 <span className="t-kicker">Area status</span>
                 <strong>{pressureLabel(fieldContext.pressure)}</strong>
                 <small>{pressureEffect(fieldContext.pressure)}</small>
+                {deploymentWindow ? <small data-g4-brief-window="true">{resuming ? "ACCEPTED TIMING · " : "NEXT DEPLOYMENT · "}{deploymentWindow.text}</small> : null}
               </div>
             </>
           ) : null}
