@@ -1,10 +1,11 @@
 /** Real UI/store, synthetic server-shaped fixtures; no account or live API access. */
 import assert from 'node:assert/strict';
-import {mkdirSync,writeFileSync} from 'node:fs';
+import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createServer} from 'vite';
 const {chromium} = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const out = 'artifacts/g3';mkdirSync(out,{recursive:true});
-const entry = `import React from 'react';import{createRoot}from'react-dom/client';
+const production=process.env.G3_RUNTIME==='production';
+const out = production?'artifacts/g3-production':'artifacts/g3';mkdirSync(out,{recursive:true});
+let entry = `import React from 'react';import{createRoot}from'react-dom/client';
 import{TacticalApp}from'/tactical-ops-src/ui/App.tsx';import{useBattleStore as store}from'/tactical-ops-src/store/battleStore.ts';import{TACTICAL_CSS}from'/tactical-ops-src/styles.ts';
 const style=document.createElement('style');style.textContent=TACTICAL_CSS;document.head.append(style);
 const params=new URLSearchParams(location.search),profile=params.get('profile')||'eligible',mode=params.get('mode')||'war-table';
@@ -18,8 +19,9 @@ const receipt={runId:'field_g3_result',missionId:ids[0],victory:true,cycleId:7,c
 const progression={version:1,foundationStage:'completed',completed:true,revision:10,activeRunId:null,operations:{'broken-signal':{status:'cleared',missions:{}},'dead-relay':{status:'cleared',missions:{}}},fieldOps:field};
 store.setState({progression,screen:mode,foundationCompleted:true,progressionStatus:'ready',progressionCommitPending:profile==='pending',progressionError:profile==='failed'?'Synthetic recording failure':null,selectedMissionId:ids[0],selectedSquadIds:['alpha','ally-02','ally-03'],selectedDirectiveTier:'advanced',currentRunKey:'field_g3_result',fieldResult:['pending','failed'].includes(profile)?null:profile==='stale'?{...receipt,runId:'other_run'}:receipt,battle:{...store.getState().battle,results:{victory:true,turns:7,hostilesEliminated:3,squadStanding:3,squadDeployed:3,damageTaken:20,bonesRecovered:0}}});
 window.fixture={store};createRoot(document.getElementById('mount')).render(React.createElement(TacticalApp));`;
+if(production) entry='const store=window.__tactical;window.TacticalOps.init({onboarding:"off"});await window.TacticalOps.open();'+entry.slice(entry.indexOf('const params')).replace("createRoot(document.getElementById('mount')).render(React.createElement(TacticalApp));",'');
 const server=await createServer({configFile:false,cacheDir:'node_modules/.vite-g3',optimizeDeps:{include:['react','react-dom/client','react/jsx-dev-runtime','lucide-react','zustand']},plugins:[{
-  name:'g3-fixture',configureServer(s){s.middlewares.use((req,res,next)=>{if(!req.url?.startsWith('/g3-fixture'))return next();res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial}</style><div id="tacticalOpsRoot" data-open="1"><div id="mount" style="height:100%"></div></div><script type="module" src="/@g3"></script>');});},resolveId(id){if(id==='/@g3')return '\0g3';},load(id){if(id==='\0g3')return entry;}
+  name:'g3-fixture',configureServer(s){s.middlewares.use((req,res,next)=>{if(req.url==='/g3-bundle.js'){res.setHeader('Content-Type','application/javascript');res.end(readFileSync('js/tactical_ops.js'));return;}if(!req.url?.startsWith('/g3-fixture'))return next();res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta charset="utf-8">'+(production?'<script src="/g3-bundle.js"></script>':'')+'<meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial}</style><div id="tacticalOpsRoot" data-open="1"><div id="mount" style="height:100%"></div></div><script type="module" src="/@g3"></script>');});},resolveId(id){if(id==='/@g3')return '\0g3';},load(id){if(id==='\0g3')return entry;}
 }],server:{host:'127.0.0.1',port:0}});
 await server.listen();
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE || undefined,args:['--no-sandbox']});
@@ -73,6 +75,6 @@ try {
       cases.push({width,height,profile,surfaces:['results']});await page.close();
     }
   }
-  writeFileSync(out+'/results.json',JSON.stringify({cases,limitations:'Synthetic fixtures; Chromium touch emulation. Physical S26 Ultra Telegram acceptance and live persistence remain unverified.'},null,2));
-  console.log('PASS G3 browser: '+cases.length+' cases / 45 surfaces; command → correct brief; receipt states; next CTA; 320/412/430px; accepted legacy run');
+  writeFileSync(out+'/results.json',JSON.stringify({cases,runtime:production?'canonical production IIFE':'source React',limitations:'Synthetic fixtures; Chromium touch emulation. Physical S26 Ultra Telegram acceptance and live persistence remain unverified.'},null,2));
+  console.log('PASS G3 browser ('+(production?'production IIFE':'source React')+'): '+cases.length+' cases / 45 surfaces; command → correct brief; receipt states; next CTA; 320/412/430px; accepted legacy run');
 } finally {await browser.close();await server.close();}

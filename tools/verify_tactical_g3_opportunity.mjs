@@ -43,6 +43,7 @@ try {
   const receipt = {runId:'field_result',missionId:ids[0],victory:true,cycleId:7,challengeSuccess:false,challengeBonus:0,progressEarned:2,firstCycleSecure:true,progressBefore:12,progressAfter:14,rankBefore:3,rankAfter:3,pressureBefore:2,pressureAfter:1,regionalApplied:true,unlockedApproaches:[],legacyReport:false,recordedAt:1,xpGranted:0,bonesGranted:0};
   assert.match(purpose.fieldResultPurpose(receipt).exhausted,/Optional challenge not completed/,'first clear cannot hide an unmet challenge');
   assert.match(purpose.fieldResultPurpose({...receipt,legacyReport:true}).exhausted,/unmeasured/);
+  assert.match(purpose.fieldResultPurpose({...receipt,firstCycleSecure:false,regionalApplied:false}).exhausted,/No current-rotation clear bonus/,'an older accepted cycle cannot prove the current reward was already claimed');
   assert.match(g3.veteranReceiptReason('ROTATION_CREDIT_USED'),/cannot grant a second credit/);
   assert.match(g3.veteranReceiptReason('FOUNDATION_REQUIRED_AT_START'),/when this run was accepted/);
   assert.equal(after.confirmedReturnAction(null,null,account),null);

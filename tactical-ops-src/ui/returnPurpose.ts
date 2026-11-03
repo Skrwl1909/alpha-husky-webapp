@@ -107,7 +107,7 @@ export function fieldResultPurpose(r: FieldResult): { earned: string; exhausted:
     future: r.victory ? 'Try a different holder or squad in Relay Lockdown; no additional progression reward.' : 'Keep an ally on the exact relay tile and clear adjacent contesters before round 7.' };
   const earned = r.rewardAmountsAvailable === false ? `Character reward amounts unavailable · ${r.progressEarned} Commander points recorded` : `${r.xpGranted} EXP · ${r.bonesGranted} Bones · ${r.progressEarned} Commander points recorded`;
   const clear = !r.victory ? 'No clear recorded. No victory bonus earned.'
-    : r.firstCycleSecure === false ? 'Clear bonus already secured this rotation.'
+    : r.firstCycleSecure === false ? r.regionalApplied ? 'Clear bonus already secured this rotation.' : 'No current-rotation clear bonus recorded.'
     : r.firstCycleSecure === true ? 'First clear recorded this rotation.' : 'Clear bonus eligibility not supplied; only the amounts above are confirmed.';
   const exhausted = `${clear} ${r.legacyReport ? 'Challenge unmeasured in this receipt.' : !r.challengeSuccess ? 'Optional challenge not completed; no challenge bonus confirmed.' : r.challengeBonus > 0 ? `Challenge completed · +${r.challengeBonus} bonus recorded.` : 'Challenge completed; no new challenge bonus recorded.'}`;
   const changed = r.regionalApplied && r.pressureBefore !== r.pressureAfter ? `Signal Pressure ${r.pressureBefore} → ${r.pressureAfter}.`

@@ -34,7 +34,9 @@ jobs:
           node --check js/tactical_ops.js
           git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
       - name: Mobile opportunity and result flow
-        run: node tools/verify_tactical_g3_browser.mjs
+        run: |
+          node tools/verify_tactical_g3_browser.mjs
+          G3_RUNTIME=production node tools/verify_tactical_g3_browser.mjs
         env:
           CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4

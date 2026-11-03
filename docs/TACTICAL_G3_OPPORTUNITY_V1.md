@@ -18,7 +18,8 @@ The Brief explains potential Veteran progress alongside the existing objective,
 failure, Advanced and optional challenge conditions. Results shows actual receipt
 amounts, challenge outcome and readable Veteran reasons, then opens the next
 recommended mission with its correct tier. There is one Veteran counter per
-ordinary Results panel. Pending, failed and mismatched receipts confirm no earnings.
+ordinary Results panel. Old-rotation receipts cannot imply today’s bonus was already
+claimed. Pending, failed and mismatched receipts confirm no earnings.
 
 ## Authority and backend dependency
 
@@ -43,7 +44,7 @@ or older VPS files must be reconciled, never overwritten with this snapshot.
 ## Review gates
 
 Local verification: focused G3 domain/host checks; 30 browser cases over 45
-surfaces at 320/412/430px; existing 20-case Veteran browser suite; purpose, S1,
+surfaces at 320/412/430px; existing 20-case Veteran browser suite and 138-case production Results/legacy suite; purpose, S1,
 S3, accepted-run and G1/P5 checks; canonical build and syntax. Private projection
 tests and existing Growth/VNext backend tests use synthetic accounts only.
 See PR checks for results on the exact published commit. No assertion was weakened;
