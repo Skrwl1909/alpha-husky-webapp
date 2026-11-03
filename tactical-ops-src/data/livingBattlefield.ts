@@ -27,12 +27,12 @@ export function fieldWindow(mission: MissionDef | null | undefined, context: Par
 /** Read only the active server rotation for previews. Previously accepted runs
  * must use their frozen FieldContext and must never inherit today's pressure. */
 export function currentFieldWindow(missionId: string, board: {cycleId:number;nextRotationAt:number;activeMissionIds:string[];reportVersion?:number;directiveSet?: "pursuit"|"attrition"} | undefined,
-  region: {cycleId:number;pressure:number} | undefined, now = Date.now()): FieldWindow | null {
+  region: {cycleId:number;pressure:number} | undefined, now = Date.now(), tier: "standard" | "advanced" = "standard"): FieldWindow | null {
   if (!board || !region || region.cycleId !== board.cycleId || board.nextRotationAt * 1000 <= now ||
       !board.activeMissionIds.includes(missionId)) return null;
   const mission = getMissionDef(missionId);
   return fieldWindow(mission, { cycleId:board.cycleId, pressure:region.pressure,
-    reportVersion:board.reportVersion || 2, directiveTier:"standard", directiveSet:board.directiveSet });
+    reportVersion:board.reportVersion || 2, directiveTier:tier, directiveSet:board.directiveSet });
 }
 
 /** Only an authenticated matching receipt may justify a changed world-window claim. */
