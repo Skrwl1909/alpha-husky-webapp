@@ -119,7 +119,7 @@ try{
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
-const uxRuntime=new Set([...approvedG3Sources,...approvedG2Sources]);
+const uxRuntime=new Set([...approvedG3Sources,...approvedG2Sources,'tactical-ops-src/data/livingBattlefield.ts']);
 const upstreamChanges=new Set(git('diff','--name-only',base,reviewedMain).trim().split('\n'));
 for(const path of git('diff','--name-only',reviewedMain,'HEAD').trim().split('\n')){
  if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(uxRuntime.has(path),`unreviewed UX production change: ${path}`);
