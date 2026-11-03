@@ -371,7 +371,7 @@ function WarTable() {
                 <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
               </div>
               <p className="t-player-next-reason">{primaryPurpose?.resume ? "Accepted squad and conditions preserved · battle restarts at round 1." : primaryPurpose?.reason}</p>
-              {primaryPurpose && !primaryPurpose.resume && recommendedMission?.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region)?.text}</p> : null}
+              {primaryPurpose && !primaryPurpose.resume && recommendedMission?.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier)?.text}</p> : null}
               <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
                 <span>{primaryPurpose?.chapter ? "CHAPTER RECORD" : recommendedPurpose?.rewardClearText}</span>
                 <span className={recommendedChallenge ? "is-earned" : ""}>
@@ -670,7 +670,7 @@ function Brief() {
   const mission = baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
-  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region) : null;
+  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
