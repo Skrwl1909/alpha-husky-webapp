@@ -2,6 +2,7 @@ import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowt
 import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import { parseVeteran } from "../data/veteran";
+import { parseVeteranOpportunity, type VeteranOpportunity } from "../data/progressionOpportunity";
 import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "../data/fieldOps";
 import type { CampaignContext, ChapterIntel } from "../data/operations";
 import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
@@ -51,6 +52,7 @@ export interface FoundationProgressionState {
 }
 
 export interface FieldOpsProgression {
+  veteranOpportunity?: VeteranOpportunity;
   interceptRevisionAvailable?: 2;
   veteranProgressionAvailable?: boolean;
   veteranCareer?: import("../data/veteran").VeteranProgress;
@@ -295,6 +297,8 @@ function parseState(raw: unknown): FoundationProgressionState | null {
         if (career.lastSecuredCycle != null && !Number.isInteger(career.lastSecuredCycle)) return null;
       }
       Object.assign(state.fieldOps, { board, commander, region, ...(rotation ? { rotationProgress: rotation } : {}), ...(career ? { careerRecord: career } : {}), lastResult: parseFieldResult(field.lastResult) });
+      const opportunity = parseVeteranOpportunity(field.veteranOpportunity, board.cycleId);
+      if (opportunity && opportunity.missionIds.every(id => board.activeMissionIds.includes(id))) state.fieldOps.veteranOpportunity = opportunity;
     }
   }
   // Fail closed on malformed optional chapter wire data. Never infer progress from local results.

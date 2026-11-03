@@ -4,7 +4,7 @@ const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:
 try {
  const [r,p,ops,battle,rules]=await Promise.all(['/tactical-ops-src/ui/returnPurpose.ts','/tactical-ops-src/ui/missionPurpose.ts','/tactical-ops-src/data/operations.ts','/tactical-ops-src/combat/battle.ts','/tactical-ops-src/combat/missionRules.ts'].map(x=>vite.ssrLoadModule(x)));
  const ids=['field-relay-recovery','field-relay-hold','field-squad-survival'];
- const account=(rank=1)=>({completed:true,operations:{},fieldOps:{board:{cycleId:7,activeMissionIds:ids,reportVersion:3,directiveSet:'pursuit'},commander:{rank,progress:0,unlockedApproaches:['standard'],unlockedDirectiveTiers:rank===3?['standard','advanced']:['standard']},records:{}}});
+ const account=(rank=1)=>({completed:true,operations:{},fieldOps:{board:{cycleId:7,activeMissionIds:ids,reportVersion:3,directiveSet:'pursuit'},commander:{rank,progress:0,unlockedApproaches:['standard'],unlockedDirectiveTiers:rank===3?['standard','advanced']:['standard']},records:Object.fromEntries(ids.map(missionId=>[missionId,{missionId,clearCount:0,lastClearCycle:null,lastChallengeCycle:null,lastAdvancedCycle:null}]))}});
  for(const rank of [1,3]) {
   const a=account(rank),route=r.commandPurpose(a);
   assert.equal(route.primary.missionId,ids[0]);assert.equal(route.primary.title,'SECURE A FIELD OP');

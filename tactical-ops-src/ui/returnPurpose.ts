@@ -2,7 +2,8 @@ import { chapterNextMission } from '../data/campaignChapter';
 import { BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, missionForContext } from '../data/operations';
 import type { FoundationProgressionState } from '../host/foundationProgression';
 import type { FieldResult } from '../data/fieldOps';
-import { nextFieldMission } from './missionPurpose';
+import { missionRewardTruth, nextFieldMission } from './missionPurpose';
+import { parseVeteranOpportunity } from '../data/progressionOpportunity';
 
 export type PurposeAction = { missionId: string; title: string; reason: string; tier: 'standard' | 'advanced'; resume: boolean; chapter?: boolean; masteryChallenge?: 'relay-lockdown-v1' };
 /** A single read-only decision hierarchy. Never changes eligibility or the accepted run. */
@@ -22,6 +23,13 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     if (id) { primary = action(id, 'CONTINUE THE STORY', id === 'dead-relay-courier' ? 'Defeat the courier to open Hold. An early first win can record Courier Trace for delayed Hold reinforcements.' : id.endsWith('hold') ? 'Control the relay to unlock the Guardian.' : id.endsWith('guardian') ? 'Defeat the Guardian to record The Dead Relay campaign completion.' : id.endsWith('commander') ? 'Defeat the commander to complete Broken Signal.' : 'Complete this story objective to unlock the next campaign mission.'); break; }
   }
   const candidates: PurposeAction[] = [];
+  if (!primary && b?.nextRotationAt && b.nextRotationAt * 1000 <= Date.now()) return {primary:null, alternatives:[]};
+  const veteran = parseVeteranOpportunity(f?.veteranOpportunity, b?.cycleId);
+  if (!primary && veteran?.status === 'eligible' && veteran.recommendedMissionId && b?.activeMissionIds.includes(veteran.recommendedMissionId)) {
+    primary = action(veteran.recommendedMissionId, 'VETERAN OPPORTUNITY', veteran.reason === 'DIVERSITY_AVAILABLE'
+      ? 'Add missing mission or objective diversity with an Advanced victory. No additional credit is promised.'
+      : 'An Advanced victory can record this rotation’s Veteran credit. Review the conditions before deploying; only the server receipt confirms progress.', 'advanced');
+  }
   if (!primary && f?.masteryPath && (f.commander?.rank || 0) >= 3 && b?.reportVersion === 3) {
     if (f.masteryPath.unlockedChallenge) {
       const recorded = Boolean(f.masteryPath.firstLockdownClear);
@@ -44,6 +52,8 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       const base = getMissionDef(id); if (!base) continue;
       const m = missionForContext(base, { reportVersion: b.reportVersion || 2 });
       const r = f.records[id];
+      const truth = missionRewardTruth(m, f);
+      if (truth.clear === 'UNKNOWN') continue;
       if (r?.lastClearCycle !== b.cycleId) candidates.push(action(id, 'SECURE A FIELD OP', 'First clear is open this rotation. A confirmed victory records this operation; regional effects depend on the server receipt.'));
       if (m.challenge && r?.lastChallengeCycle !== b.cycleId) candidates.push(action(id, 'OPTIONAL CHALLENGE', `${m.challenge.label}. ${r?.lastClearCycle === b.cycleId ? "Clear bonus already secured; an eligible challenge can still add progress." : "An eligible first clear and challenge can record progress this rotation."}`));
       if (f.commander.unlockedDirectiveTiers?.includes('advanced') && r?.lastAdvancedCycle !== b.cycleId) candidates.push(action(id, 'ADVANCED CHALLENGE', 'Face the Advanced conditions shown in the briefing. An accepted clear enters your Advanced record; no extra currency is promised.', 'advanced'));
@@ -52,7 +62,16 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     // No accepted run is replaced: saved missions were resolved above.
     const priority = (a: PurposeAction) => a.title === 'SECURE A FIELD OP' ? 0 : a.title === 'OPTIONAL CHALLENGE' ? 1 : a.title === 'ADVANCED CHALLENGE' ? 2 : 3;
     candidates.sort((a, b) => priority(a) - priority(b));
-    primary ||= candidates.shift() || (() => { const n = nextFieldMission(f); return n.missionId ? action(n.missionId, 'PRACTICE WITH YOUR SQUAD', `Current clear and challenge goals are recorded${f.commander?.unlockedDirectiveTiers?.includes('advanced') ? ', including Advanced' : ''}. Try another squad or route for practice; no new rotation bonus or rank is promised.`) : null; })();
+    if (!primary) {
+      primary = candidates.shift() || null;
+      if (!primary) {
+        const next = nextFieldMission(f);
+        const known = b.activeMissionIds.every(id => !!f.records[id]);
+        if (next.missionId) primary = action(next.missionId, known ? 'PRACTICE WITH YOUR SQUAD' : 'REVIEW FIELD CONDITIONS', known
+          ? `Current clear and challenge goals are recorded${f.commander?.unlockedDirectiveTiers?.includes('advanced') ? ', including Advanced' : ''}. Try another squad or route for practice; no new rotation bonus or rank is promised.`
+          : 'Progression eligibility is unavailable. Refresh the War Table or review this mission for practice; no new progress is promised.');
+      }
+    }
   }
   const used = new Set(primary ? [primary.missionId] : []);
   const alternatives: PurposeAction[] = [];
@@ -87,9 +106,10 @@ export function fieldResultPurpose(r: FieldResult): { earned: string; exhausted:
     changed: r.firstLockdownClear ? 'Lockdown completion is permanently recorded. No regional change or additional unlock.' : 'No permanent Lockdown completion confirmed by this receipt. No regional change.',
     future: r.victory ? 'Try a different holder or squad in Relay Lockdown; no additional progression reward.' : 'Keep an ally on the exact relay tile and clear adjacent contesters before round 7.' };
   const earned = r.rewardAmountsAvailable === false ? `Character reward amounts unavailable · ${r.progressEarned} Commander points recorded` : `${r.xpGranted} EXP · ${r.bonesGranted} Bones · ${r.progressEarned} Commander points recorded`;
-  const exhausted = !r.victory ? 'No clear recorded. No victory bonus earned.'
-    : r.firstCycleSecure === false ? `Clear bonus already secured this rotation. ${r.challengeBonus > 0 ? `Challenge bonus earned: +${r.challengeBonus}.` : r.challengeSuccess ? 'Challenge met; no new challenge bonus granted.' : 'Challenge not met.'}`
+  const clear = !r.victory ? 'No clear recorded. No victory bonus earned.'
+    : r.firstCycleSecure === false ? 'Clear bonus already secured this rotation.'
     : r.firstCycleSecure === true ? 'First clear recorded this rotation.' : 'Clear bonus eligibility not supplied; only the amounts above are confirmed.';
+  const exhausted = `${clear} ${r.legacyReport ? 'Challenge unmeasured in this receipt.' : !r.challengeSuccess ? 'Optional challenge not completed; no challenge bonus confirmed.' : r.challengeBonus > 0 ? `Challenge completed · +${r.challengeBonus} bonus recorded.` : 'Challenge completed; no new challenge bonus recorded.'}`;
   const changed = r.regionalApplied && r.pressureBefore !== r.pressureAfter ? `Signal Pressure ${r.pressureBefore} → ${r.pressureAfter}.`
     : r.frontJustSecured ? 'Current rotation front secured.' : 'No regional change confirmed by this receipt.';
   const future = r.masteryUnlocked ? 'Relay Mastery recorded · 1/1. Relay Lockdown is permanently unlocked, including outside the base mission rotation.' : r.regionalApplied && r.pressureBefore >= 2 && r.pressureAfter < 2

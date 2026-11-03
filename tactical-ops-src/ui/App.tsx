@@ -1,6 +1,7 @@
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { veteranRequirement } from "../data/veteran";
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
+import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
@@ -223,6 +224,7 @@ function WarTable() {
   const field = progression?.fieldOps;
   const purposeRoute = commandPurpose(progression);
   const primaryPurpose = purposeRoute.primary;
+  const veteranView = veteranOpportunityView(field);
   const openPurpose = openPurposeBrief;
   const campaignCareer = tacticalCareerTruth(progression);
   const acceptedChapter = progression?.tacticalChapter;
@@ -343,11 +345,11 @@ function WarTable() {
           <div className="t-pi-career t-pi-v2" data-progress-identity="command" aria-label="Veteran Career toward Rank 4">
             <div className="t-pi-career-head"><span>{commanderRank===4?"VETERAN CAREER COMPLETE":"VETERAN CAREER"}</span><strong>{field.veteranCareer?.credits || 0}/12</strong></div>
             <div className="t-pi-track" role="progressbar" aria-label="Veteran career credits" aria-valuemin={0} aria-valuemax={12} aria-valuenow={field.veteranCareer?.credits || 0}><span style={{width:`${Math.min(100,Math.max(0,(field.veteranCareer?.credits||0)/12*100))}%`}} /></div>
-            <p>{commanderRank===4?"RANK 4 EARNED":`${Math.max(0,12-(field.veteranCareer?.credits||0))} eligible credits to Rank 4`}</p>
+            <p>{commanderRank===4?"RANK 4 EARNED":"Credits and objective diversity both contribute to Rank 4"}</p>
           </div>
-          <div className="t-pi-v2-next"><span>NEXT STEP</span><p>{field.veteranCareer?.lastCycle===field.board?.cycleId?"Rotation credit already saved. Try a different eligible objective or companion challenge.":"Complete an eligible Advanced Field Op for Veteran progression."}</p></div>
+          <div className="t-pi-v2-next" data-opportunity-status={veteranView.status}><span>VETERAN · {veteranView.status.toUpperCase()}</span><p>{veteranView.copy}</p></div>
           <details className="t-pi-v2-rules"><summary>How Veteran credits work</summary><p>{veteranRequirement(field.veteranCareer)}</p><small>Each eligible rotation credit is recorded only once. Replays do not guarantee new credits.</small></details>
-          {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>{const s=useBattleStore.getState(), mid=field.board?.activeMissionIds.find(id=>!field.veteranCareer?.missionIds.includes(id))||field.board?.activeMissionIds[0];if(mid){s.openOperationBrief(mid);useBattleStore.getState().selectDirectiveTier("advanced")}}}>PREPARE ADVANCED FIELD OP</button>}
+          {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : null}
         </section> : null}
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
@@ -372,7 +374,7 @@ function WarTable() {
                 <span className={recommendedChallenge ? "is-earned" : ""}>
                   {primaryPurpose?.chapter ? "NO FIELD BONUS PROMISED" : recommendedPurpose?.rewardChallengeText}
                 </span>
-                <span>{primaryPurpose?.masteryChallenge ? field?.masteryPath?.firstLockdownClear ? "LOCKDOWN COMPLETION RECORDED" : "RELAY MASTERY COMPLETE · 1/1" : primaryPurpose?.chapter ? "Intel follows confirmed chapter completion" : recommendedPurpose?.rewardEligibility.clear === "SECURED" && recommendedPurpose?.rewardEligibility.challenge === "SECURED" ? "No new rotation bonus promised" : "Eligible clears / challenges can add Mastery"}</span>
+                <span>{primaryPurpose?.title === 'VETERAN OPPORTUNITY' ? 'POTENTIAL VETERAN PROGRESS · ADVANCED' : primaryPurpose?.masteryChallenge ? field?.masteryPath?.firstLockdownClear ? "LOCKDOWN COMPLETION RECORDED" : "RELAY MASTERY COMPLETE · 1/1" : primaryPurpose?.chapter ? "Intel follows confirmed chapter completion" : recommendedPurpose?.rewardEligibility.clear === "SECURED" && recommendedPurpose?.rewardEligibility.challenge === "SECURED" ? "No new rotation bonus promised" : "Eligible clears / challenges can add Mastery"}</span>
               </div>
             </div>
             <div className="t-wt-feature-cta">
@@ -661,6 +663,7 @@ function Brief() {
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
   const mission = baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
+  const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
@@ -750,6 +753,7 @@ function Brief() {
               <p>{purpose.tacticalThreat}</p>
             </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
+            {fieldOp ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>VETERAN · {veteranBrief.status.toUpperCase()}:</b> {veteranBrief.copy}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
               {buildNotes.map(row => <p key={row}>{row}</p>)}

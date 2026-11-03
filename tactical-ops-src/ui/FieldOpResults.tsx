@@ -3,6 +3,7 @@ import { Check, Shield, AlertTriangle } from "lucide-react";
 import type { FieldResult } from "../data/fieldOps";
 import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
+import { veteranReceiptReason } from "../data/progressionOpportunity";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
@@ -55,11 +56,12 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
               <small>{receipt.progressBefore} → {receipt.progressAfter} total points · rank shown by this receipt</small></div>
           </div>
         </div>
+        {receipt.veteranCareer?.unlocked ? <p className="t-fr-delta" data-veteran-career-delta="true">VETERAN CAREER {receipt.veteranCareer.before} → {receipt.veteranCareer.after}/12 · RANK 4 · PACK EXTRACTION UNLOCKED</p> : null}
         {receipt.veteranCareer && !receipt.veteranCareer.unlocked ? <div className="t-pi-career" aria-label="Veteran Career progress" data-progress-identity="results">
-          <div className="t-pi-career-head"><span>VETERAN CAREER · TOWARD RANK 4</span><strong>{receipt.veteranCareer.after}/12</strong></div>
+          <div className="t-pi-career-head"><span>VETERAN CAREER · TOWARD RANK 4</span><strong data-veteran-career-delta="true">{receipt.veteranCareer.before !== receipt.veteranCareer.after ? `${receipt.veteranCareer.before} → ` : ''}{receipt.veteranCareer.after}/12</strong></div>
           <div className="t-pi-track" role="progressbar" aria-label="Veteran career credits" aria-valuemin={0} aria-valuemax={12} aria-valuenow={receipt.veteranCareer.after}><span style={{ width: `${Math.min(100, Math.max(0, receipt.veteranCareer.after / 12 * 100))}%` }} /></div>
-          <p>{receipt.veteranCareer.after > receipt.veteranCareer.before ? "ROTATION CREDIT SECURED · Progress toward Rank 4 saved." : "NO NEW ROTATION CREDIT · Try another eligible objective or rotation."}</p>
-          <small>{Math.max(0, 12 - receipt.veteranCareer.after)} credits remaining · Credits require eligible Advanced Field Ops across rotations.</small>
+          <p>{veteranReceiptReason(receipt.veteranCareer.reason)}</p>
+          <small>Rank 4 also requires mission and objective diversity. Check the War Table for the next confirmed opportunity.</small>
         </div> : null}
         <dl className="t-fr-rewards">
           <div data-muted={!amountsAvailable || receipt.xpGranted === 0 ? "true" : undefined}><dt>EXP</dt><dd aria-label={amountsAvailable ? undefined : "EXP amount unavailable"}>{amountsAvailable ? `+${receipt.xpGranted}` : "—"}</dd></div>
@@ -68,8 +70,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         </dl>
         {!amountsAvailable ? <p>Character reward amounts were not supplied by this receipt.</p> : null}
         <p className="t-fr-eligibility">{meaning?.exhausted}</p>
-        {receipt.veteranCareer ? <p className="t-fr-delta" data-veteran-career-delta="true"><strong>VETERAN CAREER</strong> {receipt.veteranCareer.before} → {receipt.veteranCareer.after}/12 · {receipt.veteranCareer.unlocked ? "RANK 4 · PACK EXTRACTION UNLOCKED" : receipt.veteranCareer.reason.replaceAll("_", " ").toLowerCase()}</p> : null}
-        {receipt.masteryChanges?.map(change => <p className="t-fr-delta" key={change.unitId}><strong>{masteryDef(change.unitId)?.name || change.unitId}</strong> {change.gained > 0 ? `+${change.gained} Mastery earned` : "No new Mastery earned"} · Foundation {change.progress}/8{change.beforeStage !== change.stage ? ` · Stage ${change.beforeStage} → ${change.stage}` : ""}{change.veteran ? ` · Veteran ${change.veteran.before} → ${change.veteran.after}/12${change.veteran.unlocked ? " · New option unlocked" : " · Progress recorded"}` : ""}</p>)}
+        {receipt.masteryChanges?.map(change => <p className="t-fr-delta" key={change.unitId}><strong>{masteryDef(change.unitId)?.name || change.unitId}</strong> {change.gained > 0 ? `+${change.gained} Mastery earned` : "No new Mastery earned"} · Foundation {change.progress}/8{change.beforeStage !== change.stage ? ` · Stage ${change.beforeStage} → ${change.stage}` : ""}{change.veteran ? ` · Veteran ${change.veteran.before} → ${change.veteran.after}/12 · ${change.veteran.unlocked ? "New option unlocked" : veteranReceiptReason(change.veteran.reason)}` : ""}</p>)}
       </section>
       <section className="t-fr-consequence" aria-label="Confirmed gameplay consequence">
         <span className="t-kicker">WHAT CHANGED</span>

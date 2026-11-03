@@ -34,6 +34,8 @@ export function missionRewardTruth(m: MissionDef, field: FieldOpsProgression | u
   if (m.activity !== "FIELD_OP") return { clear:"NOT_APPLICABLE", challenge:"NOT_APPLICABLE", commander:"UNKNOWN", copy:"Campaign progress is recorded by the server." };
   if (!field?.board || !field.commander) return { clear:"UNKNOWN", challenge:"UNKNOWN", commander:"UNKNOWN", copy:"Refresh to check this rotation's confirmed rewards." };
   const row = field.records?.[m.missionId];
+  if (field.board.nextRotationAt && field.board.nextRotationAt * 1000 <= Date.now()) return {clear:'UNKNOWN', challenge:'UNKNOWN', commander:'UNKNOWN', copy:'This rotation ended. Refresh the War Table to check new opportunities.'};
+  if (!row || !field.board.activeMissionIds.includes(m.missionId)) return {clear:'UNKNOWN', challenge:'UNKNOWN', commander:'UNKNOWN', copy:'No current reward eligibility supplied for this mission. Refresh the War Table; no bonus is promised.'};
   const clear = row?.lastClearCycle === field.board.cycleId ? "SECURED" : "AVAILABLE";
   const challenge = !m.challenge ? "NOT_APPLICABLE" : row?.lastChallengeCycle === field.board.cycleId ? "SECURED" : "AVAILABLE";
   const commander = field.commander.rank >= 3 || field.commander.certificationComplete ? "CERTIFIED" : "ACTIVE";
