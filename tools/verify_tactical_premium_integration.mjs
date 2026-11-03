@@ -11,6 +11,13 @@ const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops-src/version.ts']);
 const extended='tools/verify_tactical_brief_closure_browser.mjs';
 const reviewedMain='50fb6a2e9de7f3c3a905dcb5427f4f97e9701a09';
+const g2Baseline='24ac8223966ea60552e4e655f9d9d2e252a71b71';
+const approvedG2Sources=new Set([
+ 'tactical-ops-src/data/operations.ts',
+ 'tactical-ops-src/host/foundationProgression.ts',
+ 'tactical-ops-src/store/battleStore.ts',
+ 'tactical-ops-src/ui/App.tsx',
+]);
 const approvedG3Sources=new Set([
  'tactical-ops-src/data/progressionOpportunity.ts',
  'tactical-ops-src/host/foundationProgression.ts',
@@ -33,7 +40,7 @@ const app='tactical-ops-src/ui/App.tsx';
 let preserved=0;
 for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
- let source=approvedG3Sources.has(path) ? git('show',`${reviewedMain}:${path}`) : readFileSync(path,'utf8');
+ let source=approvedG3Sources.has(path) ? git('show',`${reviewedMain}:${path}`) : approvedG2Sources.has(path) ? git('show',`${g2Baseline}:${path}`) : readFileSync(path,'utf8');
  if(path==='tactical-ops-src/styles.ts'){
   // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
   const imported='import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";\n';
@@ -67,12 +74,18 @@ try{
  // must restore the exact original integrated App union, including all handlers.
  const current=git('show',`${reviewedMain}:${app}`);
  const actual=readFileSync(app,'utf8');
- const beforeG3=actual.slice(0,actual.indexOf('function WarTable()'))
+ const baselineActual=git('show',`${g2Baseline}:${app}`);
+ // G2 may change only the frozen run's Brief mission selector.
+ const oldHoldSelector='missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined)';
+ const newHoldSelector='missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null)';
+ assert.equal(actual.replace(newHoldSelector,oldHoldSelector),baselineActual,
+  'G2 changed App outside the frozen Hold mission selector');
+ const beforeG3=baselineActual.slice(0,baselineActual.indexOf('function WarTable()'))
   .replace('import { veteranOpportunityView } from "../data/progressionOpportunity";\n','');
  assert.equal(beforeG3, current.slice(0,current.indexOf('function WarTable()')),
   'G3 changed unrelated App declarations or imports');
  const fromSector=x=>x.slice(x.indexOf('function Sector()'));
- assert.equal(fromSector(actual),fromSector(current),
+ assert.equal(fromSector(baselineActual),fromSector(current),
   'G3 changed unrelated battle, results or app entry points');
  for(const marker of ['veteranOpportunityView(field)',
      'data-opportunity-status={veteranView.status}',
@@ -90,14 +103,14 @@ try{
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
-const uxRuntime=approvedG3Sources;
+const uxRuntime=new Set([...approvedG3Sources,...approvedG2Sources]);
 const upstreamChanges=new Set(git('diff','--name-only',base,reviewedMain).trim().split('\n'));
 for(const path of git('diff','--name-only',reviewedMain,'HEAD').trim().split('\n')){
  if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(uxRuntime.has(path),`unreviewed UX production change: ${path}`);
 }
 for(const path of git('diff','--name-only',base).trim().split('\n')){
  if(!(path.startsWith('tactical-ops-src/')||path.startsWith('js/')))continue;
- if(expected.has(path)||path==='tactical-ops-src/ui/returnPurpose.ts'||uxRuntime.has(path))continue;
+ if(expected.has(path)||uxRuntime.has(path))continue;
  assert(upstreamChanges.has(path),`unrelated production change: ${path}`);
  assert.equal(readFileSync(path,'utf8'),git('show',`${reviewedMain}:${path}`),`pre-existing main source changed by UX: ${path}`);
 }
