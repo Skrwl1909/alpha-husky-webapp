@@ -14,9 +14,10 @@ try {
  }
  assert.equal(Object.keys(ops.MISSION_DEFS).length,12,"twelve authored missions");
  const m=ops.MISSION_DEFS["field-relay-hold"];
- const field={board:{cycleId:7,activeMissionIds:["field-relay-hold"],nextRotationAt:1},commander:{rank:2,progress:9,unlockedApproaches:[]},records:{"field-relay-hold":{lastClearCycle:7,lastChallengeCycle:null}}};
+ const field={board:{cycleId:7,activeMissionIds:["field-relay-hold"],nextRotationAt:Math.floor(Date.now()/1000)+86400},commander:{rank:2,progress:9,unlockedApproaches:[]},records:{"field-relay-hold":{lastClearCycle:7,lastChallengeCycle:null}}};
  assert.equal(p.missionRewardTruth(m,field).clear,"SECURED");
  assert.equal(p.missionRewardTruth(m,field).challenge,"AVAILABLE");
+ assert.equal(p.missionRewardTruth(m,{...field,board:{...field.board,nextRotationAt:1}}).clear,"UNKNOWN","expired board must not promise eligibility");
  assert(!p.missionRewardTruth(m,field).copy.includes("First clear may"),"no false first clear");
  field.commander.rank=3;
  assert.equal(p.missionRewardTruth(m,field).commander,"CERTIFIED");

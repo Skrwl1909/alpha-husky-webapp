@@ -4,7 +4,7 @@ const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:
 try {
  const [r,p,ops,battle,rules]=await Promise.all(['/tactical-ops-src/ui/returnPurpose.ts','/tactical-ops-src/ui/missionPurpose.ts','/tactical-ops-src/data/operations.ts','/tactical-ops-src/combat/battle.ts','/tactical-ops-src/combat/missionRules.ts'].map(x=>vite.ssrLoadModule(x)));
  const ids=['field-relay-recovery','field-relay-hold','field-squad-survival'];
- const account=(rank=1)=>({completed:true,operations:{},fieldOps:{board:{cycleId:7,activeMissionIds:ids,reportVersion:3,directiveSet:'pursuit'},commander:{rank,progress:0,unlockedApproaches:['standard'],unlockedDirectiveTiers:rank===3?['standard','advanced']:['standard']},records:{}}});
+ const account=(rank=1)=>({completed:true,operations:{},fieldOps:{board:{cycleId:7,activeMissionIds:ids,reportVersion:3,directiveSet:'pursuit'},commander:{rank,progress:0,unlockedApproaches:['standard'],unlockedDirectiveTiers:rank===3?['standard','advanced']:['standard']},records:Object.fromEntries(ids.map(missionId=>[missionId,{missionId,clearCount:0,lastClearCycle:null,lastChallengeCycle:null,lastAdvancedCycle:null}]))}});
  for(const rank of [1,3]) {
   const a=account(rank),route=r.commandPurpose(a);
   assert.equal(route.primary.missionId,ids[0]);assert.equal(route.primary.title,'SECURE A FIELD OP');
@@ -32,7 +32,7 @@ try {
  const story=account();story.operations={'dead-relay':{missions:{'dead-relay-courier':'available'}}};assert.equal(r.commandPurpose(story).primary.missionId,'dead-relay-courier');
  assert.equal(r.commandPurpose({completed:true}).primary,null,'Unavailable is not a new reward');
  const sample={victory:true,firstCycleSecure:false,challengeSuccess:true,challengeBonus:0,xpGranted:0,bonesGranted:0,progressEarned:0,regionalApplied:false,pressureBefore:2,pressureAfter:1};
- assert.match(r.fieldResultPurpose(sample).exhausted,/already secured/);assert.match(r.fieldResultPurpose(sample).changed,/No regional change confirmed/);
+ assert.match(r.fieldResultPurpose(sample).exhausted,/No current-rotation clear bonus/);assert.match(r.fieldResultPurpose({...sample,regionalApplied:true}).exhausted,/already secured/);assert.match(r.fieldResultPurpose(sample).changed,/No regional change confirmed/);
  assert.match(r.fieldResultPurpose({...sample,rewardAmountsAvailable:false}).earned,/unavailable/);
  assert.match(r.fieldResultPurpose({...sample,regionalApplied:true}).future,/Already accepted runs keep/);
  assert(!r.fieldResultPurpose({...sample,regionalApplied:true,pressureBefore:1,pressureAfter:0}).future.includes('delay'),'No new delay when threshold was already active');
