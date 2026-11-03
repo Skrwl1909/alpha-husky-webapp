@@ -77,7 +77,6 @@ try{
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
    if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/New option unlocked/i);
    if(scenario==='failure')assert.match(await page.locator('h2').innerText(),/MISSION LOST/);
-   if(recorded){await ledger.locator('summary').click();assert(!await ledger.evaluate(e=>e.open),'accounting restores first-screen compact layout');}
    const controls=page.locator('.t-result-actions button');
    if(cinematic){
     const hero=panel.locator('.t-results-plate');
@@ -91,6 +90,7 @@ try{
      assert(r.y>=0&&r.y+r.height<=height,'compact primary action below initial viewport');
     }
    }
+   if(recorded){await ledger.locator('summary').click();assert(!await ledger.evaluate(e=>e.open),'accounting restores first-screen compact layout');}
    for(const b of await controls.all()){
     await b.scrollIntoViewIfNeeded();const rect=await b.boundingBox();assert(rect.height>=44&&rect.width>=44,'touch target too small');
     assert(await b.evaluate(e=>{const r=e.getBoundingClientRect(),hit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2);return hit===e||e.contains(hit)}),'blocked action');
