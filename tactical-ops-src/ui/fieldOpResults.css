@@ -112,3 +112,116 @@
 #tacticalOpsRoot .t-special-field-results .t-fr-details>details[open]{padding:12px 0}
 #tacticalOpsRoot .t-special-field-results .t-fr-details .t-field-feedback{margin:6px 0}
 #tacticalOpsRoot .t-special-field-results .t-special-balance{padding:10px;border:1px solid #466877;background:#0c2530}
+
+/* After Action Impact V1 — one receipt-confirmed breakthrough, one next decision.
+   Ordinary Field Ops only. No global modal, campaign, legacy or special-mode changes. */
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-outcome-hero{
+  min-height:155px;padding-bottom:12px;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-outcome-hero .t-kicker{
+  margin-top:54px;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-outcome-hero .t-title{
+  font-size:clamp(25px,7.2vw,35px);line-height:1.04;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-record{
+  padding-block:8px;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results)[data-recording=confirmed] .t-fr-record p{
+  display:none;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact{
+  position:relative;isolation:isolate;overflow:hidden;margin:12px 0 0;
+  padding:14px 15px 15px;border:1px solid #6eaab5;
+  border-left:3px solid #ace9ef;border-radius:3px;
+  background:linear-gradient(122deg,#163a43 0%,#0c2631 48%,#0a1922 100%);
+  box-shadow:inset 0 1px #c5f6ff23,0 8px 25px #0004;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact::after{
+  content:"";position:absolute;right:-22px;top:-35px;width:145px;height:145px;
+  border:1px solid #9bdde51b;border-radius:50%;
+  box-shadow:0 0 0 22px #86cad00b,0 0 0 44px #86cad008;
+  pointer-events:none;z-index:-1;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact-overline{
+  display:block;margin-bottom:5px;font:700 9px/1.4 var(--t-font-sans);
+  letter-spacing:.16em;color:#a4cbd6;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact-overline span{
+  color:#b9f5fc;margin-right:5px;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact-title{
+  display:block;max-width:29ch;margin:0;
+  font:800 clamp(18px,4.8vw,25px)/1.13 var(--t-font-display);
+  letter-spacing:.025em;text-wrap:balance;color:#ecfbff;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact p{
+  position:relative;max-width:56ch;margin-top:7px;
+  font-size:12px;line-height:1.5;color:#d4e8ed;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-kind=milestone]{
+  border-color:#b99d66;border-left-color:#f7dca0;
+  background:linear-gradient(120deg,#3b3424,#19272c 62%,#0b1a24);
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-kind=milestone] .t-fr-impact-title{color:#ffe7b0}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-kind=secured]{
+  border-color:#6d928d;border-left-color:#a0e2c8;
+  background:linear-gradient(110deg,#173632,#13262b,#0a1720);
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-kind=recorded]{
+  border-color:#526b75;border-left-color:#86a2ad;
+  background:linear-gradient(110deg,#192a32,#101e26);
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-next{
+  margin-top:11px;padding:0 1px;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-next>strong{
+  font-size:15px;color:#eaf7fb;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-next p{
+  font-size:11px;line-height:1.38;margin-top:3px;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-result-actions{
+  margin-top:9px;padding-bottom:10px;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-result-actions .t-btn-primary{
+  min-height:50px;border-color:#a1dce5;
+  box-shadow:inset 0 1px #d1f5ff4b,inset 0 -2px #020c14,0 5px 16px #0005;
+}
+#tacticalOpsRoot .t-field-results .t-fr-ledger{
+  margin:2px 0 0;border-top:1px solid #65869540;
+}
+#tacticalOpsRoot .t-field-results .t-fr-ledger>summary{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  min-height:48px;padding:10px 3px;list-style:none;
+  font-size:10px;font-weight:800;letter-spacing:.12em;color:#c6e4ec;
+}
+#tacticalOpsRoot .t-field-results .t-fr-ledger>summary::-webkit-details-marker{display:none}
+#tacticalOpsRoot .t-field-results .t-fr-ledger>summary::after{
+  content:"+";font:600 18px/1 var(--t-font-sans);color:#9ccbd5;
+}
+#tacticalOpsRoot .t-field-results .t-fr-ledger[open]>summary::after{content:"−"}
+#tacticalOpsRoot .t-field-results .t-fr-ledger>summary small{
+  margin-left:auto;font-size:10px;font-weight:400;letter-spacing:0;color:#9db9c4;
+}
+#tacticalOpsRoot .t-field-results .t-fr-ledger .t-fr-earned{
+  margin-top:2px;padding:12px 0;border-top:1px solid #6586953d;
+}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-details{
+  margin-top:2px;
+}
+@media(max-width:350px){
+  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-outcome-hero{min-height:142px}
+  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-outcome-hero .t-kicker{margin-top:43px}
+  #tacticalOpsRoot .t-field-results .t-fr-impact{padding:11px 12px 12px}
+  #tacticalOpsRoot .t-field-results .t-fr-ledger>summary small{font-size:9px;max-width:14ch}
+}
+@media(prefers-reduced-motion:no-preference){
+  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact{
+    animation:tactical-impact-reveal .42s ease-out both;
+  }
+  @keyframes tactical-impact-reveal{
+    from{opacity:.65;transform:translateY(7px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+}
