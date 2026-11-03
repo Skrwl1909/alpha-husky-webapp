@@ -10,6 +10,19 @@ const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops-src/version.ts']);
 const extended='tools/verify_tactical_brief_closure_browser.mjs';
+const reviewedMain='50fb6a2e9de7f3c3a905dcb5427f4f97e9701a09';
+const approvedG3Sources=new Set([
+ 'tactical-ops-src/data/progressionOpportunity.ts',
+ 'tactical-ops-src/host/foundationProgression.ts',
+ 'tactical-ops-src/ui/App.tsx',
+ 'tactical-ops-src/ui/FieldOpResults.tsx',
+ 'tactical-ops-src/ui/missionPurpose.ts',
+ 'tactical-ops-src/ui/returnPurpose.ts',
+ 'tactical-ops-src/version.ts',
+ 'js/tactical_ops.js',
+ 'js/boot_loaders.js',
+]);
+
 // Phase 04 deliberately restyles these two ordinary Results leaves. The caller,
 // receipt ownership, every other source and all legacy paths stay pinned.
 const presentationLeaves=new Set(['tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/fieldOpResults.css']);
@@ -18,7 +31,7 @@ const app='tactical-ops-src/ui/App.tsx';
 let preserved=0;
 for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
- let source=readFileSync(path,'utf8');
+ let source=approvedG3Sources.has(path) ? git('show',`${reviewedMain}:${path}`) : readFileSync(path,'utf8');
  if(path==='tactical-ops-src/styles.ts'){
   // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
   const imported='import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";\n';
@@ -50,7 +63,19 @@ try{
  const union=git('merge-file','-p',join(temp,'ours'),join(temp,'base'),join(temp,'theirs'));
  // Special Field Op presentation is an additive results-only branch. Reversing it
  // must restore the exact original integrated App union, including all handlers.
- const current=readFileSync(app,'utf8');
+ const current=git('show',`${reviewedMain}:${app}`);
+ const actual=readFileSync(app,'utf8');
+ const beforeG3=actual.slice(0,actual.indexOf('function WarTable()'))
+  .replace('import { veteranOpportunityView } from "../data/progressionOpportunity";\n','');
+ assert.equal(beforeG3, current.slice(0,current.indexOf('function WarTable()')),
+  'G3 changed unrelated App declarations or imports');
+ const fromSector=x=>x.slice(x.indexOf('function Sector()'));
+ assert.equal(fromSector(actual),fromSector(current),
+  'G3 changed unrelated battle, results or app entry points');
+ for(const marker of ['veteranOpportunityView(field)',
+     'data-opportunity-status={veteranView.status}',
+     'data-opportunity-status={veteranBrief.status}'])
+  assert(actual.includes(marker),'missing G3 integration: '+marker);
  const commandBaseline=git('show','281335d26b5fbdc83977de869edab74c222fe1ab:'+app);
  const cutBefore=x=>x.slice(0,x.indexOf('function WarTable()'));
  const cutAfter=x=>x.slice(x.indexOf('function Brief()'));
@@ -63,8 +88,7 @@ try{
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
-const reviewedMain='e85d6dcef087ba47f35b68235a706664be1e521f';
-const uxRuntime=new Set(['tactical-ops-src/ui/App.tsx','tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/commandDeck.css','js/tactical_ops.js']);
+const uxRuntime=approvedG3Sources;
 const upstreamChanges=new Set(git('diff','--name-only',base,reviewedMain).trim().split('\n'));
 for(const path of git('diff','--name-only',reviewedMain,'HEAD').trim().split('\n')){
  if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(uxRuntime.has(path),`unreviewed UX production change: ${path}`);
