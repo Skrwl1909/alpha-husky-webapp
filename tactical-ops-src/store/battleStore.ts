@@ -42,7 +42,7 @@ import {
   resolveDeploySpawns,
   type OnboardingEncounterId,
 } from "../data/onboarding";
-import { missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
+import { g2HoldRevisionForRequest, missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
@@ -950,11 +950,12 @@ export const useBattleStore = create<Store>((set, get) => {
                    !persisted.progression.tacticalChapter.intelConsumedByRunId &&
                    requestedRuleset === TACTICAL_VNEXT_RULESET ? 1:undefined,
                 persisted.progression.fieldOps?.veteranProgressionAvailable ? 2 : undefined,
-                mission.missionId==="field-relay-intercept" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.fieldOps?.interceptRevisionAvailable===2 || (persisted.chapterMode ? persisted.progression.chapterActiveMission?.rulesContract?.missionRevision : existing?.rulesContract?.missionRevision)===2) ? 2 : undefined,
+                (mission.missionId==="field-relay-intercept" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.fieldOps?.interceptRevisionAvailable===2 || (persisted.chapterMode ? persisted.progression.chapterActiveMission?.rulesContract?.missionRevision : existing?.rulesContract?.missionRevision)===2)) ? 2 :
+                g2HoldRevisionForRequest(mission.missionId,requestedRuleset,persisted.progression.deadRelayHoldRevisionAvailable,existing),
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
-              const acceptedMission = missionForContext(mission, started.run.fieldContext, started.run.rulesContract?.missionRevision);
+              const acceptedMission = missionForContext(mission, started.run.fieldContext, started.run.rulesContract?.missionRevision, started.run.campaignContext);
               // Review the server-frozen Intercept formation before the first turn.
               if (mission.missionId === "field-relay-intercept" && started.run.started) {
                 set({busy:false,screen:"brief",ticker:null});return;
