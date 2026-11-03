@@ -58,6 +58,15 @@ try{
    assert.equal(await page.locator('.t-field-results').count(),1);const panel=page.locator('.t-field-results');
    const recorded=!['pending','error','stale','stale-mission','unrecorded'].includes(scenario);
    assert.equal(await panel.getAttribute('data-recording'),recorded?'confirmed':scenario==='pending'?'pending':scenario==='error'?'failed':'unrecorded');
+   // Detailed earnings have moved below the prominent impact and next action.
+   // Exercise the native disclosure before inspecting retained receipt accounting.
+   const ledger=panel.locator('.t-fr-ledger');
+   assert.equal(await ledger.count(),recorded?1:0,'receipt-only detail disclosure');
+   if(recorded){
+     assert.equal(await ledger.getAttribute('open'),null,'accounting starts collapsed');
+     await ledger.locator('summary').click();
+     assert(await ledger.evaluate(e=>e.open),'accounting remains keyboard/touch accessible');
+   }
    assert.equal(await page.getByLabel('Confirmed mission earnings',{exact:true}).count(),recorded?1:0);
    if(scenario==='missing'){
     assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['—','—','+1']);
@@ -68,6 +77,7 @@ try{
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
    if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/New option unlocked/i);
    if(scenario==='failure')assert.match(await page.locator('h2').innerText(),/MISSION LOST/);
+   if(recorded){await ledger.locator('summary').click();assert(!await ledger.evaluate(e=>e.open),'accounting restores first-screen compact layout');}
    const controls=page.locator('.t-result-actions button');
    if(cinematic){
     const hero=panel.locator('.t-results-plate');
