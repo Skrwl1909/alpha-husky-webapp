@@ -74,11 +74,26 @@ try{
  // must restore the exact original integrated App union, including all handlers.
  const current=git('show',`${reviewedMain}:${app}`);
  const actual=readFileSync(app,'utf8');
+ // Remove only the eight exact reviewed G4 UI additions; every other App byte is pinned.
+ let normalizedG4=actual;
+ for(const snippet of [
+ "\nimport { currentFieldWindow, fieldWindow } from \"../data/livingBattlefield\";",
+ "\n  const highlightedFieldWindow = activeMissionIds.map(id => ({ id, window: currentFieldWindow(id, field?.board, field?.region) })).find(item => item.window) || null;",
+ "\n              {primaryPurpose && !primaryPurpose.resume && recommendedMission?.activity === \"FIELD_OP\" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region) ? <p className=\"t-brief-purpose-meta\" data-g4-command-window=\"true\">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region)?.text}</p> : null}",
+ "\n            {highlightedFieldWindow ? <small data-g4-world-window=\"true\">{getMissionDef(highlightedFieldWindow.id)?.name} · {highlightedFieldWindow.window?.text}</small> : null}",
+ "\n              const tacticalWindow = currentFieldWindow(mission.missionId, field?.board, field?.region);",
+ "\n                    {tacticalWindow ? <p className=\"t-brief-purpose-meta\" data-g4-mission-window=\"true\">{tacticalWindow.text}</p> : null}",
+ "\n  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region) : null;",
+ "\n                {deploymentWindow ? <small data-g4-brief-window=\"true\">{resuming ? \"ACCEPTED TIMING · \" : \"NEXT DEPLOYMENT · \"}{deploymentWindow.text}</small> : null}"
+]) {
+  assert(normalizedG4.includes(snippet),'missing audited G4 App insertion: '+snippet.slice(0,65));
+  normalizedG4=normalizedG4.replace(snippet,'');
+ }
  const baselineActual=git('show',`${g2Baseline}:${app}`);
  // G2 may change only the frozen run's Brief mission selector.
  const oldHoldSelector='missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined)';
  const newHoldSelector='missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null)';
- assert.equal(actual.replace(newHoldSelector,oldHoldSelector),baselineActual,
+ assert.equal(normalizedG4.replace(newHoldSelector,oldHoldSelector),baselineActual,
   'G2 changed App outside the frozen Hold mission selector');
  const beforeG3=baselineActual.slice(0,baselineActual.indexOf('function WarTable()'))
   .replace('import { veteranOpportunityView } from "../data/progressionOpportunity";\n','')
