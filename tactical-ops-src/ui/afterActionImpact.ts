@@ -12,14 +12,6 @@ type Consequence = { label: string; detail: string } | null;
 /** A consequential battle should feel consequential *before* its accounting is shown. */
 export function recordedImpact(receipt: FieldResult, consequence: Consequence): RecordedImpact {
   const mastery = receipt.masteryChanges?.find(change => change.veteran?.unlocked || change.stage > change.beforeStage);
-  if (receipt.victory && receipt.regionalApplied && receipt.pressureBefore >= 2 && receipt.pressureAfter < 2) {
-    return {
-      kind: "world",
-      eyebrow: "BATTLEFIELD SHIFT CONFIRMED",
-      title: "HOUND REINFORCEMENTS DELAYED",
-      detail: `Signal Pressure ${receipt.pressureBefore} → ${receipt.pressureAfter}. Your Pack gains one extra preparation round in new eligible reinforcement Field Ops. Already accepted runs keep their original timing.`,
-    };
-  }
   if (receipt.veteranCareer?.unlocked) return {
     kind: "milestone", eyebrow: "CAREER BREAKTHROUGH", title: "VETERAN EARNED",
     detail: "Rank 4 recorded. Pack Extraction is now unlocked.",
@@ -34,6 +26,14 @@ export function recordedImpact(receipt: FieldResult, consequence: Consequence): 
     title: `${mastery.unitId} · ${mastery.veteran?.unlocked ? "VETERAN UNLOCKED" : "MASTERY STAGE ADVANCED"}`,
     detail: mastery.veteran?.unlocked ? "A new companion option was unlocked by this result." : `Mastery stage ${mastery.beforeStage} → ${mastery.stage}. Review this unit's saved capabilities.`,
   };
+  if (receipt.victory && receipt.regionalApplied && receipt.pressureBefore >= 2 && receipt.pressureAfter < 2) {
+    return {
+      kind: "world",
+      eyebrow: "BATTLEFIELD SHIFT CONFIRMED",
+      title: "HOUND REINFORCEMENTS DELAYED",
+      detail: `Signal Pressure ${receipt.pressureBefore} → ${receipt.pressureAfter}. Your Pack gains one extra preparation round in new eligible reinforcement Field Ops. Already accepted runs keep their original timing.`,
+    };
+  }
   if (consequence) return {
     kind: "world", eyebrow: "WORLD STATE RECORDED",
     title: consequence.label, detail: consequence.detail,
