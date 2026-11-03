@@ -28,6 +28,12 @@ try {
    assert.equal(currentFieldWindow(id,{...board,nextRotationAt:1},{cycleId:13,pressure:1}),null,'expired board cannot claim opportunity');
    assert.equal(currentFieldWindow(id,{...board,activeMissionIds:[]},{cycleId:13,pressure:1}),null,'mission must be active');
  }
+ const advancedBoard={cycleId:13,nextRotationAt:Math.floor(Date.now()/1000)+3600,
+   reportVersion:3,directiveSet:'pursuit',activeMissionIds:['field-isolated-hold','field-rearguard']};
+ assert.equal(currentFieldWindow('field-isolated-hold',advancedBoard,{cycleId:13,pressure:1}),null,'Standard isolated hold has no HOUND');
+ assert.equal(currentFieldWindow('field-isolated-hold',advancedBoard,{cycleId:13,pressure:1},Date.now(),'advanced')?.actualRound,3,'Advanced pursuit introduces HOUND with reduced-pressure delay');
+ assert.equal(currentFieldWindow('field-rearguard',advancedBoard,{cycleId:13,pressure:1},Date.now(),'advanced')?.actualRound,3,'Advanced pursuit moves baseline from 3 to 2 before pressure delay');
+ assert.equal(currentFieldWindow('field-rearguard',advancedBoard,{cycleId:13,pressure:2},Date.now(),'advanced')?.actualRound,2,'Advanced pursuit baseline must be truthful');
  assert.equal(fieldWindow(getMissionDef('field-isolated-hold'),{pressure:1}),null,'no fake reinforcement for other directives');
  assert.equal(fieldWindow(getMissionDef('dead-relay-hold'),{pressure:1}),null,'campaign consequence is separate from Field Ops');
  assert.equal(fieldWindow(getMissionDef('field-relay-hold'),undefined),null,'no unsupported prediction');
