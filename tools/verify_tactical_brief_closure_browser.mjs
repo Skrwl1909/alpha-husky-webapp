@@ -42,7 +42,10 @@ try{
    assert.equal(await recoverRules.evaluate(e=>e.open),false,'full rules start collapsed');
    await recoverRules.locator('summary').click();
    assert.match(await recoverRules.innerText(),/relay.*orthogonal cell/s,'full legal RECOVER range preserved');
-   if(tier==='advanced')assert.match(await recoverRules.innerText(),/rounds divisible by 2.*round 6/s,'advanced timing remains explicit in rules');
+   if(tier==='advanced'){
+     assert.match(await recoverRules.innerText(),/rounds divisible by 2/,'advanced signal cycle remains explicit');
+     assert.match(await overview.innerText(),/round 6/,'advanced deadline remains visible in fail condition');
+   }
    await recoverRules.locator('summary').click();
    const threats=page.getByLabel('Tactical threats',{exact:true});
    assert.equal(await threats.evaluate(e=>e.open),false);
