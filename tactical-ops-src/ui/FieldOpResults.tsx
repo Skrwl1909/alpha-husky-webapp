@@ -52,7 +52,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       <strong className="t-fr-impact-title">{impact.title}</strong>
       <p>{impact.detail}</p>
     </section> : null}
-    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason}</p></div> : null}
+    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason.replace("Clear bonus already secured; an eligible challenge can still add progress.", "First win saved. The bonus challenge is still open.")}</p></div> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     {receipt ? <details className="t-fr-ledger">
       <summary><span>MISSION RECORD</span><small>Commander · Veteran · Mastery · Rewards</small></summary>
