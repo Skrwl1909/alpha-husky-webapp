@@ -368,7 +368,6 @@ function ObjectiveChip() {
   const directive = objectiveDirective(battle);
   const objective = battle.objective;
   const activeHound = battle.reinforcement;
-  // Display only live, combat-resolved timing that matches a saved Field Op context.
   const acceptedWindow = mission ? fieldWindow(mission, acceptedContext) : null;
   const packBoughtTime = Boolean(acceptedWindow?.delayed && activeHound &&
     !activeHound.spawned && acceptedWindow.actualRound === activeHound.triggerRound);
