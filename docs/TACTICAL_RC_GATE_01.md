@@ -45,6 +45,8 @@ S2 wykazało ruch, umiejętności, SKIP, telegraphy, kontry i dwie drogi zwycię
 
 Po instalacji zależności w repozytorium frontendu uruchom poniższe polecenia. Workflow `Tactical VNext global contract` wykonuje podstawową bramkę, sprawdza składnię i porównuje wygenerowany bundle i loader z commitem.
 
+Porównanie bajtów bundle’a wykonuj na Ubuntu z Node 22, tak jak w CI. Windows odtworzył własny build, a kanoniczny workflow zsynchronizował różniący się IIFE z Ubuntu w `776ca44`.
+
 ```bash
 node tools/verify_tactical_ops_vnext_contract.mjs
 node tools/verify_tactical_vnext_run_contract_wire.mjs
@@ -70,10 +72,12 @@ Wynik lokalny obejmuje 29 przechodzących uruchomień skryptów frontendu, w tym
 
 ## Handoff S4
 
-Na Samsungu S26 Ultra i iPhonie 13 użyj Telegrama. Powtórz na Androidzie standalone po udostępnieniu buildu. Zapisz platformę, build, misję, rodzaj połączenia, wynik oraz krótkie kroki do odtworzenia problemu. Użyj wyłącznie zatwierdzonych kont QA.
+Na Samsungu S26 Ultra i iPhonie 13 użyj Telegrama. Powtórz na Androidzie standalone po udostępnieniu buildu. Sprawdź, czy HUD i Action Dock mieszczą się w obszarze dostępnym na dotyk, także po zmianie orientacji i powrocie z tła. Zapisz platformę, build, misję, rodzaj połączenia, wynik oraz krótkie kroki do odtworzenia problemu. Użyj wyłącznie zatwierdzonych kont QA.
 
 1. Przejdź **WAR TABLE → BRIEF → SQUAD → BATTLE → RESULTS → NEXT OPERATION**. Rozpocznij od misji wskazanej przez War Table. Sprawdź, czy cel i wybór składu wystarczą do podjęcia pierwszej decyzji. W walce sprawdź ruch, umiejętność i SKIP, w tym akcję ocalałego sojusznika po utracie Alphy, jeśli reguły na to pozwalają.
 2. W kwalifikującym się Field Relay Hold lub Relay Intercept ze wsparciem porównaj rzeczywisty spawn HOUND z zapowiedzią. Dla bazowej rundy 2 oczekuj rundy 2 przy Pressure 2–3, rundy 3 przy 0–1. Potwierdź, że wznowienie wcześniej przyjętej próby zachowuje jej rundę. Alternatywnie sprawdź Dead Relay Hold z prawdziwym Courier Trace i bez niego według reguł zaakceptowanej rewizji.
 3. Porównaj jedno istniejące ulepszenie składu przed zakupem i po nim. Przykład: w Signal Atlas wybierz dostępne ulepszenie CNC Suppress, zapisz pokazywany i faktyczny efekt przed/po w porównywalnych nowych próbach. Sprawdź, czy stara zaakceptowana próba zachowała własny snapshot. Użyj właściwego celu, dystansu i statusów dla obu pomiarów.
 4. Po wyniku odczytaj potwierdzony zysk i wykonaj sugerowaną kolejną akcję. W osobnej sesji QA przeładuj Results, ponów rozliczenie i sprawdź pojedynczy first clear/challenge. Wykonaj także jedną porażkę, aby sprawdzić czytelny, prawdziwy wynik i dalszą opcję.
 5. Przeprowadź pięć sesji bez podpowiedzi, w tym jedną z Kacprem. Po przejściu zadaj cztery pytania. **Jaki był twój cel? Która decyzja zmieniła walkę? Co zyskał twój Pack? Co zrobisz dalej i dlaczego?** Zapisz odpowiedzi i miejsca zatrzymania przed wyjaśnieniem mechanik.
+
+Próg S4 według blueprintu. Co najmniej 4/5 testerów samodzielnie nazywa cel i warunek zwycięstwa (H1), a co najmniej 4/5 wskazuje rzeczywistą zdobycz i następny próg (H2). Zapisz, czy różne plany prowadziły do różnych skutków (H3), co zmieniło ulepszenie (H4) i czy tester sam podjął następną próbę lub podał konkretny powód powrotu (H5).
