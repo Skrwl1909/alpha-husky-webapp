@@ -29,6 +29,7 @@ window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical
  if(kind==='chapter'){
   canonical.tacticalChapter={version:1,chapterId:'edge-relay',status:'ACTIVE',doctrine:'RECON',revision:0,completedMissionIds:[],activeRunId:run.runId,intelEffect:'NONE',intelConsumedByRunId:null,lastReceiptId:null};
   canonical.chapterActiveMission={...run,missionId:'field-relay-recovery',chapterContext:{version:1,chapterId:'edge-relay',doctrine:'RECON',stageIndex:0},
+   combatProfileV3:{version:3,mode:'battle-v1',alpha:{hp:120,atk:28,def:12,spd:14},pet:null},
    rulesContract:{rulesetVersion:'tactical-intent-vnext.0',missionId:'field-relay-recovery',missionRevision:1,combatProfileVersion:3,masterySnapshotVersion:1,rewardPolicyVersion:1,source:'BACKEND_SNAPSHOT'}};
  }
 }};

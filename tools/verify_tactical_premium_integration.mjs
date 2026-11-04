@@ -127,19 +127,17 @@ try{
    .replace(/  const specialKind = !chapterMode[\s\S]*?(?=  return \(\n    <div className="t-fill">\n      <Background dim=\{0\.6\} \/>\n      <div className="t-overlay t-results-overlay">)/,'');
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
-const expected=new Set(heads.flatMap(changed));
-// Reviewed After Action Impact V1 leaf: receipt presenter plus its existing Results/CSS surface.
-const impactLeaves=['tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/fieldOpResults.css','tactical-ops-src/ui/afterActionImpact.ts'];
-const uxRuntime=new Set([...approvedG3Sources,...approvedG2Sources,'tactical-ops-src/data/livingBattlefield.ts','tactical-ops-src/ui/Battle.tsx',...impactLeaves]);
-const upstreamChanges=new Set(git('diff','--name-only',base,reviewedMain).trim().split('\n'));
-for(const path of git('diff','--name-only',reviewedMain,'HEAD').trim().split('\n')){
- if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(uxRuntime.has(path),`unreviewed UX production change: ${path}`);
-}
-for(const path of git('diff','--name-only',base).trim().split('\n')){
- if(!(path.startsWith('tactical-ops-src/')||path.startsWith('js/')))continue;
- if(expected.has(path)||uxRuntime.has(path))continue;
- assert(upstreamChanges.has(path),`unrelated production change: ${path}`);
- assert.equal(readFileSync(path,'utf8'),git('show',`${reviewedMain}:${path}`),`pre-existing main source changed by UX: ${path}`);
+// Keep the historical UI comparisons above. Protect the working tree against
+// the exact merged production baseline, including Browser Guest from PR #237.
+const mergedBaseline='7ffa44997b71cb4c7c3fa230abaf88c9f72444dc';
+git('merge-base','--is-ancestor',mergedBaseline,'HEAD');
+const rcContractPaths=new Set([
+ ...generated,
+ 'tactical-ops-src/combat/intentContract.ts',
+ 'tactical-ops-src/host/foundationProgression.ts',
+]);
+for(const path of git('diff','--name-only','--no-renames',mergedBaseline,'--','index.html','js','tactical-ops-src').trim().split('\n').filter(Boolean)){
+ assert(rcContractPaths.has(path),`unreviewed production change since merged baseline: ${path}`);
 }
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
 const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');

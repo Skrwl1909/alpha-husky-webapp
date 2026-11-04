@@ -5,6 +5,9 @@ on:
       - "tactical-ops-src/combat/intentContract.ts"
       - "tactical-ops-src/data/missionContracts.ts"
       - "tools/verify_tactical_ops_vnext_contract.mjs"
+      - "tools/verify_tactical_vnext_run_contract_wire.mjs"
+      - "tools/verify_tactical_vnext_step5_squad_matrix.mjs"
+      - "tools/simulate_tactical_vnext_step0_legacy.mjs"
       - "docs/TACTICAL_VNEXT_GLOBAL_RULES_CONTRACT_2026-10-19.md"
       - ".github/workflows/tactical-vnext-global-contract.yml"
   workflow_dispatch:
@@ -21,7 +24,11 @@ jobs:
       - name: Install
         run: npm install --no-audit --no-fund
       - name: Global VNext coverage + deterministic intent invariants
-        run: node tools/verify_tactical_ops_vnext_contract.mjs
+        run: |
+          node tools/verify_tactical_ops_vnext_contract.mjs
+          node tools/verify_tactical_vnext_run_contract_wire.mjs
+          node tools/verify_tactical_vnext_step5_squad_matrix.mjs
+          node tools/simulate_tactical_vnext_step0_legacy.mjs
       - name: Legacy real-unit and campaign regressions
         run: |
           node tools/verify_tactical_ops_pr1b.mjs
@@ -33,4 +40,5 @@ jobs:
       - name: Check bundle syntax and existing failure records
         run: |
           node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
           node tools/verify_tactical_ops_failure_recording.mjs
