@@ -179,7 +179,7 @@ for(const conf of [
   await t.button("Play as Guest").handlers.click();
   t.button("I saved the code — enter game").handlers.click();
   for(let i=0;i<8;i++) await Promise.resolve();
-  assert.deepEqual(sequence,["profile","awakening","oath","onboarding"]);
+  assert.equal(sequence.join(","),"profile,awakening,oath,onboarding");
 }
 assert.match(html,/browser_guest_entry_v1\.js/);
 assert.match(html,/AlphaBrowserGuestV1\?\.shouldHoldBoot/);
