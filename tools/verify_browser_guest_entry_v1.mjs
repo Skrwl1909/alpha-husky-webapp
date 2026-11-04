@@ -178,7 +178,7 @@ for(const conf of [
   t.window.Onboarding={open:async()=>{sequence.push("onboarding");}};
   await t.button("Play as Guest").handlers.click();
   t.button("I saved the code — enter game").handlers.click();
-  for(let i=0;i<8;i++) await Promise.resolve();
+  await new Promise(resolve => setImmediate(resolve));
   assert.equal(sequence.join(","),"profile,awakening,oath,onboarding");
 }
 assert.match(html,/browser_guest_entry_v1\.js/);
