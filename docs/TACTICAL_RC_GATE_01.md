@@ -1,6 +1,6 @@
 # Tactical Ops RC Gate 01
 
-**Decyzja: HOLD dla G0 i S4.** Baza frontendu `7ffa44997b71cb4c7c3fa230abaf88c9f72444dc` zawiera PR #238 i #239 oraz bundle `v3.6.32-player-voice-v1`. Ten RC zamyka lukę walidacji wersji kontraktu. Oficjalna akceptacja wymaga dowodu z wdrożonego backendu i sesji z graczami.
+**Decyzja: HOLD dla G0 i S4.** Baza frontendu `7ffa44997b71cb4c7c3fa230abaf88c9f72444dc` zawiera PR #238 i #239 oraz bundle `v3.6.32-player-voice-v1`. Ten RC zamyka luki walidacji wersji kontraktu i brakującego profilu V3. Oficjalna akceptacja wymaga dowodu z działającego backendu i sesji z graczami.
 
 ## Przepływ kontraktu
 
@@ -63,12 +63,89 @@ W odizolowanej kopii źródeł backendu `python -B -m unittest test_tactical_vne
 
 Wynik lokalny obejmuje 29 przechodzących uruchomień skryptów frontendu, w tym G1–G4, S2, Intercept i Results. Backend zwrócił 21/21 testów kontraktu i 34/34 trwałości w głównej kopii, 77/77 w odtworzonej paczce G1 oraz 4/4 w kandydacie projekcji G3. Wyniki backendu mają oddzielne bazy i częściowo nakładające się przypadki. Uruchomienie samych testów G1 na głównej, mieszanej kopii dało 11/16, w tym dwa błędy braku `activate_v2`. Dlatego dowód G1 jest przypisany do odtworzonej paczki.
 
-## Otwarte przypadki
+## Zamknięcie inżynierskie
 
-- **P0 · dowód wdrożenia.** Ustalić wersje działających modułów i porównać zanonimizowaną projekcję zaakceptowanego runu przed i po wznowieniu. Zebrać wersje kontraktu, typ celu, wymiary planszy, skład jako role, wersje zamrożonego progresu, faktyczną rundę wsparcia i delty po pierwszym zapisie i ponowieniu. Włączyć jedną próbę Legacy, rewizje 1 i 2 oraz przypadki first clear/challenge. Raportować zgodność runu jako tak/nie, bez identyfikatorów graczy, sesji, żądań i runów.
-- **P0 · niezależna luka w odpowiedzi klienta.** W wire fixture zaakceptowany run z kontraktem 3 przechodzi przez `startOperationMission` bez `combatProfileV3`. `applyRunCombatProfile` zwraca wówczas bazowe spawny. Lokalny backend dołącza profil i ma osobny test uszkodzonego zapisu. Dowód dotyczy syntetycznej odpowiedzi i ścieżki frontendu. Obserwacja z produkcji pozostaje otwarta.
-- **P1 · istniejący test pochodzenia źródeł.** `node tools/verify_tactical_premium_integration.mjs` na bazie `7ffa449` z plikami LF odrzuca `js/browser_guest_entry_v1.js` jako `unreviewed UX production change`. To osobna bramka z listą zmian dozwolonych dla wcześniejszej integracji UX. Wymaga rozstrzygnięcia przed przyjęciem tego RC.
-- **P1 · S4.** Wykonać poniższy handoff i zapisać wyniki.
+- W testach wire stary parser przyjmował kontrakt misji bez V3. Start oraz projekcje aktywnych prób Canon, Field Ops i Chapter wymagają teraz prawidłowego `combatProfileV3`, jeśli mają zaakceptowany kontrakt. Starsze próby bez kontraktu zachowują dotychczasowe parsowanie. Osobny format onboardingowego Foundation publikuje `foundationRunRules` i korzysta z własnego inicjalizatora walki. Zachowano ten protokół.
+- Trzy workflow zgłaszały `unreviewed UX production change: js/browser_guest_entry_v1.js`. Plik został dodany na `main` przez PR #237. Test zachowuje ścisłe historyczne porównania App/Battle i porównuje zmiany kodu produkcyjnego z dokładnym SHA `7ffa449`, dopuszczając pięć wskazanych plików RC. Porównanie obejmuje również `index.html`.
+- Właściciel potwierdził 3/3 zgodnych plików backendu na dysku. Katalog roboczy i moment startu API są zgodne z tą wersją źródeł. To dowód tożsamości plików i chronologii. Tożsamość modułów w pamięci i przebieg sesji QA pozostają do potwierdzenia.
+
+## Handoff runtime
+
+Uruchom wyłącznie po wyraźnej zgodzie właściciela na start, wznowienie, zapis wyniku i dwa ponowienia na jednym wskazanym koncie QA. Preferuj istniejące środowisko izolowane z tym samym backendem i kandydatem frontendu. Próbę na produkcji przeprowadza właściciel po osobnej zgodzie na zapis na tym koncie. Zaloguj konto QA zwykłym wejściem Telegram lub zatwierdzoną sesją aplikacji. Użyj jednego okna z konsolą deweloperską. Zaplanuj test z dala od zmiany rotacji, bez innych prób ani aktywności na tym koncie. Wybierz zwykłe Field Relay Hold albo Relay Intercept ze wsparciem HOUND, bez aktywnej próby, z dostępną nagrodą first clear i niezaliczonym wyzwaniem rotacji. Jeśli takich warunków brakuje, zapisz HOLD dla brakującego przypadku.
+
+W konsoli zalogowanej aplikacji uruchom poniższy kod. Instalacja wyłącznie obserwuje wywołania. Start i pierwszy zapis wykonuje zwykły klient. Skrypt używa `window.apiPost` z tej sesji do `POST /webapp/tactical-foundation/state` i do powtórzeń `POST /webapp/tactical-foundation/mission/continue`. Treść autoryzacji obsługuje aplikacja. Raportuj wyłącznie zwracane podsumowania i obserwacje UI. Surowe żądania, odpowiedzi, nagłówki i identyfikatory pozostają w sesji QA.
+
+```js
+(() => {
+  if (window.rc241 || typeof window.apiPost !== 'function') throw Error('QA_SETUP');
+  const post = window.apiPost;
+  const root = '/webapp/tactical-foundation';
+  const settle = `${root}/mission/continue`;
+  const stable = value => JSON.stringify(value, (_, x) => x && typeof x === 'object' && !Array.isArray(x)
+    ? Object.fromEntries(Object.keys(x).sort().map(k => [k, x[k]])) : x);
+  const same = (a, b) => stable(a) === stable(b);
+  const state = async () => (await post(`${root}/state`, {})).data;
+  let started, resumed, settled, body, repeated = false;
+  window.apiPost = async (path, payload) => {
+    const response = await post(path, payload);
+    if (path === `${root}/mission/start` && response.ok && response.run?.fieldContext) {
+      if (!started) started = structuredClone(response.run);
+      else resumed = structuredClone(response.run);
+    }
+    if (path === settle && !settled && started && response.ok && response.fieldResult?.runId === started.runId) {
+      body = structuredClone(payload);
+      settled = structuredClone(response);
+    }
+    return response;
+  };
+  const frozen = ({started: _, ...run}) => run;
+  const projection = s => [s.revision, s.fieldOps.records[started.missionId], s.fieldOps.commander,
+    s.fieldOps.veteranCareer, s.fieldOps.rotationProgress, s.fieldOps.careerRecord, s.playerGrowth, s.packMastery];
+  window.rc241 = {
+    async battle() {
+      if (!started) throw Error('QA_NO_FIELD_START');
+      const active = (await state()).fieldOps?.activeMissionRun;
+      const run = resumed || started;
+      const tiles = [...document.querySelectorAll('#tacticalOpsRoot .t-grid > i')];
+      const rules = run.rulesContract;
+      return {mission: run.missionId, vnext: rules?.rulesetVersion === 'tactical-intent-vnext.0',
+        backendSnapshot: rules?.source === 'BACKEND_SNAPSHOT', missionRevision: rules?.missionRevision,
+        rewardPolicyVersion: rules?.rewardPolicyVersion, masterySnapshotVersion: rules?.masterySnapshotVersion,
+        profileV3: rules?.combatProfileVersion === 3 && run.combatProfileV3?.version === 3,
+        persisted: !!active && same(frozen(run), frozen(active)), newRun: started.started === true,
+        resumedSame: resumed ? !resumed.started && same(frozen(started), frozen(resumed)) : null,
+        grid: [new Set(tiles.map(t => t.style.left)).size, new Set(tiles.map(t => t.style.top)).size]};
+    },
+    async repeat() {
+      if (!settled || repeated) throw Error('QA_NO_FRESH_SETTLEMENT');
+      repeated = true;
+      const receipt = settled.fieldResult;
+      const before = await state();
+      const retry = await post(settle, body);
+      let duplicateBlocked = false;
+      try {
+        await post(settle, {...body, expectedRevision: before.revision, requestId: `rc241-${crypto.randomUUID()}`});
+      } catch (error) {
+        duplicateBlocked = error.status === 409 && error.data?.code === 'run_already_committed';
+      }
+      const after = await state();
+      return {victory: receipt.victory, firstClear: settled.firstClear, challenge: receipt.firstCycleChallenge,
+        xp: receipt.xpGranted, bones: receipt.bonesGranted,
+        durable: before.fieldOps.lastCompletedMissionRunId === started.runId &&
+          !before.fieldOps.activeMissionRun && same(projection(before), projection(settled.data)),
+        sameReceipt: retry.idempotent === true && retry.firstClear === settled.firstClear && same(retry.fieldResult, receipt),
+        duplicateBlocked, progressionUnchanged: same(projection(before), projection(after))};
+    },
+    stop() { window.apiPost = post; delete window.rc241; }
+  };
+})();
+```
+
+1. **START.** Zapisz salda XP i Bones z UI. Rozpocznij wskazaną misję z War Table, a na planszy uruchom `await rc241.battle()`. Oczekuj `newRun`, `persisted`, `profileV3`, `vnext` i `backendSnapshot` równych `true`, `grid: [10, 7]` oraz wersji 1 dla polityki nagród i Mastery. Oczekuj rewizji 1 dla Relay Hold albo 2 dla Relay Intercept, jeśli serwer oferuje rewizję 2. Zapisz typ celu i rundę HOUND z HUD. Brak capability lub zaakceptowanego VNext daje HOLD dla tego środowiska. VNext bez poprawnego profilu lub z błędną geometrią daje NO-GO dla tej próby.
+2. **RESUME.** Wyjdź do War Table przed zakończeniem, wznów tę samą próbę i ponów `await rc241.battle()`. Oczekuj `resumedSame: true`, `persisted: true`, tej samej geometrii, celu i rundy HOUND. Porównanie obejmuje ID, skład, profile, wzrost, Mastery i kontekst wewnątrz sesji. Zmiana zaakceptowanych danych daje NO-GO.
+3. **SETTLEMENT i REPEAT.** Wygraj i spełnij warunek wyzwania z Briefu. Poczekaj na potwierdzenie zapisu w Results i odnotuj zmianę sald. Uruchom `await rc241.repeat()` raz. Wymagane są `victory`, `firstClear`, `challenge`, `durable`, `sameReceipt`, `duplicateBlocked` i `progressionUnchanged` równe `true`. Odśwież projekcję sald w aplikacji i sprawdź, że XP i Bones wzrosły tylko o delty z pierwszego zapisu. Powtórny przyrost, niespójny receipt lub brak trwałego zapisu daje NO-GO. Jeśli warunek zwycięstwa lub challenge nie został spełniony, raportuj brak pokrycia. Zakończ `rc241.stop()`.
+
+Przekaż tylko status każdego kroku, publiczną nazwę misji, wersje, wymiary, cel, rundę HOUND, zwrócone wartości logiczne oraz delty nagród. W razie błędu przekaż kod i etap. Ten protokół sprawdza zachowanie obsługującej sesję instancji API. Identyfikacja konkretnych modułów w pamięci wymaga osobnego dowodu pochodzenia runtime.
 
 ## Handoff S4
 
