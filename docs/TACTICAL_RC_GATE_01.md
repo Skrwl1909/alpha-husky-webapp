@@ -45,7 +45,7 @@ S2 wykazało ruch, umiejętności, SKIP, telegraphy, kontry i dwie drogi zwycię
 
 Po instalacji zależności w repozytorium frontendu uruchom poniższe polecenia. Workflow `Tactical VNext global contract` wykonuje podstawową bramkę, sprawdza składnię i porównuje wygenerowany bundle i loader z commitem.
 
-Porównanie bajtów bundle’a wykonuj na Ubuntu z Node 22, tak jak w CI. Windows odtworzył własny build, a kanoniczny workflow zsynchronizował różniący się IIFE z Ubuntu w `776ca44`.
+Porównanie bajtów bundle’a wykonuj na Ubuntu z Node 22, tak jak w CI. Kanoniczny workflow zsynchronizował IIFE `v3.6.34-rc-gate-01` z Ubuntu w `7d1e2f3`.
 
 ```bash
 node tools/verify_tactical_ops_vnext_contract.mjs
@@ -100,7 +100,8 @@ W konsoli zalogowanej aplikacji uruchom poniższy kod. Instalacja wyłącznie ob
   };
   const frozen = ({started: _, ...run}) => run;
   const projection = s => [s.revision, s.fieldOps.records[started.missionId], s.fieldOps.commander,
-    s.fieldOps.veteranCareer, s.fieldOps.rotationProgress, s.fieldOps.careerRecord, s.playerGrowth, s.packMastery];
+    s.fieldOps.veteranCareer, s.fieldOps.rotationProgress, s.fieldOps.careerRecord, s.fieldOps.region,
+    s.fieldOps.masteryPath, s.playerGrowth, s.packMastery];
   window.rc241 = {
     async battle() {
       if (!started) throw Error('QA_NO_FIELD_START');
