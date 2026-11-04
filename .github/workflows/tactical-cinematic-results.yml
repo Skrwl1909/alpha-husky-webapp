@@ -49,10 +49,15 @@ jobs:
           for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
             assert (after/f'legacy-{name}.html').exists(),name
           sizes={}
+          # The 2026-11-01 cinematic baseline is for screenshot identity, not the
+          # incremental bundle-size gate: subsequent merged G2/G3/G4 builds grew independently.
+          # Budget only the changes introduced by THIS PR against its actual base.
+          base_sha = '${{ github.event.pull_request.base.sha }}'
           for p in ['tactical-ops-src/ui/fieldOpResults.css','js/tactical_ops.js']:
-            old=subprocess.check_output(['git','show','62ebdca0:'+p]);new=Path(p).read_bytes()
-            sizes[p]={'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new))}
-            assert len(gzip.compress(new))-len(gzip.compress(old))<8192
+            old=subprocess.check_output(['git','show',base_sha+':'+p]);new=Path(p).read_bytes()
+            change=len(gzip.compress(new))-len(gzip.compress(old))
+            sizes[p]={'base_sha':base_sha,'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new)),'gzip_delta':change}
+            assert change<8192, f'{p}: incremental gzip budget exceeded by {change} bytes'
           Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
           print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
           PY
