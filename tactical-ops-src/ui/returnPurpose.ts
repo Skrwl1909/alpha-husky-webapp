@@ -12,7 +12,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
   const f = p.fieldOps, b = f?.board;
   const action = (missionId: string, title: string, reason: string, tier: 'standard' | 'advanced' = 'standard', resume = false): PurposeAction => ({ missionId, title, reason, tier, resume });
   const saved = p.chapterActiveMission || f?.activeMissionRun || Object.values(p.operations || {}).find(op => op.activeMissionRun)?.activeMissionRun;
-  let primary = saved && getMissionDef(saved.missionId) ? action(saved.missionId, 'FINISH YOUR ACCEPTED MISSION', 'Your accepted squad and conditions are preserved. The battle restarts at round 1.', saved.fieldContext?.directiveTier || 'standard', true) : null;
+  let primary = saved && getMissionDef(saved.missionId) ? action(saved.missionId, 'FINISH YOUR ACCEPTED MISSION', 'Your squad and mission are saved. Ready to go again from round 1?', saved.fieldContext?.directiveTier || 'standard', true) : null;
   if (primary && saved?.fieldContext?.masteryChallenge) primary.masteryChallenge = saved.fieldContext.masteryChallenge;
   if (p.tacticalChapter?.status === 'ACTIVE' && p.tacticalChapter.doctrine === 'RECON' && (!saved || saved === p.chapterActiveMission)) {
     const id = chapterNextMission(p.tacticalChapter);
@@ -28,7 +28,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
   if (!primary && veteran?.status === 'eligible' && veteran.recommendedMissionId && b?.activeMissionIds.includes(veteran.recommendedMissionId)) {
     primary = action(veteran.recommendedMissionId, 'VETERAN OPPORTUNITY', veteran.reason === 'DIVERSITY_AVAILABLE'
       ? 'Add missing mission or objective diversity with an Advanced victory. No additional credit is promised.'
-      : 'An Advanced victory can record this rotation’s Veteran credit. Review the conditions before deploying; only the server receipt confirms progress.', 'advanced');
+      : 'Win this Advanced fight for a shot at your Veteran credit. The result confirms what you earn.', 'advanced');
   }
   if (!primary && f?.masteryPath && (f.commander?.rank || 0) >= 3 && b?.reportVersion === 3) {
     if (f.masteryPath.unlockedChallenge) {
@@ -54,9 +54,9 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       const r = f.records[id];
       const truth = missionRewardTruth(m, f);
       if (truth.clear === 'UNKNOWN') continue;
-      if (r?.lastClearCycle !== b.cycleId) candidates.push(action(id, 'SECURE A FIELD OP', 'First clear is open this rotation. A confirmed victory records this operation; regional effects depend on the server receipt.'));
-      if (m.challenge && r?.lastChallengeCycle !== b.cycleId) candidates.push(action(id, 'OPTIONAL CHALLENGE', `${m.challenge.label}. ${r?.lastClearCycle === b.cycleId ? "Clear bonus already secured; an eligible challenge can still add progress." : "An eligible first clear and challenge can record progress this rotation."}`));
-      if (f.commander.unlockedDirectiveTiers?.includes('advanced') && r?.lastAdvancedCycle !== b.cycleId) candidates.push(action(id, 'ADVANCED CHALLENGE', 'Face the Advanced conditions shown in the briefing. An accepted clear enters your Advanced record; no extra currency is promised.', 'advanced'));
+      if (r?.lastClearCycle !== b.cycleId) candidates.push(action(id, 'SECURE A FIELD OP', 'Your first win here is still up for grabs. Take the field!'));
+      if (m.challenge && r?.lastChallengeCycle !== b.cycleId) candidates.push(action(id, 'OPTIONAL CHALLENGE', `${m.challenge.label}. ${r?.lastClearCycle === b.cycleId ? "First win saved. The bonus challenge is still open." : "First win and bonus challenge are still up for grabs."}`));
+      if (f.commander.unlockedDirectiveTiers?.includes('advanced') && r?.lastAdvancedCycle !== b.cycleId) candidates.push(action(id, 'ADVANCED CHALLENGE', 'Ready for a tougher fight? Win on Advanced to mark the challenge. No extra currency.', 'advanced'));
     }
     // Prefer unfinished clears, then optional challenges, then Advanced; finished optional practice is last.
     // No accepted run is replaced: saved missions were resolved above.
