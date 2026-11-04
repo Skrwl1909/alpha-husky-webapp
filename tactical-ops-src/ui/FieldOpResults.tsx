@@ -39,7 +39,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       <span className="t-outcome-stamp"><span aria-hidden="true">///</span> FIELD OP / AFTER ACTION</span>
       <div className="t-kicker">{missionName}</div>
       <h2 className="t-title">{victory ? "OBJECTIVE SECURED" : "MISSION LOST"}</h2>
-      <p className="t-fr-outcome">{victory ? "You did it. The Pack held on." : failure} <span>{receipt ? "Win saved." : "Battle over."}</span></p>
+      <p className="t-fr-outcome">{victory ? "You did it. The Pack held on." : failure} <span>{receipt ? victory ? "Win saved." : "Attempt saved." : "Battle over."}</span></p>
     </header>
     <div className="t-fr-record" role="status" aria-live="polite" aria-atomic="true">
       {receipt ? <Check aria-hidden="true" /> : state === "failed" ? <AlertTriangle aria-hidden="true" /> : <Shield aria-hidden="true" />}
