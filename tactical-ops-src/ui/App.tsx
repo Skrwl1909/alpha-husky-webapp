@@ -708,6 +708,7 @@ function Brief() {
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
   const recoverBrief = mission?.objectiveType === "RECOVER";
+  const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);
   const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
@@ -748,9 +749,9 @@ function Brief() {
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
             <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : recoverBrief ? "WIN CONDITION · RECOVER THE SIGNAL" : "OBJECTIVE"}</div>
-            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : recoverBrief ? "GET TO THE RELAY. USE RECOVER." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
-            {recoverBrief ? <p className="t-brief-purpose-meta">Get within RECOVER range (normally 1 tile). Signal opens on rounds {fieldContext && mission?.directive?.recoverEveryRounds ? `${mission.directive.recoverEveryRounds}, ${mission.directive.recoverEveryRounds * 2}, …` : "2, 4, 6…"}. Use RECOVER before acting.</p> : null}
-            {recoverBrief && purpose ? <details className="t-mission-extra" aria-label="Recover rules"><summary>FULL RECOVER RULES <span>DETAILS +</span></summary><p>{purpose.objectiveText}</p></details> : null}
+            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : quickRecover ? "GET TO THE RELAY. USE RECOVER." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            {quickRecover ? <p className="t-brief-purpose-meta">Get within RECOVER range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens on rounds ${mission.directive.recoverEveryRounds}, ${mission.directive.recoverEveryRounds * 2}, …` : "Use RECOVER when the signal opens."} Use RECOVER before acting.</p> : null}
+            {quickRecover && purpose ? <details className="t-mission-extra" aria-label="Recover rules"><summary>FULL RECOVER RULES <span>DETAILS +</span></summary><p>{purpose.objectiveText}</p></details> : null}
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
