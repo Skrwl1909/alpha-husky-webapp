@@ -22,6 +22,7 @@
   var active = requested && approvedHost && !nativeRuntime && !tgInitData;
   var token = "";
   var expiresAt = 0;
+  var persisted = false;
   var busy = false;
   var pendingRecovery = "";
 
@@ -35,6 +36,7 @@
     try { global.sessionStorage.removeItem(STORAGE_KEY); } catch (_) {}
     token = "";
     expiresAt = 0;
+    persisted = false;
     if (active) global.__ahAlphaAccountSession = null;
   }
 
@@ -47,11 +49,12 @@
     }
     token = String(state.token);
     expiresAt = Number(state.expiresAt);
+    persisted = true;
     global.__ahAlphaAccountSession = { sessionToken: token };
   }
 
   function holdBoot() {
-    return active && !token;
+    return active && !persisted;
   }
 
   function el(tag, attrs, text) {
@@ -98,7 +101,22 @@
       });
       var continueButton = el("button", { type: "button" }, "I saved the code — enter game");
       continueButton.style.cssText = "width:100%;margin-top:10px;border:1px solid #718299;border-radius:10px;background:#203046;color:white;padding:12px;cursor:pointer";
+      continueButton.disabled = !persisted;
+      if (!persisted) {
+        status.textContent = "Browser storage is blocked. Save the recovery code and enable storage to keep your account.";
+        var retry = el("button", { type: "button" }, "Retry saving session");
+        retry.style.cssText = continueButton.style.cssText;
+        retry.addEventListener("click", function () {
+          try {
+            global.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token: token, expiresAt: expiresAt }));
+            persisted = true;
+            render();
+          } catch (_) { status.textContent = "Storage still blocked. Keep your recovery code safe."; }
+        });
+        panel.appendChild(retry);
+      }
       continueButton.addEventListener("click", function () {
+        if (!persisted) return;
         pendingRecovery = "";
         render();
         global.dispatchEvent(new Event("ah:browser-guest-ready"));
@@ -127,8 +145,13 @@
           token = String(body.session_token);
           expiresAt = Date.now() + Number(body.expires_in) * 1000;
           global.__ahAlphaAccountSession = { sessionToken: token };
-          global.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token: token, expiresAt: expiresAt }));
           pendingRecovery = String(body.guest_recovery_token);
+          try {
+            global.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token: token, expiresAt: expiresAt }));
+            persisted = true;
+          } catch (_) {
+            persisted = false;
+          }
           render();
         } catch (err) {
           status.textContent = "Could not start: " + String(err && err.message || "connection error");
@@ -149,7 +172,7 @@
     active: active,
     shouldHoldBoot: holdBoot,
     render: render,
-    hasSession: function () { return Boolean(token); },
+    hasSession: function () { return Boolean(token && persisted); },
     clear: clear
   });
   if (active) {
