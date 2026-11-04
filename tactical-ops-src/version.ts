@@ -1,3 +1,3 @@
-/** Tactical After Action Impact V1: receipt-first results without new gameplay rules; preserves G2/G3/G4. */
-export const VERSION = "tactical_ops.js v3.6.31-after-action-impact";
-export const CACHE_KEY = "tops-3.6.31-after-action-impact";
+/** Tactical Player Voice V1: shorter, receipt-truthful War Table, Brief, Battle and Results. */
+export const VERSION = "tactical_ops.js v3.6.32-player-voice-v1";
+export const CACHE_KEY = "tops-3.6.32-player-voice-v1";

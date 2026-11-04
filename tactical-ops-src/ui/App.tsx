@@ -363,14 +363,14 @@ function WarTable() {
               <span className="t-wt-art-label">{visual.label}</span>
             </div>
             <div className="t-wt-feature-copy">
-              <div className="t-kicker t-cd-operation-label">COMMAND PRIORITY / {primaryPurpose?.title || "NEXT OP"}</div>
+              <div className="t-kicker t-cd-operation-label">NEXT UP / {primaryPurpose?.title || "NEXT OP"}</div>
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
               <div className="t-player-route-metrics" aria-label="Next step and rotation progress">
                 <span>{rotationProgress?.securedCount ?? activeMissionIds.filter(id => field?.records[id]?.lastClearCycle === currentCycleId).length}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
                 <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
               </div>
-              <p className="t-player-next-reason">{primaryPurpose?.resume ? "Accepted squad and conditions preserved · battle restarts at round 1." : primaryPurpose?.reason}</p>
+              <p className="t-player-next-reason">{primaryPurpose?.resume ? "Your squad is saved. Restart from round 1." : primaryPurpose?.reason}</p>
               {primaryPurpose && !primaryPurpose.resume && recommendedMission?.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier)?.text}</p> : null}
               <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
                 <span>{primaryPurpose?.chapter ? "CHAPTER RECORD" : recommendedPurpose?.rewardClearText}</span>
@@ -708,6 +708,7 @@ function Brief() {
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
   const recoverBrief = mission?.objectiveType === "RECOVER";
+  const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);
   const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
@@ -748,7 +749,9 @@ function Brief() {
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
             <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : recoverBrief ? "WIN CONDITION · RECOVER THE SIGNAL" : "OBJECTIVE"}</div>
-            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : quickRecover ? "GET TO THE RELAY. USE RECOVER." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            {quickRecover ? <p className="t-brief-purpose-meta">Get within RECOVER range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens on rounds ${mission.directive.recoverEveryRounds}, ${mission.directive.recoverEveryRounds * 2}, …` : "Use RECOVER when the signal opens."} Use RECOVER before acting.</p> : null}
+            {quickRecover && purpose ? <details className="t-mission-extra" aria-label="Recover rules"><summary>FULL RECOVER RULES <span>DETAILS +</span></summary><p>{purpose.objectiveText}</p></details> : null}
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
@@ -760,7 +763,7 @@ function Brief() {
               <p>{purpose.tacticalThreat}</p>
             </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
-            {fieldOp ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>VETERAN · {veteranBrief.status.toUpperCase()}:</b> {veteranBrief.copy}</p> : null}
+            {fieldOp ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>{veteranBrief.status === "claimed" ? "VETERAN CREDIT SAVED" : veteranBrief.status === "eligible" ? "VETERAN CHANCE!" : veteranBrief.status === "locked" ? "VETERAN NOT READY" : "VETERAN STATUS UNKNOWN"}:</b> {veteranBrief.copy}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
               {buildNotes.map(row => <p key={row}>{row}</p>)}
@@ -774,7 +777,7 @@ function Brief() {
           {fieldOp ? (
             <>
               <div className="t-deploy-summary-card">
-                <span className="t-kicker">{fieldContext.masteryChallenge ? 'Completion' : 'Clear reward'}</span>
+                <span className="t-kicker">{fieldContext.masteryChallenge ? 'Completion' : 'First win'}</span>
                 <strong>{purpose?.rewardClearText}</strong>
                 <small>{rewardTruth?.copy}</small>
               </div>

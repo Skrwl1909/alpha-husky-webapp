@@ -39,7 +39,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       <span className="t-outcome-stamp"><span aria-hidden="true">///</span> FIELD OP / AFTER ACTION</span>
       <div className="t-kicker">{missionName}</div>
       <h2 className="t-title">{victory ? "OBJECTIVE SECURED" : "MISSION LOST"}</h2>
-      <p className="t-fr-outcome">{victory ? "Objective completed." : failure} <span>Local battle outcome.</span></p>
+      <p className="t-fr-outcome">{victory ? "You did it. The Pack held on." : failure} <span>{receipt ? victory ? "Win saved." : "Attempt saved." : "Battle over."}</span></p>
     </header>
     <div className="t-fr-record" role="status" aria-live="polite" aria-atomic="true">
       {receipt ? <Check aria-hidden="true" /> : state === "failed" ? <AlertTriangle aria-hidden="true" /> : <Shield aria-hidden="true" />}
@@ -47,12 +47,12 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <p>{receipt ? "Receipt-confirmed progress below." : pending ? "Waiting for confirmation. Earnings are not confirmed yet." : "Earnings are not confirmed. Retry saving this result."}</p></div>
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
-    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} aria-label="Confirmed gameplay consequence">
+    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline"><span aria-hidden="true">///</span> {impact.eyebrow}</span>
       <strong className="t-fr-impact-title">{impact.title}</strong>
       <p>{impact.detail}</p>
     </section> : null}
-    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason}</p></div> : null}
+    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason.replace("Clear bonus already secured; an eligible challenge can still add progress.", "First win saved. The bonus challenge is still open.")}</p></div> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     {receipt ? <details className="t-fr-ledger">
       <summary><span>MISSION RECORD</span><small>Commander · Veteran · Mastery · Rewards</small></summary>

@@ -22,6 +22,7 @@ import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
 import { missionLiveProgress, objectiveDirective, recoverGuidance } from "./missionPurpose";
+import { fieldWindow } from "../data/livingBattlefield";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
@@ -356,6 +357,7 @@ function ObjectiveChip() {
   const battle = useBattleStore((s) => s.battle);
   const [expanded, setExpanded] = useState(false);
   const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const acceptedContext = useBattleStore((s) => s.currentFieldContext);
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const training = !mission && onboardingEnabled;
@@ -365,6 +367,10 @@ function ObjectiveChip() {
   const liveGoal = mission ? missionLiveProgress(battle) : null;
   const directive = objectiveDirective(battle);
   const objective = battle.objective;
+  const activeHound = battle.reinforcement;
+  const acceptedWindow = mission ? fieldWindow(mission, acceptedContext) : null;
+  const packBoughtTime = Boolean(acceptedWindow?.delayed && activeHound &&
+    !activeHound.spawned && acceptedWindow.actualRound === activeHound.triggerRound);
   if (!rulesText && !mission?.challenge && !objective && !training) return null;
   const jammed = objective?.type === "RECOVER" && !recoverSignalOpen(battle);
   const title =
@@ -416,6 +422,7 @@ function ObjectiveChip() {
       <span className="t-objective-detail">{detail}</span>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
+      {packBoughtTime ? <small data-player-voice-hound="true">HOUND HELD BACK! · ARRIVES ROUND {activeHound!.triggerRound}</small> : null}
       {body ? <span>{body}{extras ? ` · ${extras}` : ""}</span> : extras ? <span>{extras}</span> : null}
       {mission?.challenge ? <small>OPTIONAL / {mission.challenge.label}</small> : null}
       {roundCap ? (
@@ -637,7 +644,7 @@ export function BattleScreen() {
           })() : null}
           {reinforcement?.telegraphed && !reinforcement.spawned ? (() => {
             const pos = fieldPercent(reinforcement.spawn.c, reinforcement.spawn.r);
-            return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>INBOUND</span><small>HOUND</small></div>;
+            return <div className="t-reinforcement-marker" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>HOUND INCOMING!</span><small>ROUND {reinforcement.triggerRound}</small></div>;
           })() : null}
           {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => {
             const c = i % GRID_COLS;
