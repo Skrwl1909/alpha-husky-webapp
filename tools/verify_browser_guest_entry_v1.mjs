@@ -183,4 +183,31 @@ for(const conf of [
 }
 assert.match(html,/browser_guest_entry_v1\.js/);
 assert.match(html,/AlphaBrowserGuestV1\?\.shouldHoldBoot/);
+
+// Equipped must use canonical API for authenticated browser guests, not demo fixture.
+const equippedSource = fs.readFileSync(new URL("../js/equipped.js", import.meta.url), "utf8");
+const eqBegin = equippedSource.indexOf("  function hasInitData() {");
+const eqEnd = equippedSource.indexOf("\n  function itemEffectText(", eqBegin);
+assert.ok(eqBegin >= 0 && eqEnd > eqBegin, "Equipped auth helper must exist");
+const eqHelper = equippedSource.slice(eqBegin, eqEnd);
+function equippedAuthenticated({ telegram = "", browserActive = false, browserSession = false, bearer = "" } = {}) {
+  const env = {
+    getTg: () => ({ initData: telegram }),
+    window: {
+      INIT_DATA: "",
+      AlphaBrowserGuestV1: { active: browserActive, hasSession: () => browserSession },
+      __ahAlphaAccountSession: { sessionToken: bearer }
+    }
+  };
+  vm.runInNewContext(eqHelper + "\nwindow.__equippedTestAuth = hasInitData();", env);
+  return env.window.__equippedTestAuth;
+}
+assert.equal(equippedAuthenticated({ telegram: "TEST_TELEGRAM" }), true);
+assert.equal(equippedAuthenticated({ browserActive: true, browserSession: true, bearer: "TEST_BEARER" }), true);
+assert.equal(equippedAuthenticated({ browserActive: true, browserSession: false, bearer: "TEST_BEARER" }), false);
+assert.equal(equippedAuthenticated({ browserActive: true, browserSession: true }), false);
+assert.equal(equippedAuthenticated(), false);
+assert.match(equippedSource, /if \(!hasInitData\(\)\) \{\s*this\._syncExternalState\(previewFixtureState\(\)\)/);
+assert.match(equippedSource, /equippedPost\("\/webapp\/equipped\/state"/);
+assert.match(equippedSource, /equippedPost\("\/webapp\/inventory\/state"/);
 console.log("PASS: Browser Guest V1 offline isolation, creation, persistence and recovery");
