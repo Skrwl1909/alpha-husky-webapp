@@ -1,0 +1,41 @@
+name: Tactical Player Voice V1
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - 'tools/verify_tactical_player_voice_v1.mjs'
+      - 'tools/verify_tactical_after_action_impact.mjs'
+      - 'tools/verify_tactical_premium_integration.mjs'
+      - '.github/workflows/tactical-player-voice-v1.yml'
+permissions:
+  contents: read
+jobs:
+  player-voice:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Receipt-truthful language, frozen combat and existing gates
+        run: |
+          node tools/verify_tactical_player_voice_v1.mjs
+          node tools/verify_tactical_after_action_impact.mjs
+          node tools/verify_tactical_g4_living_battlefield.mjs
+          node tools/verify_tactical_g3_opportunity.mjs
+          node tools/verify_tactical_purpose_return.mjs
+          node tools/verify_tactical_s1_purpose_truth.mjs
+          node tools/verify_tactical_s3_after_action.mjs
+          node tools/verify_tactical_premium_integration.mjs
+      - name: Canonical runtime and loader parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      # Existing G3, field Results, purpose and cinematic workflows own mobile browser matrices.
