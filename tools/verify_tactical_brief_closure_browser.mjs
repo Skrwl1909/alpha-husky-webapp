@@ -36,9 +36,14 @@ try{
   await page.screenshot({path:`${out}/${width}x${height}-${tier}-${motion}-overview.png`});
   if(phase==='after'){
    assert.match(await overview.innerText(),/WIN CONDITION.*RECOVER THE SIGNAL/s);
-   assert.match(await overview.innerText(),/relay.*orthogonal cell/s);
+   assert.match(await overview.innerText(),/GET TO THE RELAY\. USE RECOVER\./s,'first-read objective must be clear');
    assert.match(await overview.innerText(),/FAIL IF:.*entire squad falls/s);
-   if(tier==='advanced')assert.match(await overview.innerText(),/rounds divisible by 2.*round 6/s);
+   const recoverRules=page.getByLabel('Recover rules',{exact:true});
+   assert.equal(await recoverRules.evaluate(e=>e.open),false,'full rules start collapsed');
+   await recoverRules.locator('summary').click();
+   assert.match(await recoverRules.innerText(),/relay.*orthogonal cell/s,'full legal RECOVER range preserved');
+   if(tier==='advanced')assert.match(await recoverRules.innerText(),/rounds divisible by 2.*round 6/s,'advanced timing remains explicit in rules');
+   await recoverRules.locator('summary').click();
    const threats=page.getByLabel('Tactical threats',{exact:true});
    assert.equal(await threats.evaluate(e=>e.open),false);
    const summary=threats.locator('summary');await summary.scrollIntoViewIfNeeded();
