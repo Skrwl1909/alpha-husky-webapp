@@ -17,6 +17,7 @@ try {
   const impact = recordedImpact(base, delta);
   assert.equal(impact.title, "HOUND HELD BACK!");
   assert.equal(impact.kind, "world");
+  assert.equal(impact.beat, "breakthrough", "visual celebration follows an actual one-round advantage");
   assert.match(impact.detail, /HOUND arrives 1 round later/);
   assert.deepEqual(base, clone, "read only; no receipt mutation");
 
@@ -25,10 +26,12 @@ try {
   assert.doesNotMatch(ordinaryPressure.detail, /extra preparation round/);
   const areaClear = recordedImpact({ ...base, pressureBefore: 1, pressureAfter: 0 }, { label: "SIGNAL PRESSURE CHANGED", detail: "Pressure 1 → 0." });
   assert.equal(areaClear.title, "AREA CLEAR!");
+  assert.equal(areaClear.beat, "clear");
   assert.match(areaClear.detail, /No extra delay stacks/);
   assert.doesNotMatch(areaClear.detail, /2 rounds later/);
   const lowPressure = recordedImpact({ ...base, pressureBefore: 3, pressureAfter: 2 }, { label: "SIGNAL PRESSURE CHANGED", detail: "Pressure 3 → 2." });
   assert.equal(lowPressure.title, "PRESSURE DOWN.");
+  assert.equal(lowPressure.beat, "step");
   assert.match(lowPressure.detail, /still arrives on schedule/);
   const stale = recordedImpact({ ...base, regionalApplied: false }, null);
   assert.equal(stale.title, "FIRST WIN SECURED!", "unconfirmed pressure must not imply a world effect");
