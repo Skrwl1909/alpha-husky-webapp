@@ -55,7 +55,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       const truth = missionRewardTruth(m, f);
       if (truth.clear === 'UNKNOWN') continue;
       if (r?.lastClearCycle !== b.cycleId) candidates.push(action(id, 'SECURE A FIELD OP', 'Your first win here is still up for grabs. Take the field!'));
-      if (m.challenge && r?.lastChallengeCycle !== b.cycleId) candidates.push(action(id, 'OPTIONAL CHALLENGE', `${m.challenge.label}. ${r?.lastClearCycle === b.cycleId ? "First win saved. The bonus challenge is still open." : "First win and bonus challenge are still up for grabs."}`));
+      if (m.challenge && r?.lastChallengeCycle !== b.cycleId) candidates.push(action(id, 'OPTIONAL CHALLENGE', `${m.challenge.label}. ${r?.lastClearCycle === b.cycleId ? "Clear bonus already secured; an eligible challenge can still add progress." : "First win and bonus challenge are still up for grabs."}`));
       if (f.commander.unlockedDirectiveTiers?.includes('advanced') && r?.lastAdvancedCycle !== b.cycleId) candidates.push(action(id, 'ADVANCED CHALLENGE', 'Ready for a tougher fight? Win on Advanced to mark the challenge. No extra currency.', 'advanced'));
     }
     // Prefer unfinished clears, then optional challenges, then Advanced; finished optional practice is last.
