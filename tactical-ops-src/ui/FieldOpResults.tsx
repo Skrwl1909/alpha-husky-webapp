@@ -47,7 +47,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <p>{receipt ? "Receipt-confirmed progress below." : pending ? "Waiting for confirmation. Earnings are not confirmed yet." : "Earnings are not confirmed. Retry saving this result."}</p></div>
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
-    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} aria-label="Confirmed gameplay consequence">
+    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline"><span aria-hidden="true">///</span> {impact.eyebrow}</span>
       <strong className="t-fr-impact-title">{impact.title}</strong>
       <p>{impact.detail}</p>
