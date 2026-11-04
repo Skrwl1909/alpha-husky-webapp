@@ -55,7 +55,10 @@ try {
  for(const marker of ['data-g4-world-window','data-g4-command-window','data-g4-mission-window','data-g4-brief-window']){
    assert(app.includes(marker),'missing tactical window UI '+marker);
  }
- assert(results.includes('consequence?.detail || meaning?.changed'),'preserve S3 receipt-confirmed consequence in Results');
+ const impact=readFileSync('tactical-ops-src/ui/afterActionImpact.ts','utf8');
+ assert(results.includes('recordedImpact(receipt, consequence)') && results.includes('{receipt && impact ?') &&
+   impact.includes('consequence.label') && impact.includes('consequence.detail'),
+   'S3 receipt-confirmed consequence must still reach Results through the receipt-only impact presenter');
  assert(!results.includes('data-g4-confirmed-window'),'do not add duplicate Results copy or push primary CTA below fold');
  console.log('PASS G4 living battlefield: actual combat timing 3 missions x 4 pressures, current/expired boards, accepted-run immutability, receipt-gated threshold, UI wiring');
 } finally {await vite.close();}

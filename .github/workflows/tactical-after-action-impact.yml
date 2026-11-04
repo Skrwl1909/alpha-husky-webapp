@@ -1,0 +1,48 @@
+name: Tactical After Action Impact V1
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - 'tools/verify_tactical_after_action_impact.mjs'
+      - '.github/workflows/tactical-after-action-impact.yml'
+permissions:
+  contents: read
+jobs:
+  impact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Receipt authority, hierarchy and prior gameplay regression
+        run: |
+          node tools/verify_tactical_after_action_impact.mjs
+          node tools/verify_tactical_s3_after_action.mjs
+          node tools/verify_tactical_s3_consequence_chain.mjs
+          node tools/verify_tactical_g4_living_battlefield.mjs
+          node tools/verify_tactical_g3_opportunity.mjs
+          node tools/verify_tactical_ops_failure_recording.mjs
+      - name: Canonical production bundle parity
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      # Existing Field Op Results Premium, Cinematic Results and G3 browser workflows
+      # already exercise source/production IIFE across mobile viewports.
+      # This dedicated gate stays fast and covers new receipt semantics + bundle parity.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-after-action-impact-v1
+          path: |
+            artifacts/field-results/after
+            artifacts/field-results/after-production
+            artifacts/g3
+            artifacts/g3-production
+          if-no-files-found: warn

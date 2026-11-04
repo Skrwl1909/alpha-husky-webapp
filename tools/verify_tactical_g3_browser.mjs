@@ -63,8 +63,13 @@ try {
       assert.equal(await page.locator('.t-fr-next').count(),confirmed?1:0,'no next-reward claim without receipt');
       assert.equal(await page.locator('.t-result-actions .t-btn-primary').count(),1);
       if(confirmed){
+        const ledger=page.locator('.t-fr-ledger');
+        assert.equal(await ledger.getAttribute('open'),null,'detailed accounting stays collapsed by default');
+        await ledger.locator('summary').click();
         assert.match(await page.locator('.t-fr-eligibility').innerText(),/Optional challenge not completed/);
         assert.match(await page.locator('.t-pi-career p').innerText(),/cannot grant a second credit/);
+        await ledger.locator('summary').click();
+        assert.equal(await ledger.getAttribute('open'),null,'next move stays prominent after reviewing receipt');
       } else {
         assert.equal(await page.locator('.t-field-results').getAttribute('data-recording'),profile==='stale'?'unrecorded':profile);
         assert.equal(await page.locator('.t-result-actions .t-btn-primary').isDisabled(),profile==='pending');

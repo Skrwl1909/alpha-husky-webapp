@@ -49,7 +49,7 @@ try{
   }
   if(mode==='brief'||mode==='resume')assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/all three allies/i);
   if(mode==='battle')assert.match(await page.locator('.t-shell').innerText(),/PACK EXTRACTION/);
-  if(mode==='results'){await page.getByText('Progression & eligibility',{exact:true}).click();assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/11 → 12/);assert.match(await page.locator('[data-veteran-delta]').innerText(),/OPTION UNLOCKED/)}
+  if(mode==='results'){const ledger=page.locator('.t-field-results .t-fr-ledger');assert.equal(await ledger.getAttribute('open'),null,'receipt ledger starts collapsed');await ledger.locator('summary').click();assert(await ledger.evaluate(e=>e.open),'touch can open receipt ledger');await page.getByText('Progression & eligibility',{exact:true}).click();assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/11 → 12/);assert.match(await page.locator('[data-veteran-delta]').innerText(),/OPTION UNLOCKED/)}
   if(mode==='extraction-results'){
    const panel=page.locator('.t-special-field-results[data-special-result="extraction"]');
    assert.equal(await panel.getAttribute('data-recording'),'confirmed');

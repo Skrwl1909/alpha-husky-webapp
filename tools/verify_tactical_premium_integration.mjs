@@ -119,7 +119,9 @@ try{
  assert.equal(normalized,union,'App must retain original three-way union outside special Results branch');
 }finally{rmSync(temp,{recursive:true,force:true});}
 const expected=new Set(heads.flatMap(changed));
-const uxRuntime=new Set([...approvedG3Sources,...approvedG2Sources,'tactical-ops-src/data/livingBattlefield.ts']);
+// Reviewed After Action Impact V1 leaf: receipt presenter plus its existing Results/CSS surface.
+const impactLeaves=['tactical-ops-src/ui/FieldOpResults.tsx','tactical-ops-src/ui/fieldOpResults.css','tactical-ops-src/ui/afterActionImpact.ts'];
+const uxRuntime=new Set([...approvedG3Sources,...approvedG2Sources,'tactical-ops-src/data/livingBattlefield.ts',...impactLeaves]);
 const upstreamChanges=new Set(git('diff','--name-only',base,reviewedMain).trim().split('\n'));
 for(const path of git('diff','--name-only',reviewedMain,'HEAD').trim().split('\n')){
  if(path.startsWith('tactical-ops-src/')||path.startsWith('js/'))assert(uxRuntime.has(path),`unreviewed UX production change: ${path}`);

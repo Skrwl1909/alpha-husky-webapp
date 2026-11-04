@@ -4,6 +4,7 @@ import type { FieldResult } from "../data/fieldOps";
 import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
 import { veteranReceiptReason } from "../data/progressionOpportunity";
+import { recordedImpact } from "./afterActionImpact";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
@@ -24,6 +25,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
   const milestone = Boolean(receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone);
   const careerAdvance = receipt?.veteranCareer && receipt.veteranCareer.after > receipt.veteranCareer.before;
   const masteryGain = receipt?.masteryChanges?.some(change => change.gained > 0);
+  const impact = receipt ? recordedImpact(receipt, consequence) : null;
   const achievement = receipt?.veteranCareer?.unlocked ? "VETERAN EARNED"
     : rankAdvance ? `RANK ${receipt.rankAfter} EARNED`
     : masteryMilestone ? `${masteryDef(masteryMilestone.unitId)?.name || masteryMilestone.unitId} · ${masteryMilestone.veteran?.unlocked ? "VETERAN" : `STAGE ${masteryMilestone.stage}`}`
@@ -45,7 +47,15 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <p>{receipt ? "Receipt-confirmed progress below." : pending ? "Waiting for confirmation. Earnings are not confirmed yet." : "Earnings are not confirmed. Retry saving this result."}</p></div>
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
-    {receipt ? <>
+    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} aria-label="Confirmed gameplay consequence">
+      <span className="t-fr-impact-overline"><span aria-hidden="true">///</span> {impact.eyebrow}</span>
+      <strong className="t-fr-impact-title">{impact.title}</strong>
+      <p>{impact.detail}</p>
+    </section> : null}
+    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason}</p></div> : null}
+    <div className="t-brief-actions t-result-actions">{actions}</div>
+    {receipt ? <details className="t-fr-ledger">
+      <summary><span>MISSION RECORD</span><small>Commander · Veteran · Mastery · Rewards</small></summary>
       <section className="t-fr-earned" aria-label="Confirmed mission earnings">
         <div className="t-fr-spotlight">
           <span className="t-fr-insignia" aria-hidden="true">{receipt.rankAfter}</span>
@@ -70,16 +80,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         </dl>
         {!amountsAvailable ? <p>Character reward amounts were not supplied by this receipt.</p> : null}
         <p className="t-fr-eligibility">{meaning?.exhausted}</p>
-        {receipt.masteryChanges?.map(change => <p className="t-fr-delta" key={change.unitId}><strong>{masteryDef(change.unitId)?.name || change.unitId}</strong> {change.gained > 0 ? `+${change.gained} Mastery earned` : "No new Mastery earned"} · Foundation {change.progress}/8{change.beforeStage !== change.stage ? ` · Stage ${change.beforeStage} → ${change.stage}` : ""}{change.veteran ? ` · Veteran ${change.veteran.before} → ${change.veteran.after}/12 · ${change.veteran.unlocked ? "New option unlocked" : veteranReceiptReason(change.veteran.reason)}` : ""}</p>)}
+        {receipt.masteryChanges?.map(change => <p className="t-fr-delta" key={change.unitId}><strong>{masteryDef(change.unitId)?.name || change.unitId}</strong> {change.gained > 0 ? `+${change.gained} Mastery earned` : "No new Mastery earned"} · Foundation {change.progress}/8{change.beforeStage !== change.stage ? ` · Stage ${change.beforeStage} → ${change.stage}` : ""}{change.veteran && (change.veteran.unlocked || change.veteran.after > change.veteran.before) ? ` · Veteran ${change.veteran.before} → ${change.veteran.after}/12 · ${change.veteran.unlocked ? "New option unlocked" : veteranReceiptReason(change.veteran.reason)}` : ""}</p>)}
       </section>
-      <section className="t-fr-consequence" aria-label="Confirmed gameplay consequence">
-        <span className="t-kicker">WHAT CHANGED</span>
-        <strong>{consequence?.label || "FIELD RECORD UPDATED"}</strong>
-        <p>{consequence?.detail || meaning?.changed}</p>
-      </section>
-    </> : null}
-    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason}</p></div> : null}
-    <div className="t-brief-actions t-result-actions">{actions}</div>
+    </details> : null}
     <div className="t-fr-details">{children}</div>
   </div>;
 }
