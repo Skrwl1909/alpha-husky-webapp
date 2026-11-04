@@ -363,7 +363,7 @@ function WarTable() {
               <span className="t-wt-art-label">{visual.label}</span>
             </div>
             <div className="t-wt-feature-copy">
-              <div className="t-kicker t-cd-operation-label">COMMAND PRIORITY / {primaryPurpose?.title || "NEXT OP"}</div>
+              <div className="t-kicker t-cd-operation-label">NEXT UP / {primaryPurpose?.title || "NEXT OP"}</div>
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
               <div className="t-player-route-metrics" aria-label="Next step and rotation progress">
