@@ -18,6 +18,9 @@ globalThis.window={
  location:{search:""},
  localStorage:{getItem:()=>null},
  apiPost:async(path,body)=>{
+  if(path==="/webapp/tactical-foundation/state") {
+   return {ok:true,data:{...snapshot,fieldOps:{records:{},activeMissionRun:structuredClone(acceptedRun)}}};
+  }
   assert.equal(path,"/webapp/tactical-foundation/mission/start");
   assert.equal(body.missionId,"field-relay-hold");
   return {ok:true,data:structuredClone(snapshot),run:structuredClone(acceptedRun)};
@@ -37,6 +40,12 @@ try {
  assert.equal(intent.parseRunRulesContract(null),null);
  assert.throws(()=>intent.parseRunRulesContract({...rules,source:"CLIENT"}),/unsupported/);
  assert.throws(()=>intent.parseRunRulesContract({...rules,extra:true}),/invalid/);
+ for (const missionId of ["field-relay-intercept", "dead-relay-hold"]) {
+  for (const missionRevision of [1,2]) {
+   assert.equal(intent.parseRunRulesContract({...rules,missionId,missionRevision}).missionRevision,missionRevision);
+  }
+  assert.throws(()=>intent.parseRunRulesContract({...rules,missionId,missionRevision:3}),/unsupported/);
+ }
  assert.equal(intent.TACTICAL_VNEXT_ENABLED,false,"new run rules do not activate globally");
  const start=()=>foundation.startOperationMission("fixture-start",5,"field-relay-hold");
  // A valid VNext acceptance is carried through, but only the battle-start boundary enables it.
@@ -67,14 +76,30 @@ try {
  await assert.rejects(start(),e=>e.code==="invalid_progression_response");
  acceptedRun={runId:"rules-mismatch",missionId:"field-relay-hold",rulesContract:{...rules,missionId:"dead-relay-hold"}};
  await assert.rejects(start(),e=>e.code==="invalid_run_rules_contract");
+ for (const unsupported of [
+  {missionRevision:2},
+  {combatProfileVersion:2},
+  {combatProfileVersion:4},
+  {masterySnapshotVersion:2},
+  {rewardPolicyVersion:2},
+ ]) {
+  acceptedRun={runId:"unsupported-run",missionId:rules.missionId,squadIds:legacy.run.squadIds,
+   rulesContract:{...rules,...unsupported}};
+  await assert.rejects(start(),/unsupported_run_rules_contract/,`start accepted ${JSON.stringify(unsupported)}`);
+  await assert.rejects(foundation.loadFoundationProgression(),/unsupported_run_rules_contract/,`resume accepted ${JSON.stringify(unsupported)}`);
+ }
  assert.equal(types.GRID_COLS,8,"rejected start must not switch the active grid");
+ assert.equal(intent.TACTICAL_VNEXT_ENABLED,false,"rejected contracts must leave the scheduler unchanged");
  // A subsequent accepted VNext run can still activate normally.
- acceptedRun={runId:"new-vnext",missionId:"field-relay-hold",rulesContract:rules};
+ acceptedRun={runId:"new-vnext",missionId:"field-relay-hold",squadIds:legacy.run.squadIds,rulesContract:rules};
  const again=await start();
+ const resumed=await foundation.loadFoundationProgression();
+ assert.deepEqual(resumed.fieldOps.activeMissionRun.rulesContract,again.run.rulesContract);
+ assert(Object.isFrozen(resumed.fieldOps.activeMissionRun.rulesContract));
  types.selectAcceptedBattleRules(again.run.rulesContract);
  intent.selectAcceptedIntentRules(again.run.rulesContract||null);
  assert.equal(types.GRID_COLS,10);
  assert.equal(types.GRID_ROWS,7);
  assert.equal(intent.TACTICAL_VNEXT_ENABLED,true);
- console.log("PASS: mocked mission-start acceptance, mismatched response rejection, 10x7 -> 8x5 -> 10x7 same-session rules, no global enable or backend writes");
+ console.log("PASS: mocked start and resume, supported revisions, five unsupported version tuples rejected, 10x7 -> 8x5 -> 10x7");
 } finally {await vite.close();}
