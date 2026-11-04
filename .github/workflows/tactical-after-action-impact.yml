@@ -33,14 +33,9 @@ jobs:
           npm run build:tactical-ops
           node --check js/tactical_ops.js
           git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
-      - name: Mobile aftermath in real React and production IIFE
-        run: |
-          RESULTS_PHASE=after node tools/verify_field_op_results_premium.mjs
-          RESULTS_PHASE=after RESULTS_RUNTIME=production node tools/verify_field_op_results_premium.mjs
-          node tools/verify_tactical_g3_browser.mjs
-          G3_RUNTIME=production node tools/verify_tactical_g3_browser.mjs
-        env:
-          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      # Existing Field Op Results Premium, Cinematic Results and G3 browser workflows
+      # already exercise source/production IIFE across mobile viewports.
+      # This dedicated gate stays fast and covers new receipt semantics + bundle parity.
       - uses: actions/upload-artifact@v4
         if: always()
         with:
