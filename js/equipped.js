@@ -396,7 +396,15 @@
   function hasInitData() {
     try {
       const tg = getTg();
-      return !!( (tg && tg.initData) || window.INIT_DATA );
+      if ((tg && tg.initData) || window.INIT_DATA) return true;
+      // Browser Guest uses the shared SecureSession API client, not Telegram initData.
+      // Keep the packaged APK and Telegram branches unchanged.
+      return !!(
+        window.AlphaBrowserGuestV1?.active &&
+        window.AlphaBrowserGuestV1?.hasSession?.() &&
+        (window.__ahAlphaAccountSession?.sessionToken ||
+          window.__ahAlphaAccountSession?.session_token)
+      );
     } catch (_) {
       return false;
     }
