@@ -225,3 +225,28 @@
     to{opacity:1;transform:translateY(0)}
   }
 }
+
+/* Player Voice V1: visual weight follows an actual gameplay consequence. */
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="step"]{
+  border-color:#526d78;border-left-color:#8ba8b4;
+  background:linear-gradient(115deg,#172b33,#0c1b23 70%);
+  box-shadow:inset 0 1px #d8eff018;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="step"] .t-fr-impact-title{
+  color:#d6e7eb;font-size:clamp(16px,4.5vw,22px);
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="breakthrough"]{
+  border-color:#89d8e4;border-left-color:#caf7ff;
+  background:linear-gradient(118deg,#1c4852,#0f3440 45%,#09212c);
+  box-shadow:inset 0 1px #dafaff4a,0 0 22px #74cce017,0 10px 25px #0005;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="breakthrough"] .t-fr-impact-title{
+  color:#f3ffff;
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="clear"]{
+  border-color:#7aa897;border-left-color:#a8e3cd;
+  background:linear-gradient(116deg,#1b3935,#0d2b31 54%,#0b1a25);
+}
+#tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="clear"] .t-fr-impact-title{
+  color:#d5ffe7;
+}
