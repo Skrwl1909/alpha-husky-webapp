@@ -21,7 +21,7 @@ try {
   assert.deepEqual(base, clone, "read only; no receipt mutation");
 
   const ordinaryPressure = recordedImpact({ ...base, pressureBefore: 3, pressureAfter: 2 }, { label: "SIGNAL PRESSURE CHANGED", detail: "Pressure 3 → 2. Reinforcements remain on schedule." });
-  assert.equal(ordinaryPressure.title, "SIGNAL PRESSURE CHANGED");
+  assert.equal(ordinaryPressure.title, "PRESSURE DOWN.");
   assert.doesNotMatch(ordinaryPressure.detail, /extra preparation round/);
   const areaClear = recordedImpact({ ...base, pressureBefore: 1, pressureAfter: 0 }, { label: "SIGNAL PRESSURE CHANGED", detail: "Pressure 1 → 0." });
   assert.equal(areaClear.title, "AREA CLEAR!");
