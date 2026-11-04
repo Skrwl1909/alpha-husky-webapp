@@ -118,6 +118,7 @@
       continueButton.addEventListener("click", function () {
         if (!persisted) return;
         pendingRecovery = "";
+        global.__ahAlphaAccountSession = { sessionToken: token };
         render();
         global.dispatchEvent(new Event("ah:browser-guest-ready"));
       });
@@ -144,7 +145,6 @@
           }
           token = String(body.session_token);
           expiresAt = Date.now() + Number(body.expires_in) * 1000;
-          global.__ahAlphaAccountSession = { sessionToken: token };
           pendingRecovery = String(body.guest_recovery_token);
           try {
             global.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token: token, expiresAt: expiresAt }));
