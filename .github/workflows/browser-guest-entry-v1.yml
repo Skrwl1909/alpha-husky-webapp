@@ -1,0 +1,27 @@
+name: Browser Guest V1 offline tests
+
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'js/browser_guest_entry_v1.js'
+      - 'tools/verify_browser_guest_entry_v1.mjs'
+      - '.github/workflows/browser-guest-entry-v1.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-guest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Browser guest isolated auth and APK regression smoke
+        run: |
+          node --check js/browser_guest_entry_v1.js
+          node --check tools/verify_browser_guest_entry_v1.mjs
+          node tools/verify_browser_guest_entry_v1.mjs
