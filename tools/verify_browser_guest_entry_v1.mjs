@@ -148,6 +148,39 @@ const fakeRecovery="TEST_RECOVERY_"+"A".repeat(52);
   assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
   assert.ok(t.all().some(n=>/INVALID_OR_EXPIRED_RECOVERY/.test(n.textContent)));
 }
+{
+  // Clean URL: same tab retains existing browser guest session, no new account.
+  const t=setup({query:"",saved:{token:"TEST_RESUMED",expiresAt:Date.now()+3600000}});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,true);
+  assert.equal(t.window.__ahAlphaAccountSession.sessionToken,"TEST_RESUMED");
+  assert.equal(t.requests.length,0);
+}
+{
+  const t=setup({query:"",saved:{token:"TEST_EXPIRED",expiresAt:Date.now()-1000}});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,true);
+  assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
+  assert.ok(t.button("I already have a recovery code"));
+  assert.equal(t.requests.length,0);
+}
+for(const conf of [
+  {query:"",native:true,saved:{token:"TEST_IGNORE",expiresAt:Date.now()+3600000}},
+  {query:"",telegram:"TEST_SIGNED_TELEGRAM",saved:{token:"TEST_IGNORE",expiresAt:Date.now()+3600000}}
+]){
+  const t=setup(conf);t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,false);
+  assert.equal(t.requests.length,0);
+}
+{
+  const t=setup();t.ready();const sequence=[];
+  t.window.loadPlayerState=async()=>{sequence.push("profile");t.window.__ahLastProfilePayload={nickname:"TEST_PLAYER"};};
+  t.window.Awakening={checkState:async()=>{sequence.push("awakening");},isOpen:()=>false};
+  t.window.Oath={checkAndOpen:async()=>{sequence.push("oath");},getState:()=>({ok:true,show:false}),isOpen:()=>false};
+  t.window.Onboarding={open:async()=>{sequence.push("onboarding");}};
+  await t.button("Play as Guest").handlers.click();
+  t.button("I saved the code — enter game").handlers.click();
+  for(let i=0;i<8;i++) await Promise.resolve();
+  assert.deepEqual(sequence,["profile","awakening","oath","onboarding"]);
+}
 assert.match(html,/browser_guest_entry_v1\.js/);
 assert.match(html,/AlphaBrowserGuestV1\?\.shouldHoldBoot/);
 console.log("PASS: Browser Guest V1 offline isolation, creation, persistence and recovery");
