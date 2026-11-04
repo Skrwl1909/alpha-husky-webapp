@@ -3,6 +3,7 @@ import type { FieldResult } from "../data/fieldOps";
 /** Receipt-only after-action hierarchy. No local gameplay, reward or eligibility resolver. */
 export type RecordedImpact = {
   kind: "world" | "milestone" | "secured" | "recorded";
+  beat?: "breakthrough" | "step" | "clear";
   eyebrow: string;
   title: string;
   detail: string;
@@ -28,7 +29,7 @@ export function recordedImpact(receipt: FieldResult, consequence: Consequence): 
   };
   if (receipt.victory && receipt.regionalApplied && receipt.pressureBefore >= 2 && receipt.pressureAfter < 2) {
     return {
-      kind: "world",
+      kind: "world", beat: "breakthrough",
       eyebrow: "THE PACK PUSHED BACK",
       title: "HOUND HELD BACK!",
       detail: `Pressure ${receipt.pressureBefore} → ${receipt.pressureAfter}. HOUND arrives 1 round later in new Field Ops with reinforcements. Ongoing missions keep their timing.`,
@@ -36,12 +37,12 @@ export function recordedImpact(receipt: FieldResult, consequence: Consequence): 
   }
   if (receipt.victory && receipt.regionalApplied && receipt.pressureBefore !== receipt.pressureAfter) {
     if (receipt.pressureAfter === 0 && receipt.pressureBefore === 1) {
-      return { kind: "world", eyebrow: "THE PACK OWNS THIS GROUND",
+      return { kind: "world", beat: "clear", eyebrow: "THE PACK OWNS THIS GROUND",
         title: "AREA CLEAR!",
         detail: "Pressure 1 → 0. HOUND is still 1 round late in new eligible fights. No extra delay stacks." };
     }
     if (receipt.pressureBefore === 3 && receipt.pressureAfter === 2) {
-      return { kind: "world", eyebrow: "THE PACK PUSHED BACK",
+      return { kind: "world", beat: "step", eyebrow: "THE PACK PUSHED BACK",
         title: "PRESSURE DOWN.",
         detail: "Pressure 3 → 2. HOUND still arrives on schedule. Push harder to slow it down." };
     }
