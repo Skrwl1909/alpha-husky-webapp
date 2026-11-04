@@ -67,7 +67,7 @@ try {
         assert.equal(await ledger.getAttribute('open'),null,'detailed accounting stays collapsed by default');
         await ledger.locator('summary').click();
         assert.match(await page.locator('.t-fr-eligibility').innerText(),/Optional challenge not completed/);
-        assert.match(await page.locator('.t-pi-career p').innerText(),/cannot grant a second credit/);
+        assert.match(await page.locator('.t-pi-career p').innerText(),/One per rotation/);
         await ledger.locator('summary').click();
         assert.equal(await ledger.getAttribute('open'),null,'next move stays prominent after reviewing receipt');
       } else {
