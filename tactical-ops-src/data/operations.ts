@@ -30,15 +30,34 @@ export interface MissionDef {
 }
 
 export interface CampaignContext { version: 1; courierTraceAcquired: boolean }
-export type ChapterIntel={version:1;effect:"DELAY_REINFORCEMENT";sourceChapterId:"edge-relay";
-  missionId:string;baselineRound:number;effectiveRound:number};
+export type ChapterIntel = {sourceChapterId: "edge-relay"; missionId: string} & (
+  {version: 1; effect: "DELAY_REINFORCEMENT"; baselineRound: number; effectiveRound: number} |
+  {version: 2; effect: "SOUTH_APPROACH"; approach: "south"} |
+  {version: 2; effect: "COMMAND_DISRUPTION"; entry: "north-east"}
+);
 /** Frozen modifier from an accepted run; never accept a local progress claim. */
-export function applyChapterIntelToRules<T extends {reinforcement: {triggerRound:number}|null}>(rules:T,missionId:string,intel?:ChapterIntel):T {
-  if(!intel)return rules;
-  if(intel.version!==1||intel.effect!=="DELAY_REINFORCEMENT"||intel.sourceChapterId!=="edge-relay"||
-     intel.missionId!==missionId||!rules.reinforcement||rules.reinforcement.triggerRound!==intel.baselineRound||
-     intel.effectiveRound!==intel.baselineRound+1)throw Error("chapter_intel_rules_mismatch");
-  return {...rules,reinforcement:{...rules.reinforcement,triggerRound:intel.effectiveRound}};
+export function applyChapterIntelToRules(rules: ReturnType<typeof missionBattleRules>, missionId: string, intel?: ChapterIntel) {
+  if (!intel) return rules;
+  if (intel.missionId !== missionId) throw Error("chapter_intel_rules_mismatch");
+  if (intel.effect === "SOUTH_APPROACH") return rules;
+  const original = rules.reinforcement;
+  if (!original?.telegraphed) throw Error("chapter_intel_rules_mismatch");
+  let reinforcement;
+  if (intel.effect === "DELAY_REINFORCEMENT") {
+    if (original.triggerRound !== intel.baselineRound || intel.effectiveRound !== intel.baselineRound + 1) {
+      throw Error("chapter_intel_rules_mismatch");
+    }
+    reinforcement = {...original, triggerRound: intel.effectiveRound};
+  } else {
+    if (original.spawn.c !== 7 || original.spawn.r !== 4) throw Error("chapter_intel_rules_mismatch");
+    reinforcement = {...original, spawn: {...original.spawn, c: 7, r: 0}};
+  }
+  return {...rules, reinforcement, directive: rules.directive && {
+    ...rules.directive,
+    copy: intel.effect === "COMMAND_DISRUPTION" ? "A HOUND enters from the north-east." :
+      `A HOUND enters on round ${intel.effectiveRound}.`,
+    reinforcement,
+  }};
 }
 
 export interface TacticalOperationDef {
@@ -355,10 +374,14 @@ export function missionForContext(mission: MissionDef, context?: Partial<FieldCo
 }
 
 /** The accepted Commander squad rules also supply Field Ops' two tactical slots. */
-export function missionSpawnsForSquad(mission: MissionDef, squadIds: string[], pet?: TacticalPet | null, approach: DeploymentApproach = "standard"): SpawnSpec[] | null {
+export function missionSpawnsForSquad(mission: MissionDef, squadIds: string[], pet?: TacticalPet | null, approach: DeploymentApproach = "standard", intel?: ChapterIntel): SpawnSpec[] | null {
   if (mission.operationId === DEAD_RELAY.operationId) {
     const squad = commanderSpawnsForSquad(squadIds, pet);
-    return squad ? [...squad.slice(0, 3), ...(mission.spawns || [])] : null;
+    if (!squad) return null;
+    const allies = squad.slice(0, 3);
+    return [...(intel?.effect === "SOUTH_APPROACH" && intel.missionId === mission.missionId
+      ? allies.map((spawn, i) => ({...spawn, ...DEPLOYMENT_APPROACHES[intel.approach].cells[i]}))
+      : allies), ...(mission.spawns || [])];
   }
   if (mission.activity === "FIELD_OP") {
     const squad = commanderSpawnsForSquad(squadIds, pet);

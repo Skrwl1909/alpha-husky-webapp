@@ -1,4 +1,4 @@
-import { chapterNextMission } from '../data/campaignChapter';
+import { chapterNextMission, DOCTRINES } from '../data/campaignChapter';
 import { BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, missionForContext } from '../data/operations';
 import type { FoundationProgressionState } from '../host/foundationProgression';
 import type { FieldResult } from '../data/fieldOps';
@@ -14,9 +14,9 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
   const saved = p.chapterActiveMission || f?.activeMissionRun || Object.values(p.operations || {}).find(op => op.activeMissionRun)?.activeMissionRun;
   let primary = saved && getMissionDef(saved.missionId) ? action(saved.missionId, 'FINISH YOUR ACCEPTED MISSION', 'Your squad and mission are saved. Ready to go again from round 1?', saved.fieldContext?.directiveTier || 'standard', true) : null;
   if (primary && saved?.fieldContext?.masteryChallenge) primary.masteryChallenge = saved.fieldContext.masteryChallenge;
-  if (p.tacticalChapter?.status === 'ACTIVE' && p.tacticalChapter.doctrine === 'RECON' && (!saved || saved === p.chapterActiveMission)) {
+  if (p.tacticalChapter?.status === 'ACTIVE' && p.tacticalChapter.doctrine && (!saved || saved === p.chapterActiveMission)) {
     const id = chapterNextMission(p.tacticalChapter);
-    if (id) primary = { ...action(id, saved ? 'FINISH YOUR ACCEPTED CHAPTER RUN' : 'CONTINUE GHOST SIGNAL', 'Complete the next chapter objective. Chapter progress and Intel advance only on an accepted server result.', saved?.fieldContext?.directiveTier || 'standard', Boolean(saved)), chapter: true };
+    if (id) primary = { ...action(id, saved ? 'FINISH YOUR ACCEPTED CHAPTER RUN' : `CONTINUE ${DOCTRINES[p.tacticalChapter.doctrine].title}`, 'Complete the next chapter objective. Chapter progress and Intel advance only on an accepted server result.', saved?.fieldContext?.directiveTier || 'standard', Boolean(saved)), chapter: true };
   }
   if (!primary) for (const op of [BROKEN_SIGNAL, DEAD_RELAY]) {
     const id = op.orderedMissionIds.find(id => p.operations?.[op.operationId]?.missions[id] === 'available');

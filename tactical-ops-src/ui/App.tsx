@@ -7,7 +7,7 @@ import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { missionForContext } from "../data/operations";
 import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
-import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
+import {acceptedIntelSummary, chapterDisplay, chapterIntelSummary, DOCTRINES, type DoctrineId} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
 import { savedSidegradeProof } from "./s3PowerProof";
@@ -29,7 +29,7 @@ import {
   enemyBriefRows,
   resolveCurrentEncounter,
 } from "../data/onboarding";
-import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
+import { applyChapterIntelToRules, missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, BROKEN_SIGNAL_COMMANDER_SPAWNS } from "../data/operations";
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 import { SkillbookPanel } from "./Skillbook";
@@ -258,7 +258,7 @@ function WarTable() {
   const recommendedMission = recommendedBase ? missionForContext(recommendedBase, masteryPreview) : null;
   const recommendedChallenge = recommendedMission ? field?.records[recommendedMission.missionId]?.lastChallengeCycle === currentCycleId : false;
   const recommendedAccepted = primaryPurpose?.chapter ? progression?.chapterActiveMission : recommendedMission && field?.activeMissionRun?.missionId === recommendedMission.missionId ? field.activeMissionRun : progression?.operations?.[recommendedMission?.operationId || ""]?.activeMissionRun;
-  const recommendedPurpose = recommendedMission ? deriveMissionPresentation(recommendedMission, field, recommendedAccepted, field?.lastResult, masteryPreview) : null;
+  const recommendedPurpose = recommendedMission && !primaryPurpose?.chapter ? deriveMissionPresentation(recommendedMission, field, recommendedAccepted, field?.lastResult, masteryPreview) : null;
   const rotationLabel = field?.board ? rotationTime(field.board.nextRotationAt) : "REFRESH REQUIRED";
   const commanderRank = field?.commander?.rank || 0;
   const commanderProgress = field?.commander?.progress || 0;
@@ -342,6 +342,21 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
+        {acceptedChapter && chapterView ? <section className="t-panel t-chapter-readout" aria-label="Server accepted doctrine chapter">
+          <div className="t-kicker">CAMPAIGN CHAPTER · SERVER RECORDED</div>
+          <h2 className="t-title">{acceptedChapter.doctrine ? `${acceptedChapter.doctrine} · ` : ""}{chapterView.title}</h2>
+          <div className="t-chapter-steps">{acceptedChapter.status === "AVAILABLE" ? (Object.keys(DOCTRINES) as DoctrineId[])
+            .filter(id => id === "RECON" || progression?.chapterDoctrineVersion === 2)
+            .map(id => <div key={id}><strong>{id} · {DOCTRINES[id].title}</strong><p>{DOCTRINES[id].copy}</p>
+              <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={()=>void chooseDoctrine(id)}>COMMIT TO {DOCTRINES[id].title}</button></div>) :
+            <><strong>{chapterView.stage} / {chapterView.total} OPERATIONS RECORDED</strong>
+            {acceptedChapter.completedMissionIds.length ? <p>RECORDED · {acceptedChapter.completedMissionIds.map(id => getMissionDef(id)?.name || id).join(" · ")}</p> : null}
+            <p>{chapterView.nextMissionName ? `NEXT · ${chapterView.nextMissionName}` : "CHAPTER COMPLETE"}</p></>}</div>
+          {acceptedChapter.status==="ACTIVE" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={openChapterBrief}>{acceptedChapter.activeRunId?"RESUME CHAPTER RUN":"DEPLOY NEXT CHAPTER OP"}</button>:null}
+          <p>{chapterView.consequence}</p>
+          {acceptedChapter.status === "AVAILABLE" ? <small>Your doctrine is locked once recorded.</small> : null}
+        </section> : null}
+
         {field?.veteranProgressionAvailable && commanderRank>=3 ? <section className="t-panel" data-veteran-career="true">
           <div className="t-pi-v2-heading"><span className="t-pi-v2-medal" aria-label={`Commander Rank ${commanderRank}`}><span className="t-pi-v2-medal-icon" aria-hidden="true">✦</span><strong>{commanderRank}</strong><small>COMMANDER</small></span><div className="t-pi-v2-heading-copy"><span className="t-kicker">VETERAN CAREER · COMMANDER RANK {commanderRank}</span><strong>{commanderRank===4?"RANK 4 SECURED":"YOUR PATH TO RANK 4"}</strong><small>{commanderRank===4?"PACK EXTRACTION UNLOCKED":"Earn credits through eligible Advanced Field Ops"}</small></div></div>
           <div className="t-pi-career t-pi-v2" data-progress-identity="command" aria-label="Veteran Career toward Rank 4">
@@ -448,19 +463,6 @@ function WarTable() {
 
         </div> : null}
         {deckTab === "missions" ? <div className="t-command-pane" aria-label="Operations and field missions">
-        {acceptedChapter && chapterView ? <section className="t-panel t-chapter-readout" aria-label="Server accepted doctrine chapter">
-          <div className="t-kicker">CAMPAIGN CHAPTER · SERVER RECORDED</div>
-          <h2 className="t-title">{chapterView.title}</h2>
-          <div className="t-chapter-steps">{acceptedChapter.status === "AVAILABLE" ? (Object.entries(DOCTRINES).map(([id,def]) =>
-            <div key={id}><strong>{id} · {def.title}</strong><p>{def.copy}</p>{id==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={()=>void chooseDoctrine()}>COMMIT TO GHOST SIGNAL</button> : <small>Future doctrine · not yet operational</small>}</div>)) :
-            <><strong>{chapterView.stage} / {chapterView.total} OPERATIONS VERIFIED</strong>
-            <p>{chapterView.nextMissionName ? `NEXT · ${chapterView.nextMissionName}` : "CHAPTER COMPLETE"}</p></>}</div>
-          {acceptedChapter.status==="ACTIVE" && acceptedChapter.doctrine==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={openChapterBrief}>{acceptedChapter.activeRunId?"RESUME CHAPTER RUN":"DEPLOY NEXT CHAPTER OP"}</button>:null}
-          {acceptedChapter.status==="COMPLETED"?<strong>{acceptedChapter.intelConsumedByRunId?"INTEL DEPLOYED IN AN ACCEPTED RUN":"RECON INTEL READY · DELAY NEXT ELIGIBLE REINFORCEMENT"}</strong>:null}
-          <p>{chapterView.consequence}</p>
-          <small>{acceptedChapter.status === "AVAILABLE" ? "Doctrine selection becomes playable only after the server exposes a verified choice action. No client-only selection." : "Mission progress advances only on the next accepted server receipt. Existing Field Ops can still be played normally."}</small>
-        </section> : null}
-
         {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
 
 
@@ -657,30 +659,35 @@ function Brief() {
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const chapterMode = useBattleStore((s) => s.chapterMode);
   const chapterActive = useBattleStore((s) => s.progression?.chapterActiveMission);
+  const chapter = useBattleStore((s) => s.progression?.tacticalChapter);
   const campaignRun = useBattleStore((s) => s.progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun);
   const campaignIntel = useBattleStore((s) => s.progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true);
-  const campaignContext = campaignRun?.missionId === selectedMissionId ? campaignRun.campaignContext : { version: 1 as const, courierTraceAcquired: campaignIntel };
   const baseMission = getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
   const briefPane = useRef<HTMLDivElement>(null);
-  useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
+  useEffect(()=>{if(savedRun?.runId && (selectedMissionId==="field-relay-intercept" || savedRun.chapterIntel)){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId,savedRun?.chapterIntel]);
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
+  const campaignContext = resuming ? savedRun?.campaignContext : { version: 1 as const, courierTraceAcquired: campaignIntel };
+  const chapterIntel = resuming ? savedRun?.chapterIntel : undefined;
+  const briefPet = (resuming ? savedRun?.combatProfileV2?.pet : null) || equippedPet;
   const mission = baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null) : null;
   const fieldOp = mission?.activity === "FIELD_OP";
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
-  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
+  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : chapterMode ? null : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
-  const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
+  const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, briefPet, selectedApproach, chapterIntel)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
   const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
-  const chapterIntel = useBattleStore((s)=>s.currentChapterIntel);
-  const reinforcementRound = mission && (fieldOp || campaignMission) ? (chapterIntel?.effectiveRound || missionBattleRules(mission, false, fieldContext, campaignContext).reinforcement?.triggerRound) : undefined;
+  const reinforcementRound = mission && (fieldOp || campaignMission)
+    ? applyChapterIntelToRules(missionBattleRules(mission, false, fieldContext, campaignContext), mission.missionId, chapterIntel).reinforcement?.triggerRound : undefined;
   const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
-  const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
+  const objective = chapterMode && mission?.missionId === "dead-relay-courier"
+    ? "Intercept the Signal Courier before it reaches the south-east exit."
+    : mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
   const previewGrowth = resuming ? savedRun?.playerGrowth : playerGrowth;
@@ -701,9 +708,9 @@ function Brief() {
       : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
   const primaryObjective = fieldOp || campaignMission ? `PRIMARY OBJECTIVE: ${mission.objectiveType}` : mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
   const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "CNC JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
-  const missionIntel = campaignMission
+  const missionIntel = chapterIntel ? acceptedIntelSummary(chapterIntel) : chapterMode ? "Chapter progress is recorded after settlement." : campaignMission
     ? mission?.missionId === "dead-relay-courier" ? "EARLY INTERCEPT: first win by round 4 grants Courier Trace. Slower victory still unlocks Hold."
-      : mission?.missionId === "dead-relay-hold" ? `COURIER TRACE ${campaignContext.courierTraceAcquired ? "ACTIVE: HOUND ROUND 3" : "NOT ACQUIRED: HOUND ROUND 2"}`
+      : mission?.missionId === "dead-relay-hold" ? `COURIER TRACE ${campaignContext?.courierTraceAcquired ? "ACTIVE: HOUND ROUND 3" : "NOT ACQUIRED: HOUND ROUND 2"}`
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
@@ -763,7 +770,9 @@ function Brief() {
               <p>{purpose.tacticalThreat}</p>
             </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
-            {fieldOp ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>{veteranBrief.status === "claimed" ? "VETERAN CREDIT SAVED" : veteranBrief.status === "eligible" ? "VETERAN CHANCE!" : veteranBrief.status === "locked" ? "VETERAN NOT READY" : "VETERAN STATUS UNKNOWN"}:</b> {veteranBrief.copy}</p> : null}
+            {fieldOp && !chapterMode ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>{veteranBrief.status === "claimed" ? "VETERAN CREDIT SAVED" : veteranBrief.status === "eligible" ? "VETERAN CHANCE!" : veteranBrief.status === "locked" ? "VETERAN NOT READY" : "VETERAN STATUS UNKNOWN"}:</b> {veteranBrief.copy}</p> : null}
+              {chapterMode && chapter?.doctrine ? <p>{chapter.doctrine} · STAGE {chapter.completedMissionIds.length + 1}/3 · {chapter.completedMissionIds.length} RECORDED</p> : null}
+              {chapterIntel ? <p><b>ACCEPTED CHAPTER INTEL</b> · {acceptedIntelSummary(chapterIntel)}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
               <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
               {buildNotes.map(row => <p key={row}>{row}</p>)}
@@ -771,10 +780,10 @@ function Brief() {
             </details> : null}
             {purpose ? <details className="t-mission-extra" aria-label="Mission outcome and recording">
               <summary>WHAT HAPPENS AFTER <span>DETAILS</span></summary>
-              <p>{purpose.nextConsequence}</p>
+              <p>{chapterMode ? "An accepted victory records this chapter operation." : purpose.nextConsequence}</p>
             </details> : null}
           </div>
-          {fieldOp ? (
+          {fieldOp && !chapterMode ? (
             <>
               <div className="t-deploy-summary-card">
                 <span className="t-kicker">{fieldContext.masteryChallenge ? 'Completion' : 'First win'}</span>
@@ -967,7 +976,7 @@ function Brief() {
             {conditions.length ? <section className="t-conditions" aria-label="Special conditions">
               {conditions.map((condition) => <div className="t-condition t-condition-v29" key={condition.type}>
                 <strong>{condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</strong>
-                <p>{condition.copy}</p>
+                <p>{condition.reinforcement && chapterIntel && chapterIntel.effect !== "SOUTH_APPROACH" ? acceptedIntelSummary(chapterIntel) : condition.copy}</p>
               </div>)}
               {mission?.squadHint ? <p className="t-deploy-tip"><strong>Squad tip:</strong> {mission.squadHint}</p> : null}
             </section> : null}
@@ -976,12 +985,12 @@ function Brief() {
               {resuming ? <p className="t-deploy-resume">Original conditions are locked for this saved run. Finish it before starting a different challenge.</p> : null}
               {fieldContext.masteryChallenge ? <p>RELAY MASTERY · 1/1 · Permanent Relay Lockdown access. Fixed pressure and deadline; support follows the accepted plan.</p> : field?.board?.reportVersion === 3 ? <>
                 <div className="t-kicker">Directive tier</div>
-                <div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div>
+                <div className="t-brief-actions">{(["standard", "advanced"] as const).map((tier) => <button type="button" className={`t-btn ${selectedDirectiveTier === tier ? "t-btn-primary" : ""}`} key={tier} aria-pressed={selectedDirectiveTier === tier} disabled={busy || (chapterMode && resuming) || !field.commander?.unlockedDirectiveTiers?.includes(tier)} onClick={() => selectDirectiveTier(tier)}>{tier.toUpperCase()}{tier === "advanced" && !field.commander?.unlockedDirectiveTiers?.includes(tier) ? " / RANK 3" : ""}</button>)}</div>
                 <small>{selectedDirectiveTier === "advanced" ? `${directiveSetLabel(fieldContext.directiveSet)} · Advanced clear is recorded.` : "Standard field conditions."}</small>
               </> : null}
 
               <div className="t-kicker">Deployment approach</div>
-              <div className="t-brief-actions">{(["standard", "south"] as const).map((approach) => <button type="button" key={approach} className={`t-btn ${selectedApproach === approach ? "t-btn-primary" : ""}`} aria-pressed={selectedApproach === approach} disabled={busy || !field?.commander?.unlockedApproaches.includes(approach)} onClick={() => selectApproach(approach)}>{DEPLOYMENT_APPROACHES[approach].name}{approach === "south" && !field?.commander?.unlockedApproaches.includes("south") ? " / RANK 2" : ""}</button>)}</div>
+              <div className="t-brief-actions">{(["standard", "south"] as const).map((approach) => <button type="button" key={approach} className={`t-btn ${selectedApproach === approach ? "t-btn-primary" : ""}`} aria-pressed={selectedApproach === approach} disabled={busy || (chapterMode && resuming) || !field?.commander?.unlockedApproaches.includes(approach)} onClick={() => selectApproach(approach)}>{DEPLOYMENT_APPROACHES[approach].name}{approach === "south" && !field?.commander?.unlockedApproaches.includes("south") ? " / RANK 2" : ""}</button>)}</div>
               <small>{DEPLOYMENT_APPROACHES[selectedApproach].copy}</small>
             </div> : null}
           </section>
@@ -1022,7 +1031,7 @@ function Brief() {
         </div> : null}
         <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
           <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
-          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
+          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, briefPet))}>
             {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
             <ChevronRight className="t-ico" />
           </button>
@@ -1073,6 +1082,8 @@ function Results() {
   const fieldResult = useBattleStore((s) => s.fieldResult);
   const campaignResult = useBattleStore((s) => s.campaignResult);
   const chapterResult = useBattleStore((s) => s.chapterResult);
+  const chapter = useBattleStore((s) => s.progression?.tacticalChapter);
+  const chapterIntel = useBattleStore((s) => s.currentChapterIntel);
   const chapterMode = useBattleStore((s) => s.chapterMode);
   const saveChapterResult = useBattleStore((s) => s.saveChapterResult);
   const saveCampaignResult = useBattleStore((s) => s.saveCampaignResult);
@@ -1197,7 +1208,7 @@ function Results() {
         <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
           <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
           <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
+          <h2 className="t-title">{chapterMode ? chapterResult ? chapterResult.victory ? "CHAPTER OP COMPLETE" : "CHAPTER OP FAILED" : "CHAPTER OP RESULT" : recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
           {sessionVictory ? (
             <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
@@ -1205,8 +1216,9 @@ function Results() {
           {operationVictory && !campaignMission && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
           {chapterMode ? <div className="t-panel" role="status">
             <strong>{chapterResult ? "CHAPTER RESULT RECORDED" : progressionCommitPending ? "RECORDING CHAPTER RESULT…" : "CHAPTER RESULT NOT YET RECORDED"}</strong>
-            <p>{chapterResult ? `GHOST SIGNAL · ${chapterResult.stageRecorded}/3 accepted operations. ${chapterResult.chapterComplete?"RECON Intel ready for a qualifying encounter.":"Return to War Table for the next mission."}` : "Only server-recorded results advance this chapter."}</p>
+            <p>{chapterResult && chapter?.doctrine ? `${chapter.doctrine} · ${chapterResult.stageRecorded}/3 operations recorded. ${chapterResult.chapterComplete ? chapterIntelSummary(chapter) : `NEXT · ${chapterDisplay(chapter).nextMissionName}`}` : "Only server-recorded results advance this chapter."}</p>
           </div>:null}
+          {chapterIntel ? <p><b>CHAPTER INTEL USED</b> · {acceptedIntelSummary(chapterIntel)}</p> : null}
           {!chapterMode && fieldOp ? <div>
             
             {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
