@@ -43,6 +43,7 @@ import {
   type OnboardingEncounterId,
 } from "../data/onboarding";
 import { g2HoldRevisionForRequest, missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
+import { chapterNextMission, type DoctrineId } from "../data/campaignChapter";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
@@ -107,6 +108,7 @@ interface UiBattle {
   fieldResult: FieldResult | null;
   campaignResult: CampaignResult | null;
   chapterResult: ChapterResult | null;
+  chapterSettlementRevision: number | null;
   chapterMode: boolean;
   currentChapterIntel: import("../data/operations").ChapterIntel | null;
   currentCampaignContext: CampaignContext | null;
@@ -170,7 +172,7 @@ interface Store extends UiBattle {
   saveFieldResult: () => Promise<void>;
   saveCampaignResult: () => Promise<void>;
   saveChapterResult: () => Promise<void>;
-  chooseDoctrine: () => Promise<void>;
+  chooseDoctrine: (doctrine: DoctrineId) => Promise<void>;
   openChapterBrief: () => void;
   openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1") => void;
   activeRulesetVersion: string | null;
@@ -537,6 +539,7 @@ export const useBattleStore = create<Store>((set, get) => {
       fieldResult: null,
       campaignResult: null,
       chapterResult: null,
+      chapterSettlementRevision: null,
       currentChapterIntel:chapterIntel||null,
       currentCampaignContext: campaignContext || null,
       continueRequestId: null,
@@ -598,6 +601,7 @@ export const useBattleStore = create<Store>((set, get) => {
     fieldResult: null,
     campaignResult: null,
     chapterResult: null,
+    chapterSettlementRevision: null,
     chapterMode: false,
     currentChapterIntel:null,
     currentCampaignContext: null,
@@ -715,24 +719,27 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     selectDirectiveTier: (tier) => {
       const current = get();
+      if (current.chapterMode && current.progression?.chapterActiveMission) return;
       if (current.selectedMasteryChallenge) return;
       if (current.screen !== "brief" || current.busy || current.progressionCommitPending || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" || !current.progression?.fieldOps?.commander?.unlockedDirectiveTiers?.includes(tier)) return;
       set({ selectedDirectiveTier: tier });
     },
     selectApproach: (approach) => {
       const current = get();
+      if (current.chapterMode && current.progression?.chapterActiveMission) return;
       if (current.progression?.fieldOps?.activeMissionRun?.fieldContext?.progressionVersion===2) return;
       if (current.selectedMasteryChallenge && current.progression?.fieldOps?.activeMissionRun) return;
       if (current.screen !== "brief" || current.busy || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
       if (!current.progression?.fieldOps?.commander?.unlockedApproaches.includes(approach)) return;
       set({ selectedApproach: approach });
     },
-    chooseDoctrine: async () => {
+    chooseDoctrine: async (doctrine) => {
       const current=get(),chapter=current.progression?.tacticalChapter;
       if(current.progressionCommitPending||!current.progression||chapter?.status!=="AVAILABLE")return;
+      if (doctrine !== "RECON" && current.progression.chapterDoctrineVersion !== 2) return;
       set({progressionCommitPending:true,progressionError:null});
       try {
-        const next=await chooseTacticalDoctrine(createFoundationRequestId("chapter-choose"),current.progression.revision,"RECON");
+        const next=await chooseTacticalDoctrine(createFoundationRequestId("chapter-choose"),current.progression.revision,doctrine);
         applyCanonicalProgression(next);
       }catch(error){
         const canonical=error instanceof FoundationProgressionError?error.state:null;
@@ -742,15 +749,15 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     openChapterBrief: () => {
       const current=get(),chapter=current.progression?.tacticalChapter;
-      if(!chapter||chapter.status!=="ACTIVE"||chapter.doctrine!=="RECON"||!current.foundationCompleted)return;
-      const missionId=["field-relay-recovery","field-relay-intercept","dead-relay-courier"][chapter.completedMissionIds.length];
+      if (!chapter || !current.foundationCompleted) return;
+      const missionId = chapterNextMission(chapter);
       if(!missionId)return;
       const active=current.progression?.chapterActiveMission;
       if(chapter.activeRunId && (!active||active.runId!==chapter.activeRunId||active.missionId!==missionId)){
         set({progressionError:"Saved chapter run could not be restored. Refresh Tactical Ops."});return;
       }
       const currentSquad=active?.squadIds||["alpha","ally-02","ally-03"];
-      set({screen:"brief",chapterMode:true,selectedMasteryChallenge:null,selectedMissionId:missionId,selectedSquadIds:currentSquad,
+      set({screen:"brief",chapterMode:true,selectedMasteryChallenge:null,selectedVeteranChallenge:false,selectedMissionId:missionId,selectedSquadIds:currentSquad,
         selectedApproach:active?.fieldContext?.approach||"standard",
         selectedDirectiveTier:active?.fieldContext?.directiveTier||"standard",
         currentCampaignContext:null,chapterResult:null,campaignResult:null,fieldResult:null,progressionError:null});
@@ -767,13 +774,15 @@ export const useBattleStore = create<Store>((set, get) => {
           ...(s.battle.failureReason?{failureReason:s.battle.failureReason}:{})};
       if(!report)return;
       const requestId=s.continueRequestId||createFoundationRequestId("chapter-continue");
-      set({progressionCommitPending:true,progressionError:null,continueRequestId:requestId});
+      const expectedRevision = s.chapterSettlementRevision ?? s.progression.revision;
+      set({progressionCommitPending:true,progressionError:null,continueRequestId:requestId,chapterSettlementRevision:expectedRevision});
       try {
-        const response=await continueOperationMission(requestId,s.progression.revision,s.currentRunKey,
+        const response=await continueOperationMission(requestId,expectedRevision,s.currentRunKey,
           false,mission.activity==="FIELD_OP"?report as import("../data/fieldOps").FieldReport:undefined,
           mission.activity!=="FIELD_OP"?report as CampaignReport:undefined,
           s.activeRulesetVersion||undefined,true);
-        if(!response.chapterResult||response.chapterResult.runId!==s.currentRunKey)throw new FoundationProgressionError("invalid_chapter_receipt");
+        if (!response.chapterResult || response.chapterResult.runId !== s.currentRunKey ||
+            response.chapterResult.missionId !== mission.missionId) throw new FoundationProgressionError("invalid_chapter_receipt");
         if(get().currentRunKey!==s.currentRunKey)return;
         applyCanonicalProgression(response.state);
         set({chapterResult:response.chapterResult,progressionCommitPending:false});
@@ -781,6 +790,9 @@ export const useBattleStore = create<Store>((set, get) => {
         if(get().currentRunKey!==s.currentRunKey)return;
         const canonical=error instanceof FoundationProgressionError?error.state:null;
         if(canonical)applyCanonicalProgression(canonical);
+        if (error instanceof FoundationProgressionError && error.code === "stale_revision") {
+          set({continueRequestId:null,chapterSettlementRevision:null});
+        }
         set({progressionCommitPending:false,progressionError:"Chapter result not confirmed. Retry saving or refresh."});
       }
     },
@@ -919,7 +931,11 @@ export const useBattleStore = create<Store>((set, get) => {
           if (!mission || !mission.executable) return;
           if (mission.activity === "FIELD_OP" && !persisted.progression.fieldOps?.board) { set({ progressionError: "Refresh the War Table before deploying." }); return; }
           const squadIds = mission.activity === "FIELD_OP" || mission.operationId === DEAD_RELAY.operationId || mission.objectiveType === "RECOVER" || mission.objectiveType === "BOSS" ? persisted.selectedSquadIds : undefined;
-          const spawns = missionSpawnsForSquad(mission, squadIds || [], persisted.progression.equippedPet, persisted.selectedApproach);
+          const existing = persisted.chapterMode ? persisted.progression.chapterActiveMission :
+            mission.activity === "FIELD_OP" ? persisted.progression.fieldOps?.activeMissionRun :
+            persisted.progression.operations?.[mission.operationId]?.activeMissionRun;
+          const savedPet = existing?.missionId === mission.missionId && existing.combatProfileV2?.pet || null;
+          const spawns = missionSpawnsForSquad(mission, squadIds || [], savedPet || persisted.progression.equippedPet, persisted.selectedApproach);
           if (!spawns) {
             set({ progressionError: mission.objectiveType === "BOSS" ? "Choose exactly two companions for ALPHA." : "Choose CNC, SHADOW or your equipped PET to accompany ALPHA." });
             return;
@@ -927,13 +943,15 @@ export const useBattleStore = create<Store>((set, get) => {
           set({ busy: true, ticker: "Preparing operation run…", progressionError: null });
           void (async () => {
             try {
-              // Preserve the immutable rules of an accepted legacy run, even after earning RECON Intel.
-              const existing = mission.activity === "FIELD_OP"
-                ? persisted.progression.fieldOps?.activeMissionRun
-                : persisted.progression.operations?.[mission.operationId]?.activeMissionRun;
               const requestedRuleset = persisted.chapterMode ? TACTICAL_VNEXT_RULESET
                 : existing ? existing.rulesContract?.rulesetVersion
                 : persisted.progression.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined;
+              const chapter = persisted.progression.tacticalChapter;
+              const intelVersion = !persisted.chapterMode && mission.operationId === DEAD_RELAY.operationId &&
+                requestedRuleset === TACTICAL_VNEXT_RULESET
+                ? persisted.progression.chapterDoctrineVersion === 2 ? 2
+                  : chapter?.status === "COMPLETED" && !chapter.intelConsumedByRunId ? 1 : undefined
+                : undefined;
               const started = await startOperationMission(
                 createFoundationRequestId(persisted.chapterMode?"chapter-start":"mission-start"),
                 persisted.progression.revision,
@@ -945,24 +963,21 @@ export const useBattleStore = create<Store>((set, get) => {
                     : persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
                 requestedRuleset,
                 persisted.chapterMode,
-                !persisted.chapterMode && mission.operationId===DEAD_RELAY.operationId &&
-                   persisted.progression.tacticalChapter?.status==="COMPLETED" &&
-                   !persisted.progression.tacticalChapter.intelConsumedByRunId &&
-                   requestedRuleset === TACTICAL_VNEXT_RULESET ? 1:undefined,
+                intelVersion,
                 persisted.progression.fieldOps?.veteranProgressionAvailable ? 2 : undefined,
-                (mission.missionId==="field-relay-intercept" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.fieldOps?.interceptRevisionAvailable===2 || (persisted.chapterMode ? persisted.progression.chapterActiveMission?.rulesContract?.missionRevision : existing?.rulesContract?.missionRevision)===2)) ? 2 :
+                (mission.missionId==="field-relay-intercept" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.fieldOps?.interceptRevisionAvailable===2 || existing?.rulesContract?.missionRevision===2)) ? 2 :
                 g2HoldRevisionForRequest(mission.missionId,requestedRuleset,persisted.progression.deadRelayHoldRevisionAvailable,existing),
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
               const acceptedMission = missionForContext(mission, started.run.fieldContext, started.run.rulesContract?.missionRevision, started.run.campaignContext);
-              // Review the server-frozen Intercept formation before the first turn.
-              if (mission.missionId === "field-relay-intercept" && started.run.started) {
+              // Review the server-frozen formation or Intel before the first turn.
+              if (started.run.started && (mission.missionId === "field-relay-intercept" || started.run.chapterIntel)) {
                 set({busy:false,screen:"brief",ticker:null});return;
               }
               const frozenPet = started.run.combatProfileV2?.pet;
               const runPet = frozenPet ? { id: frozenPet.id, name: frozenPet.name, img: frozenPet.img } : started.state.equippedPet;
-              const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, runPet, started.run.fieldContext?.approach);
+              const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, runPet, started.run.fieldContext?.approach, started.run.chapterIntel);
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
               beginBattle(
                 g,
@@ -1205,6 +1220,7 @@ export const useBattleStore = create<Store>((set, get) => {
     selectShadowSidegrade: (choice) => selectTeammateSidegrade("shadow", choice),
     toggleCommanderTeammate: (unitId) => {
       const current = get();
+      if (current.chapterMode && current.progression?.chapterActiveMission) return;
       if (current.progression?.fieldOps?.activeMissionRun?.fieldContext?.progressionVersion===2) return;
       if (current.selectedMasteryChallenge && current.progression?.fieldOps?.activeMissionRun?.fieldContext?.lockdownPlan) return;
       if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" && getMissionDef(current.selectedMissionId)?.operationId !== DEAD_RELAY.operationId)) return;

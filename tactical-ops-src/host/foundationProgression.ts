@@ -5,7 +5,7 @@ import { parseVeteran } from "../data/veteran";
 import { parseVeteranOpportunity, type VeteranOpportunity } from "../data/progressionOpportunity";
 import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "../data/fieldOps";
 import type { CampaignContext, ChapterIntel } from "../data/operations";
-import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
+import {chapterNextMission, DOCTRINES, parseChapterSnapshot, type ChapterSnapshot, type DoctrineId} from "../data/campaignChapter";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
@@ -42,6 +42,7 @@ export interface FoundationProgressionState {
   fieldOps?: FieldOpsProgression;
   /** Read-only optional V1 from authoritative backend; absent = no new campaign UI. */
   tacticalChapter?: ChapterSnapshot;
+  chapterDoctrineVersion?: 2;
   chapterActiveMission?: OperationMissionRun;
   operations?: Record<string, OperationProgressionState>;
   campaignIntel?: { "dead-relay": { courierTraceAcquired: boolean } };
@@ -161,7 +162,7 @@ export interface OperationMissionRun {
   squadIds: string[];
   fieldContext?: FieldContext;
   campaignContext?: CampaignContext;
-  chapterContext?: { version: 1; chapterId: "edge-relay"; doctrine: "RECON"; stageIndex: number };
+  chapterContext?: { version: 1; chapterId: "edge-relay"; doctrine: DoctrineId; stageIndex: number };
   chapterIntel?: ChapterIntel;
 }
 
@@ -309,6 +310,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     const chapter=parseChapterSnapshot(value.tacticalChapter);
     if(!chapter)return null;
     state.tacticalChapter=chapter;
+    if (value.chapterDoctrineVersion === 2) state.chapterDoctrineVersion = 2;
     if (value.chapterActiveMission != null) {
       const active = value.chapterActiveMission as Record<string, unknown>;
       if (!active || typeof active !== "object" || Array.isArray(active) ||
@@ -319,11 +321,13 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       const fieldContext = parseFieldContext(active.fieldContext);
       if (active.fieldContext != null && !fieldContext) return null;
       const contract=parseRunRulesContract(active.rulesContract);
-      if(!contract || contract.missionId!==active.missionId ||
-         !parseChapterContext(active.chapterContext))return null;
+      const chapterContext = parseChapterContext(active.chapterContext);
+      if (!contract || contract.missionId !== active.missionId || !chapterContext ||
+          chapterContext.doctrine !== chapter.doctrine || chapterContext.stageIndex !== chapter.completedMissionIds.length ||
+          active.missionId !== chapterNextMission(chapter)) return null;
       state.chapterActiveMission = {runId:active.runId,missionId:active.missionId,
         squadIds:[...active.squadIds],rulesContract:contract,
-        chapterContext:parseChapterContext(active.chapterContext),
+        chapterContext,
         packMastery:parsePackMastery(active.packMastery),
         tacticalProfile:parseTacticalProfile(active.tacticalProfile),
         ...(active.playerGrowth!=null?{playerGrowth:requireRunGrowth(active.playerGrowth)}:{}),
@@ -361,15 +365,24 @@ function parseState(raw: unknown): FoundationProgressionState | null {
 function parseChapterContext(raw: unknown): OperationMissionRun["chapterContext"] {
   if (!raw || typeof raw !== "object") return undefined;
   const x=raw as Record<string,unknown>;
-  if (x.version!==1 || x.chapterId!=="edge-relay" || x.doctrine!=="RECON" ||
+  if (x.version!==1 || x.chapterId!=="edge-relay" || typeof x.doctrine !== "string" || !Object.hasOwn(DOCTRINES, x.doctrine) ||
       !Number.isInteger(x.stageIndex) || Number(x.stageIndex)<0 || Number(x.stageIndex)>2) return undefined;
-  return {version:1,chapterId:"edge-relay",doctrine:"RECON",stageIndex:Number(x.stageIndex)};
+  return {version:1,chapterId:"edge-relay",doctrine:x.doctrine as DoctrineId,stageIndex:Number(x.stageIndex)};
 }
 function parseChapterIntel(raw:unknown, missionId:string):ChapterIntel|undefined {
   if (!raw || typeof raw!=="object") return undefined;
   const x=raw as Record<string,unknown>;
-  if(x.version!==1 || x.effect!=="DELAY_REINFORCEMENT" || x.sourceChapterId!=="edge-relay" ||
-     x.missionId!==missionId || !Number.isInteger(x.baselineRound) || !Number.isInteger(x.effectiveRound) ||
+  if (x.sourceChapterId !== "edge-relay" || x.missionId !== missionId) return undefined;
+  if (x.version === 2 && x.effect === "SOUTH_APPROACH" && x.approach === "south" &&
+      ["dead-relay-courier", "dead-relay-hold", "dead-relay-guardian"].includes(missionId)) {
+    return {version:2, effect:"SOUTH_APPROACH", sourceChapterId:"edge-relay", missionId, approach:"south"};
+  }
+  if (x.version === 2 && x.effect === "COMMAND_DISRUPTION" && x.entry === "north-east" &&
+      missionId === "dead-relay-guardian") {
+    return {version:2, effect:"COMMAND_DISRUPTION", sourceChapterId:"edge-relay", missionId, entry:"north-east"};
+  }
+  if(x.version!==1 || x.effect!=="DELAY_REINFORCEMENT" ||
+     !Number.isInteger(x.baselineRound) || !Number.isInteger(x.effectiveRound) ||
      Number(x.effectiveRound)!==Number(x.baselineRound)+1) return undefined;
   return {version:1,effect:"DELAY_REINFORCEMENT",sourceChapterId:"edge-relay",
     missionId,baselineRound:Number(x.baselineRound),effectiveRound:Number(x.effectiveRound)};
@@ -422,7 +435,9 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
       if (activeValue.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && activeValue.missionId !== 'field-relay-hold') || (fieldContext.veteranChallenge && activeValue.missionId !== 'field-relay-recovery'))) return null;
       const contract = parseRunRulesContract(activeValue.rulesContract);
       if (contract && contract.missionId !== activeValue.missionId) return null;
-      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(activeValue, contract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}), ...(parseChapterContext(activeValue.chapterContext) ? {chapterContext:parseChapterContext(activeValue.chapterContext)} : {}), ...(parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string) ? {chapterIntel:parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string)} : {}) };
+      const chapterIntel = parseChapterIntel(activeValue.chapterIntel, activeValue.missionId);
+      if (activeValue.chapterIntel != null && (!chapterIntel || !contract)) return null;
+      activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(activeValue, contract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}), ...(parseChapterContext(activeValue.chapterContext) ? {chapterContext:parseChapterContext(activeValue.chapterContext)} : {}), ...(chapterIntel ? {chapterIntel} : {}) };
     }
     parsed[operationId] = {
       status: value.status,
@@ -497,7 +512,7 @@ export async function continueFoundationRun(
 export type ChapterResult = {version:1;chapterId:"edge-relay";runId:string;missionId:string;
  victory:boolean;stageRecorded:number;chapterComplete:boolean;combatProof:"CLIENT_REPORT_ONLY"};
 
-export async function chooseTacticalDoctrine(requestId:string,expectedRevision:number,doctrine:"RECON"):Promise<FoundationProgressionState>{
+export async function chooseTacticalDoctrine(requestId:string,expectedRevision:number,doctrine:DoctrineId):Promise<FoundationProgressionState>{
   return responseState(await request("/webapp/tactical-foundation/chapter/choose",
     {requestId,expectedRevision,doctrine}));
 }
@@ -510,7 +525,7 @@ export async function startOperationMission(
   fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
   rulesetVersion?: string,
   chapterMode = false,
-  chapterIntelVersion?: 1,
+  chapterIntelVersion?: 1 | 2,
   masteryVersion?: 2,
   missionRevision?: 2,
 ): Promise<{ state: FoundationProgressionState; run: OperationMissionRun }> {
@@ -534,7 +549,16 @@ export async function startOperationMission(
   if (fieldOptions?.masteryChallenge && fieldContext?.masteryChallenge !== fieldOptions.masteryChallenge) throw new FoundationProgressionError("invalid_progression_response");
   const rulesContract = parseRunRulesContract(value.rulesContract);
   if (rulesContract && rulesContract.missionId !== missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
-  return { state: responseState(response), run: { started:value.started===true, runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(value, rulesContract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
+  const state = responseState(response);
+  const chapterContext = parseChapterContext(value.chapterContext);
+  const chapterIntel = parseChapterIntel(value.chapterIntel, missionId);
+  if ((value.chapterIntel != null && (!chapterIntel || !rulesContract)) ||
+      (chapterMode && (!chapterContext || state.chapterActiveMission?.runId !== value.runId ||
+        chapterContext.doctrine !== state.tacticalChapter?.doctrine ||
+        chapterContext.stageIndex !== state.tacticalChapter?.completedMissionIds.length))) {
+    throw new FoundationProgressionError("invalid_progression_response");
+  }
+  return { state, run: { started:value.started===true, runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(value, rulesContract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(chapterContext ? {chapterContext} : {}), ...(chapterIntel ? {chapterIntel} : {}) } };
 }
 
 export async function continueOperationMission(

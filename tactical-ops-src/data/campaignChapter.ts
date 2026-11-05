@@ -1,4 +1,4 @@
-import {getMissionDef} from "../data/operations";
+import {getMissionDef, type ChapterIntel} from "../data/operations";
 export type DoctrineId="RECON"|"DEFENSE"|"INTERDICTION";
 export type ChapterStatus="AVAILABLE"|"ACTIVE"|"COMPLETED";
 export type ChapterSnapshot={version:1;chapterId:"edge-relay";status:ChapterStatus;doctrine:DoctrineId|null;revision:number;completedMissionIds:string[];activeRunId:string|null;intelEffect:"NONE"|"DELAY_REINFORCEMENT"|"SOUTH_APPROACH"|"COMMAND_DISRUPTION";intelConsumedByRunId:string|null;lastReceiptId:string|null};
@@ -25,18 +25,44 @@ export function parseChapterSnapshot(raw:unknown):ChapterSnapshot|null{
  if(doctrine&&(completed.some(id=>!DOCTRINES[doctrine].missions.includes(id as never))||DOCTRINES[doctrine].missions.some((id,i)=>i<completed.length&&completed[i]!==id)))return null;
  if(x.status==="COMPLETED"&&(!doctrine||completed.length!==3||x.activeRunId!==null||x.intelEffect!==DOCTRINES[doctrine].effect))return null;
  if(x.status==="ACTIVE"&&completed.length>=3)return null;
+ if(x.status!=="COMPLETED"&&(x.intelEffect!=="NONE"||x.intelConsumedByRunId!==null))return null;
  return {version:1,chapterId:"edge-relay",status:x.status as ChapterStatus,doctrine,revision:Number(x.revision),completedMissionIds:[...completed],activeRunId:x.activeRunId as string|null,intelEffect:x.intelEffect as ChapterSnapshot["intelEffect"],intelConsumedByRunId:x.intelConsumedByRunId as string|null,lastReceiptId:x.lastReceiptId as string|null};
 }
 export function chapterNextMission(s:ChapterSnapshot):string|null{
  if(s.status!=="ACTIVE"||!s.doctrine)return null;
  return DOCTRINES[s.doctrine].missions[s.completedMissionIds.length]||null;
 }
+export const CHAPTER_INTEL_LABELS = {
+  NONE: "",
+  DELAY_REINFORCEMENT: "Next eligible reinforcement delayed by one round",
+  SOUTH_APPROACH: "South entry for the next Dead Relay encounter",
+  COMMAND_DISRUPTION: "Next Guardian reinforcement redirected to the north-east",
+} satisfies Record<ChapterSnapshot["intelEffect"], string>;
+
+export function chapterIntelSummary(chapter: ChapterSnapshot): string {
+  if (chapter.intelEffect === "NONE") return "";
+  if (chapter.intelConsumedByRunId) {
+    return `INTEL USED · ${{
+      DELAY_REINFORCEMENT: "Reinforcement delayed by one round",
+      SOUTH_APPROACH: "Squad entered from the south",
+      COMMAND_DISRUPTION: "Guardian reinforcement redirected to the north-east",
+    }[chapter.intelEffect]}`;
+  }
+  return `INTEL READY · ${CHAPTER_INTEL_LABELS[chapter.intelEffect]}`;
+}
+export function acceptedIntelSummary(intel: ChapterIntel): string {
+  switch (intel.effect) {
+    case "DELAY_REINFORCEMENT": return `Reinforcement moved from round ${intel.baselineRound} to ${intel.effectiveRound}.`;
+    case "SOUTH_APPROACH": return "The squad deploys from the south.";
+    case "COMMAND_DISRUPTION": return "The Guardian's HOUND reinforcement enters from the north-east.";
+  }
+}
 export function chapterDisplay(s:ChapterSnapshot){
  const next=chapterNextMission(s);
  return {complete:s.status==="COMPLETED",stage:s.completedMissionIds.length,total:3,
   title:s.doctrine?DOCTRINES[s.doctrine].title:"CHOOSE YOUR DOCTRINE",
   nextMissionId:next,nextMissionName:next?getMissionDef(next)?.name||next:null,
-  consequence:s.status==="COMPLETED"?"Server-recorded campaign Intel is available only under the accepted next-run contract.":s.doctrine?DOCTRINES[s.doctrine].copy:"Doctrine selection must be recorded by the server before deployment."};
+  consequence:s.status==="COMPLETED"?chapterIntelSummary(s):s.doctrine?DOCTRINES[s.doctrine].copy:"Doctrine selection must be recorded by the server before deployment."};
 }
 /** Deterministic reference transition model for backend integration tests, NOT a client write. */
 export function chapterTransition(s:ChapterSnapshot,event:
