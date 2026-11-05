@@ -26,12 +26,12 @@ function assertHoundBlob(path, source) {
 }
 for(const path of Object.keys(approvedHoundBlobs)){
  assert.equal(git('rev-parse',`${houndMerge}:${path}`).trim(),approvedHoundBlobs[path]);
- const source=readFileSync(path,'utf8').replaceAll('\\r\\n','\\n');
+ const source=readFileSync(path,'utf8').replaceAll('\r\n','\n');
  assertHoundBlob(path,source);
- assert.throws(()=>assertHoundBlob(path,source+'\\n/* unreviewed edit */\\n'),/unreviewed HOUND source/);
+ assert.throws(()=>assertHoundBlob(path,source+'\n/* unreviewed edit */\n'),/unreviewed HOUND source/);
 }
 function normalizeHoundStyles(source) {
- const imported='import HOUND_DIRECTIONAL_CSS from "./ui/houndDirectional.css?raw";\\n';
+ const imported='import HOUND_DIRECTIONAL_CSS from "./ui/houndDirectional.css?raw";\n';
  const composition=' + OVERHEAD_PROJECTION_CSS + "\\n" + HOUND_DIRECTIONAL_CSS;';
  assert.equal(source.split(imported).length,2,'missing or repeated HOUND CSS import');
  assert.equal(source.split(composition).length,2,'missing or repeated HOUND CSS composition');
