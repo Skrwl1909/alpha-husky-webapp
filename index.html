@@ -428,6 +428,28 @@ html.ah-boot-ready .ah-boot-screen{
   animation: ahPioneerSweepPass 5.6s linear infinite;
 }
 
+.hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-glow{
+  display:block;
+  z-index:4;
+  animation:ahSignalRankGlowPulse 3.2s ease-in-out infinite;
+}
+.hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-sweep{
+  display:block;
+  z-index:5;
+  --pioneer-sweep-max-opacity:.10;
+  animation:ahPioneerSweepPass 6.4s linear infinite;
+}
+@keyframes ahSignalRankGlowPulse{
+  0%, 100%{
+    opacity:.14;
+    transform:var(--hero-frame-transform);
+  }
+  50%{
+    opacity:.24;
+    transform:var(--hero-frame-transform) scale(1.003);
+  }
+}
+
 @keyframes ahPioneerGlowPulse{
   0%, 100%{
     opacity:.16;
@@ -465,6 +487,15 @@ html.ah-boot-ready .ah-boot-screen{
     opacity:.16;
   }
   .hero-frame.is-pioneer-frame .hero-frame-overlay-sweep{
+    animation:none;
+    opacity:0;
+  }
+  .hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-glow{
+    animation:none;
+    opacity:.16;
+    transform:var(--hero-frame-transform);
+  }
+  .hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-sweep{
     animation:none;
     opacity:0;
   }
@@ -3845,7 +3876,11 @@ body.ah-perf-lite .hero-frame[data-aura-key="alpha_signal_core"] .hero-aura-ring
 html.ah-perf-lite .ah-bg-particles,
 body.ah-perf-lite .ah-bg-particles,
 html.ah-perf-lite .ah-bg-noise,
-body.ah-perf-lite .ah-bg-noise{
+body.ah-perf-lite .ah-bg-noise,
+html.ah-perf-lite .hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-glow,
+body.ah-perf-lite .hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-glow,
+html.ah-perf-lite .hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-sweep,
+body.ah-perf-lite .hero-frame.is-signal-rank-plate-frame .hero-frame-overlay-sweep{
   display:none !important;
 }
 
@@ -10489,6 +10524,15 @@ const AH_FRAME_ASSET_OVERRIDES = Object.freeze({
     sweep: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777053630/frames/pioneer/pioneer_frame_sweep_overlay_v2.png",
     preview: "https://res.cloudinary.com/dnjwvxinh/image/upload/v1777053630/frames/pioneer/pioneer_frame_base_transparent_v2.png",
   }),
+  signal_rank_plate: Object.freeze({
+    key: "signal_rank_plate",
+    display_name: "Signal Rank Plate",
+    source: "Signal",
+    base: "https://res.cloudinary.com/dnjwvxinh/image/upload/frames/signal_rank_plate/signal_rank_plate_base_transparent_v1.png",
+    glow: "https://res.cloudinary.com/dnjwvxinh/image/upload/frames/signal_rank_plate/signal_rank_plate_glow_overlay_v1.png",
+    sweep: "https://res.cloudinary.com/dnjwvxinh/image/upload/frames/signal_rank_plate/signal_rank_plate_sweep_overlay_v1.png",
+    preview: "https://res.cloudinary.com/dnjwvxinh/image/upload/frames/signal_rank_plate/signal_rank_plate_base_transparent_v1.png",
+  }),
 });
 
 window.__AH_FRAME_ASSET_OVERRIDES__ = {
@@ -10670,13 +10714,15 @@ function setHeroFrame(frameUrl, frameKey, skinKey){
   const override = ahFrameAssetOverride(resolvedKey);
   const resolvedFrameUrl = String(override?.base || frameUrl || "").trim();
   const isPioneer = resolvedKey === "pioneer_frame";
+  const isSignalRankPlate = resolvedKey === "signal_rank_plate";
 
   applyHeroSkinFit(resolvedFrameUrl || frameUrl, resolvedKey, null, skinKey);
   ahSetHeroFrameLayer(baseLayer, resolvedFrameUrl, resolvedKey);
   heroFrame?.classList?.toggle?.("is-pioneer-frame", isPioneer);
+  heroFrame?.classList?.toggle?.("is-signal-rank-plate-frame", isSignalRankPlate);
 
-  const glowUrl = isPioneer ? String(override?.glow || "").trim() : "";
-  const sweepUrl = isPioneer ? String(override?.sweep || "").trim() : "";
+  const glowUrl = (isPioneer || isSignalRankPlate) ? String(override?.glow || "").trim() : "";
+  const sweepUrl = (isPioneer || isSignalRankPlate) ? String(override?.sweep || "").trim() : "";
   ahSetHeroFrameLayer(glowLayer, glowUrl, resolvedKey);
   ahSetHeroFrameLayer(sweepLayer, sweepUrl, resolvedKey);
 }
