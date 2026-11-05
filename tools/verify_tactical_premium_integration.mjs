@@ -44,7 +44,7 @@ for(const head of heads)for(const path of changed(head)){
  if(path==='tactical-ops-src/styles.ts'){
   // Overhead V1 may compose only its isolated render-only leaf, after
   // the exact previously approved Command Deck + Results composition.
-  const overheadImport='import OVERHEAD_PROJECTION_CSS from "./ui/overheadProjection.css?raw";\\n';
+  const overheadImport='import OVERHEAD_PROJECTION_CSS from "./ui/overheadProjection.css?raw";\n';
   const newTail=' + COMMAND_DECK_CSS + "\\n" + OVERHEAD_PROJECTION_CSS;';
   assert(source.includes(overheadImport),'missing audited overhead CSS import');
   assert(source.includes(newTail),'missing audited overhead CSS composition');
@@ -65,7 +65,7 @@ for(const head of heads)for(const path of changed(head)){
  if(path==='tactical-ops-src/ui/Battle.tsx') {
   // The new camera attribute is an inert render-only marker. No other
   // combat UI or behavior changes are permitted in the historical baseline.
-  const cameraMarker='      data-projection="relay-overhead-v1"\\n';
+  const cameraMarker='      data-projection="relay-overhead-v1"\n';
   assert(source.includes(cameraMarker),'missing audited overhead marker');
   source=source.replace(cameraMarker,'');
  }
@@ -97,7 +97,7 @@ try{
  const battleHunks=[["import { missionLiveProgress, objectiveDirective, recoverGuidance } from \"./missionPurpose\";","import { missionLiveProgress, objectiveDirective, recoverGuidance } from \"./missionPurpose\";\nimport { fieldWindow } from \"../data/livingBattlefield\";"],["  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));\n  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);","  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));\n  const acceptedContext = useBattleStore((s) => s.currentFieldContext);\n  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);"],["  const objective = battle.objective;\n  if (!rulesText && !mission?.challenge && !objective && !training) return null;","  const objective = battle.objective;\n  const activeHound = battle.reinforcement;\n  const acceptedWindow = mission ? fieldWindow(mission, acceptedContext) : null;\n  const packBoughtTime = Boolean(acceptedWindow?.delayed && activeHound &&\n    !activeHound.spawned && acceptedWindow.actualRound === activeHound.triggerRound);\n  if (!rulesText && !mission?.challenge && !objective && !training) return null;"],["      <small className=\"t-objective-action\">{directive.action}</small>","      <small className=\"t-objective-action\">{directive.action}</small>\n      {packBoughtTime ? <small data-player-voice-hound=\"true\">HOUND HELD BACK! · ARRIVES ROUND {activeHound!.triggerRound}</small> : null}"],["<span>INBOUND</span><small>HOUND</small>","<span>HOUND INCOMING!</span><small>ROUND {reinforcement.triggerRound}</small>"]];
  for(const [before,after] of battleHunks){assert(expectedBattle.includes(before),'missing reviewed combat message insertion');expectedBattle=expectedBattle.replace(before,after);}
  const currentBattle=readFileSync('tactical-ops-src/ui/Battle.tsx','utf8');
- const cameraMarker='      data-projection="relay-overhead-v1"\\n';
+ const cameraMarker='      data-projection="relay-overhead-v1"\n';
  assert(currentBattle.includes(cameraMarker),'overhead camera marker missing from runtime');
  assert.equal(currentBattle.replace(cameraMarker,''),expectedBattle,'unreviewed Battle change outside scoped combat UI or overhead marker');
  // Remove only the eight exact reviewed G4 UI additions; every other App byte is pinned.
