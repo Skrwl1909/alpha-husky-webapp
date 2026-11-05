@@ -4,16 +4,19 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { build } from "esbuild";
+import { stripTypeScriptTypes } from "node:module";
 
 const root = resolve(import.meta.dirname, "..");
-const result = await build({
-  entryPoints: [resolve(root, "tactical-ops-src/combat/movement.ts")],
-  bundle: true, write: false, format: "esm", platform: "node", target: "es2020",
-  logLevel: "silent",
-});
-assert.equal(result.outputFiles.length, 1);
-const url = "data:text/javascript;base64," + Buffer.from(result.outputFiles[0].contents).toString("base64");
+const source = readFileSync(resolve(root, "tactical-ops-src/combat/movement.ts"), "utf8");
+const runtimeSource = source
+  .replace(/^import \{ GRID_COLS, GRID_ROWS, type Cell, type CombatUnit \} from "\\.\\/types";\\r?\\n/m, "")
+  .replace(/^import[^\\n]*\\n/gm, "");
+// Decode the production geometry implementation itself without adding build
+// dependencies. Node 22's built-in TS stripper removes types, not semantics.
+const compiled = stripTypeScriptTypes(runtimeSource);
+const url = "data:text/javascript;base64," + Buffer.from(
+  "const GRID_COLS = 8; const GRID_ROWS = 5;\\n" + compiled,
+).toString("base64");
 const { FIELD_PROJECTION, fieldPercentForGrid, fieldPercent, fieldTouchFootprint } = await import(url);
 assert.deepEqual(FIELD_PROJECTION, { left: 12, right: 88, top: 24, bottom: 82, touchFill: 0.82 });
 
