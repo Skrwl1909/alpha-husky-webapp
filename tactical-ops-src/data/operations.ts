@@ -47,8 +47,11 @@ export interface TacticalOperationDef {
   orderedMissionIds: string[];
 }
 
+/** Presentation-only mapping. Accepted mission rules and world state are untouched. */
 export const MISSION_BATTLEFIELDS: Record<string, { art: string }> = {
-  "broken-signal": { art: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png" },
+  "broken-signal": { art: "/images/tactical_ops/battlefields/battlefield_broken_signal_mobile.webp" },
+  "dead-relay": { art: "/images/tactical_ops/battlefields/battlefield_dead_relay_mobile.webp" },
+  "field-ops": { art: "/images/tactical_ops/battlefields/battlefield_field_ops_mobile.webp" },
 };
 
 export function missionBattlefield(mission: MissionDef | null) {
@@ -165,7 +168,7 @@ export function getMissionDef(missionId: string | null | undefined): MissionDef 
 
 /** Configuration pool. The backend supplies the three active slots for each UTC cycle. */
 export const FIELD_OP_IDS = ["field-relay-recovery", "field-relay-hold", "field-squad-survival", "field-relay-intercept", "field-isolated-hold", "field-rearguard"];
-const fieldBase = { activity: "FIELD_OP" as const, operationId: "field-ops", regionId: "broken-signal", battlefield: "broken-signal", squadCap: 3, executable: true, resultsCopy: "Field Op complete. Your result records commander progress, the optional challenge and temporary signal pressure." };
+const fieldBase = { activity: "FIELD_OP" as const, operationId: "field-ops", regionId: "broken-signal", battlefield: "field-ops", squadCap: 3, executable: true, resultsCopy: "Field Op complete. Your result records commander progress, the optional challenge and temporary signal pressure." };
 Object.assign(MISSION_DEFS, {
   "field-relay-recovery": {
     ...fieldBase, missionId: "field-relay-recovery", name: "RELAY RECOVERY", objectiveType: "RECOVER",
@@ -223,7 +226,7 @@ Object.assign(MISSION_DEFS, {
   },
   "dead-relay-courier": {
     activity: "CANON", missionId: "dead-relay-courier", operationId: DEAD_RELAY.operationId,
-    battlefield: "broken-signal", name: "THE COURIER", objectiveType: "INTERCEPT", squadCap: 3,
+    battlefield: "dead-relay", name: "THE COURIER", objectiveType: "INTERCEPT", squadCap: 3,
     executable: true,
     briefCopy: "HOUND is evacuating relay intel. Stop the reinforced SIGNAL COURIER before it reaches the south-east exit. It moves up to 2 cells each turn, while a HOUND patrol pressures your flank. Slow, intercept or focus fire. Stop it by round 4 on the FIRST successful clear to earn intel for the next mission.",
     resultsCopy: "Courier stopped. Relay coordinates recovered. The counterattack is imminent.",
@@ -238,7 +241,7 @@ Object.assign(MISSION_DEFS, {
   },
   "dead-relay-hold": {
     activity: "CANON", missionId: "dead-relay-hold", operationId: DEAD_RELAY.operationId,
-    battlefield: "broken-signal", name: "RELAY UNDER FIRE", objectiveType: "HOLD", squadCap: 3,
+    battlefield: "dead-relay", name: "RELAY UNDER FIRE", objectiveType: "HOLD", squadCap: 3,
     executable: true,
     briefCopy: "Hold the relay for 3 consecutive round changes. Any enemy inside the marked zone resets control. Your recovered courier intel delays one HOUND reinforcement by a round.",
     resultsCopy: "Relay secured. The defensive perimeter is stable. Guardian access confirmed.",
@@ -250,7 +253,7 @@ Object.assign(MISSION_DEFS, {
   },
   "dead-relay-guardian": {
     activity: "CANON", missionId: "dead-relay-guardian", operationId: DEAD_RELAY.operationId,
-    battlefield: "broken-signal", name: "RELAY GUARDIAN", objectiveType: "BOSS", squadCap: 3,
+    battlefield: "dead-relay", name: "RELAY GUARDIAN", objectiveType: "BOSS", squadCap: 3,
     executable: true,
     briefCopy: "Eliminate the Dead Relay Guardian while a telegraphed HOUND reinforcement closes from the flank. This is the final mission of Operation 02.",
     resultsCopy: "OPERATION 02 — THE DEAD RELAY SECURED. Canonical campaign archive updated.",
