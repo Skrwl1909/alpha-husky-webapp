@@ -11,7 +11,7 @@
   var originHost = String(global.location && global.location.hostname || "").toLowerCase();
   var params = new URLSearchParams(global.location && global.location.search || "");
   var requested = params.get("browser_guest") === "1";
-  var approvedHost = originHost === "app.alphahusky.win" || originHost.endsWith(".vercel.app");
+  var approvedHost = originHost === "app.alphahusky.win" || originHost.endsWith(".vercel.app") || global.location.origin === "http://localhost:3000";
   var nativeRuntime = Boolean(
     global.Capacitor && (
       (typeof global.Capacitor.isNativePlatform === "function" && global.Capacitor.isNativePlatform()) ||
