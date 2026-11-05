@@ -45,3 +45,63 @@
   object-fit: cover;
   object-position: 50% 48%;
 }
+
+
+/* Battlefield Visual Alignment V1 — grounded silhouettes, render-only.
+   Projection anchors, movement, input hitboxes, objective tiles and threats
+   remain untouched. Sizes are constrained by BOTH column and row pitch,
+   because Alpha/CNC/SHADOW artwork is ~2:1 but HOUNDs are near square.
+   The feet, ground shadow and selection ring share the canonical cell anchor.
+   Container query units reference .t-field (container-type:size). */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token {
+  width: 10%;
+  width: min(10cqw, 49px, 10cqh);
+  min-width: 0;
+  max-width: none;
+  transform: translate(-50%, -100%);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.alpha {
+  width: min(10.2cqw, 52px, 9.6cqh);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.leader {
+  width: min(10.2cqw, 54px, 12cqh);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.hound {
+  width: min(10.1cqw, 50px, 13cqh);
+}
+
+/* Preserve the authored 0.92–1.04 depth cue, but keep every foot on the cell.
+   The parent .t-token already has transform-origin: 50% 100%. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.depth-0 { transform: translate(-50%, -100%) scale(.92); }
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.depth-1 { transform: translate(-50%, -100%) scale(.95); }
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.depth-2 { transform: translate(-50%, -100%) scale(.98); }
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.depth-3 { transform: translate(-50%, -100%) scale(1.01); }
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.depth-4 { transform: translate(-50%, -100%) scale(1.04); }
+
+/* Ring ellipse center sits at the foot anchor for 28–52px portrait tokens. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token .t-ring {
+  bottom: -5px;
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.directional-alpha .t-alpha-ground-shadow {
+  bottom: -1%;
+  height: 6%;
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.directional-hound::before {
+  bottom: 0;
+  height: 10%;
+}
+
+/* Dense accepted VNext 10x7: keep even foreground silhouettes inside their
+   adjacent column pitch; cap tall sprites by row height, not only device width. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"].battlefield-vnext-preview .t-token {
+  width: min(7.6cqw, 39px, 6.7cqh);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"].battlefield-vnext-preview .t-token.alpha {
+  width: min(8cqw, 41px, 6.7cqh);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"].battlefield-vnext-preview .t-token.leader {
+  width: min(7.9cqw, 44px, 8.8cqh);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"].battlefield-vnext-preview .t-token.hound {
+  width: min(7.85cqw, 41px, 8.8cqh);
+}
