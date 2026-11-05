@@ -17,6 +17,7 @@ import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./ta
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { FALLBACK_SPRITE, OPERATION } from "../data/units";
+import { houndView } from "./houndDirectional";
 import type { PlayerIdentity } from "../host/identity";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
@@ -172,12 +173,14 @@ function Token({
   const identity = useBattleStore((s) => s.identity);
   const isAlpha = unit.team === "ally" && unit.role === "alpha";
   const directionalAlpha = allowDirectional(unit, identity);
+  const directionalHound = !!houndView(unit, "front");
   const [artFailed, setArtFailed] = useState(false);
   const className = [
     "t-token",
     unit.team,
     roleClass(unit),
     directionalAlpha && !artFailed ? "directional-alpha" : "",
+    directionalHound && !artFailed ? "directional-hound" : "",
     unit.defeated && hp<=0 ? "defeated" : "",
     unit.hasActed ? "acted" : "",
     selected ? "selected active" : "",
@@ -207,7 +210,9 @@ function Token({
   useLayoutEffect(() => {
     if (facingTarget) setFacing(current => facingToward(unit, facingTarget, current));
   }, [facingTarget?.c, facingTarget?.r, unit.c, unit.r]);
-  const src = directionalAlpha && !artFailed ? alphaView(facing) : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
+  const src = !artFailed && directionalAlpha ? alphaView(facing)
+    : !artFailed && directionalHound ? houndView(unit, facing)!
+    : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
   return (
     <>
     <div
@@ -225,7 +230,7 @@ function Token({
       {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
       {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
       {directionalAlpha && !artFailed ? <span className="t-alpha-ground-shadow" aria-hidden="true" /> : null}
-      <img className="body" src={src} alt="" draggable={false} onError={isAlpha && !artFailed ? () => setArtFailed(true) : undefined} />
+      <img className="body" src={src} alt="" draggable={false} onError={!artFailed && (directionalAlpha || directionalHound) ? () => setArtFailed(true) : undefined} />
       {hp<=0 ? null : (
         <div className="t-plate">
           <div className="t-plate-name">
@@ -569,6 +574,7 @@ export function BattleScreen() {
   return (
     <div
       className={`t-battle${onboardingEnabled && !mission ? " is-foundation-training" : ""}${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
+      data-projection="relay-overhead-v1"
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
     >
@@ -685,7 +691,7 @@ export function BattleScreen() {
                 inspecting={u.id === inspectId}
                 signalCarrier={u.id === signalCarrierId}
                 interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
-                facingTarget={combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id) ? units.find(t => t.id === combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id)?.targetId) : undefined}
+                facingTarget={enemyScene?.actorId === u.id ? enemyScene.to : combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id) ? units.find(t => t.id === combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id)?.targetId) : undefined}
               />
             ))}
           {enemyScene && (() => {
@@ -693,7 +699,7 @@ export function BattleScreen() {
             const actor=units.find(u=>u.id===enemyScene.actorId);
             const style={"--enemy-x":from.x+"%","--enemy-y":from.y+"%","--enemy-target-x":to.x+"%","--enemy-target-y":to.y+"%","--enemy-duration":enemyScene.durationMs+"ms"} as CSSProperties;
             return <div className={`t-hostile-scene t-hostile-${enemyScene.style}`} key={enemyScene.id} style={style} aria-hidden="true">
-              {["melee","heavy"].includes(enemyScene.style)&&actor?<img src={actor.attackSprite||actor.sprite} alt="" />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
+              {["melee","heavy"].includes(enemyScene.style)&&actor?<img src={houndView(actor,facingToward(enemyScene.from,enemyScene.to,"front"))||actor.attackSprite||actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
             </div>;
           })()}
           {presentation.primaryFx.map(effect=>{
@@ -707,7 +713,7 @@ export function BattleScreen() {
             return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
               style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
               {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:
-                <img className="t-choreo-actor" src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
+                <img className="t-choreo-actor" src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : houndView(performer,facingToward(effect.from,receiver,"front")) || performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)||houndView(performer,"front")){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
             </div>;
           })}
           {presentation.primaryFx.map(effect=>{

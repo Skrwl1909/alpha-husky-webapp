@@ -153,13 +153,13 @@ export function parseRunRulesContract(raw: unknown): RunRulesContract | null {
   if (Object.keys(x).length !== keys.length || !keys.every((k) => Object.prototype.hasOwnProperty.call(x, k))) {
     throw new Error("invalid_run_rules_contract");
   }
+  const supportsRevision2 = x.missionId === "field-relay-intercept" || x.missionId === "dead-relay-hold";
   if (x.rulesetVersion !== TACTICAL_VNEXT_RULESET || x.source !== "BACKEND_SNAPSHOT" ||
       typeof x.missionId !== "string" || !x.missionId ||
-      !["missionRevision", "combatProfileVersion", "masterySnapshotVersion", "rewardPolicyVersion"]
-        .every((k) => Number.isSafeInteger(x[k]) && (x[k] as number) >= 1)) {
+      (x.missionRevision !== 1 && !(supportsRevision2 && x.missionRevision === 2)) ||
+      x.combatProfileVersion !== 3 || x.masterySnapshotVersion !== 1 || x.rewardPolicyVersion !== 1) {
     throw new Error("unsupported_run_rules_contract");
   }
-  if (x.missionId === "field-relay-intercept" && ![1,2].includes(x.missionRevision as number)) throw new Error("unsupported_run_rules_contract");
   return Object.freeze({ ...x }) as unknown as RunRulesContract;
 }
 

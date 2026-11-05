@@ -66,10 +66,37 @@ export function canOccupy(units: CombatUnit[], c: number, r: number, ignoreId?: 
   return inBounds(c, r) && !occupiedKeys(units, ignoreId).has(cellKey(c, r));
 }
 
+/**
+ * Render-only overhead projection. Logical grid coordinates and combat rules
+ * remain unchanged. Shared anchors are used by units, grid, hazards, targets,
+ * movement affordances, mission objectives and combat FX.
+ */
+export const FIELD_PROJECTION = Object.freeze({
+  left: 12,
+  right: 88,
+  top: 24,
+  bottom: 82,
+  touchFill: 0.82,
+});
+
+export function fieldPercentForGrid(
+  c: number, r: number, columns: number, rows: number,
+): { x: number; y: number } {
+  const across = c / Math.max(1, columns - 1);
+  const down = r / Math.max(1, rows - 1);
+  return {
+    x: FIELD_PROJECTION.left + (FIELD_PROJECTION.right - FIELD_PROJECTION.left) * across,
+    y: FIELD_PROJECTION.top + (FIELD_PROJECTION.bottom - FIELD_PROJECTION.top) * down,
+  };
+}
+
 export function fieldPercent(c: number, r: number): { x: number; y: number } {
-  const n = r / (GRID_ROWS - 1);
-  const y = 26 + n * 52;
-  const half = 34 + n * 8;
-  const a = c / (GRID_COLS - 1);
-  return { x: 50 - half + half * 2 * a, y };
+  return fieldPercentForGrid(c, r, GRID_COLS, GRID_ROWS);
+}
+
+export function fieldTouchFootprint(columns: number, rows: number): { widthPct: number; heightPct: number } {
+  return {
+    widthPct: ((FIELD_PROJECTION.right - FIELD_PROJECTION.left) / Math.max(1, columns - 1)) * FIELD_PROJECTION.touchFill,
+    heightPct: ((FIELD_PROJECTION.bottom - FIELD_PROJECTION.top) / Math.max(1, rows - 1)) * FIELD_PROJECTION.touchFill,
+  };
 }
