@@ -12,6 +12,33 @@ const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops
 const extended='tools/verify_tactical_brief_closure_browser.mjs';
 const reviewedMain='50fb6a2e9de7f3c3a905dcb5427f4f97e9701a09';
 const g2Baseline='24ac8223966ea60552e4e655f9d9d2e252a71b71';
+const overheadMerge='6b78f7812d0a4eae480f13b5ecdf07acf5b78453';
+const houndMerge='98b41d5a1b8112c09787a2eca6185df79145d6ca';
+const approvedHoundBlobs=Object.freeze({
+ 'tactical-ops-src/styles.ts':'b1b7e0729b289ee646695257ffcb0e76b84722c2',
+ 'tactical-ops-src/ui/Battle.tsx':'18edd840fb2ff963ca99e96d7499f61a72cdef96',
+ 'tactical-ops-src/ui/houndDirectional.css':'b4d1c644c5f8594e3b3ac34355af091d4d4a5e4e',
+ 'tactical-ops-src/ui/houndDirectional.ts':'eb3bde279ebed29cfe5fbfd9094e888db96a0364',
+});
+function assertHoundBlob(path, source) {
+ const blob=execFileSync('git',['hash-object','--stdin'],{input:source,encoding:'utf8'}).trim();
+ assert.equal(blob,approvedHoundBlobs[path],`unreviewed HOUND source: ${path}`);
+}
+for(const path of Object.keys(approvedHoundBlobs)){
+ assert.equal(git('rev-parse',`${houndMerge}:${path}`).trim(),approvedHoundBlobs[path]);
+ const source=readFileSync(path,'utf8').replaceAll('\\r\\n','\\n');
+ assertHoundBlob(path,source);
+ assert.throws(()=>assertHoundBlob(path,source+'\\n/* unreviewed edit */\\n'),/unreviewed HOUND source/);
+}
+function normalizeHoundStyles(source) {
+ const imported='import HOUND_DIRECTIONAL_CSS from "./ui/houndDirectional.css?raw";\\n';
+ const composition=' + OVERHEAD_PROJECTION_CSS + "\\n" + HOUND_DIRECTIONAL_CSS;';
+ assert.equal(source.split(imported).length,2,'missing or repeated HOUND CSS import');
+ assert.equal(source.split(composition).length,2,'missing or repeated HOUND CSS composition');
+ const normalized=source.replace(imported,'').replace(composition,' + OVERHEAD_PROJECTION_CSS;');
+ assert.equal(normalized,git('show',`${overheadMerge}:tactical-ops-src/styles.ts`),'unexpected styles after HOUND normalization');
+ return normalized;
+}
 const approvedG2Sources=new Set([
  'tactical-ops-src/data/operations.ts',
  'tactical-ops-src/host/foundationProgression.ts',
@@ -42,6 +69,7 @@ for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=approvedG3Sources.has(path) ? git('show',`${reviewedMain}:${path}`) : approvedG2Sources.has(path) ? git('show',`${g2Baseline}:${path}`) : readFileSync(path,'utf8');
  if(path==='tactical-ops-src/styles.ts'){
+  source=normalizeHoundStyles(source);
   // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
   const imported='import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";\n';
   assert(source.includes(imported),'missing Command Deck CSS import');
