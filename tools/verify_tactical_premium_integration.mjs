@@ -45,8 +45,18 @@ for(const head of heads)for(const path of changed(head)){
   // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
   const imported='import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";\n';
   assert(source.includes(imported),'missing Command Deck CSS import');
-  assert(source.includes(' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;'),'missing canonical style composition');
-  source=source.replace(imported,'').replace(' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;',' + FIELD_OP_RESULTS_CSS;');
+  // Strip only the exact approved overhead CSS wiring, then retain the
+  // original historical Command Deck provenance comparison unchanged.
+  const overheadImport='import OVERHEAD_PROJECTION_CSS from "./ui/overheadProjection.css?raw";\n';
+  const overheadComposition=' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS + "\\n" + OVERHEAD_PROJECTION_CSS;';
+  const commandComposition=' + FIELD_OP_RESULTS_CSS + "\\n" + COMMAND_DECK_CSS;';
+  assert(source.includes(overheadImport),'missing reviewed overhead CSS import');
+  assert(source.includes(overheadComposition),'missing reviewed overhead CSS composition');
+  assert.equal(source.split(overheadImport).length,2,'overhead CSS import repeated');
+  assert.equal(source.split(overheadComposition).length,2,'overhead CSS composition repeated');
+  source=source.replace(overheadImport,'').replace(overheadComposition,commandComposition);
+  assert(source.includes(commandComposition),'missing canonical style composition');
+  source=source.replace(imported,'').replace(commandComposition,' + FIELD_OP_RESULTS_CSS;');
  }
  if(path==='tools/verify_field_op_results_premium.mjs'){
   // Only additive, opt-in visual acceptance is permitted. Prove that removing
@@ -82,7 +92,13 @@ try{
  let expectedBattle=git('show',voiceBase+':tactical-ops-src/ui/Battle.tsx');
  const battleHunks=[["import { missionLiveProgress, objectiveDirective, recoverGuidance } from \"./missionPurpose\";","import { missionLiveProgress, objectiveDirective, recoverGuidance } from \"./missionPurpose\";\nimport { fieldWindow } from \"../data/livingBattlefield\";"],["  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));\n  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);","  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));\n  const acceptedContext = useBattleStore((s) => s.currentFieldContext);\n  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);"],["  const objective = battle.objective;\n  if (!rulesText && !mission?.challenge && !objective && !training) return null;","  const objective = battle.objective;\n  const activeHound = battle.reinforcement;\n  const acceptedWindow = mission ? fieldWindow(mission, acceptedContext) : null;\n  const packBoughtTime = Boolean(acceptedWindow?.delayed && activeHound &&\n    !activeHound.spawned && acceptedWindow.actualRound === activeHound.triggerRound);\n  if (!rulesText && !mission?.challenge && !objective && !training) return null;"],["      <small className=\"t-objective-action\">{directive.action}</small>","      <small className=\"t-objective-action\">{directive.action}</small>\n      {packBoughtTime ? <small data-player-voice-hound=\"true\">HOUND HELD BACK! · ARRIVES ROUND {activeHound!.triggerRound}</small> : null}"],["<span>INBOUND</span><small>HOUND</small>","<span>HOUND INCOMING!</span><small>ROUND {reinforcement.triggerRound}</small>"]];
  for(const [before,after] of battleHunks){assert(expectedBattle.includes(before),'missing reviewed combat message insertion');expectedBattle=expectedBattle.replace(before,after);}
- assert.equal(readFileSync('tactical-ops-src/ui/Battle.tsx','utf8'),expectedBattle,'unreviewed Battle change outside scoped combat UI');
+ // Normalize only the approved passive camera marker; the original
+ // byte-for-byte Battle provenance comparison remains authoritative.
+ const overheadBattle=readFileSync('tactical-ops-src/ui/Battle.tsx','utf8');
+ const overheadMarker='      data-projection="relay-overhead-v1"\n';
+ assert.equal(overheadBattle.split(overheadMarker).length,2,'missing or repeated overhead camera marker');
+ assert.equal(overheadBattle.replace(overheadMarker,''),expectedBattle,
+  'unreviewed Battle change outside scoped combat UI');
  // Remove only the eight exact reviewed G4 UI additions; every other App byte is pinned.
  let normalizedG4=actual;
  for(const snippet of [
@@ -131,10 +147,29 @@ try{
 // the exact merged production baseline, including Browser Guest from PR #237.
 const mergedBaseline='7ffa44997b71cb4c7c3fa230abaf88c9f72444dc';
 git('merge-base','--is-ancestor',mergedBaseline,'HEAD');
+// Approved immutable Git blob hashes were independently reviewed before
+// this change (not generated from the working tree at test time).
+// Any edit, including to camera, touch geometry or scene mapping, must fail.
+const approvedOverheadBlobs=Object.freeze({
+ 'tactical-ops-src/combat/movement.ts': 'da860cee9b335eadffd6c0cff8d11232d23df6f6',
+ 'tactical-ops-src/ui/battlePresentation.ts': 'ca8715fa5940f337f6f51d8e248d04ef16aa26d5',
+ 'tactical-ops-src/data/operations.ts': '3bd74f6bfe3b97b6d4767291ef74b72d20ff17ae',
+ 'tactical-ops-src/ui/overheadProjection.css': '27f2ff02637931c38e599f2f1815ccabb5493e3c',
+ 'tactical-ops-src/ui/Battle.tsx': '857360586ff25668c6e2a2b1b39de2bcf7d0ad83',
+ 'tactical-ops-src/styles.ts': 'c25ef822860a41017c6e4d3c2faa4ceeec878b5b',
+});
+for(const [path,approvedBlob] of Object.entries(approvedOverheadBlobs)){
+ const actualBlob=git('hash-object','--',path).trim();
+ assert.equal(actualBlob,approvedBlob,'unauthorized overhead source change: '+path);
+}
+const cameraCss=readFileSync('tactical-ops-src/ui/overheadProjection.css','utf8');
+assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
+assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');
 const rcContractPaths=new Set([
  ...generated,
  'tactical-ops-src/combat/intentContract.ts',
  'tactical-ops-src/host/foundationProgression.ts',
+ ...Object.keys(approvedOverheadBlobs),
 ]);
 for(const path of git('diff','--name-only','--no-renames',mergedBaseline,'--','index.html','js','tactical-ops-src').trim().split('\n').filter(Boolean)){
  assert(rcContractPaths.has(path),`unreviewed production change since merged baseline: ${path}`);
