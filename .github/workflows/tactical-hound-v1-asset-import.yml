@@ -1,0 +1,65 @@
+name: Tactical HOUND V1 — Approved Art Import
+on:
+  push:
+    branches:
+      - feat/tactical-hound-directional-v1
+permissions:
+  contents: write
+jobs:
+  import:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Fetch exact owner-approved WebP sprite package
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --silent --show-error 'https://d2ol7oe51mr4n9.cloudfront.net/user_3KEwEdRKzfZliIoXNpVQ0ObfnKb/a8ea0817-13f7-42b4-95f5-a44bc9f95f45.zip' -o /tmp/tactical_hounds.zip
+          echo 'fb7db59f7f564e908959aa3f3aab35fda884ea7131ed8d76a7fb56d4b7da214f  /tmp/tactical_hounds.zip' | sha256sum -c -
+      - name: Extract exactly five archetypes by four orientations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          import struct
+          root=Path('images/tactical_ops/hounds')
+          root.mkdir(parents=True,exist_ok=True)
+          with ZipFile('/tmp/tactical_hounds.zip') as z:
+              expected={f'images/tactical_ops/hounds/hound_{a}_{d}.webp'
+                        for a in ('bulwark','marksman','disruptor','skirmisher','courier')
+                        for d in ('front','back','left','right')}
+              found={x for x in z.namelist() if x.endswith('.webp')}
+              assert found==expected, (found^expected)
+              for path in sorted(expected):
+                  raw=z.read(path)
+                  assert len(raw)>10000 and raw[:4]==b'RIFF' and raw[8:12]==b'WEBP',path
+                  assert raw[12:16] in (b'VP8X', b'VP8 ', b'VP8L'),path
+                  (root/Path(path).name).write_bytes(raw)
+                  print(path,len(raw))
+          PY
+      - name: Commit original approved sprite bytes to the PR branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add images/tactical_ops/hounds/hound_*_*.webp
+          if git diff --cached --quiet; then
+            echo 'Approved assets already present'
+            exit 0
+          fi
+          git commit -m "assets(tactical): import verified HOUND direction sprites [skip ci]"
+          for attempt in 1 2 3 4 5; do
+            git fetch origin feat/tactical-hound-directional-v1
+            git rebase origin/feat/tactical-hound-directional-v1
+            if git push origin HEAD:feat/tactical-hound-directional-v1; then exit 0; fi
+            sleep 3
+          done
+          exit 1
