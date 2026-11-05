@@ -34,7 +34,7 @@ jobs:
           RESULTS_RUNTIME: production
           RESULTS_CINEMATIC: '1'
           CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
-      - name: Legacy variants identical and visual size budget
+      - name: Verify reviewed Chapter heading, legacy variants and visual size budget
         run: |
           python3 - <<'PY'
           import gzip,json,subprocess
@@ -44,8 +44,20 @@ jobs:
           legacy=list(before.glob('legacy-*.html'))
           assert len(legacy)==6
           for p in legacy:
-            if p.stem in ('legacy-campaign','legacy-chapter'):
+            if p.stem == 'legacy-campaign':
               assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+          old_title=b'<h2 class="t-title">FIELD OP COMPLETE</h2>'
+          new_title=b'<h2 class="t-title">CHAPTER OP RESULT</h2>'
+          chapter_before=(before/'legacy-chapter.html').read_bytes()
+          chapter_after=(after/'legacy-chapter.html').read_bytes()
+          def same_chapter(before_html, after_html):
+            return (before_html.count(old_title)==1 and before_html.count(new_title)==0
+                    and after_html.count(new_title)==1 and after_html.count(old_title)==0
+                    and before_html.replace(old_title,new_title,1)==after_html)
+          assert same_chapter(chapter_before,chapter_after),'unexpected Chapter Results HTML delta'
+          assert b'CHAPTER RESULT NOT YET RECORDED' in chapter_after
+          assert not same_chapter(chapter_before,chapter_after.replace(b'NOT YET RECORDED',b'RECORDED',1))
+          assert not same_chapter(chapter_before,chapter_after+new_title)
           for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
             assert (after/f'legacy-{name}.html').exists(),name
           sizes={}
@@ -59,7 +71,7 @@ jobs:
             sizes[p]={'base_sha':base_sha,'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new)),'gzip_delta':change}
             assert change<8192, f'{p}: incremental gzip budget exceeded by {change} bytes'
           Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
-          print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
+          print('PASS: exact campaign HTML, exact S9B heading delta, special Results, negative checks and sizes:',sizes)
           PY
       - name: Preview asset origin and production API safety contract
         run: |

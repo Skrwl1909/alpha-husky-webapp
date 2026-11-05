@@ -149,6 +149,7 @@ try{
    cases.push({scenario:'production-close-reopen-scroll-style-lifecycle'});
   }
  }
+ if(cinematic) await page.setViewportSize({width:390,height:844});
  for(const scenario of ['campaign','chapter','lockdown','lockdown-pending','extraction','extraction-pending']){
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=${scenario}`);await page.locator('.t-results').waitFor();
   const special=['lockdown','lockdown-pending','extraction','extraction-pending'].includes(scenario);
@@ -174,7 +175,13 @@ try{
   }else if(phase==='after'||!special){
    assert.equal(await page.locator('.t-field-results').count(),0,scenario+' ordinary Results leaked');
   }
-  // Campaign and Chapter remain byte-identical; special modes are intentionally redesigned.
+  if(cinematic && scenario==='chapter'){
+   const title=phase==='before'?'FIELD OP COMPLETE':'CHAPTER OP RESULT';
+   assert.equal(await page.locator('.t-results h2').innerText(),title);
+   assert.equal(await page.getByText('CHAPTER RESULT NOT YET RECORDED',{exact:true}).count(),1);
+   await page.locator('.t-results').screenshot({path:`${out}/legacy-chapter.png`,animations:'disabled'});
+  }
+  // The workflow compares the full HTML, with one reviewed S9B heading change.
   writeFileSync(`${out}/legacy-${scenario}.html`,await page.locator('.t-results').evaluate(e=>e.outerHTML));
   cases.push({scenario,legacy:true});
  }
