@@ -11,7 +11,7 @@
   var originHost = String(global.location && global.location.hostname || "").toLowerCase();
   var params = new URLSearchParams(global.location && global.location.search || "");
   var requested = params.get("browser_guest") === "1";
-  var approvedHost = originHost === "app.alphahusky.win" || originHost.endsWith(".vercel.app");
+  var approvedHost = originHost === "app.alphahusky.win" || originHost.endsWith(".vercel.app") || global.location.origin === "http://localhost:3000";
   var nativeRuntime = Boolean(
     global.Capacitor && (
       (typeof global.Capacitor.isNativePlatform === "function" && global.Capacitor.isNativePlatform()) ||
@@ -19,7 +19,12 @@
     )
   ) || Boolean(global.AlphaHuskyCapp && global.AlphaHuskyCapp.isPackagedRuntime && global.AlphaHuskyCapp.isPackagedRuntime());
   var tgInitData = String(global.Telegram && global.Telegram.WebApp && global.Telegram.WebApp.initData || "");
-  var active = requested && approvedHost && !nativeRuntime && !tgInitData;
+  // Preserve an opted-in browser guest across navigation to the clean home URL.
+  // A stored token must still pass hydrate() expiry checks; this never creates an account.
+  function hasStoredGuest() {
+    try { return Boolean(global.sessionStorage.getItem(STORAGE_KEY)); } catch (_) { return false; }
+  }
+  var active = (requested || hasStoredGuest()) && approvedHost && !nativeRuntime && !tgInitData;
   var token = "";
   var expiresAt = 0;
   var persisted = false;
@@ -52,6 +57,30 @@
     expiresAt = Number(state.expiresAt);
     persisted = true;
     global.__ahAlphaAccountSession = { sessionToken: token };
+  }
+
+  // The original game may check FTUE before a browser guest authenticates.
+  // Recheck canonical FTUE states after the guest's player profile is ready.
+  async function resumeBrowserIdentity() {
+    if (!active || !persisted || !token || typeof global.loadPlayerState !== "function") return;
+    try {
+      await global.loadPlayerState();
+      if (!global.__ahLastProfilePayload) return;
+      if (typeof global.Awakening?.checkState === "function") {
+        await global.Awakening.checkState({ force: true });
+        if (global.Awakening.isOpen?.()) return;
+      }
+      if (typeof global.Oath?.checkAndOpen === "function") {
+        await global.Oath.checkAndOpen({ force: true });
+        if (global.Oath.isOpen?.() || !global.Oath.getState?.()) return;
+      }
+      await global.Onboarding?.open?.(false);
+    } catch (_) { /* Never fall back to creating a new account. */ }
+  }
+
+  function signalReady() {
+    global.dispatchEvent(new Event("ah:browser-guest-ready"));
+    void resumeBrowserIdentity();
   }
 
   function holdBoot() {
@@ -131,7 +160,7 @@
           input.value = "";
           global.__ahAlphaAccountSession = { sessionToken: token };
           render();
-          global.dispatchEvent(new Event("ah:browser-guest-ready"));
+          signalReady();
         } catch (err) {
           status.textContent = "Unable to recover: " + String(err && err.message || "connection error");
         } finally {
@@ -185,7 +214,7 @@
         pendingRecovery = "";
         global.__ahAlphaAccountSession = { sessionToken: token };
         render();
-        global.dispatchEvent(new Event("ah:browser-guest-ready"));
+        signalReady();
       });
       panel.appendChild(action);
       panel.appendChild(continueButton);

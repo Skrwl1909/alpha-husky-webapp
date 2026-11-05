@@ -7,7 +7,7 @@ const source = fs.readFileSync(new URL("../js/browser_guest_entry_v1.js", import
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const KEY = "ah.browser.guest.v1";
 
-function setup({ host = "app.alphahusky.win", query = "?browser_guest=1",
+function setup({ host = "app.alphahusky.win", origin = "https://app.alphahusky.win", query = "?browser_guest=1",
   native = false, packaged = false, telegram = "", saved = null,
   storageBlocked = false, response = null } = {}) {
   const elements = [], events = [], requests = [], listeners = {};
@@ -28,7 +28,7 @@ function setup({ host = "app.alphahusky.win", query = "?browser_guest=1",
     addEventListener(k,v){listeners[k]=v;}
   };
   const window = {
-    document, location:{hostname:host,search:query}, API_BASE:"https://api.alphahusky.win",
+    document, location:{hostname:host,origin,search:query}, API_BASE:"https://api.alphahusky.win",
     Capacitor:native?{isNativePlatform:()=>true}:undefined,
     AlphaHuskyCapp:packaged?{isPackagedRuntime:()=>true}:undefined,
     Telegram:{WebApp:{initData:telegram}},
@@ -148,6 +148,81 @@ const fakeRecovery="TEST_RECOVERY_"+"A".repeat(52);
   assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
   assert.ok(t.all().some(n=>/INVALID_OR_EXPIRED_RECOVERY/.test(n.textContent)));
 }
+{
+  // Clean URL: same tab retains existing browser guest session, no new account.
+  const t=setup({query:"",saved:{token:"TEST_RESUMED",expiresAt:Date.now()+3600000}});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,true);
+  assert.equal(t.window.__ahAlphaAccountSession.sessionToken,"TEST_RESUMED");
+  assert.equal(t.requests.length,0);
+}
+{
+  const t=setup({query:"",saved:{token:"TEST_EXPIRED",expiresAt:Date.now()-1000}});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,true);
+  assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
+  assert.ok(t.button("I already have a recovery code"));
+  assert.equal(t.requests.length,0);
+}
+for(const conf of [
+  {query:"",native:true,saved:{token:"TEST_IGNORE",expiresAt:Date.now()+3600000}},
+  {query:"",telegram:"TEST_SIGNED_TELEGRAM",saved:{token:"TEST_IGNORE",expiresAt:Date.now()+3600000}}
+]){
+  const t=setup(conf);t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,false);
+  assert.equal(t.requests.length,0);
+}
+{
+  const t=setup();t.ready();const sequence=[];
+  t.window.loadPlayerState=async()=>{sequence.push("profile");t.window.__ahLastProfilePayload={nickname:"TEST_PLAYER"};};
+  t.window.Awakening={checkState:async()=>{sequence.push("awakening");},isOpen:()=>false};
+  t.window.Oath={checkAndOpen:async()=>{sequence.push("oath");},getState:()=>({ok:true,show:false}),isOpen:()=>false};
+  t.window.Onboarding={open:async()=>{sequence.push("onboarding");}};
+  await t.button("Play as Guest").handlers.click();
+  t.button("I saved the code — enter game").handlers.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(sequence.join(","),"profile,awakening,oath,onboarding");
+}
 assert.match(html,/browser_guest_entry_v1\.js/);
 assert.match(html,/AlphaBrowserGuestV1\?\.shouldHoldBoot/);
+
+// Equipped must use canonical API for authenticated browser guests, not demo fixture.
+const equippedSource = fs.readFileSync(new URL("../js/equipped.js", import.meta.url), "utf8");
+const eqBegin = equippedSource.indexOf("  function hasInitData() {");
+const eqEnd = equippedSource.indexOf("\n  function itemEffectText(", eqBegin);
+assert.ok(eqBegin >= 0 && eqEnd > eqBegin, "Equipped auth helper must exist");
+const eqHelper = equippedSource.slice(eqBegin, eqEnd);
+function equippedAuthenticated({ telegram = "", browserActive = false, browserSession = false, bearer = "" } = {}) {
+  const env = {
+    getTg: () => ({ initData: telegram }),
+    window: {
+      INIT_DATA: "",
+      AlphaBrowserGuestV1: { active: browserActive, hasSession: () => browserSession },
+      __ahAlphaAccountSession: { sessionToken: bearer }
+    }
+  };
+  vm.runInNewContext(eqHelper + "\nwindow.__equippedTestAuth = hasInitData();", env);
+  return env.window.__equippedTestAuth;
+}
+assert.equal(equippedAuthenticated({ telegram: "TEST_TELEGRAM" }), true);
+assert.equal(equippedAuthenticated({ browserActive: true, browserSession: true, bearer: "TEST_BEARER" }), true);
+assert.equal(equippedAuthenticated({ browserActive: true, browserSession: false, bearer: "TEST_BEARER" }), false);
+assert.equal(equippedAuthenticated({ browserActive: true, browserSession: true }), false);
+assert.equal(equippedAuthenticated(), false);
+assert.match(equippedSource, /if \(!hasInitData\(\)\) \{\s*this\._syncExternalState\(previewFixtureState\(\)\)/);
+assert.match(equippedSource, /equippedPost\("\/webapp\/equipped\/state"/);
+assert.match(equippedSource, /equippedPost\("\/webapp\/inventory\/state"/);
+
+// localhost is allowed only for the existing CORS-approved dev origin.
+// Explicit opt-in remains mandatory; native/Telegram cannot activate guest mode.
+for (const { origin, query, native, telegram, allowed } of [
+  {origin:"http://localhost:3000",query:"?browser_guest=1",allowed:true},
+  {origin:"http://localhost:3000",query:"",allowed:false},
+  {origin:"http://localhost:3001",query:"?browser_guest=1",allowed:false},
+  {origin:"https://localhost:3000",query:"?browser_guest=1",allowed:false},
+  {origin:"http://localhost:3000",query:"?browser_guest=1",native:true,allowed:false},
+  {origin:"http://localhost:3000",query:"?browser_guest=1",telegram:"TEST_SIGNED_TELEGRAM",allowed:false}
+]) {
+  const t=setup({host:"localhost",origin,query,native,telegram});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,allowed);
+  assert.equal(t.requests.length,0,"localhost boot must never create accounts");
+}
 console.log("PASS: Browser Guest V1 offline isolation, creation, persistence and recovery");
