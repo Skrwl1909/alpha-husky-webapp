@@ -53,5 +53,15 @@ jobs:
           git add images/tactical_ops/battlefields/battlefield_*_mobile.webp
           if ! git diff --cached --quiet; then
             git commit -m "assets(tactical): add three verified original overhead battlefields [skip ci]"
-            git push origin HEAD:feat/tactical-overhead-perspective-v1
+            for attempt in 1 2 3 4 5; do
+              git fetch origin feat/tactical-overhead-perspective-v1
+              git rebase origin/feat/tactical-overhead-perspective-v1
+              if git push origin HEAD:feat/tactical-overhead-perspective-v1; then
+                echo "Verified art imported to PR branch"
+                exit 0
+              fi
+              sleep 3
+            done
+            echo "Unable to push assets after retries" >&2
+            exit 1
           fi
