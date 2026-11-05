@@ -1,0 +1,39 @@
+/* Tactical Overhead Projection V1
+   Global shared presentation for Legacy 8x5 and VNext 10x7.
+   No replacement art is synthesized: high-angle Broken Signal/Dead Relay/Field Ops
+   masters are a separate asset integration step. This layer adjusts existing art
+   to the new flat ground anchor plane until those art files are provided.
+   No overlays claim functional cover, elevation, blocked terrain or new rules. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] {
+  --tops-projection-snow: rgba(186, 218, 234, .27);
+  --tops-projection-ink: rgba(4, 14, 23, .60);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-field-art {
+  object-position: 50% 63%;
+  filter: saturate(.77) brightness(1.02) contrast(1.02);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-field-grade {
+  background:
+    linear-gradient(180deg, rgba(4,13,22,.40), transparent 20%, transparent 76%, rgba(4,13,22,.53)),
+    radial-gradient(ellipse 80% 74% at 50% 49%, rgba(66,113,136,.045), transparent 76%);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-grid i {
+  width: 9px;
+  height: 9px;
+  border: 1px solid rgba(182,219,235,.31);
+  background: rgba(106,186,215,.035);
+  opacity: .78;
+}
+/* The projected cell is already the token and input anchor; subtle grounding
+   must not translate any hitbox or compete with the live threat layer. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token .t-ring {
+  opacity: .90;
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.active .t-ring {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-grid i {
+    animation: none !important;
+  }
+}
