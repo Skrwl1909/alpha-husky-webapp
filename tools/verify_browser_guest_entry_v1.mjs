@@ -7,7 +7,7 @@ const source = fs.readFileSync(new URL("../js/browser_guest_entry_v1.js", import
 const html = fs.readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const KEY = "ah.browser.guest.v1";
 
-function setup({ host = "app.alphahusky.win", query = "?browser_guest=1",
+function setup({ host = "app.alphahusky.win", origin = "https://app.alphahusky.win", query = "?browser_guest=1",
   native = false, packaged = false, telegram = "", saved = null,
   storageBlocked = false, response = null } = {}) {
   const elements = [], events = [], requests = [], listeners = {};
@@ -28,7 +28,7 @@ function setup({ host = "app.alphahusky.win", query = "?browser_guest=1",
     addEventListener(k,v){listeners[k]=v;}
   };
   const window = {
-    document, location:{hostname:host,search:query}, API_BASE:"https://api.alphahusky.win",
+    document, location:{hostname:host,origin,search:query}, API_BASE:"https://api.alphahusky.win",
     Capacitor:native?{isNativePlatform:()=>true}:undefined,
     AlphaHuskyCapp:packaged?{isPackagedRuntime:()=>true}:undefined,
     Telegram:{WebApp:{initData:telegram}},
@@ -210,4 +210,19 @@ assert.equal(equippedAuthenticated(), false);
 assert.match(equippedSource, /if \(!hasInitData\(\)\) \{\s*this\._syncExternalState\(previewFixtureState\(\)\)/);
 assert.match(equippedSource, /equippedPost\("\/webapp\/equipped\/state"/);
 assert.match(equippedSource, /equippedPost\("\/webapp\/inventory\/state"/);
+
+// localhost is allowed only for the existing CORS-approved dev origin.
+// Explicit opt-in remains mandatory; native/Telegram cannot activate guest mode.
+for (const { origin, query, native, telegram, allowed } of [
+  {origin:"http://localhost:3000",query:"?browser_guest=1",allowed:true},
+  {origin:"http://localhost:3000",query:"",allowed:false},
+  {origin:"http://localhost:3001",query:"?browser_guest=1",allowed:false},
+  {origin:"https://localhost:3000",query:"?browser_guest=1",allowed:false},
+  {origin:"http://localhost:3000",query:"?browser_guest=1",native:true,allowed:false},
+  {origin:"http://localhost:3000",query:"?browser_guest=1",telegram:"TEST_SIGNED_TELEGRAM",allowed:false}
+]) {
+  const t=setup({host:"localhost",origin,query,native,telegram});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,allowed);
+  assert.equal(t.requests.length,0,"localhost boot must never create accounts");
+}
 console.log("PASS: Browser Guest V1 offline isolation, creation, persistence and recovery");
