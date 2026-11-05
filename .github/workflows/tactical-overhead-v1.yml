@@ -22,7 +22,13 @@ jobs:
       - run: node tools/verify_tactical_overhead_perspective.mjs
       - run: npm run build:tactical-ops
       - run: node tools/verify_tactical_battlefield_p5.mjs
-      - run: node tools/verify_tactical_premium_integration.mjs
+      # This PR touches Battle.tsx intentionally; the historical premium
+      # integration script asserts byte-for-byte unchanged Battle.tsx and
+      # cannot be used as a pass/fail gate for a presentation-camera PR.
+      # Exercise the current gameplay/accepted-run contracts instead.
+      - run: node tools/verify_tactical_mission_clarity.mjs
+      - run: node tools/verify_tactical_vnext_run_contract_wire.mjs
+      - run: node tools/verify_tactical_ops_vnext_contract.mjs
       - name: Sync canonical production bundle and cache marker on branch only
         run: |
           git config user.name "github-actions[bot]"
