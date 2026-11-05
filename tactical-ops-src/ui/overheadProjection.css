@@ -1,16 +1,16 @@
 /* Tactical Overhead Projection V1
    Global shared presentation for Legacy 8x5 and VNext 10x7.
-   No replacement art is synthesized: high-angle Broken Signal/Dead Relay/Field Ops
-   masters are a separate asset integration step. This layer adjusts existing art
-   to the new flat ground anchor plane until those art files are provided.
+   Three approved authored arena artworks are registered by mission family.
+   The source artwork is portrait-native and is not stretched or painted with
+   gameplay grids. Shared camera anchors are derived from fieldPercent().
    No overlays claim functional cover, elevation, blocked terrain or new rules. */
 #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] {
   --tops-projection-snow: rgba(186, 218, 234, .27);
   --tops-projection-ink: rgba(4, 14, 23, .60);
 }
 #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-field-art {
-  object-position: 50% 63%;
-  filter: saturate(.77) brightness(1.02) contrast(1.02);
+  object-position: 50% 50%;
+  filter: saturate(.82) brightness(1.00) contrast(1.01);
 }
 #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-field-grade {
   background:
@@ -36,4 +36,12 @@
   #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-grid i {
     animation: none !important;
   }
+}
+
+/* Authoritative 9:16 battlefield art is never warped into a landscape canvas.
+   The backdrop is decorative; combat overlays always use full field anchors.
+   Keep the same portrait art on wider screens until a real wide master exists. */
+#tacticalOpsRoot[data-layout="wide"] .t-battle[data-projection="relay-overhead-v1"] .t-field-art {
+  object-fit: cover;
+  object-position: 50% 48%;
 }
