@@ -27,3 +27,28 @@
     transition: none !important;
   }
 }
+
+/* Tight, neutral-warm separation preserves the armor material on overhead ice. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.hound img.body {
+  position: relative;
+  filter: contrast(.95) brightness(1.24) drop-shadow(0 -.5px .8px rgba(218,198,187,.58));
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.hound::before {
+  content: "";
+  position: absolute;
+  inset: auto 16% -2px;
+  width: auto;
+  z-index: auto;
+  height: 7px;
+  background: radial-gradient(ellipse, rgba(1,6,10,.76), transparent 72%);
+}
+
+/* Axial MARKSMAN art uses only about half its square width. Side poses
+   already occupy 92%, and their feet end 8% above the canvas edge. */
+#tacticalOpsRoot .t-token.directional-hound img.body:is([src$="hound_marksman_front.webp"],[src$="hound_marksman_back.webp"]) {
+  scale: 1.10;
+  transform-origin: 50% 100%;
+}
+#tacticalOpsRoot .t-token.directional-hound img.body:is([src$="hound_marksman_left.webp"],[src$="hound_marksman_right.webp"]) {
+  translate: 0 8%;
+}

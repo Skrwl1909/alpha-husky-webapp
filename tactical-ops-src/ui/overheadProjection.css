@@ -105,3 +105,20 @@
 #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"].battlefield-vnext-preview .t-token.hound {
   width: min(7.85cqw, 41px, 8.8cqh);
 }
+
+/* Dark cloth and leather need a small lift at sprite scale. Keep the active
+   ring, target reticle and subdued targeting state in charge of emphasis. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.ally:is(.skirmisher,.support) img.body {
+  position: relative;
+  filter: contrast(.90) brightness(1.32) drop-shadow(0 -.6px .85px rgba(211,218,222,.66));
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.ally:is(.skirmisher,.support)::before {
+  content: "";
+  position: absolute;
+  inset: auto 13% -2px;
+  height: 7px;
+  background: radial-gradient(ellipse, rgba(1,6,10,.76), transparent 72%);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.directional-alpha img.body {
+  filter: brightness(1.07) drop-shadow(0 -.5px .75px rgba(205,215,220,.54));
+}

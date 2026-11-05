@@ -14,6 +14,15 @@ const reviewedMain='50fb6a2e9de7f3c3a905dcb5427f4f97e9701a09';
 const g2Baseline='24ac8223966ea60552e4e655f9d9d2e252a71b71';
 const overheadMerge='6b78f7812d0a4eae480f13b5ecdf07acf5b78453';
 const houndMerge='98b41d5a1b8112c09787a2eca6185df79145d6ca';
+const alignmentMerge='71870735afca184e1e7b32d95aca6059a5937d07';
+const actorFacingBlobs=Object.freeze({
+ 'tactical-ops-src/ui/Battle.tsx':'158b697d505d96dc65c40fa0ff9b571f94c37291',
+ 'tactical-ops-src/ui/houndDirectional.css':'6aff7c91ddac17534450ba1e6585cf94b044e5b2',
+ 'tactical-ops-src/ui/overheadProjection.css':'7b12b872489c5af3a8da4a7efcd890b015430a10',
+});
+function sourceBlob(source) {
+ return execFileSync('git',['hash-object','--stdin'],{input:source,encoding:'utf8'}).trim();
+}
 const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/styles.ts':'b1b7e0729b289ee646695257ffcb0e76b84722c2',
  'tactical-ops-src/ui/Battle.tsx':'18edd840fb2ff963ca99e96d7499f61a72cdef96',
@@ -21,12 +30,12 @@ const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/ui/houndDirectional.ts':'eb3bde279ebed29cfe5fbfd9094e888db96a0364',
 });
 function assertHoundBlob(path, source) {
- const blob=execFileSync('git',['hash-object','--stdin'],{input:source,encoding:'utf8'}).trim();
- assert.equal(blob,approvedHoundBlobs[path],`unreviewed HOUND source: ${path}`);
+ assert.equal(sourceBlob(source),approvedHoundBlobs[path],`unreviewed HOUND source: ${path}`);
 }
 for(const path of Object.keys(approvedHoundBlobs)){
  assert.equal(git('rev-parse',`${houndMerge}:${path}`).trim(),approvedHoundBlobs[path]);
- const source=readFileSync(path,'utf8').replaceAll('\r\n','\n');
+ const source=Object.hasOwn(actorFacingBlobs,path) ? git('show',`${alignmentMerge}:${path}`)
+  : readFileSync(path,'utf8').replaceAll('\r\n','\n');
  assertHoundBlob(path,source);
  assert.throws(()=>assertHoundBlob(path,source+'\n/* unreviewed edit */\n'),/unreviewed HOUND source/);
 }
@@ -197,8 +206,17 @@ const visualAppendix=cameraCss.slice(cameraBaseline.length);
 assert(visualAppendix.startsWith('\n\n/* Battlefield Visual Alignment V1'),'missing scoped visual alignment appendix');
 assert(!/pointer-events\s*:|left\s*:|top\s*:|z-index\s*:/i.test(visualAppendix),'visual alignment must not reposition input or gameplay anchors');
 const approvedAlignmentRuntime=new Set(['tactical-ops-src/ui/overheadProjection.css','tactical-ops-src/version.ts','js/tactical_ops.js','js/boot_loaders.js']);
-for(const changedFile of git('diff','--name-only','--no-renames','df00ab5d473186ccc4ff7a583ea49a1a48e8a075','HEAD','--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+for(const changedFile of git('diff','--name-only','--no-renames','df00ab5d473186ccc4ff7a583ea49a1a48e8a075',alignmentMerge,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(approvedAlignmentRuntime.has(changedFile),'unreviewed runtime mutation in visual alignment PR: '+changedFile);
+}
+// Preserve the previous approval boundaries above and pin the three exact
+// render leaves for Actor Readability. Combat and asset diffs still fail.
+git('merge-base','--is-ancestor',alignmentMerge,'HEAD');
+for(const [path,expected] of Object.entries(actorFacingBlobs)){
+ assert.equal(sourceBlob(readFileSync(path,'utf8')),expected,'unreviewed actor presentation: '+path);
+}
+for(const path of git('diff','--name-only','--no-renames',alignmentMerge,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(generated.has(path)||Object.hasOwn(actorFacingBlobs,path),'unreviewed runtime mutation after visual alignment: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');

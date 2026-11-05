@@ -6,7 +6,7 @@ import { foundationBattleGuidance } from "./playerGuidance";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
-import { fieldPercent, cellKey } from "../combat/movement";
+import { fieldPercent, cellKey, chebyshev } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
 import { getActionPresentation, RECOVER_PRESENTATION, type ActionArchetype } from "./actionPresentation";
@@ -39,6 +39,20 @@ function facingToward(from: FacingCell, to: FacingCell, fallback: Facing): Facin
   const dx = to.c - from.c, dy = to.r - from.r;
   if (!dx && !dy) return fallback;
   return Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "front" : "back");
+}
+
+function nearestOpponent(unit: CombatUnit, units: readonly CombatUnit[]): CombatUnit | undefined {
+  let nearest: CombatUnit | undefined;
+  let distance = Infinity;
+  for (const opponent of units) {
+    if (opponent.team === unit.team || opponent.defeated || opponent.hp <= 0) continue;
+    const next = chebyshev(unit, opponent);
+    if (next < distance || (next === distance && nearest && opponent.id < nearest.id)) {
+      nearest = opponent;
+      distance = next;
+    }
+  }
+  return nearest;
 }
 const alphaView = (facing: Facing) => `/images/tactical_ops/alpha_directional/${facing}.png`;
 
@@ -151,6 +165,7 @@ function Token({
   travelGhost = false,
   shownHp,
   facingTarget,
+  idleTarget,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -164,6 +179,7 @@ function Token({
   travelGhost?: boolean;
   shownHp?: number;
   facingTarget?: FacingCell;
+  idleTarget?: FacingCell;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const hp = shownHp ?? unit.hp;
@@ -171,7 +187,6 @@ function Token({
   const selectTarget = useBattleStore((s) => s.selectTarget);
   const busy = useBattleStore((s) => s.busy);
   const identity = useBattleStore((s) => s.identity);
-  const isAlpha = unit.team === "ally" && unit.role === "alpha";
   const directionalAlpha = allowDirectional(unit, identity);
   const directionalHound = !!houndView(unit, "front");
   const [artFailed, setArtFailed] = useState(false);
@@ -199,17 +214,28 @@ function Token({
     .filter(Boolean)
     .join(" ");
   const previousCell = useRef({ c: unit.c, r: unit.r });
-  const [facing, setFacing] = useState<Facing>("front");
+  const [moveFacing, setMoveFacing] = useState<Facing>();
+  const [lastFacing, setLastFacing] = useState<Facing>("front");
+  const directional = (directionalAlpha || directionalHound) && !artFailed;
   useLayoutEffect(() => {
     const previous = previousCell.current;
-    if (previous.c !== unit.c || previous.r !== unit.r) {
-      setFacing(current => facingToward(previous, unit, current));
-      previousCell.current = { c: unit.c, r: unit.r };
+    const current = { c: unit.c, r: unit.r };
+    previousCell.current = current;
+    if (!directional) {
+      setMoveFacing(undefined);
+      return;
     }
-  }, [unit.c, unit.r]);
+    if (previous.c === current.c && previous.r === current.r) return;
+    setMoveFacing(facingToward(previous, current, "front"));
+    // Match the existing .t-token left/top travel transition.
+    const timer = window.setTimeout(() => setMoveFacing(undefined), 280);
+    return () => window.clearTimeout(timer);
+  }, [directional, unit.c, unit.r]);
+  const lookAt = facingTarget ?? idleTarget;
+  const facing = moveFacing ?? (lookAt ? facingToward(unit, lookAt, lastFacing) : lastFacing);
   useLayoutEffect(() => {
-    if (facingTarget) setFacing(current => facingToward(unit, facingTarget, current));
-  }, [facingTarget?.c, facingTarget?.r, unit.c, unit.r]);
+    if (directional) setLastFacing(facing);
+  }, [directional, facing]);
   const src = !artFailed && directionalAlpha ? alphaView(facing)
     : !artFailed && directionalHound ? houndView(unit, facing)!
     : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
@@ -554,6 +580,10 @@ export function BattleScreen() {
   const signalCarrierId = useBattleStore((s) => s.battle.signalCarrierId);
   const identity = useBattleStore((s) => s.identity);
 
+  const idleTargets = useMemo(() => new Map(units
+    .filter(unit => !unit.defeated && (allowDirectional(unit, identity) || houndView(unit, "front")))
+    .map(unit => [unit.id, nearestOpponent(unit, units)] as const)), [units, identity]);
+
   const moves = useMemo(
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
     [units, activeId, mode, busy, actionSkillId],
@@ -677,23 +707,30 @@ export function BattleScreen() {
           {units
             .slice()
             .sort((a, b) => a.r - b.r || a.c - b.c)
-            .map((u) => (
-              <Token
-                key={u.id}
-                unit={u}
-                selected={u.id === activeId}
-                validTarget={targets.has(u.id)}
-                targeting={presentation.targeting}
-                attacking={u.id === attackingId}
-                hitReacting={u.id === impactId && impactKey > 0}
-                shownHp={displayHp[u.id]}
-                travelGhost={travelActors.has(u.id)}
-                inspecting={u.id === inspectId}
-                signalCarrier={u.id === signalCarrierId}
-                interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
-                facingTarget={enemyScene?.actorId === u.id ? enemyScene.to : combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id) ? units.find(t => t.id === combatFx.find(f => f.actorId === u.id && f.targetId && f.targetId !== u.id)?.targetId) : undefined}
-              />
-            ))}
+            .map((u) => {
+              const actionFx = busy ? combatFx.find(f => f.actorId === u.id &&
+                (f.terminal || (f.targetId && f.targetId !== u.id))) : undefined;
+              const facingTarget = enemyScene?.actorId === u.id ? enemyScene.to
+                : actionFx?.terminal ?? units.find(target => target.id === actionFx?.targetId);
+              return (
+                <Token
+                  key={u.id}
+                  unit={u}
+                  selected={u.id === activeId}
+                  validTarget={targets.has(u.id)}
+                  targeting={presentation.targeting}
+                  attacking={u.id === attackingId}
+                  hitReacting={u.id === impactId && impactKey > 0}
+                  shownHp={displayHp[u.id]}
+                  travelGhost={travelActors.has(u.id)}
+                  inspecting={u.id === inspectId}
+                  signalCarrier={u.id === signalCarrierId}
+                  interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
+                  facingTarget={facingTarget}
+                  idleTarget={idleTargets.get(u.id)}
+                />
+              );
+            })}
           {enemyScene && (() => {
             const from=fieldPercent(enemyScene.from.c,enemyScene.from.r),to=fieldPercent(enemyScene.to.c,enemyScene.to.r);
             const actor=units.find(u=>u.id===enemyScene.actorId);
