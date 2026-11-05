@@ -39,7 +39,8 @@ assert.match(rule(normal, ".t-token"), /transform:\s*translate\(-50%,\s*-100%\)/
 assert.match(rule(normal, ".t-token .t-ring"), /bottom:\s*-5px/);
 for (const [depth, scale] of [[0,.92],[1,.95],[2,.98],[3,1.01],[4,1.04]]) {
   const val=rule(normal, ".t-token.depth-" + depth);
-  assert.ok(val.includes("translate(-50%, -100%) scale("+scale+")"),"Depth "+depth+" must stay foot-anchored");
+  const match=val.match(/transform:\\s*translate\\(-50%,\\s*-100%\\)\\s+scale\\((\\d*\\.?\\d+)\\)/);
+  assert.ok(match && Number(match[1])===scale,"Depth "+depth+" must stay foot-anchored");
 }
 const variants = [
   [normal, ".t-token", 8, 5, 2.3],
