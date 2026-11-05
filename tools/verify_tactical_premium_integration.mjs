@@ -122,7 +122,7 @@ try{
  for(const [before,after] of battleHunks){assert(expectedBattle.includes(before),'missing reviewed combat message insertion');expectedBattle=expectedBattle.replace(before,after);}
  // Normalize only the approved passive camera marker; the original
  // byte-for-byte Battle provenance comparison remains authoritative.
- const overheadBattle=readFileSync('tactical-ops-src/ui/Battle.tsx','utf8');
+ const overheadBattle=git('show',`${overheadMerge}:tactical-ops-src/ui/Battle.tsx`);
  const overheadMarker='      data-projection="relay-overhead-v1"\n';
  assert.equal(overheadBattle.split(overheadMarker).length,2,'missing or repeated overhead camera marker');
  assert.equal(overheadBattle.replace(overheadMarker,''),expectedBattle,
@@ -187,10 +187,19 @@ const approvedOverheadBlobs=Object.freeze({
  'tactical-ops-src/styles.ts': 'c25ef822860a41017c6e4d3c2faa4ceeec878b5b',
 });
 for(const [path,approvedBlob] of Object.entries(approvedOverheadBlobs)){
- const actualBlob=git('hash-object','--',path).trim();
+ const actualBlob=git('rev-parse',`${overheadMerge}:${path}`).trim();
  assert.equal(actualBlob,approvedBlob,'unauthorized overhead source change: '+path);
 }
 const cameraCss=readFileSync('tactical-ops-src/ui/overheadProjection.css','utf8');
+const cameraBaseline=git('show','df00ab5d473186ccc4ff7a583ea49a1a48e8a075:tactical-ops-src/ui/overheadProjection.css');
+assert(cameraCss.startsWith(cameraBaseline),'approved overhead CSS baseline was modified');
+const visualAppendix=cameraCss.slice(cameraBaseline.length);
+assert(visualAppendix.startsWith('\n\n/* Battlefield Visual Alignment V1'),'missing scoped visual alignment appendix');
+assert(!/pointer-events\s*:|left\s*:|top\s*:|z-index\s*:/i.test(visualAppendix),'visual alignment must not reposition input or gameplay anchors');
+const approvedAlignmentRuntime=new Set(['tactical-ops-src/ui/overheadProjection.css','tactical-ops-src/version.ts','js/tactical_ops.js','js/boot_loaders.js']);
+for(const changedFile of git('diff','--name-only','--no-renames','df00ab5d473186ccc4ff7a583ea49a1a48e8a075','HEAD','--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(approvedAlignmentRuntime.has(changedFile),'unreviewed runtime mutation in visual alignment PR: '+changedFile);
+}
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');
 const rcContractPaths=new Set([
@@ -199,7 +208,7 @@ const rcContractPaths=new Set([
  'tactical-ops-src/host/foundationProgression.ts',
  ...Object.keys(approvedOverheadBlobs),
 ]);
-for(const path of git('diff','--name-only','--no-renames',mergedBaseline,'--','index.html','js','tactical-ops-src').trim().split('\n').filter(Boolean)){
+for(const path of git('diff','--name-only','--no-renames',mergedBaseline,overheadMerge,'--','index.html','js','tactical-ops-src').trim().split('\n').filter(Boolean)){
  assert(rcContractPaths.has(path),`unreviewed production change since merged baseline: ${path}`);
 }
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
