@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /** Cross-grid checks for the actual production geometry functions.
- * No mock projection: esbuild loads the authoritative TS module. */
+ * No mock projection: Node 22 strips TypeScript from the authoritative module. */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -8,14 +8,14 @@ import { stripTypeScriptTypes } from "node:module";
 
 const root = resolve(import.meta.dirname, "..");
 const source = readFileSync(resolve(root, "tactical-ops-src/combat/movement.ts"), "utf8");
-const runtimeSource = source
-  .replace(/^import \{ GRID_COLS, GRID_ROWS, type Cell, type CombatUnit \} from "\\.\\/types";\\r?\\n/m, "")
-  .replace(/^import[^\\n]*\\n/gm, "");
+const lines = source.split("\n");
+assert.match(lines[0], /import.*GRID_COLS.*GRID_ROWS/);
+const runtimeSource = lines.slice(1).join("\n");
 // Decode the production geometry implementation itself without adding build
 // dependencies. Node 22's built-in TS stripper removes types, not semantics.
 const compiled = stripTypeScriptTypes(runtimeSource);
 const url = "data:text/javascript;base64," + Buffer.from(
-  "const GRID_COLS = 8; const GRID_ROWS = 5;\\n" + compiled,
+  "const GRID_COLS = 8; const GRID_ROWS = 5;\n" + compiled,
 ).toString("base64");
 const { FIELD_PROJECTION, fieldPercentForGrid, fieldPercent, fieldTouchFootprint } = await import(url);
 assert.deepEqual(FIELD_PROJECTION, { left: 12, right: 88, top: 24, bottom: 82, touchFill: 0.82 });
