@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: '22'
       - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
       - run: node tools/verify_tactical_overhead_perspective.mjs
       - run: npm run build:tactical-ops
       - run: node tools/verify_tactical_battlefield_p5.mjs
@@ -29,6 +30,23 @@ jobs:
       - run: node tools/verify_tactical_mission_clarity.mjs
       - run: node tools/verify_tactical_vnext_run_contract_wire.mjs
       - run: node tools/verify_tactical_ops_vnext_contract.mjs
+      - run: node tools/verify_tactical_battlefield_p5_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - run: node tools/verify_tactical_mobile_playability.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - run: node tools/verify_tactical_alpha_directional_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-overhead-v1-browser
+          path: |
+            artifacts/battlefield-p5
+            artifacts/mobile-playability
+          if-no-files-found: ignore
       - name: Sync canonical production bundle and cache marker on branch only
         run: |
           git config user.name "github-actions[bot]"
