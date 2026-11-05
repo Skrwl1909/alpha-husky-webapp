@@ -1,0 +1,29 @@
+/* HOUND Directional V1 — presentation-only final enemy silhouettes.
+   Ground shadow and lighting do not affect the independently positioned
+   hitboxes, movement tiles, intents, action events or mission outcomes. */
+#tacticalOpsRoot .t-token.directional-hound {
+  isolation: isolate;
+}
+#tacticalOpsRoot .t-token.directional-hound::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+  left: 16%;
+  width: 68%;
+  height: 11%;
+  bottom: 7%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0,0,0,.64), rgba(0,0,0,.09) 65%, transparent 80%);
+}
+#tacticalOpsRoot .t-token.directional-hound img.body {
+  position: relative;
+  object-fit: contain;
+  filter: drop-shadow(0 5px 5px rgba(2,8,17,.86)) drop-shadow(0 0 2px rgba(241,116,104,.30));
+}
+/* No extra animations: existing event-driven strike and reaction rules apply. */
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-token.directional-hound img.body {
+    transition: none !important;
+  }
+}
