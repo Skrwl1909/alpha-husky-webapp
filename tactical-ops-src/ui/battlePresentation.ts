@@ -2,7 +2,7 @@ import type { BattleState, CombatUnit } from "../combat/types";
 import type { IntentPlan } from "../combat/intentContract";
 import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 import { availableSkills } from "../combat/skills";
-import { reachableCells, cellKey } from "../combat/movement";
+import { reachableCells, cellKey, fieldTouchFootprint } from "../combat/movement";
 import { skillNeedsTargetPick } from "../combat/targeting";
 import { foundationBattleGuidance, playerBattleGuidance } from "./playerGuidance";
 import { missionLiveProgress, objectiveDirective } from "./missionPurpose";
@@ -106,7 +106,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
 /** Percentage footprint inside adjacent projected cell centers. At narrow widths
  * this is intentionally <44px; never extend invisible targets over neighbors. */
 export function cellTouchStyle(row: number, columns: number, rows: number) {
-  const n = row / Math.max(1, rows - 1);
-  return { "--cell-touch-w": `${((68 + n * 16) / Math.max(1, columns - 1)) * .88}cqw`,
-    "--cell-touch-h": `${(52 / Math.max(1, rows - 1)) * .88}cqh` };
+  const { widthPct, heightPct } = fieldTouchFootprint(columns, rows);
+  return { "--cell-touch-w": `${widthPct}cqw`,
+    "--cell-touch-h": `${heightPct}cqh` };
 }
