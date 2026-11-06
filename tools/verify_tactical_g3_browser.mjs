@@ -39,6 +39,7 @@ try {
       assert.equal(await page.locator('[data-primary-purpose]').getAttribute('data-purpose-mission'),expected);
       const action=page.locator('[data-primary-purpose] .t-btn-primary');
       assert.equal(await page.locator('.t-command-pane .t-btn-primary').count(),1,'one primary command CTA');
+      if(width===412&&profile==='claimed')await page.screenshot({path:out+'/412-claimed-command-first-view.png'});
       await action.scrollIntoViewIfNeeded();
       assert(await action.evaluate(e=>{const b=e.getBoundingClientRect();return b.width>=44&&b.height>=44&&e.contains(document.elementFromPoint(b.left+b.width/2,b.top+b.height/2));}),'reachable 44px CTA');
       await page.screenshot({path:out+'/'+width+'-'+profile+'-command.png'});
@@ -46,6 +47,7 @@ try {
       assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
       assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMissionId),expected);
       if(profile==='eligible')assert.equal(await page.evaluate(()=>fixture.store.getState().selectedDirectiveTier),'advanced');
+      await page.getByLabel('Mission overview',{exact:true}).locator('.t-brief-details > summary').click();
       await page.locator('[aria-label="Mission overview"] [data-opportunity-status]').waitFor();
       const expectedStatus=profile==='resume'?'unknown':profile;
       assert.equal(await page.locator('[aria-label="Mission overview"] [data-opportunity-status]').getAttribute('data-opportunity-status'),expectedStatus);
@@ -63,6 +65,16 @@ try {
       assert.equal(await page.locator('.t-fr-next').count(),confirmed?1:0,'no next-reward claim without receipt');
       assert.equal(await page.locator('.t-result-actions .t-btn-primary').count(),1);
       if(confirmed){
+        if(profile==='eligible'){
+          await page.evaluate(async()=>{
+            const {battle}=fixture.store.getState();
+            fixture.store.setState({battle:{...battle,results:{...battle.results,victory:false}}});
+            await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          });
+          assert.equal(await page.locator('.t-field-results h2').innerText(),'VICTORY','matching receipt takes precedence over a different local outcome');
+        }
+        assert.equal(await page.locator('.t-fr-impact').count(),1,'one confirmed consequence');
+        assert.equal(await page.locator('.t-fr-impact').evaluate(e=>getComputedStyle(e).animationName),'none','viewing a receipt does not replay a reward animation');
         const ledger=page.locator('.t-fr-ledger');
         assert.equal(await ledger.getAttribute('open'),null,'detailed accounting stays collapsed by default');
         await ledger.locator('summary').click();
@@ -71,6 +83,7 @@ try {
         await ledger.locator('summary').click();
         assert.equal(await ledger.getAttribute('open'),null,'next move stays prominent after reviewing receipt');
       } else {
+        assert.equal(await page.locator('.t-fr-impact').count(),0,'pending, failed and stale receipts have no consequence');
         assert.equal(await page.locator('.t-field-results').getAttribute('data-recording'),profile==='stale'?'unrecorded':profile);
         assert.equal(await page.locator('.t-result-actions .t-btn-primary').isDisabled(),profile==='pending');
       }
@@ -80,6 +93,41 @@ try {
       cases.push({width,height,profile,surfaces:['results']});await page.close();
     }
   }
-  writeFileSync(out+'/results.json',JSON.stringify({cases,runtime:production?'canonical production IIFE':'source React',limitations:'Synthetic fixtures; Chromium touch emulation. Physical S26 Ultra Telegram acceptance and live persistence remain unverified.'},null,2));
+  for(const receiptKind of ['trace','replay','stale']){
+    const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true});
+    await page.goto('http://127.0.0.1:'+server.httpServer.address().port+'/g3-fixture?mode=results');
+    await page.locator('.t-field-results').waitFor();
+    await page.evaluate(kind=>{
+      const {store}=fixture;
+      const p=structuredClone(store.getState().progression);
+      p.operations['dead-relay'].missions={'dead-relay-courier':'cleared','dead-relay-hold':'available'};
+      p.campaignIntel={'dead-relay':{version:1,courierTraceAcquired:true}};
+      p.vnextStartAvailable=true;
+      p.deadRelayHoldRevisionAvailable=2;
+      store.setState({
+        progression:p,selectedMissionId:'dead-relay-courier',currentRunKey:'courier-current',
+        battle:{...store.getState().battle,results:{...store.getState().battle.results,victory:false}},
+        campaignResult:{runId:kind==='stale'?'courier-old':'courier-current',missionId:'dead-relay-courier',victory:true,intelEarned:kind!=='replay'}
+      });
+    },receiptKind);
+    const impact=page.locator('.t-campaign-result-impact');
+    if(receiptKind==='trace'){
+      assert.match(await impact.innerText(),/COURIER TRACE RECORDED.*HOUND round 3/s);
+      assert.equal(await page.locator('.t-results h2').innerText(),'VICTORY');
+    }
+    if(receiptKind==='replay')assert.match(await impact.innerText(),/No Courier Trace earned this run/);
+    if(receiptKind==='stale'){
+      assert.equal(await impact.count(),0,'a mismatched campaign receipt cannot show a consequence');
+      assert.match(await page.locator('.t-results [role="status"]').innerText(),/RESULT AWAITS SERVER RECORD/);
+    }
+    if(receiptKind!=='trace')assert.doesNotMatch(await page.locator('.t-results').innerText(),/HOUND round 3/);
+    if(receiptKind!=='stale'){
+      await page.getByRole('button',{name:/^NEXT: /}).click();
+      assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMissionId),'dead-relay-hold');
+      assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
+    }
+    await page.close();
+  }
+  writeFileSync(out+'/results.json',JSON.stringify({cases,campaignReceiptCases:3,runtime:production?'canonical production IIFE':'source React',limitations:'Synthetic fixtures; Chromium touch emulation. Physical S26 Ultra Telegram acceptance and live persistence remain unverified.'},null,2));
   console.log('PASS G3 browser ('+(production?'production IIFE':'source React')+'): '+cases.length+' cases / 45 surfaces; command → correct brief; receipt states; next CTA; 320/412/430px; accepted legacy run');
 } finally {await browser.close();await server.close();}

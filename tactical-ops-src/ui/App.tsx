@@ -1,5 +1,5 @@
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
-import { veteranRequirement } from "../data/veteran";
+import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { commandPurpose, fieldResultPurpose, type PurposeAction } from "./returnPurpose";
 import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
@@ -278,14 +278,14 @@ function WarTable() {
   const recommendedBase = getMissionDef(primaryPurpose?.missionId);
   const masteryPreview = primaryPurpose?.masteryChallenge ? { reportVersion:4, masteryChallenge:primaryPurpose.masteryChallenge, pressure:2, directiveTier:'advanced' as const, directiveSet:'pursuit' as const } : undefined;
   const recommendedMission = recommendedBase ? missionForContext(recommendedBase, masteryPreview) : null;
-  const recommendedChallenge = recommendedMission ? field?.records[recommendedMission.missionId]?.lastChallengeCycle === currentCycleId : false;
   const recommendedAccepted = primaryPurpose?.chapter ? progression?.chapterActiveMission : recommendedMission && field?.activeMissionRun?.missionId === recommendedMission.missionId ? field.activeMissionRun : progression?.operations?.[recommendedMission?.operationId || ""]?.activeMissionRun;
   const recommendedPurpose = recommendedMission ? deriveMissionPresentation(recommendedMission, field, recommendedAccepted, field?.lastResult, masteryPreview) : null;
   const rotationLabel = field?.board ? rotationTime(field.board.nextRotationAt) : "REFRESH REQUIRED";
   const commanderRank = field?.commander?.rank || 0;
   const commanderProgress = field?.commander?.progress || 0;
   const commanderTarget = field?.commander?.nextRankAt || null;
-  const remainingToRank = commanderTarget ? Math.max(0, commanderTarget - commanderProgress) : 0;
+  const veteranCareer = field?.veteranProgressionAvailable && commanderRank >= 3 ? field.veteranCareer : undefined;
+  const rankLabel = commanderRank >= 4 ? "RANK 4 · VETERAN" : commanderRank === 3 ? "RANK 3 · CERTIFIED" : commanderRank ? `COMMANDER RANK ${commanderRank}` : "COMMANDER STATUS UNAVAILABLE";
   const areaPressure = field?.region ? pressureLabel(field.region.pressure) : "UNKNOWN";
   const pressureCopy = field?.region ? pressureEffect(field.region.pressure) : "Refresh to load current field conditions.";
   const highlightedFieldWindow = activeMissionIds.map(id => ({ id, window: currentFieldWindow(id, field?.board, field?.region) })).find(item => item.window) || null;
@@ -340,7 +340,6 @@ function WarTable() {
           <div className="t-wt-branding">
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
             <h1 className="t-title t-wt-title">TACTICAL OPS</h1>
-            <p className="t-wt-intro">Your next move starts here.</p>
             {progressionError && !atlasVisible ? <p className="t-wt-error" role="alert">{progressionError}</p> : null}
             {missionFirstClear ? <p className="t-wt-highlight">{firstClearMessage}</p> : null}
           </div>
@@ -364,17 +363,20 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
-        {field?.veteranProgressionAvailable && commanderRank>=3 ? <section className="t-panel" data-veteran-career="true">
-          <div className="t-pi-v2-heading"><span className="t-pi-v2-medal" aria-label={`Commander Rank ${commanderRank}`}><span className="t-pi-v2-medal-icon" aria-hidden="true">✦</span><strong>{commanderRank}</strong><small>COMMANDER</small></span><div className="t-pi-v2-heading-copy"><span className="t-kicker">VETERAN CAREER · COMMANDER RANK {commanderRank}</span><strong>{commanderRank===4?"RANK 4 SECURED":"YOUR PATH TO RANK 4"}</strong><small>{commanderRank===4?"PACK EXTRACTION UNLOCKED":"Earn credits through eligible Advanced Field Ops"}</small></div></div>
-          <div className="t-pi-career t-pi-v2" data-progress-identity="command" aria-label="Veteran Career toward Rank 4">
-            <div className="t-pi-career-head"><span>{commanderRank===4?"VETERAN CAREER COMPLETE":"VETERAN CAREER"}</span><strong>{field.veteranCareer?.credits || 0}/12</strong></div>
-            <div className="t-pi-track" role="progressbar" aria-label="Veteran career credits" aria-valuemin={0} aria-valuemax={12} aria-valuenow={field.veteranCareer?.credits || 0}><span style={{width:`${Math.min(100,Math.max(0,(field.veteranCareer?.credits||0)/12*100))}%`}} /></div>
-            <p>{commanderRank===4?"RANK 4 EARNED":"Credits and objective diversity both contribute to Rank 4"}</p>
+        <section className="t-command-progress" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
+          <div className="t-command-progress-line">
+            <strong>{rankLabel}</strong>
+            {veteranCareer ? <span>VETERAN · {veteranCareer.credits}/{VETERAN_TARGET}</span> :
+              commanderTarget ? <span>{commanderProgress}/{commanderTarget} POINTS</span> : null}
           </div>
-          <div className="t-pi-v2-next" data-opportunity-status={veteranView.status}><span>VETERAN · {veteranView.status.toUpperCase()}</span><p>{veteranView.copy}</p></div>
-          <details className="t-pi-v2-rules"><summary>How Veteran credits work</summary><p>{veteranRequirement(field.veteranCareer)}</p><small>Each eligible rotation credit is recorded only once. Replays do not guarantee new credits.</small></details>
-          {commanderRank===4 ? <button type="button" className="t-btn" disabled={Boolean(field.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : null}
-        </section> : null}
+          {veteranCareer ? <>
+            <progress className="t-progress" aria-label="Veteran career credits" value={veteranCareer.credits} max={VETERAN_TARGET} />
+            <small>{commanderRank >= 4 ? "Pack Extraction unlocked" : "Next · Rank 4 requires credits and diversity"}</small>
+          </> : commanderTarget ? <>
+            <progress className="t-progress" aria-label="Commander rank points" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
+            <small>Next · Rank {commanderRank + 1}</small>
+          </> : null}
+        </section>
         {recommendedMission ? (() => {
           const visual = missionPresentation(recommendedMission);
           return (
@@ -385,25 +387,15 @@ function WarTable() {
               <span className="t-wt-art-label">{visual.label}</span>
             </div>
             <div className="t-wt-feature-copy">
-              <div className="t-kicker t-cd-operation-label">NEXT UP / {primaryPurpose?.title || "NEXT OP"}</div>
+              <div className="t-kicker t-cd-operation-label">{primaryPurpose?.resume ? "ACCEPTED OPERATION" : "NEXT UP / OPERATION"}</div>
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
-              <div className="t-player-route-metrics" aria-label="Next step and rotation progress">
-                <span>{rotationProgress?.securedCount ?? activeMissionIds.filter(id => field?.records[id]?.lastClearCycle === currentCycleId).length}/{rotationProgress?.total || activeMissionIds.length} FIELD OPS SECURED</span>
-                <span>{commanderRank >= 3 ? "COMMANDER CERTIFIED" : commanderTarget ? `${remainingToRank} TO RANK ${commanderRank + 1}` : "COMMANDER STATUS PENDING"}</span>
-              </div>
-              <p className="t-player-next-reason">{primaryPurpose?.resume ? "Your squad is saved. Restart from round 1." : primaryPurpose?.reason}</p>
-              {primaryPurpose && !primaryPurpose.resume && recommendedMission?.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier)?.text}</p> : null}
-              <div className="t-wt-reward-chips t-premium-reward-strip" aria-label="Mission progression rewards">
-                <span>{primaryPurpose?.chapter ? "CHAPTER RECORD" : recommendedPurpose?.rewardClearText}</span>
-                <span className={recommendedChallenge ? "is-earned" : ""}>
-                  {primaryPurpose?.chapter ? "NO FIELD BONUS PROMISED" : recommendedPurpose?.rewardChallengeText}
-                </span>
-                <span>{primaryPurpose?.title === 'VETERAN OPPORTUNITY' ? 'POTENTIAL VETERAN PROGRESS · ADVANCED' : primaryPurpose?.masteryChallenge ? field?.masteryPath?.firstLockdownClear ? "LOCKDOWN COMPLETION RECORDED" : "RELAY MASTERY COMPLETE · 1/1" : primaryPurpose?.chapter ? "Intel follows confirmed chapter completion" : recommendedPurpose?.rewardEligibility.clear === "SECURED" && recommendedPurpose?.rewardEligibility.challenge === "SECURED" ? "No new rotation bonus promised" : "Eligible clears / challenges can add Mastery"}</span>
-              </div>
+              {primaryPurpose?.title === "RELAY MASTERY · 0/1" ? <p className="t-brief-purpose-meta">{primaryPurpose.title}</p> : null}
+              {primaryPurpose?.masteryChallenge && !primaryPurpose.resume && field?.lockdownPlansAvailable ? <p className="t-brief-purpose-meta">Choose Anchor or Crosslink in the brief.</p> : null}
+              {primaryPurpose?.resume ? <p className="t-player-next-reason">Your squad is saved. Restart from round 1.</p> : null}
+              {primaryPurpose && !primaryPurpose.resume && recommendedMission.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier)?.text}</p> : null}
             </div>
             <div className="t-wt-feature-cta">
-              <span className="t-cd-action-prompt" aria-hidden="true">SELECT YOUR NEXT MOVE</span>
               <button className="t-btn t-btn-primary t-wt-main-cta t-command-hero-cta" type="button" disabled={loading} onClick={() => primaryPurpose && openPurpose(primaryPurpose)}>
                 {primaryPurpose?.resume ? "RESUME OP" : primaryPurpose?.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}
                 <ChevronRight className="t-ico" />
@@ -415,16 +407,20 @@ function WarTable() {
         })() : null}
 
 
-        {!primaryPurpose ? <p role="status">No legal next mission confirmed. Refresh to load available operations.</p> : null}
-        {purposeRoute.alternatives.length ? <section className="t-purpose-alternatives" aria-label="Optional alternatives">
-          <span className="t-kicker">OTHER WAYS TO PLAY</span>
+        {!primaryPurpose ? <p role="status">Refresh to see available operations.</p> : null}
+        {purposeRoute.alternatives.length ? <details className="t-purpose-alternatives" aria-label="Optional alternatives">
+          <summary>Other operations</summary>
           {purposeRoute.alternatives.map(action => <article key={action.missionId} data-purpose-mission={action.missionId}>
             <span className="t-kicker">{action.title}</span><h3>{getMissionDef(action.missionId)?.name}</h3><p>{action.reason}</p>
             <button type="button" className="t-btn" disabled={loading} onClick={() => openPurpose(action)}>{action.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}</button>
           </article>)}
-        </section> : null}
+        </details> : null}
         <details className="t-purpose-memory t-command-records t-cd-records" aria-label="Permanent records and squad opportunity"><summary>FIELD ARCHIVE <span>RECORDS &amp; SQUAD INTEL</span></summary><div className="t-cd-record-body">
           <span className="t-kicker">PERMANENT FIELD RECORD</span>
+          {field?.veteranProgressionAvailable && commanderRank >= 3 ? <div data-opportunity-status={veteranView.status}>
+            {veteranCareer ? <p>{veteranRequirement(veteranCareer)}</p> : null}<p>{veteranView.copy}</p>
+            {commanderRank >= 4 ? <button type="button" className="t-btn" disabled={Boolean(field?.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : null}
+          </div> : null}
           {field?.masteryPath ? <p data-mastery-progress="true">RELAY MASTERY · {field.masteryPath.accomplishment ? '1/1 · Relay Lockdown permanently unlocked.' : (field.commander?.rank || 0) >= 3 ? '0/1 · Win an Advanced Relay Hold or Isolated Hold. One is available each rotation.' : '0/1 · Reach Commander Rank 3, then win an Advanced HOLD to unlock Relay Lockdown.'}</p> : null}
           {field?.masteryPath?.firstLockdownClear ? <p data-lockdown-completion="true">RELAY LOCKDOWN · FIRST CLEAR RECORDED · Persists across rotations.</p> : null}
           {campaignCareer ? <p>{campaignCareer.missions} Field secures · {campaignCareer.challenges} challenges · {campaignCareer.advanced} Advanced clears · {campaignCareer.fronts} fronts secured</p> : null}
@@ -434,16 +430,10 @@ function WarTable() {
         </div></details>
 
         <section className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail t-cd-status" aria-label="Tactical Ops overview">
-          <div className="t-panel t-wt-status-card t-wt-rank-card">
-            <span className="t-kicker">Commander</span>
-            <strong>{commanderRank >= 4 ? "RANK 4 · VETERAN" : commanderRank >= 3 ? "RANK 3 · CERTIFIED" : commanderRank ? `RANK ${commanderRank}` : "STATUS UNAVAILABLE"}</strong>
-            {commanderTarget ? (
-              <>
-                <progress className="t-progress" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
-                <small>{commanderProgress} / {commanderTarget} progress</small>
-              </>
-            ) : <small>{commanderRank >= 3 ? field?.veteranProgressionAvailable && commanderRank<4 ? "Certification complete · Veteran career open" : "All current command tools unlocked" : "Refresh to confirm Commander progress"}</small>}
-          </div>
+          {field?.board ? <div className="t-panel t-wt-status-card">
+            <span className="t-kicker">Field Ops secured</span>
+            <strong>{rotationProgress?.securedCount ?? activeMissionIds.filter(id => field.records[id]?.lastClearCycle === currentCycleId).length}/{rotationProgress?.total ?? activeMissionIds.length} FIELD OPS SECURED</strong>
+          </div> : null}
           <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
             <span className="t-kicker">Area status</span>
             <strong>{areaPressure}</strong>
@@ -735,6 +725,15 @@ function Brief() {
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
+  const deployActions = (
+    <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
+      <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
+      <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
+        {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
+        <ChevronRight className="t-ico" />
+      </button>
+    </div>
+  );
   return (
     <div className="t-fill">
       <Background dim={0.58} />
@@ -742,12 +741,9 @@ function Brief() {
         <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
           <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
-            <div className="t-deploy-mode-label">{missionVisual.label}</div>
             <div className="t-kicker">{fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
             <h1 className="t-title">{title}</h1>
-            <p>{mission ? objectiveHeadline(mission) : objective}</p>
           </div>
-          {fieldOp && field?.board ? <div className="t-deploy-rotation"><span className="t-kicker">Rotation</span><strong>{rotationTime(field.board.nextRotationAt)}</strong></div> : null}
         </header>
 
 
@@ -766,56 +762,39 @@ function Brief() {
         </nav>
         {briefTab === "mission" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Mission objective and rewards">
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
-        {campaignMission && !hold ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
             <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : recoverBrief ? "WIN CONDITION · RECOVER THE SIGNAL" : "OBJECTIVE"}</div>
             <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : quickRecover ? "GET TO THE RELAY. USE RECOVER." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
-            {quickRecover ? <p className="t-brief-purpose-meta">Get within RECOVER range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens on rounds ${mission.directive.recoverEveryRounds}, ${mission.directive.recoverEveryRounds * 2}, …` : "Use RECOVER when the signal opens."} Use RECOVER before acting.</p> : null}
-            {quickRecover && purpose ? <details className="t-mission-extra" aria-label="Recover rules"><summary>FULL RECOVER RULES <span>DETAILS +</span></summary><p>{purpose.objectiveText}</p></details> : null}
+            {quickRecover ? <p className="t-brief-purpose-meta">Get within range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens every ${mission.directive.recoverEveryRounds} rounds. ` : ""}Recover before acting.</p> : null}
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
               </ol>
             ) : <p className={recoverBrief ? "t-recover-failure" : undefined}>{purpose ? <><b>FAIL IF: </b>{purpose.failConditionText}</> : footnote}</p>}
             {fieldContext.lockdownPlan === "crosslink" ? <div className="t-lockdown-rule" role="note"><strong>NORTH → EAST → SOUTH</strong><span>Control is checked at round changes. Move between checkpoints; missing one resets to north.</span></div> : fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
-            {purpose && !fieldContext.masteryChallenge ? recoverBrief ? <details className="t-mission-extra" aria-label="Tactical threats">
-              <summary>TACTICAL THREATS <span>DETAILS +</span></summary>
-              <p>{purpose.tacticalThreat}</p>
-            </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {hold?.copy ?? purpose.tacticalThreat}</p> : null}
+            {fieldContext.masteryChallenge || fieldContext.veteranChallenge ? <p className="t-brief-purpose-meta"><b>{purpose?.rewardChallengeText}</b></p> : null}
+            {deploymentWindow ? <p className="t-brief-purpose-meta" data-g4-brief-window="true">{resuming ? "ACCEPTED TIMING · " : ""}{deploymentWindow.text}</p> : null}
+            {purpose && !fieldContext.masteryChallenge && !recoverBrief ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {hold?.copy ?? (mission?.missionId === "dead-relay-guardian" ? missionIntel : purpose.tacticalThreat)}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
-            {fieldOp ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>{veteranBrief.status === "claimed" ? "VETERAN CREDIT SAVED" : veteranBrief.status === "eligible" ? "VETERAN CHANCE!" : veteranBrief.status === "locked" ? "VETERAN NOT READY" : "VETERAN STATUS UNKNOWN"}:</b> {veteranBrief.copy}</p> : null}
-            {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
-              <summary>SQUAD TACTICS <span>OPTIONAL</span></summary>
-              {buildNotes.map(row => <p key={row}>{row}</p>)}
-              {resuming ? <small>Saved mission: your original squad and equipment remain locked.</small> : null}
-            </details> : null}
-            {purpose ? <details className="t-mission-extra" aria-label="Mission outcome and recording">
-              <summary>WHAT HAPPENS AFTER <span>DETAILS</span></summary>
-              <p>{purpose.nextConsequence}</p>
-            </details> : null}
           </div>
-          {fieldOp ? (
-            <>
-              <div className="t-deploy-summary-card">
-                <span className="t-kicker">{fieldContext.masteryChallenge ? 'Completion' : 'First win'}</span>
-                <strong>{purpose?.rewardClearText}</strong>
-                <small>{rewardTruth?.copy}</small>
-              </div>
-              <div className="t-deploy-summary-card">
-                <span className="t-kicker">{fieldContext.masteryChallenge ? 'Optional condition' : 'Bonus challenge'}</span>
-                <strong>{purpose?.rewardChallengeText}</strong>
-                <small>{mission?.challenge?.label || "Optional challenge"}</small>
-              </div>
-              <div className={`t-deploy-summary-card t-deploy-pressure is-${pressureLabel(fieldContext.pressure).toLowerCase()}`}>
-                <span className="t-kicker">Area status</span>
-                <strong>{pressureLabel(fieldContext.pressure)}</strong>
-                <small>{pressureEffect(fieldContext.pressure)}</small>
-                {deploymentWindow ? <small data-g4-brief-window="true">{resuming ? "ACCEPTED TIMING · " : "NEXT DEPLOYMENT · "}{deploymentWindow.text}</small> : null}
-              </div>
-            </>
-          ) : null}
+          {deployActions}
+          {purpose ? <details className="t-mission-extra t-brief-details" aria-label="Mission outcome and recording">
+            <summary>DETAILS</summary>
+            {quickRecover ? <section aria-label="Recover rules"><b>FULL RECOVER RULES</b><p>{purpose.objectiveText}</p></section> : null}
+            {recoverBrief ? <section aria-label="Tactical threats"><b>TACTICAL THREATS</b><p>{purpose.tacticalThreat}</p></section> : null}
+            <p>{purpose.nextConsequence}</p>
+            {fieldOp && field?.board ? <p><b>Rotation ends</b> · {rotationTime(field.board.nextRotationAt)}</p> : null}
+            {campaignMission && !hold ? <p>{missionIntel}</p> : null}
+            {fieldOp ? <>
+              <p data-opportunity-status={veteranBrief.status} role="status"><b>Veteran eligibility</b> · {veteranBrief.copy}</p>
+              <p><b>{purpose.rewardClearText}</b> · {rewardTruth?.copy}</p>
+              <p><b>{purpose.rewardChallengeText}</b> · {mission?.challenge?.label || "Optional challenge"}</p>
+              <p><b>{pressureLabel(fieldContext.pressure)}</b> · {pressureEffect(fieldContext.pressure)}</p>
+            </> : null}
+            {buildNotes.length ? <section aria-label="Squad tactics"><b>SQUAD TACTICS</b>{buildNotes.map(row => <p key={row}>{row}</p>)}</section> : null}
+          </details> : null}
         </section>
 
 
@@ -1042,13 +1021,7 @@ function Brief() {
 
 
         </div> : null}
-        <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
-          <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
-          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
-            {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
-            <ChevronRight className="t-ico" />
-          </button>
-        </div>
+        {briefTab !== "mission" ? deployActions : null}
         {progressionError ? <p style={{ color: "var(--t-enemy)", marginTop: "0.8rem" }}>{progressionError}</p> : null}
       </div>
     </div>
@@ -1127,6 +1100,7 @@ function Results() {
   const nextSuggestedMission = nextSuggestedBase && resultNext?.masteryChallenge ? missionForContext(nextSuggestedBase,{reportVersion:4,masteryChallenge:resultNext.masteryChallenge}) : nextSuggestedBase;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
   const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
+  const campaignConfirmed = !chapterMode && campaignMission ? recordedCampaignResult : null;
   const s3Proof = confirmedConsequence(recordedFieldResult, recordedCampaignResult, progression);
   const s3Return = confirmedReturnAction(recordedFieldResult, recordedCampaignResult, progression);
   const acceptedS3Run = recordedFieldResult?.runId || recordedCampaignResult?.runId || null;
@@ -1135,6 +1109,9 @@ function Results() {
   const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
   const buildEvidence = fieldcraftResults(s3CombatProof,currentRunKey,selectedMissionId);
   if (!results) return null;
+  const fieldVictory = recordedFieldResult?.victory ?? results.victory;
+  const campaignVictory = campaignConfirmed?.victory ?? results.victory;
+  const fieldFailure = recordedFieldResult?.failureReason ?? failureReason;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
@@ -1143,17 +1120,18 @@ function Results() {
     !selectedMasteryChallenge && !selectedVeteranChallenge &&
     !resultFieldContext?.masteryChallenge && !resultFieldContext?.lockdownPlan && !resultFieldContext?.veteranChallenge;
   if (ordinaryFieldOp) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
-    <FieldOpResults victory={results.victory} missionName={mission.name}
-      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+    <FieldOpResults victory={fieldVictory} missionName={mission.name}
+      plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(failureReason, mission.objectiveType)} consequence={s3Proof} tacticalMoment={s3Moment?.detail} next={s3Return}
-      actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
+      failure={fieldFailureCopy(fieldFailure, mission.objectiveType)} consequence={s3Proof}
+      replayAction={<button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button>}
+      actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> :
         <button type="button" className="t-btn t-btn-primary" onClick={() => {
           continueOnboarding();
-          if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") openPurposeBrief(resultNext);
-        }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
-        <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
-      </>}>
+          const store = useBattleStore.getState();
+          const next = recordedFieldResult.victory ? commandPurpose(store.progression).primary : null;
+          if (next && store.screen === "war-table") openPurposeBrief(next);
+        }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>}>
       {recordedFieldResult ? <details className="t-detail"><summary>Progression & eligibility</summary>
         <p>{fieldResultPurpose(recordedFieldResult).future}</p>
         <p>Challenge: {recordedFieldResult.legacyReport ? "Unmeasured in this receipt" : recordedFieldResult.challengeSuccess ? `Met · +${recordedFieldResult.challengeBonus} Commander bonus recorded` : "Not met"}.</p>
@@ -1164,6 +1142,7 @@ function Results() {
         {progression?.playerGrowth && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? <p>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not points earned this run. Open the War Table Skillbook to spend them.</p> : null}
       </details> : null}
       <details className="t-detail"><summary>Combat report · this device</summary>
+        {recordedFieldResult && s3Moment ? <p><b>TACTICAL MOMENT</b> · {s3Moment.detail}</p> : null}
         <PlayerIdentityCard />
         <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
         <p>Challenge objective: {mission.challenge?.label || "No optional challenge"}</p>
@@ -1177,10 +1156,10 @@ function Results() {
     resultFieldContext?.masteryChallenge || resultFieldContext?.lockdownPlan || resultFieldContext?.veteranChallenge)
     ? (veteranReceipt || selectedVeteranChallenge || resultFieldContext?.veteranChallenge ? "extraction" : "lockdown") : null;
   if (specialKind) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
-    <SpecialFieldOpResults kind={specialKind} victory={results.victory} missionName={mission?.name || "FIELD OP"}
-      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+    <SpecialFieldOpResults kind={specialKind} victory={fieldVictory} missionName={mission?.name || "FIELD OP"}
+      plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(failureReason, mission?.objectiveType || "HOLD")}
+      failure={fieldFailureCopy(fieldFailure, mission?.objectiveType || "HOLD")}
       actions={!recordedFieldResult ?
         <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
           onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
@@ -1211,42 +1190,7 @@ function Results() {
       </details>
     </SpecialFieldOpResults>
   </div></div>;
-  return (
-    <div className="t-fill">
-      <Background dim={0.6} />
-      <div className="t-overlay t-results-overlay">
-        <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
-          <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
-          <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
-          {sessionVictory ? (
-            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
-          ) : null}
-          {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
-          {operationVictory && !campaignMission && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
-          {chapterMode ? <div className="t-panel" role="status">
-            <strong>{chapterResult ? "CHAPTER RESULT RECORDED" : progressionCommitPending ? "RECORDING CHAPTER RESULT…" : "CHAPTER RESULT NOT YET RECORDED"}</strong>
-            <p>{chapterResult ? `GHOST SIGNAL · ${chapterResult.stageRecorded}/3 accepted operations. ${chapterResult.chapterComplete?"RECON Intel ready for a qualifying encounter.":"Return to War Table for the next mission."}` : "Only server-recorded results advance this chapter."}</p>
-          </div>:null}
-          {!chapterMode && fieldOp ? <div>
-            
-            {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
-            {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
-          </div> : null}
-          
-          {!chapterMode && fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
-          {!chapterMode && campaignMission ? <div className="t-panel t-deploy-overview" role="status">
-            <strong>{recordedCampaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
-            {recordedCampaignResult && !s3Proof ? <p>{recordedCampaignResult.victory
-              ? mission?.missionId === "dead-relay-courier" ? "Courier stopped. No Courier Trace earned this run."
-                : mission?.missionId === "dead-relay-hold" ? "Relay control recorded." : "The Dead Relay is secure."
-              : "Failure recorded."}</p> : null}
-          </div> : null}
-          {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={acceptedS3Run}>
-            <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
-            {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : null}
-            <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
-          </section> : null}
+  const report = <>
           <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. These events are not persisted progress or extra rewards.</small></section>
           {acceptedS3Run && s3Moment ? <section className="t-panel" aria-label="This session combat evidence"><span className="t-kicker">THIS RUN · ENGINE-CONFIRMED MOMENT</span><strong>{s3Moment.detail}</strong><p>Observed in the current device session only. Not a persisted combat event log or extra reward.</p></section> : null}
           {acceptedS3Run && s3Trials.length ? <section className="t-panel" aria-label="Verified optional training"><span className="t-kicker">OPTIONAL TRAINING · CONFIRMED THIS RUN</span>{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
@@ -1276,6 +1220,45 @@ function Results() {
               <small>First-time mission clears add one point. Spend available points on the War Table Skillbook before your next deployment.</small>
             </section>
           ) : null}
+  </>;
+  return (
+    <div className="t-fill">
+      <Background dim={0.6} />
+      <div className="t-overlay t-results-overlay">
+        <div className={`t-modal t-panel t-results ${campaignVictory ? "is-victory" : "is-failure"}`}>
+          <header className="t-outcome-hero"><img className="t-results-plate" src={campaignVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{campaignVictory ? "MISSION SECURED" : "MISSION LOST"}</span>
+          <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : (campaignConfirmed || operationVictory) && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
+          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignConfirmed ? campaignVictory ? "VICTORY" : "DEFEAT" : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
+          {sessionVictory ? (
+            <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
+          ) : null}
+          {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
+          {operationVictory && !campaignMission && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
+          {chapterMode ? <div className="t-panel" role="status">
+            <strong>{chapterResult ? "CHAPTER RESULT RECORDED" : progressionCommitPending ? "RECORDING CHAPTER RESULT…" : "CHAPTER RESULT NOT YET RECORDED"}</strong>
+            <p>{chapterResult ? `GHOST SIGNAL · ${chapterResult.stageRecorded}/3 accepted operations. ${chapterResult.chapterComplete?"RECON Intel ready for a qualifying encounter.":"Return to War Table for the next mission."}` : "Only server-recorded results advance this chapter."}</p>
+          </div>:null}
+          {!chapterMode && fieldOp ? <div>
+
+            {!results.victory ? <p>{fieldFailureCopy(failureReason, mission.objectiveType)} No clear or commander progress earned.</p> : null}
+            {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p role="status">{progressionCommitPending ? "Recording result…" : "Result not recorded yet."}</p>}
+          </div> : null}
+
+          {!chapterMode && fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
+          {campaignConfirmed ? <section className="t-campaign-result-impact" role="status">
+            <span className="t-kicker">WHAT CHANGED</span>
+            <strong>{s3Proof?.label || (recordedCampaignResult?.victory ? "VICTORY SAVED" : "DEFEAT SAVED")}</strong>
+            {s3Proof ? <p>{s3Proof.detail}</p> : recordedCampaignResult?.victory && !recordedCampaignResult.intelEarned && mission?.missionId === "dead-relay-courier" ? <p>Courier stopped. No Courier Trace earned this run.</p> : null}
+          </section> : !chapterMode && campaignMission ? <div className="t-panel t-deploy-overview" role="status">
+            <strong>{progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
+          </div> : null}
+          {s3Return && !campaignMission ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={acceptedS3Run}>
+            <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
+            {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : null}
+            <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
+          </section> : null}
+          {!campaignConfirmed ? report : null}
+          {campaignConfirmed ? <div className="t-kicker t-campaign-next">WHAT’S NEXT</div> : null}
           <div className="t-brief-actions t-result-actions">
             {chapterMode ? (chapterResult ?
               <button type="button" className="t-btn t-btn-primary" onClick={()=>continueOnboarding()}>RETURN TO CHAPTER</button>
@@ -1287,7 +1270,6 @@ function Results() {
                   const store = useBattleStore.getState();
                   if (s3Return?.missionId && store.screen === "war-table") store.openOperationBrief(s3Return.missionId);
                 }}>{s3Return?.missionId ? recordedCampaignResult.victory ? `NEXT: ${s3Return.title}` : "RETRY MISSION" : "BACK TO CAMPAIGN"}</button>
-                <button type="button" className="t-btn" onClick={replay}>REPLAY / SQUAD</button>
               </> : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
                 {progressionCommitPending ? "Recording..." : results.victory ? "SAVE VICTORY" : "RECORD FAILURE / RETRY"}
               </button>
@@ -1324,6 +1306,8 @@ function Results() {
               </>
             )}
           </div>
+          {campaignConfirmed ? <details className="t-detail"><summary>Combat report · this device</summary>{report}</details> : null}
+          {campaignConfirmed ? <button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button> : null}
           {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
         </div>
       </div>

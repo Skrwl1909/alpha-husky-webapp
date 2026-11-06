@@ -8,13 +8,11 @@ import { recordedImpact } from "./afterActionImpact";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
-  consequence, tacticalMoment, next, actions, children }: {
+  consequence, actions, replayAction, children }: {
   victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
   pending: boolean; error: string | null; failure: string;
   consequence: { label: string; detail: string } | null;
-  tacticalMoment?: string;
-  next: { title: string; reason: string } | null;
-  actions: ReactNode; children: ReactNode;
+  actions: ReactNode; replayAction?: ReactNode; children: ReactNode;
 }) {
   const state = receipt ? "confirmed" : pending ? "pending" : error ? "failed" : "unrecorded";
   const meaning = receipt ? fieldResultPurpose(receipt) : null;
@@ -34,13 +32,13 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     : masteryGain ? "PACK MASTERY RECORDED"
     : receipt && receipt.progressEarned > 0 ? `+${receipt.progressEarned} COMMANDER ${receipt.progressEarned === 1 ? "POINT" : "POINTS"}`
     : "RUN RECORDED";
+  const progressOnly = impact?.kind === "recorded" && (masteryGain || (receipt?.progressEarned ?? 0) > 0);
   return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-recording={state} data-milestone={milestone ? "confirmed" : undefined}>
     <header className="t-outcome-hero">
       <img className="t-results-plate" src={plate} alt="" aria-hidden="true" />
-      <span className="t-outcome-stamp"><span aria-hidden="true">///</span> FIELD OP / AFTER ACTION</span>
       <div className="t-kicker">{missionName}</div>
-      <h2 className="t-title">{victory ? "OBJECTIVE SECURED" : "MISSION LOST"}</h2>
-      <p className="t-fr-outcome">{victory ? "You did it. The Pack held on." : failure} <span>{receipt ? victory ? "Win saved." : "Attempt saved." : "Battle over."}</span></p>
+      <h2 className="t-title">{victory ? "VICTORY" : "DEFEAT"}</h2>
+      {!victory ? <p className="t-fr-outcome">{failure}</p> : null}
     </header>
     <div className="t-fr-record" role="status" aria-live="polite" aria-atomic="true">
       {receipt ? <Check aria-hidden="true" /> : state === "failed" ? <AlertTriangle aria-hidden="true" /> : <Shield aria-hidden="true" />}
@@ -49,12 +47,11 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
     {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
-      <span className="t-fr-impact-overline"><span aria-hidden="true">///</span> {impact.eyebrow}</span>
-      <strong className="t-fr-impact-title">{impact.title}</strong>
-      <p>{impact.detail}</p>
+      <span className="t-fr-impact-overline">WHAT CHANGED</span>
+      <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
+      <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}
-    {receipt && tacticalMoment ? <p className="t-fr-tactical-moment"><b>TACTICAL MOMENT · THIS DEVICE</b> {tacticalMoment}</p> : null}
-    {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason.replace("Clear bonus already secured; an eligible challenge can still add progress.", "First win saved. The bonus challenge is still open.")}</p></div> : null}
+    {receipt ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span></div> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     {receipt ? <details className="t-fr-ledger">
       <summary><span>MISSION RECORD</span><small>Commander · Veteran · Mastery · Rewards</small></summary>
@@ -86,6 +83,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       </section>
     </details> : null}
     <div className="t-fr-details">{children}</div>
+    {receipt ? replayAction : null}
   </div>;
 }
 
@@ -106,17 +104,14 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pe
   const savedLockdownCompletion = lockdown && Boolean(receipt?.firstLockdownClear);
   const newLockdownMilestone = savedLockdownCompletion && receipt?.lockdownFirstClear === true;
   const plan = receipt?.lockdownPlan === "anchor" ? "ANCHOR" : receipt?.lockdownPlan === "crosslink" ? "CROSSLINK" : null;
-  const meaning = receipt ? fieldResultPurpose(receipt) : null;
   return <div className={`t-modal t-panel t-results t-field-results t-special-field-results ${victory ? "is-victory" : "is-failure"}`}
     data-special-result={kind} data-recording={state}
     data-milestone={newLockdownMilestone ? "confirmed" : undefined}>
     <header className="t-outcome-hero">
       <img className="t-results-plate" src={plate} alt="" aria-hidden="true" />
-      <span className="t-outcome-stamp"><span aria-hidden="true">///</span> FIELD OP / AFTER ACTION</span>
       <div className="t-kicker">{missionName}</div>
-      <h2 className="t-title">{lockdown ? victory ? "RELAY LOCKDOWN COMPLETE" : "RELAY LOCKDOWN FAILED" :
-        victory ? "PACK EXTRACTION COMPLETE" : "PACK EXTRACTION FAILED"}</h2>
-      <p className="t-fr-outcome">{victory ? "Local objective completed." : failure} <span>Server confirmation is separate.</span></p>
+      <h2 className="t-title">{victory ? "VICTORY" : "DEFEAT"}</h2>
+      {!victory ? <p className="t-fr-outcome">{failure}</p> : null}
     </header>
     <div className="t-fr-record" role="status" aria-live="polite" aria-atomic="true">
       {receipt ? <Check aria-hidden="true" /> : state === "failed" ? <AlertTriangle aria-hidden="true" /> : <Shield aria-hidden="true" />}
@@ -127,18 +122,14 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pe
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
     {receipt ? <>
       <section className="t-special-achievement" aria-label="Server-confirmed special operation result">
-        <span className="t-kicker">{savedLockdownCompletion ? "PERMANENT FIELD RECORD" : "ACCEPTED OPERATION"}</span>
+        <span className="t-kicker">WHAT CHANGED</span>
         <strong>{savedLockdownCompletion ? "LOCKDOWN COMPLETION RECORDED" :
           lockdown ? "LOCKDOWN RUN RECORDED" : "PACK EXTRACTION RUN RECORDED"}</strong>
         <p>{savedLockdownCompletion ? newLockdownMilestone ? "Relay Mastery 1/1 · first completion saved permanently." : "Relay Mastery 1/1 · previously recorded completion preserved. No new progression reward." :
           lockdown ? `Optional practice accepted${plan ? ` · ${plan} plan` : ""}. No new currency or progression rewards.` :
           "Optional Veteran practice accepted. No currency, Commander, Veteran or Pack Mastery progress."}</p>
       </section>
-      {meaning?.future ? <section className="t-fr-next" aria-label="Next tactical move">
-        <span className="t-kicker">NEXT MOVE</span>
-        <strong>{lockdown ? "TRY THE OTHER PLAN" : "RETURN TO FIELD OPS"}</strong>
-        <p>{meaning.future}</p>
-      </section> : null}
+      <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span></div>
     </> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     <div className="t-fr-details">{children}</div>

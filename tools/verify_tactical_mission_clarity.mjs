@@ -21,7 +21,8 @@ assert.match(onboarding, /STRIKE \(A1\), then tap the scout/);
 assert.doesNotMatch(onboarding, /Close to melee|Move, then Strike at range 1|You cannot be in two cells at once/);
 
 assert.match(brief, /trainingSteps\.length \? \(/, "Foundation briefing should render player steps");
-assert.match(brief, /buildNotes\.length \? <details/, "Do not render build-fit for training or empty builds");
+assert.match(brief, /const buildNotes = mission \? buildFit\(mission, allies, previewGrowth\) : \[\]/, "Training has no build-fit notes");
+assert.match(brief, /buildNotes\.length \? <section aria-label="Squad tactics">/, "Details hides empty build-fit sections");
 assert.doesNotMatch(brief, /NEXT ACCEPTED RUN|<b>BUILD FIT:<\/b>/, "Avoid developer-only labels");
 
 assert.match(guidance, /validTargetIds\(battle\.units, actor, strike\)\.includes\(scout\.id\)/);
@@ -37,4 +38,4 @@ assert.match(css, /prefers-reduced-motion/);
 assert.doesNotMatch(css, /pointer-events:\s*auto/i, "Visual styles must not place blockers over the battlefield");
 assert(cacheKey && loader.includes('global.WEBAPP_VER = "' + cacheKey + '";'), "Loader must ship the current cache key");
 assert(bundleVersion && bundle.startsWith("/* " + bundleVersion + " */"), "Committed frontend bundle must match version");
-console.log("Tactical mission clarity: 19 static contract checks PASS.");
+console.log("Tactical mission clarity: 20 static contract checks PASS.");

@@ -19,7 +19,9 @@ for (const feature of ["<SkillbookPanel onClose=", "<PackMasteryPanel />", "open
 for (const feature of ["onClick={deploy}", "onClick={backToHub}", "selectKodaSidegrade", "selectShadowSidegrade", "selectedApproach", "selectedDirectiveTier", "readyCounters", "resuming ? savedRun?.packMastery"]) {
   assert(brief.includes(feature), "Brief functionality "+feature);
 }
-assert(brief.indexOf("t-deploy-actions-v29") > brief.indexOf('briefTab === "intel"'), "Deploy controls remain outside conditional panes");
+assert.equal((brief.match(/t-deploy-actions-v29/g) || []).length,1,"All tabs use the same deploy controls");
+assert.match(brief, /\{deployActions\}\s*\{purpose \? <details/, "Mission keeps deploy ahead of optional details");
+assert(brief.indexOf('{briefTab !== "mission" ? deployActions : null}') > brief.indexOf('briefTab === "intel"'), "All other panes retain deploy controls");
 assert(brief.includes('briefTab === "squad"') && brief.indexOf("<PackMasteryPanel snapshot=")>brief.indexOf('briefTab === "squad"'), "Mastery accessible on Squad tab");
 for (const asset of ["command_room.webp", "mission_hologram.webp", "frames/03_frame_content_panel.png", "frames/05_bar_nav_segmented.png", "frames/06_button_primary.png", "frames/07_button_secondary.png"]) {
   assert(css.includes(asset), "Referenced uploaded asset "+asset);

@@ -104,6 +104,9 @@ for(const head of heads)for(const path of changed(head)){
   source=source.replace("const cinematic=process.env.RESULTS_CINEMATIC==='1';\n",'')
    .replace("const out=`artifacts/${cinematic?'cinematic-results':'field-results'}/${phase}${production?'-production':''}`;","const out=`artifacts/field-results/${phase}${production?'-production':''}`;")
    .replace(/   if\(cinematic\)\{[\s\S]*?\n   }\n(?=   for\(const b)/,'');
+  const defeatCheck="assert.equal(await page.locator('h2').innerText(),'DEFEAT');";
+  assert.equal(source.split(defeatCheck).length,2,'the visible defeat heading remains tested exactly once');
+  source=source.replace(defeatCheck,"assert.match(await page.locator('h2').innerText(),/MISSION LOST/);");
  }
  assert.equal(source,git('show',`${head}:${path}`),`source implementation lost: ${path}`);preserved++;
 }
@@ -247,8 +250,29 @@ for(const path of git('diff','--name-only','--no-renames',combatExperienceBase,c
  assert(generated.has(path)||Object.hasOwn(combatExperienceBlobs,path),'unreviewed runtime mutation after combat experience base: '+path);
 }
 const courierTraceLeaves=new Set([app,'tactical-ops-src/ui/s3AfterAction.ts']);
-for(const path of git('diff','--name-only','--no-renames',courierTraceBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+const courierTraceHead='53dcf529ba3a7a3c0299bbf97a4fa903e36a8768';
+const finalPlayerBase='a19311fdcb91c69c66779f6f9e50536e17ad4fb5';
+git('merge-base','--is-ancestor',courierTraceHead,finalPlayerBase);
+git('merge-base','--is-ancestor',finalPlayerBase,'HEAD');
+for(const path of git('diff','--name-only','--no-renames',courierTraceBase,courierTraceHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||courierTraceLeaves.has(path),'unreviewed runtime mutation in Courier Trace: '+path);
+}
+// #255 was merged independently of Courier Trace. Verify it separately so it
+// does not expand either pass's allowed paths.
+assert.equal(git('rev-parse',`${finalPlayerBase}:js/frames.js`).trim(),'7defe7bf1eeee7bbd8c0b3ddb83cfe8d316dc713');
+const finalPlayerBlobs=Object.freeze({
+ 'tactical-ops-src/tactical.css':'12623fae96bea7645206730d8bb2a2b37413b7ce',
+ 'tactical-ops-src/ui/App.tsx':'b2bf9acec6bd2bfb206c9dd2e7762d6205fff9c0',
+ 'tactical-ops-src/ui/Battle.tsx':'046caa38669a638f653940ed4cdc87735b103b94',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'53ef57f4e13269066e7f6e06e7463e12ca94bc27',
+ 'tactical-ops-src/ui/battlePresentation.ts':'1a34368be8631a393b708816b7f8641ba7455c27',
+ 'tactical-ops-src/ui/fieldOpResults.css':'3db037fa829f15fabe19ed834c233614e1892df6',
+});
+for(const [path,expected] of Object.entries(finalPlayerBlobs)){
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed V1 player presentation: '+path);
+}
+for(const path of git('diff','--name-only','--no-renames',finalPlayerBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(generated.has(path)||Object.hasOwn(finalPlayerBlobs,path),'unreviewed runtime mutation in V1 player presentation: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');

@@ -48,14 +48,14 @@ try {
  assert(brief.includes('GET TO THE RELAY. USE RECOVER.'),"clear first-read goal");
  assert(brief.includes('FULL RECOVER RULES'),"precise rules stay available");
  assert(brief.includes('mission?.directive?.recoverEveryRounds'),"do not invent a fixed timing");
- assert(brief.includes('quickRecover && purpose'),"special Recover modes not overwritten");
+ assert(brief.includes('const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);'),"special Recover modes not overwritten");
  assert(brief.includes('data-opportunity-status={veteranBrief.status}'),"Veteran status still server-owned");
  assert(brief.includes('NEXT UP /'),"War Table speaks clearly");
  assert(battle.includes('acceptedWindow?.delayed && activeHound'),"no claimed battlefield advantage without engine timing");
  assert(battle.includes('acceptedWindow.actualRound === activeHound.triggerRound'),"match actual combat round");
  assert(battle.includes('data-player-voice-hound'),"visible HUD benefit");
  assert(results.includes('data-impact-beat={impact.beat}'),"graded result emphasis");
- assert(results.includes('receipt ? victory ? "Win saved." : "Attempt saved."'),"defeats must not be called wins");
+ assert(results.includes('victory ? "VICTORY" : "DEFEAT"'),"defeats must not be called wins");
  assert(results.includes('className="t-fr-ledger"'),"unchanged accounting still expandable");
  for(const k of ["step","breakthrough","clear"])
    assert(css.includes('data-impact-beat="'+k+'"'),"impact beat styling "+k);
