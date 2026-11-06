@@ -44,6 +44,7 @@
   let _howlInitInFlight = false;
   const HOWL_GENESIS_FRAME_KEY = "genesis_frame";
   const HOWL_TEST_FRAME_KEY = "howlpay_test_frame";
+  const SIGNAL_RANK_PLATE_KEY = "signal_rank_plate";
   const HOWL_POLL_MS = 9000;
   const HOWL_POLL_TIMEOUT_MS = 12 * 60 * 1000;
   const HOWL_QR_TOTAL_CODEWORDS = Object.freeze([
@@ -1022,6 +1023,7 @@
       if (selected) return { label: "Selected", className: "is-selected" };
       return { label: "Base", className: "is-owned" };
     }
+    if (!owned && key === SIGNAL_RANK_PLATE_KEY) return { label: "Preview", className: "is-locked" };
     if (!owned) return { label: "Locked", className: "is-locked" };
     if (equipped) return { label: "Equipped", className: "is-equipped" };
     if (selected) return { label: "Selected", className: "is-selected" };
@@ -1876,6 +1878,7 @@
     if (frameInfoMeta) {
       const parts = [lane, "Cosmetic frame"];
       if (source && source.toLowerCase() !== lane.toLowerCase()) parts.push(source);
+      if (k === SIGNAL_RANK_PLATE_KEY && !owned) parts.push("Preview only");
       frameInfoMeta.textContent = parts.join(" · ");
     }
     if (frameStateChip) {
@@ -1923,6 +1926,12 @@
     if (k === "default") {
       equipBtn.disabled = false;
       equipBtn.textContent = "Use No Frame";
+      return;
+    }
+    if (k === SIGNAL_RANK_PLATE_KEY && !isOwnedKey(k)) {
+      equipBtn.disabled = true;
+      equipBtn.textContent = "Preview only";
+      updateHowlControls();
       return;
     }
     if (isOwnedKey(k)) {
@@ -2017,6 +2026,8 @@
       out?.active,
       preferKey,
       ...(Array.isArray(out?.owned) ? out.owned : []),
+      // Discoverable preview; ownership and equipment remain server-authoritative.
+      SIGNAL_RANK_PLATE_KEY,
     ];
     _catalog = mergeCatalogWithFrameOverrides(out.frames, explicitKeys);
     _owned = Array.isArray(out.owned) ? out.owned.map(normKey) : ["default"];
