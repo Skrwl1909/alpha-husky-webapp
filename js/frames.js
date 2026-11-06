@@ -655,7 +655,14 @@
         #framesBack .ah-frame-gallery-skin-layer{
           inset:12% 15% 14%;
         }
-        #framesBack .ah-frames-preview-glow{
+        #framesBack .ah-frame-info{
+          padding:9px 10px;
+        }
+        #framesBack .frame-btn.ah-frame-tile{
+          min-height:112px;
+        }
+      }
+       #framesBack .ah-frames-preview-glow{
          z-index:4; opacity:0; pointer-events:none;
        }
        #framesBack .ah-frames-preview-sweep{
@@ -695,13 +702,6 @@
        body.ah-perf-lite #framesBack .ah-frames-preview-sweep{
          display:none !important;
        }
-       #framesBack .ah-frame-info{
-          padding:9px 10px;
-        }
-        #framesBack .frame-btn.ah-frame-tile{
-          min-height:112px;
-        }
-      }
       @keyframes ahFrameStageIn{
         from{ opacity:.75; transform:translateY(4px) scale(.995); }
         to{ opacity:1; transform:translateY(0) scale(1); }
