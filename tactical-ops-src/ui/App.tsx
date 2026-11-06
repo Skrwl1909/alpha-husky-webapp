@@ -1097,6 +1097,7 @@ function Results() {
   const nextSuggestedMission = nextSuggestedBase && resultNext?.masteryChallenge ? missionForContext(nextSuggestedBase,{reportVersion:4,masteryChallenge:resultNext.masteryChallenge}) : nextSuggestedBase;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
   const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
+  const campaignConfirmed = !chapterMode && campaignMission && Boolean(recordedCampaignResult);
   const s3Proof = confirmedConsequence(recordedFieldResult, recordedCampaignResult, progression);
   const s3Return = confirmedReturnAction(recordedFieldResult, recordedCampaignResult, progression);
   const acceptedS3Run = recordedFieldResult?.runId || recordedCampaignResult?.runId || null;
@@ -1221,7 +1222,7 @@ function Results() {
         <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
           <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
           <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignMission ? results.victory ? "VICTORY" : "DEFEAT" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
+          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignConfirmed ? results.victory ? "VICTORY" : "DEFEAT" : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
           {sessionVictory ? (
             <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
@@ -1238,18 +1239,20 @@ function Results() {
           </div> : null}
 
           {!chapterMode && fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
-          {!chapterMode && campaignMission ? <section className="t-campaign-result-impact" role="status">
-            <span className="t-kicker">{recordedCampaignResult ? "WHAT CHANGED" : "CAMPAIGN RECORD"}</span>
-            <strong>{s3Proof?.label || (recordedCampaignResult ? recordedCampaignResult.victory ? "VICTORY SAVED" : "DEFEAT SAVED" : progressionCommitPending ? "RECORDING RESULT…" : "RESULT NOT RECORDED")}</strong>
+          {campaignConfirmed ? <section className="t-campaign-result-impact" role="status">
+            <span className="t-kicker">WHAT CHANGED</span>
+            <strong>{s3Proof?.label || (recordedCampaignResult?.victory ? "VICTORY SAVED" : "DEFEAT SAVED")}</strong>
             {s3Proof ? <p>{s3Proof.detail}</p> : recordedCampaignResult?.victory && !recordedCampaignResult.intelEarned && mission?.missionId === "dead-relay-courier" ? <p>Courier stopped. No Courier Trace earned this run.</p> : null}
-          </section> : null}
+          </section> : !chapterMode && campaignMission ? <div className="t-panel t-deploy-overview" role="status">
+            <strong>{progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
+          </div> : null}
           {s3Return && !campaignMission ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={acceptedS3Run}>
             <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
             {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : null}
             <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
           </section> : null}
-          {!campaignMission ? report : null}
-          {campaignMission && recordedCampaignResult ? <div className="t-kicker t-campaign-next">WHAT’S NEXT</div> : null}
+          {!campaignConfirmed ? report : null}
+          {campaignConfirmed ? <div className="t-kicker t-campaign-next">WHAT’S NEXT</div> : null}
           <div className="t-brief-actions t-result-actions">
             {chapterMode ? (chapterResult ?
               <button type="button" className="t-btn t-btn-primary" onClick={()=>continueOnboarding()}>RETURN TO CHAPTER</button>
@@ -1297,8 +1300,8 @@ function Results() {
               </>
             )}
           </div>
-          {campaignMission ? <details className="t-detail"><summary>Combat report · this device</summary>{report}</details> : null}
-          {campaignMission && recordedCampaignResult ? <button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button> : null}
+          {campaignConfirmed ? <details className="t-detail"><summary>Combat report · this device</summary>{report}</details> : null}
+          {campaignConfirmed ? <button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button> : null}
           {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
         </div>
       </div>

@@ -37,6 +37,11 @@ try{
   if(phase==='after'){
    const firstViewDeploy=await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).boundingBox();
    assert(firstViewDeploy.y>=0&&firstViewDeploy.y+firstViewDeploy.height<=height,'deploy fits in the initial mission view');
+   const tabs=page.getByLabel('Mission preparation sections',{exact:true});
+   for(const tab of ['SQUAD','LOADOUT','INTEL','MISSION']){
+    await tabs.getByRole('button',{name:new RegExp(tab+'$')}).click();
+    assert.equal(await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).count(),1,tab+' retains one deploy action');
+   }
    assert.match(await overview.innerText(),/WIN CONDITION.*RECOVER THE SIGNAL/s);
    assert.match(await overview.innerText(),/GET TO THE RELAY\. USE RECOVER\./s,'first-read objective must be clear');
    assert.match(await overview.innerText(),/FAIL IF:.*entire squad falls/s);

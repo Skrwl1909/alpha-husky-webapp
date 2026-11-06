@@ -88,7 +88,8 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
     detail = result || (actor ? actor.name : "Preparing next activation");
   } else {
     title = foundationGuidance?.title || (guidance?.title === "POSITION FIRST" && moves.length ? "MOVE INTO RANGE" : guidance?.title) || (actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD");
-    detail = foundationGuidance?.copy || (battle.objective?.type === "RECOVER" && !battle.objective.completed ? guidance?.copy || "" : "");
+    const recovering = battle.objective?.type === "RECOVER" && !battle.objective.completed;
+    detail = foundationGuidance?.copy || (guidance && !recovering ? "" : guidance?.copy || directive.action);
   }
   if (!threats.length && !targeting && battle.reinforcement?.telegraphed && !battle.reinforcement.spawned && mode === "READ") {
     title = "REINFORCEMENT INBOUND"; detail = "Marked entry · not spawned yet";

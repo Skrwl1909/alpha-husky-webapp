@@ -104,8 +104,11 @@ try {
     const impact=page.locator('.t-campaign-result-impact');
     if(receiptKind==='trace')assert.match(await impact.innerText(),/COURIER TRACE RECORDED.*HOUND round 3/s);
     if(receiptKind==='replay')assert.match(await impact.innerText(),/No Courier Trace earned this run/);
-    if(receiptKind==='stale')assert.match(await impact.innerText(),/RESULT NOT RECORDED/);
-    if(receiptKind!=='trace')assert.doesNotMatch(await impact.innerText(),/HOUND round 3/);
+    if(receiptKind==='stale'){
+      assert.equal(await impact.count(),0,'a mismatched campaign receipt cannot show a consequence');
+      assert.match(await page.locator('.t-results [role="status"]').innerText(),/RESULT AWAITS SERVER RECORD/);
+    }
+    if(receiptKind!=='trace')assert.doesNotMatch(await page.locator('.t-results').innerText(),/HOUND round 3/);
     if(receiptKind!=='stale'){
       await page.getByRole('button',{name:/^NEXT: /}).click();
       assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMissionId),'dead-relay-hold');
