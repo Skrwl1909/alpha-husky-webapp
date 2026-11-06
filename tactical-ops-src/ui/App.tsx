@@ -1100,7 +1100,7 @@ function Results() {
   const nextSuggestedMission = nextSuggestedBase && resultNext?.masteryChallenge ? missionForContext(nextSuggestedBase,{reportVersion:4,masteryChallenge:resultNext.masteryChallenge}) : nextSuggestedBase;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
   const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
-  const campaignConfirmed = !chapterMode && campaignMission && Boolean(recordedCampaignResult);
+  const campaignConfirmed = !chapterMode && campaignMission ? recordedCampaignResult : null;
   const s3Proof = confirmedConsequence(recordedFieldResult, recordedCampaignResult, progression);
   const s3Return = confirmedReturnAction(recordedFieldResult, recordedCampaignResult, progression);
   const acceptedS3Run = recordedFieldResult?.runId || recordedCampaignResult?.runId || null;
@@ -1109,6 +1109,9 @@ function Results() {
   const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
   const buildEvidence = fieldcraftResults(s3CombatProof,currentRunKey,selectedMissionId);
   if (!results) return null;
+  const fieldVictory = recordedFieldResult?.victory ?? results.victory;
+  const campaignVictory = campaignConfirmed?.victory ?? results.victory;
+  const fieldFailure = recordedFieldResult?.failureReason ?? failureReason;
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
@@ -1117,10 +1120,10 @@ function Results() {
     !selectedMasteryChallenge && !selectedVeteranChallenge &&
     !resultFieldContext?.masteryChallenge && !resultFieldContext?.lockdownPlan && !resultFieldContext?.veteranChallenge;
   if (ordinaryFieldOp) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
-    <FieldOpResults victory={results.victory} missionName={mission.name}
-      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+    <FieldOpResults victory={fieldVictory} missionName={mission.name}
+      plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(failureReason, mission.objectiveType)} consequence={s3Proof}
+      failure={fieldFailureCopy(fieldFailure, mission.objectiveType)} consequence={s3Proof}
       replayAction={<button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button>}
       actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> :
         <button type="button" className="t-btn t-btn-primary" onClick={() => {
@@ -1153,10 +1156,10 @@ function Results() {
     resultFieldContext?.masteryChallenge || resultFieldContext?.lockdownPlan || resultFieldContext?.veteranChallenge)
     ? (veteranReceipt || selectedVeteranChallenge || resultFieldContext?.veteranChallenge ? "extraction" : "lockdown") : null;
   if (specialKind) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
-    <SpecialFieldOpResults kind={specialKind} victory={results.victory} missionName={mission?.name || "FIELD OP"}
-      plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
+    <SpecialFieldOpResults kind={specialKind} victory={fieldVictory} missionName={mission?.name || "FIELD OP"}
+      plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(failureReason, mission?.objectiveType || "HOLD")}
+      failure={fieldFailureCopy(fieldFailure, mission?.objectiveType || "HOLD")}
       actions={!recordedFieldResult ?
         <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
           onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
@@ -1222,10 +1225,10 @@ function Results() {
     <div className="t-fill">
       <Background dim={0.6} />
       <div className="t-overlay t-results-overlay">
-        <div className={`t-modal t-panel t-results ${results.victory ? "is-victory" : "is-failure"}`}>
-          <header className="t-outcome-hero"><img className="t-results-plate" src={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{results.victory ? "MISSION SECURED" : "MISSION LOST"}</span>
-          <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : operationVictory && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
-          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignConfirmed ? results.victory ? "VICTORY" : "DEFEAT" : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
+        <div className={`t-modal t-panel t-results ${campaignVictory ? "is-victory" : "is-failure"}`}>
+          <header className="t-outcome-hero"><img className="t-results-plate" src={campaignVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate} alt="" aria-hidden="true" /><span className="t-outcome-stamp">{campaignVictory ? "MISSION SECURED" : "MISSION LOST"}</span>
+          <div className="t-kicker">{fieldOp ? `FIELD OP / ${mission.name}` : (campaignConfirmed || operationVictory) && mission ? mission.name : sessionVictory ? encounter.operationName : "Broken Signal"}</div>
+          <h2 className="t-title">{recordedFieldResult?.masteryChallenge ? results.victory ? 'RELAY LOCKDOWN COMPLETE' : 'RELAY LOCKDOWN FAILED' : campaignConfirmed ? campaignVictory ? "VICTORY" : "DEFEAT" : campaignMission ? results.victory ? mission?.objectiveType === "BOSS" ? "DEAD RELAY SECURED" : "OBJECTIVE SECURED" : "MISSION FAILED" : fieldOp ? results.victory ? "FIELD OP COMPLETE" : "FIELD OP FAILED" : operationVictory ? mission?.objectiveType === "BOSS" ? "SIGNAL COMMANDER DOWN" : mission?.objectiveType === "RECOVER" ? "OBJECTIVE COMPLETE" : isFirstClear ? "BREACH CLEARED" : "BREACH REPLAY COMPLETE" : sessionVictory ? encounter.resultsTitle : "Operation Complete"}</h2></header>
           {sessionVictory ? (
             <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}

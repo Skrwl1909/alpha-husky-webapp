@@ -262,7 +262,7 @@ for(const path of git('diff','--name-only','--no-renames',courierTraceBase,couri
 assert.equal(git('rev-parse',`${finalPlayerBase}:js/frames.js`).trim(),'7defe7bf1eeee7bbd8c0b3ddb83cfe8d316dc713');
 const finalPlayerBlobs=Object.freeze({
  'tactical-ops-src/tactical.css':'12623fae96bea7645206730d8bb2a2b37413b7ce',
- 'tactical-ops-src/ui/App.tsx':'f437b53e6c3e1bfdf59acefa757256a1e979512a',
+ 'tactical-ops-src/ui/App.tsx':'b2bf9acec6bd2bfb206c9dd2e7762d6205fff9c0',
  'tactical-ops-src/ui/Battle.tsx':'046caa38669a638f653940ed4cdc87735b103b94',
  'tactical-ops-src/ui/FieldOpResults.tsx':'53ef57f4e13269066e7f6e06e7463e12ca94bc27',
  'tactical-ops-src/ui/battlePresentation.ts':'1a34368be8631a393b708816b7f8641ba7455c27',

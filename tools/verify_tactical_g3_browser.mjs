@@ -65,6 +65,14 @@ try {
       assert.equal(await page.locator('.t-fr-next').count(),confirmed?1:0,'no next-reward claim without receipt');
       assert.equal(await page.locator('.t-result-actions .t-btn-primary').count(),1);
       if(confirmed){
+        if(profile==='eligible'){
+          await page.evaluate(async()=>{
+            const {battle}=fixture.store.getState();
+            fixture.store.setState({battle:{...battle,results:{...battle.results,victory:false}}});
+            await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+          });
+          assert.equal(await page.locator('.t-field-results h2').innerText(),'VICTORY','matching receipt takes precedence over a different local outcome');
+        }
         assert.equal(await page.locator('.t-fr-impact').count(),1,'one confirmed consequence');
         assert.equal(await page.locator('.t-fr-impact').evaluate(e=>getComputedStyle(e).animationName),'none','viewing a receipt does not replay a reward animation');
         const ledger=page.locator('.t-fr-ledger');
@@ -98,11 +106,15 @@ try {
       p.deadRelayHoldRevisionAvailable=2;
       store.setState({
         progression:p,selectedMissionId:'dead-relay-courier',currentRunKey:'courier-current',
+        battle:{...store.getState().battle,results:{...store.getState().battle.results,victory:false}},
         campaignResult:{runId:kind==='stale'?'courier-old':'courier-current',missionId:'dead-relay-courier',victory:true,intelEarned:kind!=='replay'}
       });
     },receiptKind);
     const impact=page.locator('.t-campaign-result-impact');
-    if(receiptKind==='trace')assert.match(await impact.innerText(),/COURIER TRACE RECORDED.*HOUND round 3/s);
+    if(receiptKind==='trace'){
+      assert.match(await impact.innerText(),/COURIER TRACE RECORDED.*HOUND round 3/s);
+      assert.equal(await page.locator('.t-results h2').innerText(),'VICTORY');
+    }
     if(receiptKind==='replay')assert.match(await impact.innerText(),/No Courier Trace earned this run/);
     if(receiptKind==='stale'){
       assert.equal(await impact.count(),0,'a mismatched campaign receipt cannot show a consequence');
