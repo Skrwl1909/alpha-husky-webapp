@@ -108,6 +108,16 @@ for(const head of heads)for(const path of changed(head)){
   assert.equal(source.split(defeatCheck).length,2,'the visible defeat heading remains tested exactly once');
   source=source.replace(defeatCheck,"assert.match(await page.locator('h2').innerText(),/MISSION LOST/);");
  }
+ if(path==='.github/workflows/tactical-brief-closure.yml'){
+  const additions=[
+   "      - 'tools/verify_tactical_loadout_browser.mjs'\n",
+   "          node tools/verify_tactical_loadout_browser.mjs\n",
+  ];
+  for(const addition of additions){
+   assert.equal(source.split(addition).length,2,'missing or repeated Loadout browser coverage');
+   source=source.replace(addition,'');
+  }
+ }
  assert.equal(source,git('show',`${head}:${path}`),`source implementation lost: ${path}`);preserved++;
 }
 // Updated special-mode assertions must still exercise the original receipt/CTA matrix.
@@ -268,10 +278,26 @@ const finalPlayerBlobs=Object.freeze({
  'tactical-ops-src/ui/battlePresentation.ts':'1a34368be8631a393b708816b7f8641ba7455c27',
  'tactical-ops-src/ui/fieldOpResults.css':'3db037fa829f15fabe19ed834c233614e1892df6',
 });
-for(const [path,expected] of Object.entries(finalPlayerBlobs)){
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed V1 player presentation: '+path);
+const loadoutBase='7df407abb9f3224f11488e98f7815c84f62c7fe2';
+git('merge-base','--is-ancestor',loadoutBase,'HEAD');
+const loadoutBlobs=Object.freeze({
+ [app]:'5471fbdcd94f8d85fde692a1c7060d7797ecab5d',
+ 'tactical-ops-src/tactical.css':'9a6688d0e234519ac9a83ea7ad3d8aae16e8fe23',
+});
+const cooldownRules='tactical-ops-src/combat/missionRules.ts';
+for(const [path,expected] of Object.entries(loadoutBlobs)){
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Loadout presentation: '+path);
 }
-for(const path of git('diff','--name-only','--no-renames',finalPlayerBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+for(const [path,expected] of Object.entries(finalPlayerBlobs)){
+ assert.equal(git('rev-parse',`${loadoutBase}:${path}`).trim(),expected,'unreviewed V1 player presentation: '+path);
+ if(!Object.hasOwn(loadoutBlobs,path)) assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed post-V1 change: '+path);
+}
+for(const path of git('diff','--name-only','--no-renames',loadoutBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(generated.has(path)||Object.hasOwn(loadoutBlobs,path)||path===cooldownRules,'unreviewed runtime mutation in Loadout V1: '+path);
+}
+assert.equal(readFileSync(cooldownRules,'utf8').replace('unit: Pick<CombatUnit, "team">','unit: CombatUnit'),
+ git('show',`${loadoutBase}:${cooldownRules}`),'Loadout may only narrow the cooldown helper input type');
+for(const path of git('diff','--name-only','--no-renames',finalPlayerBase,loadoutBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(finalPlayerBlobs,path),'unreviewed runtime mutation in V1 player presentation: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');

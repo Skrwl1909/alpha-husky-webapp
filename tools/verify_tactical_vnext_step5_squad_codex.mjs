@@ -73,9 +73,9 @@ try {
   assert.equal(codex.counterplayReadiness(active,undefined,false).find(x=>x.id==="INTERRUPT").available,false,
     "legacy or disabled scheduler cannot advertise interrupt");
   const briefSetup=readFileSync("tactical-ops-src/ui/App.tsx","utf8");
-  assert(briefSetup.includes("activeProtocolSlots(allies, previewGrowth)"));
-  assert(briefSetup.includes("counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED)"));
-  assert(briefSetup.includes("resuming || busy || kodaSavePending || shadowSavePending"),
+  assert(briefSetup.includes("activeProtocolSlots(knownLoadout, previewGrowth)"));
+  assert(briefSetup.includes("counterplayReadiness(activeSlots, previewGrowth, hasIntent)"));
+  assert(/resuming \? <p>Variants locked for this run\.<\/p>[\s\S]*?onClick=\{\(\) => void saveVariant\(choice\)\}/.test(briefSetup),
     "accepted runs cannot silently switch variants after server acceptance");
 
   const before={unitTurn:2,activeId:"ally-02",units:[
@@ -106,7 +106,7 @@ try {
   assert(battleStore.includes("interruptedEnemyIds?.includes(actor.id)"),"interrupted enemy cannot reannounce instead of losing turn");
   assert(battleStore.includes("interruptLockedThreatAfterControl(threatCycle, battle, res.state"),"legal ability result must drive counter");
   const brief=readFileSync("tactical-ops-src/ui/App.tsx","utf8");
-  assert(brief.includes("equippedSignalCodex(allies, previewGrowth)")&&brief.includes("SIGNAL CODEX"));
+  assert(brief.includes("equippedSignalCodex(knownLoadout, previewGrowth)")&&brief.includes("Signal Codex equipped capabilities"));
   console.log("PASS Step 5: 5 honest Codex families, real team sidegrade/mastery composition, bounded cooldowns, verified interrupt + enemy turn loss");
 } finally {
   await vite.close();
