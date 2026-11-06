@@ -11,18 +11,20 @@ import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
-import { savedSidegradeProof } from "./s3PowerProof";
 import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
 import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
+import { composeDirectives, supportCooldownExtra } from "../combat/missionRules";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useRef, useState } from "react";
 import { firstSession, type FirstResultReceipt } from "../host/firstSession";
-import { ChevronRight, RotateCcw } from "lucide-react";
+import { ChevronRight, PawPrint, RotateCcw } from "lucide-react";
 import { useBattleStore } from "../store/battleStore";
 import { BATTLEFIELD_LAB_KEY, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
 import { loadMuted, setMuted, unlockAudio } from "../audio";
-import { OPERATION } from "../data/units";
-import { SKILLS } from "../data/skills";
+import { OPERATION, UNIT_DEFS } from "../data/units";
+import { SKILLS, getSkill } from "../data/skills";
+import { growthHero, resolveGrowthSkill } from "../data/playerGrowth";
+import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 import { BattleScreen } from "./Battle";
 import type { UnitDef } from "../combat/types";
 import {
@@ -34,8 +36,8 @@ import { missionBattleRules, missionSpawnsForSquad, BROKEN_SIGNAL, DEAD_RELAY, g
 import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 import { SkillbookPanel } from "./Skillbook";
-import { activeProtocolSlots, counterplayReadiness, equippedSignalCodex, SIGNAL_FAMILIES, squadTradeoff } from "../data/signalCodex";
-import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
+import { activeProtocolSlots, counterplayReadiness, equippedSignalCodex, SIGNAL_FAMILIES } from "../data/signalCodex";
+import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -632,6 +634,38 @@ function WarTable() {
   );
 }
 
+const LOADOUT_VARIANTS = {
+  "ally-02": [{ name: "Vanguard", slot: "A2" }, { name: "Disruptor", slot: "A3" }],
+  "ally-03": [{ name: "Restorer", slot: "A2" }, { name: "Warden", slot: "A3" }],
+} as const;
+
+function loadoutName(unit: UnitDef) {
+  if (unit.defId === "alpha") return "ALPHA";
+  if (unit.defId === "ally-02") return "CNC";
+  if (unit.defId === "ally-03") return "SHADOW";
+  return unit.defId.startsWith("pet:") ? "PET" : unit.name;
+}
+
+function loadoutRange(skill: ReturnType<typeof getSkill>) {
+  if (skill.targetType === "SELF") return "Self";
+  if (skill.maxRange === 0 && skill.radius > 0) return `Radius ${skill.radius}`;
+  const tiles = skill.minRange === skill.maxRange ? skill.maxRange : `${skill.minRange}–${skill.maxRange}`;
+  return `Range ${tiles}`;
+}
+
+function variantPreview(skill: ReturnType<typeof getSkill>) {
+  const effects = skill.effects;
+  if (effects.some(effect => effect.status === "SPD_UP" && effect.on === "self")) return "Gain speed on hit";
+  if (effects.some(effect => effect.status === "SPD_DOWN")) {
+    return effects.some(effect => effect.kind === "damage") ? "Hit and slow" : "Slow without damage";
+  }
+  if (effects.some(effect => effect.status === "GUARD")) {
+    return effects.some(effect => effect.kind === "heal") ? "Heal and guard" : "Guard allies";
+  }
+  if (effects.some(effect => effect.kind === "heal")) return skill.targetType === "ALLY_AOE" ? "Heal nearby allies" : "Heal one ally";
+  return loadoutRange(skill);
+}
+
 function Brief() {
   const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">("mission");
   const [loadoutUnit, setLoadoutUnit] = useState<string>("alpha");
@@ -689,6 +723,7 @@ function Brief() {
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
   const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
+  const loadoutDirective = briefTab === "loadout" ? composeDirectives(conditions) : null;
   const chapterIntel = useBattleStore((s)=>s.currentChapterIntel);
   const reinforcementRound = mission && (fieldOp || campaignMission) ? (chapterIntel?.effectiveRound || missionBattleRules(mission, false, fieldContext, savedRun?.campaignContext).reinforcement?.triggerRound) : undefined;
   const title = hold && baseMission ? baseMission.name : mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
@@ -696,14 +731,48 @@ function Brief() {
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
   const previewGrowth = resuming ? savedRun?.playerGrowth : playerGrowth;
-  const equippedProtocols = equippedSignalCodex(allies, previewGrowth);
-  const activeSlots = activeProtocolSlots(allies, previewGrowth);
-  const readyCounters = counterplayReadiness(activeSlots, previewGrowth, TACTICAL_VNEXT_ENABLED);
-  const s3Goals = s3TrainingGoals(mission, allies.map(u => u.defId), resuming ? savedRun?.rulesContract?.rulesetVersion === "tactical-intent-vnext.0" : Boolean(useBattleStore.getState().progression?.vnextStartAvailable));
-  const selectedTradeoff = squadTradeoff(
-    selectedSquadIds.length ? selectedSquadIds : allies.map(u => u.defId),
-    equippedPet?.id,
-  );
+  const frozenPet = resuming ? savedRun?.combatProfileV2?.pet : null;
+  const loadoutSpawns = briefTab === "loadout" && mission
+    ? missionSpawnsForSquad(mission, selectedSquadIds, frozenPet || equippedPet, selectedApproach)
+    : spawns;
+  const loadoutAllies = briefTab !== "loadout" || !loadoutSpawns ? [] : loadoutSpawns === spawns ? allies
+    : alliedBriefDefs(withTeammateSidegrades(loadoutSpawns, {
+      kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery,
+    })).map(def => applyIdentityToAlpha(def, identity));
+  const unit = loadoutAllies.find(def => def.defId === loadoutUnit) || loadoutAllies[0];
+  const variantOwner = mission && (unit?.defId === "ally-02" || unit?.defId === "ally-03") ? unit.defId : null;
+  const isCnc = variantOwner === "ally-02";
+  const savedVariant = isCnc ? kodaSidegrade : shadowSidegrade;
+  const saveVariant = isCnc ? selectKodaSidegrade : selectShadowSidegrade;
+  const savingVariant = isCnc ? kodaSavePending : shadowSavePending;
+  const hasIntent = resuming ? savedRun?.rulesContract?.rulesetVersion === TACTICAL_VNEXT_RULESET
+    : chapterMode || Boolean(progression?.vnextStartAvailable);
+  const knownLoadout = briefTab === "loadout" ? loadoutAllies.map(def => ({
+    ...def, skillIds: def.skillIds.filter(id => Boolean(SKILLS[id])),
+  })) : [];
+  const equippedProtocols = equippedSignalCodex(knownLoadout, previewGrowth);
+  const activeSlots = activeProtocolSlots(knownLoadout, previewGrowth);
+  const readyCounters = counterplayReadiness(activeSlots, previewGrowth, hasIntent);
+  const s3Goals = briefTab === "loadout" ? s3TrainingGoals(mission, loadoutAllies.map(def => def.defId), hasIntent) : [];
+  const counterCopy = {
+    INTERRUPT: ["cancel locked attacks", "attack cancel"],
+    SLOW: ["slow enemies", "enemy slow"],
+    PROTECT: ["protect allies", "ally protection"],
+    RECOVER: ["heal allies", "healing"],
+  } as const;
+  const priority = mission?.objectiveType === "INTERCEPT" ? "SLOW"
+    : mission?.objectiveType === "HOLD" ? "PROTECT"
+    : mission?.objectiveType === "SURVIVE" ? "RECOVER" : null;
+  const primaryCounter = readyCounters.find(counter => counter.id === priority);
+  const availableCounters = readyCounters.filter(counter => counter.available);
+  const strength = primaryCounter?.available ? primaryCounter : availableCounters[0];
+  const nextStrength = availableCounters.find(counter => counter !== strength);
+  const readiness = !loadoutAllies.length ? "Choose a valid squad in the Squad tab."
+    : strength ? `Can ${counterCopy[strength.id][0]}${primaryCounter && !primaryCounter.available
+        ? ` · No ${counterCopy[primaryCounter.id][1]}`
+        : nextStrength ? ` and ${counterCopy[nextStrength.id][0]}` : ""}.`
+      : primaryCounter ? `No ${counterCopy[primaryCounter.id][1]} in this loadout.`
+        : "No squad counters equipped.";
 
   const hostiles = enemyBriefRows(spawns);
   const footnote = mission
@@ -737,7 +806,7 @@ function Brief() {
   return (
     <div className="t-fill">
       <Background dim={0.58} />
-      <div ref={briefPane} className="t-brief t-deployment t-deployment-v29 t-command-art-shell t-premium-ux">
+      <div ref={briefPane} className={`t-brief t-deployment t-deployment-v29 t-command-art-shell t-premium-ux${briefTab === "loadout" ? " t-loadout-active" : ""}`}>
         <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
           <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
@@ -854,102 +923,60 @@ function Brief() {
           {showBriefMastery ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
         </div> : null}
         </div> : null}
-        {briefTab === "loadout" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Equipped protocols and sidegrades">
-        <section className="t-panel t-codex-brief" aria-label="Signal Codex equipped capabilities">
-          <div className="t-wt-section-head"><div>
-            <span className="t-kicker">SQUAD BUILD · REAL ABILITIES</span>
-            <h2 className="t-title">SIGNAL CODEX</h2>
-          </div></div>
-          <p className="t-codex-tradeoff">{selectedTradeoff}</p>
-          {s3Goals.length ? <details className="t-detail t-s3-training" aria-label="Optional tactical training goals"><summary>OPTIONAL TRAINING · {s3Goals.length} TACTICAL GOALS</summary>{s3Goals.map(goal => <div className="t-s3-goal" key={goal.id}><strong>{goal.title}</strong><p>{goal.instruction}</p><small>{goal.requirement}</small></div>)}</details> : null}
-          <p className="t-codex-note">Current squad's equipped protocols, based on real A1/A2/A3 abilities. No extra skills or battle slots are granted.</p>
-          <div className="t-codex-loadout">
-            <strong>ACTIVE LOADOUT · EXISTING ABILITY SLOTS</strong>
-            <small>Change your squad above. Saved CNC / SHADOW variants can be selected below when unlocked; existing A1 / A2 / A3 cooldown rules stay in force.</small>
-            <nav className="t-loadout-unit-picker" aria-label="Select unit abilities">
-              {allies.map(unit => <button type="button" key={unit.defId} className={(allies.some(x => x.defId === loadoutUnit) ? loadoutUnit : allies[0]?.defId) === unit.defId ? "is-selected" : ""}
-                aria-pressed={(allies.some(x => x.defId === loadoutUnit) ? loadoutUnit : allies[0]?.defId) === unit.defId}
-                onClick={() => setLoadoutUnit(unit.defId)}>
-                <img src={unit.portrait} alt="" onError={portraitFallback} />
-                <span>{unit.defId === "ally-02" ? "CNC" : unit.defId === "ally-03" ? "SHADOW" : unit.defId.startsWith("pet:") ? "PET" : unit.name}</span>
-              </button>)}
-            </nav>
-            {allies.filter(unit => unit.defId === (allies.some(x => x.defId === loadoutUnit) ? loadoutUnit : allies[0]?.defId)).map(unit => (
-              <div className="t-codex-unit" key={unit.defId}>
-                <b>{unit.name} · {unit.defId.startsWith("pet:") ? "2 ABILITIES" : "3 ABILITIES"}</b>
-                <div className="t-codex-slots">
-                  {activeSlots.filter(x => x.unitId === unit.defId).map((slot, index) => (
-                    <div key={slot.skillId+index} className="t-codex-slot">
-                      <strong>{slot.slot} · {slot.name}</strong>
-                      <small>{slot.family || "BASIC ATTACK"} · CD {slot.cooldown} · RANGE {slot.minRange}–{slot.maxRange}</small>
-                    </div>
-                  ))}
-                </div>
+        {briefTab === "loadout" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Squad loadout">
+          <section className="t-panel t-loadout-panel" aria-label="Deployed squad and abilities">
+            <h2 className="t-kicker">DEPLOYING · {loadoutAllies.length}</h2>
+            {unit ? <>
+              <nav className="t-loadout-unit-picker" aria-label="Select unit abilities">
+                {loadoutAllies.map(def => <button type="button" key={def.defId} aria-pressed={def.defId === unit.defId} onClick={() => setLoadoutUnit(def.defId)}>
+                  <span className="t-loadout-portrait" aria-hidden="true">
+                    {def.defId.startsWith("pet:") ? <PawPrint size={20} /> : null}
+                    <img src={def.portrait} alt="" onError={def.defId === "alpha" ? portraitFallback : event => { event.currentTarget.hidden = true; }} />
+                  </span>
+                  <strong>{loadoutName(def)}</strong>
+                  {mission && (def.defId === "ally-02" || def.defId === "ally-03") && sidegradesUnlocked && !resuming ? <small>Variants</small> : null}
+                </button>)}
+              </nav>
+              {variantOwner ? <section className="t-loadout-variants" aria-label={`${loadoutName(unit)} variants`}>
+                {resuming ? <p>Variants locked for this run.</p> : !sidegradesUnlocked ? <p>Variants unlock after Broken Signal.</p> : <>
+                  <div className="t-loadout-choices">
+                    {LOADOUT_VARIANTS[variantOwner].map(({ name, slot }, index) => {
+                      const choice = index === 0 ? "A" : "B";
+                      const variant = withTeammateSidegrades([{ id: variantOwner, defId: variantOwner, c: 0, r: 0 }], {
+                        kodaSidegrade: isCnc ? choice : kodaSidegrade,
+                        shadowSidegrade: isCnc ? shadowSidegrade : choice,
+                        packMastery,
+                      })[0].unitDef || UNIT_DEFS[variantOwner];
+                      const skill = variant.skillIds.map(getSkill).find(skill => skill.slot === slot)!;
+                      const preview = resolveGrowthSkill(skill, growthHero(previewGrowth, variantOwner));
+                      return <button type="button" key={choice} aria-pressed={savedVariant === choice}
+                        disabled={busy || kodaSavePending || shadowSavePending}
+                        onClick={() => void saveVariant(choice)}>
+                        <strong>{name}</strong>
+                        <small>{variantPreview(preview)} · {loadoutRange(preview)}</small>
+                      </button>;
+                    })}
+                  </div>
+                  <p role="status">{savingVariant ? "Saving variant…" : savedVariant ? `Saved · ${LOADOUT_VARIANTS[variantOwner][savedVariant === "A" ? 0 : 1].name}` : "Base loadout equipped"}</p>
+                </>}
+              </section> : null}
+              <div className="t-loadout-slots" aria-label={`${loadoutName(unit)} equipped abilities`}>
+                {(["A1", "A2", "A3"] as const).map(slot => {
+                  const equipped = activeSlots.find(row => row.unitId === unit.defId && row.slot === slot);
+                  const skill = equipped && resolveGrowthSkill(getSkill(equipped.skillId), growthHero(previewGrowth, unit.defId));
+                  const icon = equipped && tacticalActionImageForSkill(equipped.skillId);
+                  const unavailable = unit.defId.startsWith("pet:") && slot === "A3";
+                  const cooldown = skill && skill.cooldownMax + supportCooldownExtra(loadoutDirective, unit, skill);
+                  return <div key={slot} className="t-loadout-slot" data-slot={slot}>
+                    <span>{slot}</span>{icon ? <img src={icon} alt="" /> : null}
+                    <strong>{skill?.name || (unavailable ? "Unavailable" : "Empty")}</strong>
+                    {skill ? <small><span>Cooldown {cooldown}</span><span>{loadoutRange(skill)}</span></small> : unavailable ? <small>Pet has two slots</small> : null}
+                  </div>;
+                })}
               </div>
-            ))}
-          </div>
-          <div className="t-codex-counterlist" aria-label="Tactical counter options">
-            <strong>COUNTERPLAY AVAILABLE TO THIS SQUAD</strong>
-            <div className="t-codex-counters">
-              {readyCounters.map(counter => (
-                <div key={counter.id} className={`t-codex-counter ${counter.available ? "is-ready" : "is-missing"}`}>
-                  <b>{counter.label} · {counter.available ? "READY" : "NOT EQUIPPED"}</b>
-                  <small>{counter.source || counter.detail}</small>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="t-codex-variants">
-            <strong>EXISTING SAVED VARIANTS</strong>
-            {resuming ? <small className="t-codex-note">Accepted run · squad and variants are locked until this mission ends.</small> : null}
-          {mission && spawns.some((spawn) => spawn.defId === "ally-02") ? (
-            <div className="t-panel t-brief-block t-sidegrade-card">
-              <div className="t-kicker">CNC · BUG HUNTER WARDEN</div>
-              {sidegradesUnlocked ? <>
-                <div className="t-brief-actions">
-                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "A"} className={`t-btn ${kodaSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("A")}>A · VANGUARD</button>
-                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={kodaSidegrade === "B"} className={`t-btn ${kodaSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectKodaSidegrade("B")}>B · DISRUPTOR</button>
-                </div>
-                <small>{kodaSavePending ? "Saving CNC choice…" : kodaSidegrade ? `SAVED · ${kodaSidegrade === "A" ? "VANGUARD" : "DISRUPTOR"}` : "Base CNC · no sidegrade selected"}</small>
-                {!kodaSavePending && !resuming && savedSidegradeProof("ally-02", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth) ? <div className="t-growth-delta" aria-label="CNC saved sidegrade power proof">{savedSidegradeProof("ally-02", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth)!.changes.map(x => <b key={x}>{x}</b>)}</div> : null}
-              </> : <small>CNC sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
-            </div>
-          ) : null}
-
-          {mission && spawns.some((spawn) => spawn.defId === "ally-03") ? (
-            <div className="t-panel t-brief-block t-sidegrade-card">
-              <div className="t-kicker">SHADOW · STAFF SUPPORT</div>
-              {sidegradesUnlocked ? <>
-                <div className="t-brief-actions">
-                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "A"} className={`t-btn ${shadowSidegrade === "A" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("A")}>A · RESTORER</button>
-                  <button type="button" disabled={resuming || busy || kodaSavePending || shadowSavePending} aria-pressed={shadowSidegrade === "B"} className={`t-btn ${shadowSidegrade === "B" ? "t-btn-primary" : "t-btn-ghost"}`} onClick={() => void selectShadowSidegrade("B")}>B · WARDEN</button>
-                </div>
-                <small>{shadowSavePending ? "Saving SHADOW choice…" : shadowSidegrade ? `SAVED · ${shadowSidegrade === "A" ? "RESTORER" : "WARDEN"}` : "Base SHADOW · no sidegrade selected"}</small>
-                {!shadowSavePending && !resuming && savedSidegradeProof("ally-03", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth) ? <div className="t-growth-delta" aria-label="SHADOW saved sidegrade power proof">{savedSidegradeProof("ally-03", { kodaSidegrade, shadowSidegrade, packMastery }, playerGrowth)!.changes.map(x => <b key={x}>{x}</b>)}</div> : null}
-              </> : <small>SHADOW sidegrades unlock after BROKEN SIGNAL is cleared.</small>}
-            </div>
-          ) : null}
-
-
-          </div>
-          <details className="t-codex-reference"><summary>ALL PROTOCOL FAMILIES · REFERENCE</summary>
-          <div className="t-codex-grid">
-            {SIGNAL_FAMILIES.map(family => {
-              const protocols = equippedProtocols.filter(p => p.family === family);
-              return <div className="t-codex-family" key={family}>
-                <strong>{family.toUpperCase()}</strong>
-                {protocols.length ? protocols.map((p, index) =>
-                  <div key={p.unit + p.skillId + index} className="t-codex-skill">
-                    <b>{p.unit} · {p.slot} {p.skillName}</b>
-                    <small>CD {p.cooldown} · {p.description}</small>
-                  </div>) : <small className="t-codex-empty">No equipped protocol in this family.</small>}
-              </div>;
-            })}
-          </div>
-          </details>
-        </section>
-
-
+            </> : null}
+            <p className="t-loadout-readiness" role="status">{readiness}</p>
+          </section>
         </div> : null}
         {selectedMasteryChallenge && ((field?.lockdownPlansAvailable && !resuming) || fieldContext.lockdownPlan) ? <section className="t-panel t-lockdown-plans" aria-label="Deployment plans">
           <div className="t-kicker">{resuming ? "ACCEPTED PLAN · LOCKED" : "CHOOSE A PLAN · OPTIONAL PRACTICE"}</div>
@@ -1022,6 +1049,31 @@ function Brief() {
 
         </div> : null}
         {briefTab !== "mission" ? deployActions : null}
+        {briefTab === "loadout" ? <details className="t-panel t-codex-reference">
+          <summary>Details &amp; Counterplay</summary>
+          <div className="t-loadout-reference-body">
+            <section aria-label="Tactical counter options">
+              <h2 className="t-kicker">Counterplay</h2>
+              <ul>{readyCounters.map(counter => <li key={counter.id}>
+                <strong>{counter.label}</strong>
+                <span>{counter.available ? counter.source : `Unavailable · ${counter.detail}`}</span>
+              </li>)}</ul>
+            </section>
+            {s3Goals.length ? <section aria-label="Optional tactical training goals">
+              <h2 className="t-kicker">Optional training</h2>
+              <ul>{s3Goals.map(goal => <li key={goal.id}><strong>{goal.title}</strong><span>{goal.instruction} {goal.requirement}</span></li>)}</ul>
+            </section> : null}
+            <section aria-label="Signal Codex equipped capabilities">
+              <h2 className="t-kicker">Signal Codex</h2>
+              <ul>{SIGNAL_FAMILIES.map(family => {
+                const protocols = equippedProtocols.filter(protocol => protocol.family === family);
+                return <li key={family}><strong>{family}</strong>
+                  {protocols.length ? protocols.map(protocol => <span key={`${protocol.unit}-${protocol.slot}`}>{protocol.unit} · {protocol.skillName}</span>) : <span>No equipped protocol</span>}
+                </li>;
+              })}</ul>
+            </section>
+          </div>
+        </details> : null}
         {progressionError ? <p style={{ color: "var(--t-enemy)", marginTop: "0.8rem" }}>{progressionError}</p> : null}
       </div>
     </div>

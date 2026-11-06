@@ -6,7 +6,7 @@ export function recoverSignalOpen(state: BattleState): boolean {
   return !every || state.round % every === 0;
 }
 
-export function supportCooldownExtra(directive: MissionDirective | null | undefined, unit: CombatUnit, skill: SkillDef): number {
+export function supportCooldownExtra(directive: MissionDirective | null | undefined, unit: Pick<CombatUnit, "team">, skill: SkillDef): number {
   if (skill.ignoreDisruption) return 0;
   return unit.team === "ally" && skill.effects.some((e) => e.kind === "heal" || (e.kind === "status" && ["SELF", "ALLY_SINGLE", "ALLY_AOE"].includes(skill.targetType)))
     ? directive?.supportCooldownExtra || 0 : 0;
