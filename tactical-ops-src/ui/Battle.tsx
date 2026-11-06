@@ -720,7 +720,8 @@ export function BattleScreen() {
               <button
                 key={key}
                 type="button"
-                className={`t-cell move${presentation.danger.has(key) ? " is-threatened" : ""}`}
+                className="t-cell move"
+                data-threatened={presentation.danger.has(key) || undefined}
                 style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(r, GRID_COLS, GRID_ROWS) } as CSSProperties}
                 aria-label={`Move to ${c},${r}${presentation.danger.has(key) ? ". Threatened cell" : ""}`}
                 onClick={e => { if (e.detail === 0) selectCell(c, r); }}

@@ -261,9 +261,9 @@ for(const path of git('diff','--name-only','--no-renames',courierTraceBase,couri
 // does not expand either pass's allowed paths.
 assert.equal(git('rev-parse',`${finalPlayerBase}:js/frames.js`).trim(),'7defe7bf1eeee7bbd8c0b3ddb83cfe8d316dc713');
 const finalPlayerBlobs=Object.freeze({
- 'tactical-ops-src/tactical.css':'df95ca56a88c99fd7708ddd75c9aa0740dc2fb91',
- 'tactical-ops-src/ui/App.tsx':'ea18f8a68d4a28d71dbfd4348613415bebb53c4e',
- 'tactical-ops-src/ui/Battle.tsx':'188cf6083607cc3a2b715e246b627cbc98eb329c',
+ 'tactical-ops-src/tactical.css':'12623fae96bea7645206730d8bb2a2b37413b7ce',
+ 'tactical-ops-src/ui/App.tsx':'f437b53e6c3e1bfdf59acefa757256a1e979512a',
+ 'tactical-ops-src/ui/Battle.tsx':'046caa38669a638f653940ed4cdc87735b103b94',
  'tactical-ops-src/ui/FieldOpResults.tsx':'53ef57f4e13269066e7f6e06e7463e12ca94bc27',
  'tactical-ops-src/ui/battlePresentation.ts':'1a34368be8631a393b708816b7f8641ba7455c27',
  'tactical-ops-src/ui/fieldOpResults.css':'3db037fa829f15fabe19ed834c233614e1892df6',

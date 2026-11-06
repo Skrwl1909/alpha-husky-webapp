@@ -390,6 +390,8 @@ function WarTable() {
               <div className="t-kicker t-cd-operation-label">{primaryPurpose?.resume ? "ACCEPTED OPERATION" : "NEXT UP / OPERATION"}</div>
               <h2>{recommendedMission.name}</h2>
               <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
+              {primaryPurpose?.title === "RELAY MASTERY · 0/1" ? <p className="t-brief-purpose-meta">{primaryPurpose.title}</p> : null}
+              {primaryPurpose?.masteryChallenge && !primaryPurpose.resume && field?.lockdownPlansAvailable ? <p className="t-brief-purpose-meta">Choose Anchor or Crosslink in the brief.</p> : null}
               {primaryPurpose?.resume ? <p className="t-player-next-reason">Your squad is saved. Restart from round 1.</p> : null}
               {primaryPurpose && !primaryPurpose.resume && recommendedMission.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier)?.text}</p> : null}
             </div>
@@ -772,6 +774,7 @@ function Brief() {
               </ol>
             ) : <p className={recoverBrief ? "t-recover-failure" : undefined}>{purpose ? <><b>FAIL IF: </b>{purpose.failConditionText}</> : footnote}</p>}
             {fieldContext.lockdownPlan === "crosslink" ? <div className="t-lockdown-rule" role="note"><strong>NORTH → EAST → SOUTH</strong><span>Control is checked at round changes. Move between checkpoints; missing one resets to north.</span></div> : fieldContext.masteryChallenge ? <div className="t-lockdown-rule" role="note"><strong>EXACT TILE ONLY</strong><span>Adjacent allies cannot hold. Enemies within 1 tile interrupt control.</span></div> : null}
+            {fieldContext.masteryChallenge || fieldContext.veteranChallenge ? <p className="t-brief-purpose-meta"><b>{purpose?.rewardChallengeText}</b></p> : null}
             {deploymentWindow ? <p className="t-brief-purpose-meta" data-g4-brief-window="true">{resuming ? "ACCEPTED TIMING · " : ""}{deploymentWindow.text}</p> : null}
             {purpose && !fieldContext.masteryChallenge && !recoverBrief ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {hold?.copy ?? (mission?.missionId === "dead-relay-guardian" ? missionIntel : purpose.tacticalThreat)}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
