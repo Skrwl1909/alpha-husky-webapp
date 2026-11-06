@@ -225,4 +225,74 @@ for (const { origin, query, native, telegram, allowed } of [
   assert.equal(t.window.AlphaBrowserGuestV1.active,allowed);
   assert.equal(t.requests.length,0,"localhost boot must never create accounts");
 }
+
+// Regression: FactionChamber can capture early Telegram-only apiPost before
+// the canonical API becomes available. The captured function must delegate.
+const bootStart = html.indexOf("(function bootAuth(){");
+const bootEnd = html.indexOf("\n})();\n</script>", bootStart);
+assert.ok(bootStart >= 0 && bootEnd > bootStart, "early bootAuth must exist");
+const earlyBootSource = html.slice(bootStart, bootEnd + "\n})();".length);
+function earlyBootHarness({ tg = "", session = "", native = false } = {}) {
+  const calls = [], delegation = [], stored = new Map(), warnings = [];
+  const window = {
+    API_BASE: "https://api.alphahusky.win",
+    Telegram: { WebApp: { initData: tg, ready() {}, initDataUnsafe: {} } },
+    __ahAlphaAccountSession: session ? { sessionToken: session } : null,
+    AlphaHuskyCapp: native ? {
+      isPackagedRuntime: () => true,
+      apiPost: async (path, data) => ({ ok: true, native: true, path, data })
+    } : null,
+    __ahPerf: { now: () => 0, shouldApiLog: () => false }
+  };
+  vm.runInNewContext(earlyBootSource, {
+    window, Date, setTimeout,
+    sessionStorage: {
+      getItem: k => stored.get(k) || null,
+      setItem: (k, v) => stored.set(k, v)
+    },
+    fetch: async (url, options) => {
+      calls.push({ url, options });
+      return { ok: true, text: async () => '{"ok":true}', json: async () => ({ ok: true }) };
+    },
+    console: { log() {}, warn: (...args) => warnings.push(args) }
+  });
+  return { window, captured: window.apiPost, calls, delegation, warnings };
+}
+{
+  const t = earlyBootHarness();
+  t.window.S = { apiPost: async (path, body) => {
+    t.delegation.push({ path, body }); return { ok: true };
+  }};
+  const out = await t.captured("/webapp/faction/join", { faction: "rogue_byte" });
+  assert.equal(out.ok, true);
+  assert.equal(t.delegation.length, 1);
+  assert.equal(t.delegation[0].path, "/webapp/faction/join");
+  assert.equal(t.calls.length, 0, "late binding must use canonical client");
+  assert.equal(t.warnings.length, 0, "late binding must not throw NO_UID");
+}
+{
+  const t = earlyBootHarness({ session: "TEST_BROWSER_SECURE_SESSION" });
+  const out = await t.captured("/webapp/faction/join", { faction: "rogue_byte" });
+  assert.equal(out.ok, true);
+  assert.equal(t.calls.length, 1);
+  assert.equal(t.calls[0].options.headers.Authorization, "Bearer TEST_BROWSER_SECURE_SESSION");
+  assert.equal(JSON.parse(t.calls[0].options.body).session_token, "TEST_BROWSER_SECURE_SESSION");
+  assert.ok(!("init_data" in JSON.parse(t.calls[0].options.body)));
+  assert.equal(t.warnings.length, 0);
+}
+{
+  const t = earlyBootHarness({ tg: "TEST_TELEGRAM_SIGNED_INIT_DATA_12345" });
+  await t.captured("/webapp/faction/join", { faction: "rogue_byte" });
+  assert.equal(t.calls.length, 1);
+  assert.equal(t.calls[0].options.headers.Authorization, "Bearer TEST_TELEGRAM_SIGNED_INIT_DATA_12345");
+  assert.equal(JSON.parse(t.calls[0].options.body).init_data, "TEST_TELEGRAM_SIGNED_INIT_DATA_12345");
+}
+{
+  const t = earlyBootHarness({ native: true });
+  t.window.getInitDataSafe = async () => "";
+  const out = await t.captured("/webapp/faction/join", { faction: "rogue_byte" });
+  assert.equal(out.native, true, "standalone Android fallback must be preserved");
+  assert.equal(t.calls.length, 0);
+}
+
 console.log("PASS: Browser Guest V1 offline isolation, creation, persistence and recovery");
