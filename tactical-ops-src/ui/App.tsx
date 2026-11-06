@@ -5,7 +5,8 @@ import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
-import { missionForContext } from "../data/operations";
+import { g2HoldRevisionForRequest, missionForContext } from "../data/operations";
+import type { FoundationProgressionState } from "../host/foundationProgression";
 import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
@@ -34,7 +35,7 @@ import { withTeammateSidegrades } from "../data/shadowSidegrade";
 import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 import { SkillbookPanel } from "./Skillbook";
 import { activeProtocolSlots, counterplayReadiness, equippedSignalCodex, SIGNAL_FAMILIES, squadTradeoff } from "../data/signalCodex";
-import { TACTICAL_VNEXT_ENABLED } from "../combat/intentContract";
+import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -207,6 +208,28 @@ function FieldResultFeedback({ result }: { result: FieldResult }) {
   </section>;
 }
 
+function holdBrief(progression: FoundationProgressionState | null) {
+  const mission = getMissionDef("dead-relay-hold")!;
+  const active = progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun;
+  const saved = active?.missionId === mission.missionId ? active : null;
+  const ruleset = saved ? saved.rulesContract?.rulesetVersion
+    : progression?.vnextStartAvailable ? TACTICAL_VNEXT_RULESET : undefined;
+  const revision = g2HoldRevisionForRequest(mission.missionId, ruleset, progression?.deadRelayHoldRevisionAvailable, saved);
+  const intel = progression?.campaignIntel?.["dead-relay"];
+  const context = saved ? saved.campaignContext : intel && { version: 1 as const, ...intel };
+  const resolved = context ? missionForContext(mission, undefined, revision, context) : mission;
+  if (!context) return { mission: resolved, copy: "HOUND entry confirmed at deployment." };
+  const reinforcement = missionBattleRules(resolved, false, undefined, context).reinforcement!;
+  const chapter = progression?.tacticalChapter;
+  if (!saved && ruleset && !context.courierTraceAcquired && chapter?.status === "COMPLETED" && !chapter.intelConsumedByRunId) {
+    return { mission: resolved, copy: "HOUND timing confirmed at deployment." };
+  }
+  const round = saved?.chapterIntel?.effectiveRound ?? reinforcement.triggerRound;
+  const entry = revision === 2 && context.courierTraceAcquired ? "South-east" : "East";
+  const trace = context.courierTraceAcquired ? "COURIER TRACE" : "NO TRACE";
+  return { mission: resolved, copy: `${trace} · HOUND round ${round}. ${entry} entry.` };
+}
+
 function WarTable() {
   const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
   const [squadView, setSquadView] = useState<"skillbook" | "mastery">("skillbook");
@@ -221,7 +244,6 @@ function WarTable() {
   const missionFirstClear = useBattleStore((s) => s.missionFirstClear);
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
   const deadRelay = progression?.operations?.[DEAD_RELAY.operationId];
-  const courierIntel = progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true;
   const field = progression?.fieldOps;
   const purposeRoute = commandPurpose(progression);
   const primaryPurpose = purposeRoute.primary;
@@ -280,7 +302,7 @@ function WarTable() {
             <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 02</span><h2 className="t-title">THE DEAD RELAY</h2></div>
             <strong>{deadRelay.status === "cleared" ? "CAMPAIGN SECURED" : deadRelay.missions["dead-relay-courier"] === "locked" ? "LOCKED" : "IN PROGRESS"}</strong>
           </div>
-          <p>Intercept the courier. Hold the relay. Defeat its Guardian. Each first clear unlocks the next stage; your courier Intel changes the Hold mission.</p>
+          <p>Intercept the courier. Hold the relay. Defeat its Guardian.</p>
           {deadRelay.status !== "cleared" && deadRelayNextMissionId ? (
             <div className="t-wt-campaign-actions">
               <div><span className="t-kicker">NEXT STORY MISSION</span><strong>{getMissionDef(deadRelayNextMissionId)?.name || "THE DEAD RELAY"}</strong></div>
@@ -290,7 +312,7 @@ function WarTable() {
               </button>
             </div>
           ) : null}
-          <div className="t-mission-strip"><span>COURIER TRACE</span><strong>{courierIntel ? "ACQUIRED · HOUND ARRIVES 1 ROUND LATER" : "NOT RECORDED · EARLY INTERCEPT REQUIRED"}</strong></div>
+          {deadRelayNextMissionId === "dead-relay-hold" ? <div className="t-mission-strip"><span>HOLD THREAT</span><strong>{holdBrief(progression).copy}</strong></div> : null}
           <div className="t-brief-grid t-wt-canon-grid">
             {DEAD_RELAY.orderedMissionIds.map((id, index) => {
               const mission = getMissionDef(id);
@@ -657,9 +679,9 @@ function Brief() {
   const encounter = resolveCurrentEncounter(onboardingEnabled, onboardingStageId);
   const chapterMode = useBattleStore((s) => s.chapterMode);
   const chapterActive = useBattleStore((s) => s.progression?.chapterActiveMission);
-  const campaignRun = useBattleStore((s) => s.progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun);
-  const campaignIntel = useBattleStore((s) => s.progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired === true);
-  const campaignContext = campaignRun?.missionId === selectedMissionId ? campaignRun.campaignContext : { version: 1 as const, courierTraceAcquired: campaignIntel };
+  const progression = useBattleStore((s) => s.progression);
+  const campaignRun = progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun;
+  const hold = selectedMissionId === "dead-relay-hold" && !chapterMode ? holdBrief(progression) : null;
   const baseMission = getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
@@ -667,7 +689,7 @@ function Brief() {
   useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
-  const mission = baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, resuming ? campaignContext : null) : null;
+  const mission = hold?.mission ?? (baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, savedRun?.campaignContext) : null);
   const fieldOp = mission?.activity === "FIELD_OP";
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
   const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
@@ -678,8 +700,8 @@ function Brief() {
   const spawns = mission ? withTeammateSidegrades(baseSpawns, { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
   const chapterIntel = useBattleStore((s)=>s.currentChapterIntel);
-  const reinforcementRound = mission && (fieldOp || campaignMission) ? (chapterIntel?.effectiveRound || missionBattleRules(mission, false, fieldContext, campaignContext).reinforcement?.triggerRound) : undefined;
-  const title = mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
+  const reinforcementRound = mission && (fieldOp || campaignMission) ? (chapterIntel?.effectiveRound || missionBattleRules(mission, false, fieldContext, savedRun?.campaignContext).reinforcement?.triggerRound) : undefined;
+  const title = hold && baseMission ? baseMission.name : mission ? mission.name : onboardingEnabled ? encounter.operationName : OPERATION.name;
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
@@ -703,7 +725,7 @@ function Brief() {
   const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "CNC JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
   const missionIntel = campaignMission
     ? mission?.missionId === "dead-relay-courier" ? "EARLY INTERCEPT: first win by round 4 grants Courier Trace. Slower victory still unlocks Hold."
-      : mission?.missionId === "dead-relay-hold" ? `COURIER TRACE ${campaignContext.courierTraceAcquired ? "ACTIVE: HOUND ROUND 3" : "NOT ACQUIRED: HOUND ROUND 2"}`
+      : hold ? hold.copy
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
   const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
@@ -744,7 +766,7 @@ function Brief() {
         </nav>
         {briefTab === "mission" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Mission objective and rewards">
         {recruitMoment ? <div className="t-recruit-moment">{recruitMoment}</div> : null}
-        {campaignMission ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
+        {campaignMission && !hold ? <div className="t-panel t-deploy-overview"><strong>MISSION INTEL</strong><p>{missionIntel}</p></div> : null}
 
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
@@ -761,7 +783,7 @@ function Brief() {
             {purpose && !fieldContext.masteryChallenge ? recoverBrief ? <details className="t-mission-extra" aria-label="Tactical threats">
               <summary>TACTICAL THREATS <span>DETAILS +</span></summary>
               <p>{purpose.tacticalThreat}</p>
-            </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {purpose.tacticalThreat}</p> : null}
+            </details> : <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {hold?.copy ?? purpose.tacticalThreat}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
             {fieldOp ? <p className="t-brief-purpose-meta" data-opportunity-status={veteranBrief.status} role="status"><b>{veteranBrief.status === "claimed" ? "VETERAN CREDIT SAVED" : veteranBrief.status === "eligible" ? "VETERAN CHANCE!" : veteranBrief.status === "locked" ? "VETERAN NOT READY" : "VETERAN STATUS UNKNOWN"}:</b> {veteranBrief.copy}</p> : null}
             {buildNotes.length ? <details className="t-mission-extra" aria-label="Optional squad tactics">
@@ -966,8 +988,8 @@ function Brief() {
 
             {conditions.length ? <section className="t-conditions" aria-label="Special conditions">
               {conditions.map((condition) => <div className="t-condition t-condition-v29" key={condition.type}>
-                <strong>{condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</strong>
-                <p>{condition.copy}</p>
+                <strong>{hold ? "REINFORCEMENTS" : condition.maxRounds ? `DEADLINE · ROUND ${condition.maxRounds}` : condition.reinforcement ? `REINFORCEMENTS · ROUND ${reinforcementRound}` : condition.supportCooldownExtra ? "LIMITED SUPPORT · +1 TURN" : condition.name}</strong>
+                <p>{hold?.copy ?? condition.copy}</p>
               </div>)}
               {mission?.squadHint ? <p className="t-deploy-tip"><strong>Squad tip:</strong> {mission.squadHint}</p> : null}
             </section> : null}
@@ -1012,7 +1034,7 @@ function Brief() {
                     <div><div className="t-title" style={{ fontSize: "0.95rem" }}>{count > 1 ? `${def.name} × ${count}` : def.name}</div><div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def, `${def.hp} HP`)}</div></div>
                   </div>
                 ))}
-                <p style={{ color: "var(--t-faint)", fontSize: "0.78rem", margin: "0.8rem 0 0", lineHeight: 1.45 }}>{missionIntel}</p>
+                {!hold ? <p style={{ color: "var(--t-faint)", fontSize: "0.78rem", margin: "0.8rem 0 0", lineHeight: 1.45 }}>{missionIntel}</p> : null}
               </div>
             </div>
           </details>
@@ -1215,16 +1237,14 @@ function Results() {
           {!chapterMode && fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
           {!chapterMode && campaignMission ? <div className="t-panel t-deploy-overview" role="status">
             <strong>{recordedCampaignResult ? "RECORDED IN CAMPAIGN HISTORY" : progressionCommitPending ? "RECORDING CAMPAIGN RESULT..." : "RESULT AWAITS SERVER RECORD"}</strong>
-            {recordedCampaignResult ? <p><b>EARNED:</b> {recordedCampaignResult.victory ? "Campaign objective recorded." : "Failure recorded; no campaign clear."} Character reward amounts and repeat bonuses are not supplied by this receipt.</p> : null}
-            <p>{mission?.missionId === "dead-relay-courier"
-              ? recordedCampaignResult && (progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired || recordedCampaignResult.intelEarned) ? "COURIER TRACE RECORDED · NEW HOLD RUNS USE DELAYED REINFORCEMENT"
-                : !recordedCampaignResult ? "Courier result awaits server confirmation." : results.victory ? "Courier stopped. Early Intel was not secured; Hold is still unlocked." : "Courier escaped. Retry this mission to open the relay route."
-              : mission?.missionId === "dead-relay-hold" ? !recordedCampaignResult ? "Relay result awaits server confirmation." : results.victory ? "Relay controlled. Guardian now available." : "Relay control lost. Retry to secure the location."
-              : !recordedCampaignResult ? "Guardian result awaits server confirmation." : results.victory ? "The Dead Relay is secure. Your campaign completion is recorded." : "Guardian resisted. Regroup and retry."}</p>
+            {recordedCampaignResult && !s3Proof ? <p>{recordedCampaignResult.victory
+              ? mission?.missionId === "dead-relay-courier" ? "Courier stopped. No Courier Trace earned this run."
+                : mission?.missionId === "dead-relay-hold" ? "Relay control recorded." : "The Dead Relay is secure."
+              : "Failure recorded."}</p> : null}
           </div> : null}
           {s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal" data-s3-receipt={acceptedS3Run}>
             <span className="t-kicker">AFTER ACTION · SERVER RECORDED</span>
-            {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : <p>No new persistent world change confirmed by this result.</p>}
+            {s3Proof ? <div className="t-s3-world-proof"><strong>{s3Proof.label}</strong><p>{s3Proof.detail}</p></div> : null}
             <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
           </section> : null}
           <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. These events are not persisted progress or extra rewards.</small></section>
@@ -1262,7 +1282,11 @@ function Results() {
               : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={()=>void saveChapterResult()}>{progressionCommitPending?"RECORDING…":"RECORD CHAPTER RESULT"}</button>
             ) : campaignMission ? (
               recordedCampaignResult ? <>
-                <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()}>BACK TO CAMPAIGN</button>
+                <button type="button" className="t-btn t-btn-primary" onClick={() => {
+                  continueOnboarding();
+                  const store = useBattleStore.getState();
+                  if (s3Return?.missionId && store.screen === "war-table") store.openOperationBrief(s3Return.missionId);
+                }}>{s3Return?.missionId ? recordedCampaignResult.victory ? `NEXT: ${s3Return.title}` : "RETRY MISSION" : "BACK TO CAMPAIGN"}</button>
                 <button type="button" className="t-btn" onClick={replay}>REPLAY / SQUAD</button>
               </> : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
                 {progressionCommitPending ? "Recording..." : results.victory ? "SAVE VICTORY" : "RECORD FAILURE / RETRY"}

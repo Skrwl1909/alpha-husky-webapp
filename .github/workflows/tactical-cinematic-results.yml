@@ -34,7 +34,7 @@ jobs:
           RESULTS_RUNTIME: production
           RESULTS_CINEMATIC: '1'
           CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
-      - name: Legacy variants identical and visual size budget
+      - name: Legacy Results contract and visual size budget
         run: |
           python3 - <<'PY'
           import gzip,json,subprocess
@@ -45,7 +45,13 @@ jobs:
           assert len(legacy)==6
           for p in legacy:
             if p.stem in ('legacy-campaign','legacy-chapter'):
-              assert p.read_bytes()==(after/p.name).read_bytes(),p.name
+              expected=p.read_bytes()
+              if p.stem=='legacy-campaign':
+                # The receipt status heading already tells the player the Courier result is pending.
+                redundant=b'<p>Courier result awaits server confirmation.</p>'
+                assert expected.count(redundant)==1,p.name
+                expected=expected.replace(redundant,b'',1)
+              assert expected==(after/p.name).read_bytes(),p.name
           for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
             assert (after/f'legacy-{name}.html').exists(),name
           sizes={}
@@ -59,7 +65,7 @@ jobs:
             sizes[p]={'base_sha':base_sha,'before':len(old),'after':len(new),'gzip_before':len(gzip.compress(old)),'gzip_after':len(gzip.compress(new)),'gzip_delta':change}
             assert change<8192, f'{p}: incremental gzip budget exceeded by {change} bytes'
           Path('artifacts/cinematic-results/sizes.json').write_text(json.dumps(sizes,indent=2))
-          print('PASS: campaign/chapter unchanged; special Results tested; sizes:',sizes)
+          print('PASS: exact pending Courier copy removal; Chapter unchanged; special Results tested; sizes:',sizes)
           PY
       - name: Preview asset origin and production API safety contract
         run: |

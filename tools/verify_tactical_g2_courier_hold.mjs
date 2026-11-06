@@ -4,7 +4,7 @@ import { createServer } from 'vite';
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:'custom'});
 try {
   const {MISSION_DEFS, missionForContext,missionBattleRules,missionSpawnsForSquad,g2HoldRevisionForRequest}=await vite.ssrLoadModule('/tactical-ops-src/data/operations.ts');
-  const {createBattle}=await vite.ssrLoadModule('/tactical-ops-src/combat/battle.ts');
+  const {createBattle,advanceToNext,trySkip}=await vite.ssrLoadModule('/tactical-ops-src/combat/battle.ts');
   const types=await vite.ssrLoadModule('/tactical-ops-src/combat/types.ts');
   const select=g2HoldRevisionForRequest;
   assert.equal(select('dead-relay-hold','tactical-intent-vnext.0',2,null),2,'new G2 start');
@@ -43,11 +43,29 @@ try {
       const rules=missionBattleRules(variant,false,undefined,variant===withIntel?intel:none);
       const spawns=missionSpawnsForSquad(variant,squad);
       assert(spawns&&spawns.length===5);
-      const state=createBattle(null,spawns,rules.objective,rules.reinforcement,null,rules.directive);
+      let state=createBattle(null,spawns,rules.objective,rules.reinforcement,null,rules.directive);
       assert.equal(state.units.length,5);
       assert.equal(state.objective.type,'HOLD');
       assert.equal(state.reinforcement.spawned,false);
       assert(state.units.some(u=>u.id==='h1'));
+      const entry=state.reinforcement.spawn;
+      const triggerRound=state.reinforcement.triggerRound;
+      for(let activation=0;activation<20 && !state.reinforcement.spawned;activation++){
+        const next=advanceToNext(state);
+        state=next.state;
+        if(state.round<triggerRound) assert(!state.units.some(u=>u.id===entry.id),'no early HOUND');
+        if(state.reinforcement.spawned) {
+          assert(next.events.some(e=>e.type==='ticker'&&e.text.includes('REINFORCEMENT INBOUND')));
+          break;
+        }
+        const skipped=trySkip(state);
+        assert(skipped.ok);
+        state=skipped.state;
+      }
+      const hound=state.units.find(u=>u.id===entry.id);
+      assert(hound,'the HOUND must spawn during actual initiative');
+      assert.equal(state.round,triggerRound);
+      assert.deepEqual([hound.c,hound.r],[entry.c,entry.r]);
     }
   }
   console.log('PASS G2: V1 immutability, two distinct real-engine Hold encounters, 8x5/10x7, frozen Intel pressure, reinforcement timings');
