@@ -1,0 +1,22 @@
+name: Signal Rank Plate gallery animation check
+on:
+  pull_request:
+    paths:
+      - 'js/frames.js'
+      - 'tools/verify_signal_rank_plate_preview_animation.mjs'
+      - '.github/workflows/signal-rank-plate-preview.yml'
+permissions:
+  contents: read
+jobs:
+  frame-animation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Signal Rank Plate gallery animation, reduced motion and preview-only rules
+        run: |
+          node --check js/frames.js
+          node tools/verify_signal_rank_plate_preview_animation.mjs
