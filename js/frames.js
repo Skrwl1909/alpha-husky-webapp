@@ -9,6 +9,8 @@
   let closeBtn;
   let previewSkin;
   let previewFrame;
+  let previewGlow;
+  let previewSweep;
   let frameInfoName;
   let frameInfoMeta;
   let frameStateChip;
@@ -653,7 +655,47 @@
         #framesBack .ah-frame-gallery-skin-layer{
           inset:12% 15% 14%;
         }
-        #framesBack .ah-frame-info{
+        #framesBack .ah-frames-preview-glow{
+         z-index:4; opacity:0; pointer-events:none;
+       }
+       #framesBack .ah-frames-preview-sweep{
+         z-index:5; opacity:0; pointer-events:none;
+         -webkit-mask-image:linear-gradient(115deg, transparent 42%, #000 50%, transparent 58%);
+         mask-image:linear-gradient(115deg, transparent 42%, #000 50%, transparent 58%);
+         -webkit-mask-size:300% 100%; mask-size:300% 100%;
+         -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+       }
+       #framesBack .ah-frames-preview.is-signal-rank-plate-preview .ah-frames-preview-glow{
+         animation:ahGallerySignalGlow 3.2s ease-in-out infinite;
+       }
+       #framesBack .ah-frames-preview.is-signal-rank-plate-preview .ah-frames-preview-sweep{
+         animation:ahGallerySignalSweep 6.4s linear infinite;
+       }
+       @keyframes ahGallerySignalGlow{
+         0%,100%{opacity:.14;}
+         50%{opacity:.24;}
+       }
+       @keyframes ahGallerySignalSweep{
+         0%{opacity:0;-webkit-mask-position:100% 0;mask-position:100% 0;}
+         1%{opacity:.9;-webkit-mask-position:100% 0;mask-position:100% 0;}
+         18%{opacity:0;-webkit-mask-position:0% 0;mask-position:0% 0;}
+         100%{opacity:0;-webkit-mask-position:0% 0;mask-position:0% 0;}
+       }
+       @media (prefers-reduced-motion: reduce){
+         #framesBack .ah-frames-preview.is-signal-rank-plate-preview .ah-frames-preview-glow{
+           animation:none; opacity:.16;
+         }
+         #framesBack .ah-frames-preview.is-signal-rank-plate-preview .ah-frames-preview-sweep{
+           animation:none; opacity:0;
+         }
+       }
+       html.ah-perf-lite #framesBack .ah-frames-preview-glow,
+       body.ah-perf-lite #framesBack .ah-frames-preview-glow,
+       html.ah-perf-lite #framesBack .ah-frames-preview-sweep,
+       body.ah-perf-lite #framesBack .ah-frames-preview-sweep{
+         display:none !important;
+       }
+       #framesBack .ah-frame-info{
           padding:9px 10px;
         }
         #framesBack .frame-btn.ah-frame-tile{
@@ -822,6 +864,23 @@
     if (previewSkin.parentElement !== skinLayer) {
       skinLayer.appendChild(previewSkin);
     }
+
+    // Presentation-only layers. All other frames keep their normal static preview.
+    const ensureFxLayer = (id, className) => {
+      let layer = stage.querySelector("#" + id);
+      if (!layer) {
+        layer = document.createElement("img");
+        layer.id = id;
+        layer.className = "ah-frames-preview-frame " + className;
+        layer.alt = "";
+        layer.setAttribute("aria-hidden", "true");
+        layer.style.display = "none";
+        stage.appendChild(layer);
+      }
+      return layer;
+    };
+    previewGlow = ensureFxLayer("framePreviewGlow", "ah-frames-preview-glow");
+    previewSweep = ensureFxLayer("framePreviewSweep", "ah-frames-preview-sweep");
   }
 
   function currentHeroSkinUrl() {
@@ -873,6 +932,9 @@
   function setPreview(item) {
     if (!previewSkin || !previewFrame) return;
     const frameUrl = framePreviewUrl(item);
+    const key = frameKeyFromItem(item);
+    const signalFx = key === "signal_rank_plate" ? frameAssetOverride(key) : null;
+    framesBack?.querySelector?.(".ah-frames-preview")?.classList?.toggle("is-signal-rank-plate-preview", !!signalFx);
     const skinKey = currentHeroSkinKey();
     applyPreviewSkinFit(skinKey);
     setPreviewSkinSource();
@@ -882,12 +944,29 @@
         previewFrame.removeAttribute("src");
         previewFrame.style.display = "none";
       };
-      previewFrame.src = frameUrl;
+      if (previewFrame.getAttribute("src") !== frameUrl) previewFrame.src = frameUrl;
       previewFrame.style.display = "block";
     } else {
       previewFrame.removeAttribute("src");
       previewFrame.style.display = "none";
     }
+    const setFxLayer = (layer, url) => {
+      if (!layer) return;
+      if (!url) {
+        layer.style.display = "none";
+        layer.removeAttribute("src");
+        return;
+      }
+      layer.onerror = () => {
+        layer.onerror = null;
+        layer.style.display = "none";
+        layer.removeAttribute("src");
+      };
+      if (layer.getAttribute("src") !== url) layer.src = url;
+      layer.style.display = "block";
+    };
+    setFxLayer(previewGlow, signalFx?.glow || "");
+    setFxLayer(previewSweep, signalFx?.sweep || "");
   }
 
   function framePreviewUrl(item) {
