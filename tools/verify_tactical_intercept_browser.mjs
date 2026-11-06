@@ -41,7 +41,7 @@ try {
   if(mode==='rollback'){await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).click();await page.locator('.t-battle').waitFor();assert.equal(await page.evaluate(()=>calls[0].body.missionRevision),2);assert.equal(await page.evaluate(()=>fixture.store.getState().battle.objective.screenedEscape),true)}
   if(mode==='old')assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/RECOVER|Recover|relay/);
   if(mode==='tracking'){
-   assert.match(await page.locator('.t-command-cue').innerText(),/TRACKING LOCK/);assert.doesNotMatch(await page.locator('.t-command-cue').innerText(),/Move off striped cells/);
+   assert.match(await page.locator('.t-command-cue').innerText(),/TRACKING LOCK/);assert.doesNotMatch(await page.locator('.t-command-cue').innerText(),/Move off marked cells/);
    const marker=page.locator('.t-threat-tile-v2').first(),before=await marker.getAttribute('style');
    await page.getByRole('button',{name:'Move to 3,1',exact:true}).dispatchEvent('pointerdown',{pointerType:'touch',bubbles:true});
    assert.equal(await page.evaluate(()=>fixture.store.getState().battle.units.find(u=>u.id==='alpha').c),3);

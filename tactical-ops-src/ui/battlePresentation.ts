@@ -63,7 +63,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   const objective = missionLiveProgress(battle);
   const directive = objectiveDirective(battle);
   const sources = threats.map((t, i) => ({ id: t.enemyId, label: `${i + 1}`, name: battle.units.find(u => u.id === t.enemyId)?.name || "Enemy", effect: t.predictedEffect }));
-  const targetPrompt = targeting ? targetIds.length ? `${skill?.name} · ${targetIds.length} legal target${targetIds.length === 1 ? "" : "s"}` : actor?.hasMoved ? "No target · cancel, use support or Skip" : "No target in range · cancel to reposition" : null;
+  const targetPrompt = targeting ? targetIds.length ? skill?.name : actor?.hasMoved ? "Cancel or use support" : "Cancel to move into range" : null;
   // Store floats/consequences/moments are published only from accepted engine
   // events at contact. Atlas travel alone must never report a resolved hit.
   const counter = input.consequences.find(c => c.kind === "counter");
@@ -77,18 +77,18 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   let title: string, detail: string;
   if (mode === "REACT") {
     title = `INCOMING ${threats.length}`;
-    detail = targetPrompt || (threats.some(t=>t.targetUnitId&&t.targetTile===null) ? "TRACKING LOCK · break range, interrupt or protect. Sidestepping alone will not cancel." : interruptTargetIds.length ? "Interrupt available · target a marked source" : canReposition ? "Move off striped cells · attack remains locked" : "Striped cells mark the announced attack");
+    detail = targetPrompt || (threats.some(t=>t.targetUnitId&&t.targetTile===null) ? "TRACKING LOCK · break range, interrupt or guard" : interruptTargetIds.length ? "Interrupt available" : canReposition ? "Move off marked cells" : "Marked cells are under threat");
   } else if (mode === "TARGET") {
     title = targetIds.length ? "CHOOSE TARGET" : "NO TARGET";
-    detail = targetPrompt!;
+    detail = targetPrompt || "";
   } else if (mode === "RESOLVE") {
     title = "RESOLVED"; detail = result!;
   } else if (mode === "WAIT") {
     title = battle.outcome === "victory" ? "SECTOR SECURED" : battle.outcome === "defeat" ? "OPERATION FAILED" : actor?.team === "enemy" ? "ENEMY ACTION" : "RESOLVING";
     detail = result || (actor ? actor.name : "Preparing next activation");
   } else {
-    title = foundationGuidance?.title || guidance?.title || (actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD");
-    detail = foundationGuidance?.copy || guidance?.copy || directive.action;
+    title = foundationGuidance?.title || (guidance?.title === "POSITION FIRST" && moves.length ? "MOVE INTO RANGE" : guidance?.title) || (actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD");
+    detail = foundationGuidance?.copy || (battle.objective?.type === "RECOVER" && !battle.objective.completed ? guidance?.copy || "" : "");
   }
   if (!threats.length && !targeting && battle.reinforcement?.telegraphed && !battle.reinforcement.spawned && mode === "READ") {
     title = "REINFORCEMENT INBOUND"; detail = "Marked entry · not spawned yet";

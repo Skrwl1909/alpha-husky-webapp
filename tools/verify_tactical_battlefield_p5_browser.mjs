@@ -23,6 +23,16 @@ try{
  for(const [w,h,insets] of [[320,568,false],[360,780,false],[390,844,false],[430,932,false],[390,400,false],[390,700,true],[780,360,true]]){
   for(const [name,query] of [['v1','v1=1'],['hold','threat=1'],['intercept','scene=intercept&threat=2'],['recover','scene=recover']]){
    await load(w,h,query,insets);const name2=`${w}x${h}${insets?'-insets':''}-${name}`;const m=await measure(name2);results.push(m);if(phase==='after'&&m.dockButtons.some(b=>b.width<44||b.height<44))console.log('SMALL',name2,m.dockButtons.filter(b=>b.width<44||b.height<44));await shot(name2);
+   if(phase==='after'){
+    const {legal,marked}=await page.evaluate(()=>{
+     const battle=fixture.store.getState().battle,{cols,rows}=fixture.grid();
+     const legal=[];
+     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++)if(fixture.engine.tryMove(battle,c,r).ok)legal.push(`${c},${r}`);
+     const marked=[...document.querySelectorAll('.t-cell.move')].map(e=>e.getAttribute('aria-label').match(/\d+,\d+/)[0]);
+     return {legal,marked};
+    });
+    assert.deepEqual(marked,legal,`${name2}: every move marker matches an accepted engine move`);
+   }
   }
  }
  await load();results.push({label:'idle-frame-sample',timing:await frames()});
@@ -70,6 +80,13 @@ assert.equal(await page.locator('.t-threat-source').count(),2);await page.locato
  await load(390,844);await page.evaluate(()=>fixture.captureTransport());const sequence=[];
  async function beat(name){await shot('sequence-'+name);sequence.push({step:name,mode:await mode(),battle:await page.evaluate(()=>({turn:fixture.store.getState().battle.unitTurn,hp:fixture.store.getState().battle.units.map(u=>({id:u.id,hp:u.hp})),threats:fixture.store.getState().threats.map(t=>t.id)}))})}
  await beat('1-read');await page.locator('.t-act').first().click();await beat('2-target');await page.evaluate(()=>fixture.announce(1));await beat('3-react');
+ const {legalTargets,markedTargets}=await page.evaluate(()=>{
+  const battle=fixture.store.getState().battle;
+  const legalTargets=battle.units.filter(u=>fixture.engine.trySkill(battle,battle.actionSkillId,u.id).ok).map(u=>u.id);
+  const markedTargets=[...document.querySelectorAll('.t-unit-hit.is-legal-target')].map(e=>e.dataset.unitId);
+  return {legalTargets:legalTargets.sort(),markedTargets:markedTargets.sort()};
+ });
+ assert.deepEqual(markedTargets,legalTargets,'target brackets match the engine while threats stay visible');
  // The optional large target path uses the same legal target ID as its cell.
  const large=page.getByRole('group',{name:'Large legal target buttons'}).getByRole('button').first();const lr=await large.boundingBox();assert(lr.width>=44&&lr.height>=44);await large.click();await page.evaluate(()=>fixture.resolveCapture());await beat('4-resolve');assert.equal(await mode(),'RESOLVE');assert((await page.locator('.t-command-cue').innerText()).includes('HIT'));await page.locator('.t-field').evaluate(e=>{const r=e.getBoundingClientRect();e.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,clientX:r.x+2,clientY:r.y+2}))});assert(await page.evaluate(()=>fixture.store.getState().busy));
  writeFileSync(out+'/interaction-sequence.json',JSON.stringify({sequence,castEvents:await page.evaluate(()=>fixture.captureEvents),limits:'Real render/engine with isolated manual fixture transport, not live server or physical device.'},null,2));proof.push('Engine-confirmed READ → TARGET → REACT → RESOLVE capture and large target path');

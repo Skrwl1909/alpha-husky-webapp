@@ -217,13 +217,13 @@
   #tacticalOpsRoot .t-field-results .t-fr-ledger>summary small{font-size:9px;max-width:14ch}
 }
 @media(prefers-reduced-motion:no-preference){
-  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact{
-    animation:tactical-impact-reveal .42s ease-out both;
+  #tacticalOpsRoot .t-field-results .t-result-actions .t-btn-primary {
+    transition:border-color .15s ease;
   }
-  @keyframes tactical-impact-reveal{
-    from{opacity:.65;transform:translateY(7px)}
-    to{opacity:1;transform:translateY(0)}
-  }
+}
+#tacticalOpsRoot .t-results .t-fr-replay {
+  min-height:44px;margin-top:8px;padding-inline:5px;background:none;border:0;
+  color:#c1d5df;text-decoration:underline;text-underline-offset:3px;
 }
 
 /* Player Voice V1: visual weight follows an actual gameplay consequence. */

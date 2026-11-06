@@ -76,7 +76,7 @@ try{
    if(scenario==='rank4')assert.match(await page.locator('.t-fr-rank').innerText(),/RANK 3 → 4/);
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
    if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/New option unlocked/i);
-   if(scenario==='failure')assert.match(await page.locator('h2').innerText(),/MISSION LOST/);
+   if(scenario==='failure')assert.equal(await page.locator('h2').innerText(),'DEFEAT');
    const controls=page.locator('.t-result-actions button');
    if(cinematic){
     const hero=panel.locator('.t-results-plate');

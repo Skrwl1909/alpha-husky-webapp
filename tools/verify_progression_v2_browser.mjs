@@ -38,7 +38,7 @@ try{
   await page.goto('http://127.0.0.1:'+server.httpServer.address().port+'/veteran-fixture?mode='+mode);await page.locator('.t-shell').waitFor();
   if(mode==='old')assert.equal(await page.locator('[data-veteran-career]').count(),0);
   if(mode==='rank3')assert.match(await page.locator('[data-veteran-career]').innerText(),/7\/12/);
-  if(mode==='rank4'){await page.getByRole('button',{name:'PLAY PACK EXTRACTION',exact:true}).click();assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/all three allies/i)}
+  if(mode==='rank4'){await page.locator('.t-cd-records > summary').click();await page.getByRole('button',{name:'PLAY PACK EXTRACTION',exact:true}).click();assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/all three allies/i)}
   if(mode.startsWith('mastery-')){
    await page.getByRole('button',{name:/03.*SQUAD/}).click();await page.getByRole('button',{name:'PACK MASTERY',exact:true}).click();
    await page.locator('[data-veteran-mastery="ally-02"]').waitFor();

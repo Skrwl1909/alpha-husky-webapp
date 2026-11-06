@@ -38,25 +38,27 @@ try{
    assert.match(await overview.innerText(),/WIN CONDITION.*RECOVER THE SIGNAL/s);
    assert.match(await overview.innerText(),/GET TO THE RELAY\. USE RECOVER\./s,'first-read objective must be clear');
    assert.match(await overview.innerText(),/FAIL IF:.*entire squad falls/s);
+   const details=overview.locator('.t-brief-details');
+   const summary=details.locator('summary');
+   assert.equal(await details.evaluate(e=>e.open),false,'optional rules and eligibility start collapsed');
+   assert(!await overview.getByText('Veteran eligibility',{exact:true}).isVisible());
+   await summary.scrollIntoViewIfNeeded();
+   assert((await summary.boundingBox()).height>=44);
+   await summary.focus();
+   await page.keyboard.press('Enter');
+   assert(await details.evaluate(e=>e.open),'keyboard opens mission details');
    const recoverRules=page.getByLabel('Recover rules',{exact:true});
-   assert.equal(await recoverRules.evaluate(e=>e.open),false,'full rules start collapsed');
-   await recoverRules.locator('summary').click();
    assert.match(await recoverRules.innerText(),/relay.*orthogonal cell/s,'full legal RECOVER range preserved');
    if(tier==='advanced'){
      assert.match(await recoverRules.innerText(),/rounds divisible by 2/,'advanced signal cycle remains explicit');
      assert.match(await overview.innerText(),/round 6/,'advanced deadline remains visible in fail condition');
    }
-   await recoverRules.locator('summary').click();
    const threats=page.getByLabel('Tactical threats',{exact:true});
-   assert.equal(await threats.evaluate(e=>e.open),false);
-   const summary=threats.locator('summary');await summary.scrollIntoViewIfNeeded();
-   assert((await summary.boundingBox()).height>=44);await summary.focus();await page.keyboard.press('Enter');
-   assert(await threats.evaluate(e=>e.open));assert((await threats.locator('p').innerText()).length>10);
+   assert((await threats.locator('p').innerText()).length>10);
+   assert(await overview.getByText('Veteran eligibility',{exact:true}).isVisible());
    await page.screenshot({path:`${out}/${width}x${height}-${tier}-${motion}-threats.png`});
-   await summary.click();assert.equal(await threats.evaluate(e=>e.open),false);
-   for(const summary of await overview.locator('summary').all()){
-    await summary.scrollIntoViewIfNeeded();await summary.click();assert(await summary.evaluate(e=>e.parentElement.open));await summary.click();
-   }
+   await summary.click();
+   assert.equal(await details.evaluate(e=>e.open),false,'tap closes mission details');
   }
   const deploy=page.getByRole('button',{name:'DEPLOY SQUAD',exact:true});await deploy.scrollIntoViewIfNeeded();assert(await deploy.isEnabled());
   const rect=await deploy.boundingBox();assert(rect.height>=44&&rect.width>=44);

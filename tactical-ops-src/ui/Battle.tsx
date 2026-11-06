@@ -5,7 +5,7 @@ import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, LogOut, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
-import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
+import { useBattleStore, moveCellsNow } from "../store/battleStore";
 import { fieldPercent, cellKey, chebyshev } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
 import { getSkill } from "../data/skills";
@@ -328,13 +328,16 @@ function StatusStrip() {
   const kit = isAlpha ? [level != null ? `Lv ${level}` : null, identity.skinName || identity.armorLabel || identity.weaponLabel].filter(Boolean).join(" · ") : "";
   const atk = effectiveAtk(unit);
   const defn = effectiveDef(unit);
-  const detail = `${inspected && inspected.id !== unit.id ? `${inspected.name} ${displayHp[inspected.id] ?? inspected.hp}/${inspected.maxHp} HP · ` : ""}ATK ${atk} · DEF ${defn} · SPD ${effectiveSpd(unit)} · MOV ${unit.move}${kit ? ` · ${kit}` : ""}`;
+  const primaryStatus = unit.statuses.find(status => !isBuff(status.type)) ?? unit.statuses[0];
+  const statusNames = unit.statuses.map(status => STATUS_SHORT[status.type]).join(", ");
+  const detail = `${inspected && inspected.id !== unit.id ? `${inspected.name} ${displayHp[inspected.id] ?? inspected.hp}/${inspected.maxHp} HP · ` : ""}${statusNames ? `${statusNames} · ` : ""}ATK ${atk} · DEF ${defn} · SPD ${effectiveSpd(unit)} · MOV ${unit.move}${kit ? ` · ${kit}` : ""}`;
   return (
-    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Acting unit: ${unit.name}, ${hp} of ${unit.maxHp} HP. ${expanded ? detail + ". Tap to close details" : "Toggle combat details"}`}>
+    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Acting unit: ${unit.name}, ${hp} of ${unit.maxHp} HP. ${expanded ? detail + ". Tap to close details" : `${statusNames ? statusNames + ". " : ""}Toggle combat details`}`}>
       <HudPortrait key={unit.id} unit={unit} />
       <div className="t-status-main">
         <div className="t-status-head">
           <div className="t-status-name">{unit.name}</div>
+          {primaryStatus ? <span className={`t-chip t-status-effect ${isBuff(primaryStatus.type) ? "buff" : "debuff"}`}>{STATUS_SHORT[primaryStatus.type]}</span> : null}
           {isAlpha && equippedPet ? <span className="t-status-pet" title={equippedPet.name}><PawPrint className="t-ico" aria-hidden="true" /></span> : null}
         </div>
         {combatIdentityLabel(unit) ? <span className={`t-combat-identity t-identity-${affinityFor(unit)}`}>{tacticalEmblemFor(unit.defId, unit.growth?.discipline) ? <img className="t-combat-emblem" src={tacticalEmblemFor(unit.defId, unit.growth?.discipline)!} alt="" onError={e => { e.currentTarget.style.display = "none"; }} /> : null}{combatIdentityLabel(unit)}</span> : null}
@@ -610,8 +613,6 @@ export function BattleScreen() {
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
     [units, activeId, mode, busy, actionSkillId],
   );
-  const targets = useMemo(() => targetIdsNow(), [units, activeId, mode, actionSkillId]);
-
   const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: onboardingEnabled && !mission ? onboardingStageId : null });
   const threats = presentation.threats;
   const actor = presentation.actor;
@@ -651,7 +652,6 @@ export function BattleScreen() {
           <div className="t-vignette" />
           <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
             <p><strong>{presentation.title}</strong><span>{presentation.detail}</span></p>
-            {presentation.sources.length ? <small>{presentation.sources.map(source => `${source.label}. ${source.name} · ${source.effect}`).join(" / ")}</small> : null}
             {presentation.mode === "REACT" && presentation.result ? <small className="t-command-confirmation">{presentation.result}</small> : null}
           </div>
           <div className="t-grid" aria-hidden="true">
@@ -720,9 +720,9 @@ export function BattleScreen() {
               <button
                 key={key}
                 type="button"
-                className="t-cell move"
+                className={`t-cell move${presentation.danger.has(key) ? " is-threatened" : ""}`}
                 style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(r, GRID_COLS, GRID_ROWS) } as CSSProperties}
-                aria-label={`Move to ${c},${r}`}
+                aria-label={`Move to ${c},${r}${presentation.danger.has(key) ? ". Threatened cell" : ""}`}
                 onClick={e => { if (e.detail === 0) selectCell(c, r); }}
                 onPointerDown={(e) => {
                   e.stopPropagation();
@@ -745,7 +745,7 @@ export function BattleScreen() {
                   key={u.id}
                   unit={u}
                   selected={u.id === activeId}
-                  validTarget={targets.has(u.id)}
+                  validTarget={presentation.targetIds.includes(u.id)}
                   targeting={presentation.targeting}
                   attacking={u.id === attackingId}
                   hitReacting={u.id === impactId && impactKey > 0}
