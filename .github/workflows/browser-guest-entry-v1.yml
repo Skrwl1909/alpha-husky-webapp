@@ -6,6 +6,9 @@ on:
       - 'index.html'
       - 'js/browser_guest_entry_v1.js'
       - 'tools/verify_browser_guest_entry_v1.mjs'
+      - 'tools/browser_guest_live_readonly_gate.mjs'
+      - 'tools/verify_browser_guest_live_readonly_gate.mjs'
+      - 'docs/BROWSER_GUEST_RELEASE_GATE_2026-11-06.md'
       - '.github/workflows/browser-guest-entry-v1.yml'
 
 permissions:
@@ -25,3 +28,8 @@ jobs:
           node --check js/browser_guest_entry_v1.js
           node --check tools/verify_browser_guest_entry_v1.mjs
           node tools/verify_browser_guest_entry_v1.mjs
+      - name: Browser guest release gate read-only contract (mocked network)
+        run: |
+          node --check tools/browser_guest_live_readonly_gate.mjs
+          node --check tools/verify_browser_guest_live_readonly_gate.mjs
+          node tools/verify_browser_guest_live_readonly_gate.mjs
