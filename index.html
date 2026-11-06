@@ -12899,8 +12899,30 @@ document.getElementById('qClose')?.addEventListener('click', () => {
     return String(tg?.initData || window.__AH_INIT_DATA_LAST || "");
   };
 
-  // SINGLE source of truth apiPost
-  window.apiPost = window.apiPost || (async (path, data) => {
+  // Legacy modules can capture this before main boot installs canonical apiPost.
+  // Resolve canonical client at call time so Browser Guest never requires Telegram.
+  window.apiPost = window.apiPost || (async function earlyBootApiPost(path, data) {
+    const canonical = window.S?.apiPost || window.AH?.apiPost;
+    if (typeof canonical === "function" && canonical !== earlyBootApiPost) {
+      return canonical(path, data || {});
+    }
+
+    // An authenticated SecureSession can also work before canonical boot.
+    // No caller-provided UID and no Telegram initData substitution.
+    const sessionToken = String(window.__ahAlphaAccountSession?.sessionToken ||
+      window.__ahAlphaAccountSession?.session_token || "").trim();
+    if (sessionToken) {
+      const res = await fetch((window.API_BASE || "") + path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionToken}`
+        },
+        body: JSON.stringify({ ...(data || {}), session_token: sessionToken })
+      });
+      return res.json();
+    }
+
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
     const init_data = await window.getInitDataSafe(1200);
 
