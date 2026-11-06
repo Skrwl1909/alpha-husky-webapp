@@ -252,7 +252,7 @@ function earlyBootHarness({ tg = "", session = "", native = false } = {}) {
     },
     fetch: async (url, options) => {
       calls.push({ url, options });
-      return { ok: true, json: async () => ({ ok: true }) };
+      return { ok: true, text: async () => '{"ok":true}', json: async () => ({ ok: true }) };
     },
     console: { log() {}, warn: (...args) => warnings.push(args) }
   });
