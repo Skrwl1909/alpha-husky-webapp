@@ -5186,11 +5186,14 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
   padding:10px 14px;background:#081924ee;box-shadow:none;
 }
 #tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-main > .t-kicker {letter-spacing:.1em}
-#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-main .t-mission-extra {
-  border:0;border-top:1px solid #3a5967;border-radius:0;background:none;
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-command-pane .t-brief-details {
+  margin-top:10px;padding-inline:12px;border:0;border-top:1px solid #3a5967;border-radius:0;background:#081924d9;
 }
-#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-summary-main .t-mission-extra summary {
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-deploy-command-pane .t-brief-details summary {
   min-height:44px;padding-inline:0;
+}
+#tacticalOpsRoot .t-deployment.t-premium-ux .t-command-action-dock .t-btn-ghost {
+  white-space:nowrap;letter-spacing:.08em;padding-inline:6px;
 }
 @media (max-width:600px) {
   #tacticalOpsRoot .t-command-deck-v3 .t-wt-hero.t-wt-hero-compact {

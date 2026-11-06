@@ -35,6 +35,8 @@ try{
   const overview=page.getByLabel('Mission overview',{exact:true});await overview.waitFor();await page.evaluate(()=>document.fonts.ready);
   await page.screenshot({path:`${out}/${width}x${height}-${tier}-${motion}-overview.png`});
   if(phase==='after'){
+   const firstViewDeploy=await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).boundingBox();
+   assert(firstViewDeploy.y>=0&&firstViewDeploy.y+firstViewDeploy.height<=height,'deploy fits in the initial mission view');
    assert.match(await overview.innerText(),/WIN CONDITION.*RECOVER THE SIGNAL/s);
    assert.match(await overview.innerText(),/GET TO THE RELAY\. USE RECOVER\./s,'first-read objective must be clear');
    assert.match(await overview.innerText(),/FAIL IF:.*entire squad falls/s);

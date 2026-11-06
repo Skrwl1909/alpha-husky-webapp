@@ -723,6 +723,15 @@ function Brief() {
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
+  const deployActions = (
+    <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
+      <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
+      <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
+        {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
+        <ChevronRight className="t-ico" />
+      </button>
+    </div>
+  );
   return (
     <div className="t-fill">
       <Background dim={0.58} />
@@ -733,7 +742,6 @@ function Brief() {
             <div className="t-kicker">{fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
             <h1 className="t-title">{title}</h1>
           </div>
-          {fieldOp && field?.board ? <div className="t-deploy-rotation"><span className="t-kicker">Rotation</span><strong>{rotationTime(field.board.nextRotationAt)}</strong></div> : null}
         </header>
 
 
@@ -767,21 +775,23 @@ function Brief() {
             {deploymentWindow ? <p className="t-brief-purpose-meta" data-g4-brief-window="true">{resuming ? "ACCEPTED TIMING · " : ""}{deploymentWindow.text}</p> : null}
             {purpose && !fieldContext.masteryChallenge && !recoverBrief ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {hold?.copy ?? (mission?.missionId === "dead-relay-guardian" ? missionIntel : purpose.tacticalThreat)}</p> : null}
             {mission?.objective?.type==="INTERCEPT" && mission.objective.screenedEscape ? <p className="t-deploy-resume" data-intercept-formation="2"><b>SCREENED COURIER · FORMATION LOCKED</b><br />Rally and pursue for tempo, or use a mobile chase to limit exposure. A southern exit blockade buys time but commits a defender.</p> : mission?.missionId==="field-relay-intercept" && !resuming ? <p className="t-deploy-resume">Lock your squad to review server-confirmed conditions before combat. No turn begins during review.</p> : null}
-            {purpose ? <details className="t-mission-extra t-brief-details" aria-label="Mission outcome and recording">
-              <summary>DETAILS</summary>
-              {quickRecover ? <section aria-label="Recover rules"><b>FULL RECOVER RULES</b><p>{purpose.objectiveText}</p></section> : null}
-              {recoverBrief ? <section aria-label="Tactical threats"><b>TACTICAL THREATS</b><p>{purpose.tacticalThreat}</p></section> : null}
-              <p>{purpose.nextConsequence}</p>
-              {campaignMission && !hold ? <p>{missionIntel}</p> : null}
-              {fieldOp ? <>
-                <p data-opportunity-status={veteranBrief.status} role="status"><b>Veteran eligibility</b> · {veteranBrief.copy}</p>
-                <p><b>{purpose.rewardClearText}</b> · {rewardTruth?.copy}</p>
-                <p><b>{purpose.rewardChallengeText}</b> · {mission?.challenge?.label || "Optional challenge"}</p>
-                <p><b>{pressureLabel(fieldContext.pressure)}</b> · {pressureEffect(fieldContext.pressure)}</p>
-              </> : null}
-              {buildNotes.length ? <section aria-label="Squad tactics"><b>SQUAD TACTICS</b>{buildNotes.map(row => <p key={row}>{row}</p>)}</section> : null}
-            </details> : null}
           </div>
+          {deployActions}
+          {purpose ? <details className="t-mission-extra t-brief-details" aria-label="Mission outcome and recording">
+            <summary>DETAILS</summary>
+            {quickRecover ? <section aria-label="Recover rules"><b>FULL RECOVER RULES</b><p>{purpose.objectiveText}</p></section> : null}
+            {recoverBrief ? <section aria-label="Tactical threats"><b>TACTICAL THREATS</b><p>{purpose.tacticalThreat}</p></section> : null}
+            <p>{purpose.nextConsequence}</p>
+            {fieldOp && field?.board ? <p><b>Rotation ends</b> · {rotationTime(field.board.nextRotationAt)}</p> : null}
+            {campaignMission && !hold ? <p>{missionIntel}</p> : null}
+            {fieldOp ? <>
+              <p data-opportunity-status={veteranBrief.status} role="status"><b>Veteran eligibility</b> · {veteranBrief.copy}</p>
+              <p><b>{purpose.rewardClearText}</b> · {rewardTruth?.copy}</p>
+              <p><b>{purpose.rewardChallengeText}</b> · {mission?.challenge?.label || "Optional challenge"}</p>
+              <p><b>{pressureLabel(fieldContext.pressure)}</b> · {pressureEffect(fieldContext.pressure)}</p>
+            </> : null}
+            {buildNotes.length ? <section aria-label="Squad tactics"><b>SQUAD TACTICS</b>{buildNotes.map(row => <p key={row}>{row}</p>)}</section> : null}
+          </details> : null}
         </section>
 
 
@@ -1008,13 +1018,7 @@ function Brief() {
 
 
         </div> : null}
-        <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
-          <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
-          <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
-            {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
-            <ChevronRight className="t-ico" />
-          </button>
-        </div>
+        {briefTab !== "mission" ? deployActions : null}
         {progressionError ? <p style={{ color: "var(--t-enemy)", marginTop: "0.8rem" }}>{progressionError}</p> : null}
       </div>
     </div>
