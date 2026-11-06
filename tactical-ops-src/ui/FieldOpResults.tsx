@@ -8,10 +8,11 @@ import { recordedImpact } from "./afterActionImpact";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
-  consequence, next, actions, children }: {
+  consequence, tacticalMoment, next, actions, children }: {
   victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
   pending: boolean; error: string | null; failure: string;
   consequence: { label: string; detail: string } | null;
+  tacticalMoment?: string;
   next: { title: string; reason: string } | null;
   actions: ReactNode; children: ReactNode;
 }) {
@@ -52,6 +53,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       <strong className="t-fr-impact-title">{impact.title}</strong>
       <p>{impact.detail}</p>
     </section> : null}
+    {receipt && tacticalMoment ? <p className="t-fr-tactical-moment"><b>TACTICAL MOMENT · THIS DEVICE</b> {tacticalMoment}</p> : null}
     {receipt && next ? <div className="t-fr-next"><span className="t-kicker">YOUR NEXT MOVE</span><strong>{next.title}</strong><p>{next.reason.replace("Clear bonus already secured; an eligible challenge can still add progress.", "First win saved. The bonus challenge is still open.")}</p></div> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     {receipt ? <details className="t-fr-ledger">

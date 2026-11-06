@@ -1124,7 +1124,7 @@ function Results() {
     <FieldOpResults victory={results.victory} missionName={mission.name}
       plate={results.victory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(failureReason, mission.objectiveType)} consequence={s3Proof} next={s3Return}
+      failure={fieldFailureCopy(failureReason, mission.objectiveType)} consequence={s3Proof} tacticalMoment={s3Moment?.detail} next={s3Return}
       actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
         <button type="button" className="t-btn t-btn-primary" onClick={() => {
           continueOnboarding();
@@ -1146,7 +1146,6 @@ function Results() {
         <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
         <p>Challenge objective: {mission.challenge?.label || "No optional challenge"}</p>
         <section aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. Not persisted progress or extra rewards.</small></section>
-        {acceptedS3Run && s3Moment ? <p>{s3Moment.detail} · Observed in this device session only.</p> : null}
         {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
       </details>
     </FieldOpResults>

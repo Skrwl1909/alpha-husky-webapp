@@ -4897,11 +4897,12 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-threat-source {position:absolute;z-index:33;transform:translate(-50%,-50%);color:#fff0e8;background:#692431;border:1px solid #ffb4a5;border-radius:3px;font:800 11px/15px var(--t-font-sans);min-width:16px;text-align:center;pointer-events:none}
 #tacticalOpsRoot .t-command-cue {
   position:absolute;z-index:34;left:10px;right:10px;top:7px;max-height:calc(21cqh - 10px);
-  overflow:hidden;pointer-events:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+  overflow:hidden;pointer-events:none;display:grid;gap:2px;
   padding-left:8px;border-left:2px solid #799cab;color:#e4f0f4;text-shadow:0 1px 2px #04111d;
 }
-#tacticalOpsRoot .t-command-cue strong {font:800 11px/14px var(--t-font-sans);letter-spacing:.035em}
-#tacticalOpsRoot .t-command-cue > span {font:400 12px/15px var(--t-font-sans);max-width:100%;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#tacticalOpsRoot .t-command-cue p {margin:0;font:400 11px/15px var(--t-font-sans);display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#tacticalOpsRoot .t-command-cue strong {margin-right:6px;font-weight:850;letter-spacing:.025em;color:#effaff}
+#tacticalOpsRoot .t-command-cue .t-command-confirmation {font-weight:800;color:#d1f1e4}
 #tacticalOpsRoot .t-command-cue small {font:500 11px/14px var(--t-font-sans);color:#c2d8e4}
 #tacticalOpsRoot .t-battle[data-decision="REACT"] .t-command-cue {border-color:#ffb4a5}
 #tacticalOpsRoot .t-battle[data-decision="REACT"] .t-command-cue strong {color:#ffcfbf}
@@ -4923,15 +4924,24 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
    retaining the 60px dock and at least 44px for each of the three skill inputs. */
 #tacticalOpsRoot .t-battle .t-actions.has-obj {gap:2px}
 #tacticalOpsRoot .t-battle .t-actions.has-obj .t-act-obj {flex:0 0 68px}
+@media (max-width:360px) {
+  #tacticalOpsRoot .t-battle .t-actions.has-obj .t-act {min-width:44px}
+  #tacticalOpsRoot .t-battle .t-actions.has-obj .t-act.kind-control {flex-grow:1.24}
+  #tacticalOpsRoot .t-battle .t-actions.has-obj .t-act.kind-control .name {font:800 8.5px/12px var(--t-font-sans);padding-inline:0}
+  #tacticalOpsRoot .t-battle .t-actions.has-obj .t-act:not(.t-act-obj) .meta {font:700 8px/12px var(--t-font-sans)}
+}
 #tacticalOpsRoot .t-shell[data-screen="battle"] .t-dock.has-recovery {grid-template-columns:44px minmax(0,1fr) 44px;gap:2px}
 #tacticalOpsRoot .t-battle .t-enemy-command {height:60px;min-height:60px;max-height:60px}
-#tacticalOpsRoot .t-battle .t-act {height:60px;min-height:60px;padding:6px 1px 2px;gap:1px}
+#tacticalOpsRoot .t-battle .t-act {height:60px;min-height:60px;padding:2px 1px;gap:0}
 #tacticalOpsRoot .t-battle .t-act .name {flex-shrink:0;font-size:10px;line-height:12px;letter-spacing:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #tacticalOpsRoot .t-battle .t-act .meta {flex-shrink:0;margin-top:0;font-size:10px;line-height:12px;letter-spacing:0;color:#d0e5ec}
-#tacticalOpsRoot .t-battle .t-act .slot {position:absolute;font-size:9px;line-height:10px;letter-spacing:0}
-#tacticalOpsRoot .t-battle .t-act-art {width:24px;height:24px;flex:0 0 24px;margin:0 auto}
+#tacticalOpsRoot .t-battle .t-act-keyline {display:flex;flex:0 0 10px;width:100%;justify-content:space-between;align-items:center;gap:2px}
+#tacticalOpsRoot .t-battle .t-act-keyline .slot {position:static;font-size:8px;line-height:10px;letter-spacing:0}
+#tacticalOpsRoot .t-battle .t-act-keyline .t-skill-rank {position:static;max-width:none;padding:0 2px;font-size:7px;line-height:8px}
+#tacticalOpsRoot .t-battle .t-act-art {width:20px;height:20px;flex:0 0 20px;margin:0 auto}
 #tacticalOpsRoot .t-battle .t-act.on {outline:1px solid #c1e9f1;outline-offset:-3px}
-#tacticalOpsRoot .t-battle .t-act .cd {position:absolute;font-size:11px}
+#tacticalOpsRoot .t-battle .t-act .meta[data-action-state^="CD"] {color:#ffd2a0}
+#tacticalOpsRoot .t-battle .t-act .meta[data-action-state="USED"] {color:#d4eddf}
 #tacticalOpsRoot .t-battle .t-skip {min-width:44px;padding-inline:2px;font-size:11px;letter-spacing:0}
 #tacticalOpsRoot .t-cancel-label {font:400 24px/22px var(--t-font-sans)}
 #tacticalOpsRoot .t-cancel-label small {display:block;font:700 9px/10px var(--t-font-sans)}

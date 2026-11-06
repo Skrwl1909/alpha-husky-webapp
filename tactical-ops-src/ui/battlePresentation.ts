@@ -59,7 +59,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   const moves = interactive && !actor.hasMoved && !targeting ? reachableCells(actor, battle.units) : [];
   const canReposition = moves.some(c => !danger.has(cellKey(c.c, c.r)));
   const foundationGuidance = foundationBattleGuidance(battle, input.onboardingStageId);
-  const guidance = foundationGuidance || playerBattleGuidance(battle, input.mission);
+  const guidance = playerBattleGuidance(battle, input.mission);
   const objective = missionLiveProgress(battle);
   const directive = objectiveDirective(battle);
   const sources = threats.map((t, i) => ({ id: t.enemyId, label: `${i + 1}`, name: battle.units.find(u => u.id === t.enemyId)?.name || "Enemy", effect: t.predictedEffect }));
@@ -68,8 +68,9 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   // events at contact. Atlas travel alone must never report a resolved hit.
   const counter = input.consequences.find(c => c.kind === "counter");
   const float = input.floats.find(f => f.kind === "heal" || f.kind === "dmg");
-  const moment = input.combatMoment;
-  const result = counter ? "INTERRUPTED · enemy intent canceled" : float
+  const moment = input.combatMoment?.actorId === actor?.id ? input.combatMoment : null;
+  const result = counter ? "INTERRUPTED · enemy intent canceled" : moment && (moment.mode === "guard" || moment.mode === "control")
+    ? `${moment.title} · ${moment.consequence}` : float
     ? `${float.kind === "heal" ? "HEAL" : "HIT"} ${float.text} · ${battle.units.find(u => u.id === float.unitId)?.name || "unit"}`
     : moment ? `${moment.title} · ${moment.consequence}` : null;
   const mode: DecisionMode = threats.length ? "REACT" : targeting ? "TARGET" : busy && result ? "RESOLVE" : !interactive ? "WAIT" : "READ";
@@ -86,14 +87,14 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
     title = battle.outcome === "victory" ? "SECTOR SECURED" : battle.outcome === "defeat" ? "OPERATION FAILED" : actor?.team === "enemy" ? "ENEMY ACTION" : "RESOLVING";
     detail = result || (actor ? actor.name : "Preparing next activation");
   } else {
-    title = foundationGuidance?.title || (guidance?.title === "THE PACK FIGHTS ON" ? guidance.title : actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD");
-    detail = guidance?.copy || directive.action;
+    title = foundationGuidance?.title || guidance?.title || (actor?.hasMoved ? "CHOOSE ACTION" : "READ THE FIELD");
+    detail = foundationGuidance?.copy || guidance?.copy || directive.action;
   }
   if (!threats.length && !targeting && battle.reinforcement?.telegraphed && !battle.reinforcement.spawned && mode === "READ") {
     title = "REINFORCEMENT INBOUND"; detail = "Marked entry · not spawned yet";
   }
   return { mode, actor, interactive, targeting, targetIds, interruptTargetIds, threats, danger, sources, objective, title, detail, result,
-    actions: skills.map(s => ({ id: s.id, reason: !interactive ? "WAIT" : !s.ready ? `CD ${s.cd}` : skillNeedsTargetPick(s) && !s.targets.length ? "NO TARGET" : battle.actionSkillId === s.id && targeting ? "CANCEL" : "READY" })),
+    actions: skills.map(s => ({ id: s.id, reason: !s.ready ? `CD ${s.cd}` : !interactive ? "WAIT" : skillNeedsTargetPick(s) && !s.targets.length ? "NO TARGET" : battle.actionSkillId === s.id && targeting ? "CANCEL" : "READY" })),
     // An existing atlas owns the primary impact. Other layers retain numbers and
     // genuine consequences, without replaying a second burst for the same action.
     showFallbackImpact: input.combatFx.length === 0,

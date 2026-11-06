@@ -15,6 +15,9 @@ const g2Baseline='24ac8223966ea60552e4e655f9d9d2e252a71b71';
 const overheadMerge='6b78f7812d0a4eae480f13b5ecdf07acf5b78453';
 const houndMerge='98b41d5a1b8112c09787a2eca6185df79145d6ca';
 const alignmentMerge='71870735afca184e1e7b32d95aca6059a5937d07';
+const actorFacingHead='e0978282f812223a1dba9749e7626aa25fdab664';
+const actorFacingMerge='887f037bc65bc2f819d13bb0f5a7155b93e4f829';
+const combatExperienceBase='f05059c576290ea0b8fcffaca2d7f44d5c405f5d';
 const actorFacingBlobs=Object.freeze({
  'tactical-ops-src/ui/Battle.tsx':'158b697d505d96dc65c40fa0ff9b571f94c37291',
  'tactical-ops-src/ui/houndDirectional.css':'6aff7c91ddac17534450ba1e6585cf94b044e5b2',
@@ -125,7 +128,7 @@ try{
  let expectedVoice=actual;
  const voiceHunks=[["              <div className=\"t-kicker t-cd-operation-label\">COMMAND PRIORITY / {primaryPurpose?.title || \"NEXT OP\"}</div>","              <div className=\"t-kicker t-cd-operation-label\">NEXT UP / {primaryPurpose?.title || \"NEXT OP\"}</div>"],["              <p className=\"t-player-next-reason\">{primaryPurpose?.resume ? \"Accepted squad and conditions preserved · battle restarts at round 1.\" : primaryPurpose?.reason}</p>","              <p className=\"t-player-next-reason\">{primaryPurpose?.resume ? \"Your squad is saved. Restart from round 1.\" : primaryPurpose?.reason}</p>"],["  const recoverBrief = mission?.objectiveType === \"RECOVER\";","  const recoverBrief = mission?.objectiveType === \"RECOVER\";\n  const quickRecover = recoverBrief && !(mission?.objective?.type === \"RECOVER\" && mission.objective.squadExtractionRadius != null);"],["            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? \"Hold the exact relay tile · 3 consecutive round changes · finish by round 6.\" : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace(\"PRIMARY OBJECTIVE: \", \"\") : objective)}</strong>","            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? \"Hold the exact relay tile · 3 consecutive round changes · finish by round 6.\" : quickRecover ? \"GET TO THE RELAY. USE RECOVER.\" : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace(\"PRIMARY OBJECTIVE: \", \"\") : objective)}</strong>\n            {quickRecover ? <p className=\"t-brief-purpose-meta\">Get within RECOVER range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens on rounds ${mission.directive.recoverEveryRounds}, ${mission.directive.recoverEveryRounds * 2}, …` : \"Use RECOVER when the signal opens.\"} Use RECOVER before acting.</p> : null}\n            {quickRecover && purpose ? <details className=\"t-mission-extra\" aria-label=\"Recover rules\"><summary>FULL RECOVER RULES <span>DETAILS +</span></summary><p>{purpose.objectiveText}</p></details> : null}"],["            {fieldOp ? <p className=\"t-brief-purpose-meta\" data-opportunity-status={veteranBrief.status} role=\"status\"><b>VETERAN · {veteranBrief.status.toUpperCase()}:</b> {veteranBrief.copy}</p> : null}","            {fieldOp ? <p className=\"t-brief-purpose-meta\" data-opportunity-status={veteranBrief.status} role=\"status\"><b>{veteranBrief.status === \"claimed\" ? \"VETERAN CREDIT SAVED\" : veteranBrief.status === \"eligible\" ? \"VETERAN CHANCE!\" : veteranBrief.status === \"locked\" ? \"VETERAN NOT READY\" : \"VETERAN STATUS UNKNOWN\"}:</b> {veteranBrief.copy}</p> : null}"],["                <span className=\"t-kicker\">{fieldContext.masteryChallenge ? 'Completion' : 'Clear reward'}</span>","                <span className=\"t-kicker\">{fieldContext.masteryChallenge ? 'Completion' : 'First win'}</span>"]];
  for(const [before,after] of voiceHunks){assert(expectedVoice.includes(before),'missing reviewed player-voice insertion');expectedVoice=expectedVoice.replace(before,after);}
- assert.equal(readFileSync(app,'utf8'),expectedVoice,'unreviewed App change outside five scoped player-voice edits');
+ assert.equal(git('show',`${combatExperienceBase}:${app}`),expectedVoice,'unreviewed App change outside five scoped player-voice edits');
  let expectedBattle=git('show',voiceBase+':tactical-ops-src/ui/Battle.tsx');
  const battleHunks=[["import { missionLiveProgress, objectiveDirective, recoverGuidance } from \"./missionPurpose\";","import { missionLiveProgress, objectiveDirective, recoverGuidance } from \"./missionPurpose\";\nimport { fieldWindow } from \"../data/livingBattlefield\";"],["  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));\n  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);","  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));\n  const acceptedContext = useBattleStore((s) => s.currentFieldContext);\n  const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);"],["  const objective = battle.objective;\n  if (!rulesText && !mission?.challenge && !objective && !training) return null;","  const objective = battle.objective;\n  const activeHound = battle.reinforcement;\n  const acceptedWindow = mission ? fieldWindow(mission, acceptedContext) : null;\n  const packBoughtTime = Boolean(acceptedWindow?.delayed && activeHound &&\n    !activeHound.spawned && acceptedWindow.actualRound === activeHound.triggerRound);\n  if (!rulesText && !mission?.challenge && !objective && !training) return null;"],["      <small className=\"t-objective-action\">{directive.action}</small>","      <small className=\"t-objective-action\">{directive.action}</small>\n      {packBoughtTime ? <small data-player-voice-hound=\"true\">HOUND HELD BACK! · ARRIVES ROUND {activeHound!.triggerRound}</small> : null}"],["<span>INBOUND</span><small>HOUND</small>","<span>HOUND INCOMING!</span><small>ROUND {reinforcement.triggerRound}</small>"]];
  for(const [before,after] of battleHunks){assert(expectedBattle.includes(before),'missing reviewed combat message insertion');expectedBattle=expectedBattle.replace(before,after);}
@@ -213,10 +216,32 @@ for(const changedFile of git('diff','--name-only','--no-renames','df00ab5d473186
 // render leaves for Actor Readability. Combat and asset diffs still fail.
 git('merge-base','--is-ancestor',alignmentMerge,'HEAD');
 for(const [path,expected] of Object.entries(actorFacingBlobs)){
- assert.equal(sourceBlob(readFileSync(path,'utf8')),expected,'unreviewed actor presentation: '+path);
+ assert.equal(git('rev-parse',`${actorFacingMerge}:${path}`).trim(),expected,'unreviewed actor presentation: '+path);
 }
-for(const path of git('diff','--name-only','--no-renames',alignmentMerge,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+for(const path of git('diff','--name-only','--no-renames',alignmentMerge,actorFacingHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(actorFacingBlobs,path),'unreviewed runtime mutation after visual alignment: '+path);
+}
+// The old approved phases above stay exact. Pin this pass separately against
+// its actual main base, including the small cosmetic cleanup in the store.
+const combatExperienceBlobs=Object.freeze({
+ 'tactical-ops-src/store/battleStore.ts':'c64efc444512237e27645becf29a3c7fb5fc3bab',
+ 'tactical-ops-src/tactical.css':'6186f590aab733410b69fab74a6ccd7cca7a8329',
+ 'tactical-ops-src/ui/App.tsx':'fec9b2910fd82c89236549dc062fb881e8e2afda',
+ 'tactical-ops-src/ui/Battle.tsx':'4a64164c9e15af90e5f750964f17d5a7cd3a7f7e',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'406ac21b3a04a8708304b4d076737058b633ac52',
+ 'tactical-ops-src/ui/battlePresentation.ts':'3d266016b5b62aa9baf092142477dc87f4e5bdfa',
+ 'tactical-ops-src/ui/combatCohesion.css':'961f8373db8301feabddfb4dd89179ac5f571ebb',
+ 'tactical-ops-src/ui/fieldOpResults.css':'76679d2ad04387f0b3bb35508e3d8d01a7e4fe82',
+ 'tactical-ops-src/ui/houndDirectional.css':'c6dc11e0caacd676a74d0f8f072415cdd118975f',
+ 'tactical-ops-src/ui/overheadProjection.css':'34411434328b1460795bca9f85923864115dd406',
+});
+git('merge-base','--is-ancestor',actorFacingMerge,combatExperienceBase);
+git('merge-base','--is-ancestor',combatExperienceBase,'HEAD');
+for(const [path,expected] of Object.entries(combatExperienceBlobs)){
+ assert.equal(sourceBlob(readFileSync(path,'utf8')),expected,'unreviewed combat presentation: '+path);
+}
+for(const path of git('diff','--name-only','--no-renames',combatExperienceBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(generated.has(path)||Object.hasOwn(combatExperienceBlobs,path),'unreviewed runtime mutation after combat experience base: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');
