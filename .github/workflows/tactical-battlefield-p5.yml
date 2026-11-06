@@ -11,13 +11,19 @@ on:
       - 'tactical-ops-src/ui/battlePresentation.ts'
       - 'tactical-ops-src/ui/combatConsequences.ts'
       - 'tactical-ops-src/ui/combatCohesion.css'
+      - 'tactical-ops-src/ui/houndDirectional.*'
+      - 'tactical-ops-src/ui/overheadProjection.css'
       - 'tactical-ops-src/tactical.css'
       - 'tools/fixtures/battlefield-p5.tsx'
       - 'tools/verify_tactical_battlefield_p5*.mjs'
       - 'tools/verify_tactical_mobile_playability.mjs'
       - 'tools/verify_tactical_mission_clarity.mjs'
       - 'tools/verify_tactical_alpha_directional_browser.mjs'
+      - 'tools/verify_tactical_hound_directional.mjs'
+      - 'tools/verify_tactical_battlefield_visual_alignment.mjs'
+      - 'tools/verify_tactical_overhead_*.mjs'
       - 'images/tactical_ops/alpha_directional/**'
+      - 'images/tactical_ops/hounds/**'
       - '.github/workflows/tactical-battlefield-p5.yml'
 permissions:
   contents: read
@@ -33,6 +39,10 @@ jobs:
       - run: npm install --no-audit --no-fund
       - run: npm install --no-save --package-lock=false playwright@1.64.1
       - run: node tools/verify_tactical_mission_clarity.mjs
+      - run: node tools/verify_tactical_overhead_perspective.mjs
+      - run: node tools/verify_tactical_overhead_arenas.mjs
+      - run: node tools/verify_tactical_battlefield_visual_alignment.mjs
+      - run: node tools/verify_tactical_hound_directional.mjs
       - run: npm run build:tactical-ops
       - run: node tools/verify_tactical_battlefield_p5.mjs
       - run: node tools/verify_tactical_battlefield_p5_browser.mjs
