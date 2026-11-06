@@ -24,7 +24,9 @@ export function confirmedConsequence(field: FieldResult | null, campaign: Campai
     return null;
   }
   if (campaign?.victory && campaign.missionId === "dead-relay-courier" && progression?.campaignIntel?.["dead-relay"]?.courierTraceAcquired && campaign.intelEarned) {
-    return { label: "COURIER TRACE RECORDED", detail: "The accepted Dead Relay Hold context can delay its reinforcement by one round. An already-started run keeps its original conditions.", source: "SERVER_RECEIPT" };
+    return { label: "COURIER TRACE RECORDED", detail: progression.vnextStartAvailable && progression.deadRelayHoldRevisionAvailable === 2
+      ? "Next Hold: HOUND round 3. South-east entry."
+      : "Next Hold: HOUND delayed by one round.", source: "SERVER_RECEIPT" };
   }
   return null;
 }
@@ -41,7 +43,10 @@ export function confirmedReturnAction(field: FieldResult | null, campaign: Campa
   if (campaign) {
     const op = progression.operations?.["dead-relay"];
     const nextId = ["dead-relay-courier","dead-relay-hold","dead-relay-guardian"].find(id => op?.missions[id] === "available");
-    return nextId ? { title: getMissionDef(nextId)?.name || "NEXT CAMPAIGN MISSION", reason: "Continue the server-unlocked Dead Relay campaign.", missionId: nextId }
+    return nextId ? { title: getMissionDef(nextId)?.name || "NEXT CAMPAIGN MISSION",
+      reason: nextId === "dead-relay-hold" ? "Defend the relay to open the route to its Guardian."
+        : nextId === "dead-relay-guardian" ? "Defeat the Guardian to secure the Dead Relay."
+        : "Intercept the courier to open the relay route.", missionId: nextId }
       : { title: "WAR TABLE", reason: "Campaign progress is recorded. Explore available Field Ops or replay to practice; no additional reward is promised.", missionId: null };
   }
   return null;

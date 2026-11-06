@@ -236,12 +236,19 @@ const combatExperienceBlobs=Object.freeze({
  'tactical-ops-src/ui/overheadProjection.css':'34411434328b1460795bca9f85923864115dd406',
 });
 git('merge-base','--is-ancestor',actorFacingMerge,combatExperienceBase);
-git('merge-base','--is-ancestor',combatExperienceBase,'HEAD');
+const combatExperienceMerge='5569beb7bc76f7c6b24f677b75fc7d8e13df5ebf';
+const courierTraceBase='dbc930295c37393b7cd6ef21a02e476eff3a03c5';
+git('merge-base','--is-ancestor',combatExperienceBase,combatExperienceMerge);
+git('merge-base','--is-ancestor',courierTraceBase,'HEAD');
 for(const [path,expected] of Object.entries(combatExperienceBlobs)){
- assert.equal(sourceBlob(readFileSync(path,'utf8')),expected,'unreviewed combat presentation: '+path);
+ assert.equal(git('rev-parse',`${combatExperienceMerge}:${path}`).trim(),expected,'unreviewed combat presentation: '+path);
 }
-for(const path of git('diff','--name-only','--no-renames',combatExperienceBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+for(const path of git('diff','--name-only','--no-renames',combatExperienceBase,combatExperienceMerge,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(combatExperienceBlobs,path),'unreviewed runtime mutation after combat experience base: '+path);
+}
+const courierTraceLeaves=new Set([app,'tactical-ops-src/ui/s3AfterAction.ts']);
+for(const path of git('diff','--name-only','--no-renames',courierTraceBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(generated.has(path)||courierTraceLeaves.has(path),'unreviewed runtime mutation in Courier Trace: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');

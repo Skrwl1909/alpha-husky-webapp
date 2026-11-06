@@ -20,6 +20,10 @@ try {
   assert.match(confirmedConsequence(receipt,null,state).detail,/3 → 1/);
   assert.equal(confirmedConsequence(null,{missionId:"dead-relay-courier",victory:true,intelEarned:false},state),null);
   assert.match(confirmedConsequence(null,{missionId:"dead-relay-courier",victory:true,intelEarned:true},state).label,/COURIER TRACE/);
+  const earnedTrace = {missionId:"dead-relay-courier",victory:true,intelEarned:true};
+  assert.match(confirmedConsequence(null,earnedTrace,state).detail,/delayed by one round/);
+  const g2State = {...state, vnextStartAvailable:true, deadRelayHoldRevisionAvailable:2};
+  assert.match(confirmedConsequence(null,earnedTrace,g2State).detail,/round 3\. South-east entry/);
   assert.equal(confirmedReturnAction(null,null,state),null);
   assert.match(confirmedReturnAction({...receipt,regionalApplied:false},null,state).reason,/Replay to practice|Front secured/);
   assert.equal(confirmedReturnAction({...receipt,victory:false},null,state).title,"TRY A DIFFERENT TACTIC");
