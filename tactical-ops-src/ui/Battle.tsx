@@ -4,7 +4,7 @@ import { getMissionDef, missionBattlefield } from "../data/operations";
 import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Axe, ChevronsRight, Crosshair, HeartPulse, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
+import { Axe, ChevronsRight, Crosshair, HeartPulse, LogOut, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow, targetIdsNow } from "../store/battleStore";
 import { fieldPercent, cellKey, chebyshev } from "../combat/movement";
 import { availableSkills } from "../combat/skills";
@@ -27,9 +27,7 @@ import { fieldWindow } from "../data/livingBattlefield";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
-  traceTarget: "/images/tactical_ops/presentation/tactical_ops_trace_target.png",
   signalRecovery: "/images/tactical_ops/presentation/tactical_ops_signal_recovery_marker.png",
-  bossTarget: "/images/tactical_ops/presentation/tactical_ops_boss_target.png",
   reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
 } as const;
 
@@ -161,6 +159,7 @@ function Token({
   inspecting,
   signalCarrier,
   interceptTarget = false,
+  arriving = false,
   hitReacting = false,
   travelGhost = false,
   shownHp,
@@ -175,6 +174,7 @@ function Token({
   inspecting: boolean;
   signalCarrier: boolean;
   interceptTarget?: boolean;
+  arriving?: boolean;
   hitReacting?: boolean;
   travelGhost?: boolean;
   shownHp?: number;
@@ -190,10 +190,13 @@ function Token({
   const directionalAlpha = allowDirectional(unit, identity);
   const directionalHound = !!houndView(unit, "front");
   const [artFailed, setArtFailed] = useState(false);
+  const fieldLabel = interceptTarget ? "COURIER" : signalCarrier ? "TRACE TARGET" : unit.role === "leader" ? "COMMANDER" : unit.archetype;
   const className = [
     "t-token",
     unit.team,
     roleClass(unit),
+    unit.id.startsWith("pet:") ? "pet-actor" : "",
+    arriving ? "is-arriving" : "",
     directionalAlpha && !artFailed ? "directional-alpha" : "",
     directionalHound && !artFailed ? "directional-hound" : "",
     unit.defeated && hp<=0 ? "defeated" : "",
@@ -251,10 +254,7 @@ function Token({
           <i /><i /><i /><i />
         </span>
       ) : null}
-      {unit.archetype && !unit.defeated ? <span className={`t-enemy-archetype t-archetype-${unit.archetype.toLowerCase()}`} aria-label={`Enemy class: ${unit.archetype}`}>{unit.archetype}</span> : null}
-      {signalCarrier && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">TRACE TARGET</span></> : null}
-      {interceptTarget && !unit.defeated ? <><img className="t-token-marker trace" src={PRESENTATION.traceTarget} alt="" /><span className="t-objective-badge trace">COURIER</span></> : null}
-      {unit.role === "leader" && !unit.defeated ? <><img className="t-token-marker boss" src={PRESENTATION.bossTarget} alt="" /><span className="t-objective-badge boss">BOSS</span></> : null}
+      {fieldLabel && !unit.defeated ? <span className={`t-enemy-archetype t-archetype-${fieldLabel.toLowerCase().replaceAll(" ", "-")}`}>{fieldLabel}</span> : null}
       {directionalAlpha && !artFailed ? <span className="t-alpha-ground-shadow" aria-hidden="true" /> : null}
       <img className="body" src={src} alt="" draggable={false} onError={!artFailed && (directionalAlpha || directionalHound) ? () => setArtFailed(true) : undefined} />
       {hp<=0 ? null : (
@@ -449,7 +449,7 @@ function ObjectiveChip() {
   return (
     <button type="button" className={`t-obj-chip t-hud-card ${training ? "is-training" : ""} ${expanded ? "is-expanded" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Mission objective: ${liveGoal || title}. ${expanded ? detail + " Tap to close details." : (trainingCue?.title || directive.status) + ". Tap for details."}`}>
       <strong>{heading}</strong>
-      <span className="t-objective-summary">{summary}</span>
+      <span className="t-objective-summary" key={heading + summary} data-objective-state={objective?.type === "HOLD" ? summary : undefined}>{summary}</span>
       <span className="t-objective-detail">{detail}</span>
       <span className="t-objective-directive">{directive.status}</span>
       <small className="t-objective-action">{directive.action}</small>
@@ -470,7 +470,7 @@ function ObjectiveChip() {
   );
 }
 
-function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBattlePresentation>["actions"] }) {
+function SkillHud({ actionStates, usedSkillId }: { actionStates: ReturnType<typeof deriveBattlePresentation>["actions"]; usedSkillId: string | null }) {
   const battle = useBattleStore((s) => s.battle);
   const busy = useBattleStore((s) => s.busy);
   const selectSkill = useBattleStore((s) => s.selectSkill);
@@ -498,7 +498,8 @@ function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBatt
         const on = battle.actionSkillId && sk && battle.actionSkillId === sk.id;
         const cooling = sk && !sk.ready;
         const presentation = sk ? getActionPresentation(sk) : null;
-        const reason = actionStates.find(state => state.id === sk?.id)?.reason || "WAIT";
+        const reason = sk && sk.id === usedSkillId ? "USED" : actionStates.find(state => state.id === sk?.id)?.reason || "WAIT";
+        const caption = reason === "CANCEL" ? "AIMING" : reason;
         const tier = sk && actor ? combatTier(actor, sk.id) : "base";
         const rankLabel = sk && actor ? skillRankLabel(actor, sk.id) : null;
         return (
@@ -508,19 +509,20 @@ function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBatt
             className={`t-act t-growth-${tier} ${on ? "on" : ""} ${cooling ? "cooling" : ""} ${presentation ? `kind-${presentation.archetype} fx-${presentation.effectClass}` : ""}`}
             disabled={!allyTurn || !sk || !!cooling}
             aria-pressed={!!on}
-            aria-label={sk ? `${sk.slot} ${sk.name}. ${reason}. ${sk.desc}` : `Empty slot A${i + 1}`}
+            aria-label={sk ? `${sk.slot} ${sk.name}. ${rankLabel ? rankLabel + ". " : ""}${reason === "CANCEL" ? "Targeting. Tap again to cancel" : reason}. ${sk.desc}` : `Empty slot A${i + 1}`}
             onClick={() => {
               if (!sk) return;
               unlockAudio();
               selectSkill(sk.id);
             }}
           >
+            <span className="t-act-keyline" aria-hidden="true">
+              <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
+              {rankLabel ? <span className={`t-skill-rank${rankLabel === "SIGNATURE" ? " is-signature" : ""}`} title={rankLabel}>{rankLabel === "SIGNATURE" ? "SIG" : rankLabel === "TRAINED" ? "TRN" : rankLabel}</span> : null}
+            </span>
             <ActionArt src={sk ? tacticalActionImageForSkill(sk.id) : null} archetype={presentation?.archetype} />
-            <span className="slot">{sk?.slot ?? `A${i + 1}`}</span>
-            {rankLabel ? <span className={`t-skill-rank${rankLabel === "SIGNATURE" ? " is-signature" : ""}`} aria-label={`Upgrade ${rankLabel}`}>{rankLabel}</span> : null}
             <span className="name">{sk?.name ?? "—"}</span>
-            <span className="meta">{reason}</span>
-            {cooling ? <span className="cd">{sk!.cd}T</span> : null}
+            <span className="meta" data-action-state={reason}>{caption}</span>
           </button>
         );
       })}
@@ -535,14 +537,34 @@ function SkillHud({ actionStates }: { actionStates: ReturnType<typeof deriveBatt
             selectRecover();
           }}
         >
+          <span className="t-act-keyline" aria-hidden="true"><span className="slot">OBJ</span></span>
           <ActionArt src={tacticalActionImageForCommand("recover")} archetype={RECOVER_PRESENTATION.archetype} />
-          <span className="slot">OBJ</span>
           <span className="name">RECOVER</span>
           <span className="meta">{!allyTurn ? "WAIT" : recoverReady ? "READY" : !recoverSignalOpen(battle) ? `ROUND ${Math.ceil(battle.round / (battle.directive?.recoverEveryRounds || 1)) * (battle.directive?.recoverEveryRounds || 1)}` : "GET CLOSER"}</span>
         </button>
       ) : null}
     </div>
   );
+}
+
+// A receipt for the displacement the renderer just accepted, not a prediction
+// of BFS steps. Clear it on activation changes or when the short cue expires.
+function useMoveTrace(actor: CombatUnit | undefined, turn: number) {
+  const prior = useRef<{ id: string; turn: number; cell: FacingCell } | undefined>(undefined);
+  const [trace, setTrace] = useState<{ from: FacingCell; to: FacingCell }>();
+  const id = actor?.team === "ally" ? actor.id : undefined;
+  const c = actor?.c;
+  const r = actor?.r;
+  const moved = actor?.hasMoved;
+  useLayoutEffect(() => {
+    const previous = prior.current;
+    prior.current = id && c !== undefined && r !== undefined ? { id, turn, cell: { c, r } } : undefined;
+    const current = prior.current;
+    const changed = current && previous && previous.id === current.id && previous.turn === turn &&
+      (previous.cell.c !== current.cell.c || previous.cell.r !== current.cell.r);
+    setTrace(moved && changed ? { from: previous.cell, to: current.cell } : undefined);
+  }, [id, turn, c, r, moved]);
+  return { trace, clearTrace: () => setTrace(undefined) };
 }
 
 export function BattleScreen() {
@@ -593,6 +615,9 @@ export function BattleScreen() {
   const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: onboardingEnabled && !mission ? onboardingStageId : null });
   const threats = presentation.threats;
   const actor = presentation.actor;
+  const { trace, clearTrace } = useMoveTrace(actor, battle.unitTurn);
+  const moveFrom = trace && fieldPercent(trace.from.c, trace.from.r);
+  const moveTo = trace && fieldPercent(trace.to.c, trace.to.r);
   const activeSkill = actionSkillId ? getSkill(actionSkillId) : null;
   const focusPresentation = activeSkill ? getActionPresentation(activeSkill) : null;
   const impactSkill = lastActionSkillId ? getSkill(lastActionSkillId) : null;
@@ -625,9 +650,9 @@ export function BattleScreen() {
           <div className="t-field-grade" />
           <div className="t-vignette" />
           <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
-            <strong>{presentation.title}</strong><span>{presentation.detail}</span>
+            <p><strong>{presentation.title}</strong><span>{presentation.detail}</span></p>
             {presentation.sources.length ? <small>{presentation.sources.map(source => `${source.label}. ${source.name} · ${source.effect}`).join(" / ")}</small> : null}
-            {presentation.mode === "REACT" && presentation.result ? <small>{presentation.result}</small> : null}
+            {presentation.mode === "REACT" && presentation.result ? <small className="t-command-confirmation">{presentation.result}</small> : null}
           </div>
           <div className="t-grid" aria-hidden="true">
             {Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => {
@@ -637,6 +662,9 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
+          {moveFrom && moveTo && !presentation.targeting && !busy ? <svg className="t-move-trace" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" onAnimationEnd={clearTrace}>
+            <line x1={moveFrom.x} y1={moveFrom.y} x2={moveTo.x} y2={moveTo.y} />
+          </svg> : null}
           {/* Purely visual threat projection. SVG uses the same percentage field coordinates as tokens. */}
           {threats.length > 0 ? <svg className="t-threat-tethers" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             {threats.map((threat, index) => {
@@ -668,7 +696,7 @@ export function BattleScreen() {
             const pos = fieldPercent(cell.c, cell.r);
             const anchor = objective.holderRadius === 0;
             const center = cell.c === objective.terminal!.c && cell.r === objective.terminal!.r;
-            return <div key={`hold-${cell.c}-${cell.r}`} className={`t-hold-cell ${anchor ? center ? "is-lockdown-anchor" : "is-contest-zone" : "is-hold-area"}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{anchor && !center ? "" : objective.relayRoute ? `R${Math.min(objective.progress + 1, 3)}` : "HOLD"}</div>;
+            return <div key={`hold-${cell.c}-${cell.r}`} className={`t-hold-cell ${anchor ? center ? "is-lockdown-anchor" : "is-contest-zone" : "is-hold-area"}${center ? " is-hold-center" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{!center ? "" : objective.relayRoute ? `R${Math.min(objective.progress + 1, 3)}` : "HOLD"}</div>;
           }) : null}
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
@@ -676,7 +704,7 @@ export function BattleScreen() {
           })() : null}
           {objective?.type === "INTERCEPT" ? (() => {
             const pos = fieldPercent(objective.exit.c, objective.exit.r);
-            return <div className="t-terminal" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Courier escape exit"><img className="t-objective-marker-art" src={PRESENTATION.reinforcementWarning} alt="" /><span>EXIT</span><small>BLOCK / INTERCEPT</small></div>;
+            return <div className="t-terminal is-courier-exit" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Courier escape exit"><LogOut aria-hidden="true" /><span>EXIT</span></div>;
           })() : null}
           {reinforcement?.telegraphed && !reinforcement.spawned ? (() => {
             const pos = fieldPercent(reinforcement.spawn.c, reinforcement.spawn.r);
@@ -726,6 +754,7 @@ export function BattleScreen() {
                   inspecting={u.id === inspectId}
                   signalCarrier={u.id === signalCarrierId}
                   interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
+                  arriving={!!reinforcement?.spawned && u.id === reinforcement.spawn.id}
                   facingTarget={facingTarget}
                   idleTarget={idleTargets.get(u.id)}
                 />
@@ -822,7 +851,7 @@ export function BattleScreen() {
         >
           {presentation.targeting ? <span className="t-cancel-label">×<small>CANCEL</small></span> : muted ? <VolumeX className="t-ico" /> : <Volume2 className="t-ico" />}
         </button>
-        <SkillHud actionStates={presentation.actions} />
+        <SkillHud actionStates={presentation.actions} usedSkillId={busy && actor?.hasActed && attackingId === actor.id ? lastActionSkillId : null} />
         <button
           type="button"
           className="t-btn t-skip"

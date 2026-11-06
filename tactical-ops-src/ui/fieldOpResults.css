@@ -250,3 +250,19 @@
 #tacticalOpsRoot .t-field-results .t-fr-impact[data-impact-beat="clear"] .t-fr-impact-title{
   color:#d5ffe7;
 }
+
+/* Engine-observed memory uses a quieter line than the receipt and next CTA. */
+#tacticalOpsRoot .t-field-results .t-fr-tactical-moment {
+  margin: 0;
+  padding: .55rem .7rem;
+  border-left: 2px solid #7d9da8;
+  color: #d4e4e9;
+  font-size: .75rem;
+  line-height: 1.4;
+}
+#tacticalOpsRoot .t-fr-tactical-moment b {
+  display: block;
+  color: #a7c5cf;
+  font-size: .65rem;
+  letter-spacing: .06em;
+}

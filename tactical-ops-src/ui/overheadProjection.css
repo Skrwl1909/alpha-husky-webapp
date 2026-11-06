@@ -106,18 +106,23 @@
   width: min(7.85cqw, 41px, 8.8cqh);
 }
 
-/* Dark cloth and leather need a small lift at sprite scale. Keep the active
-   ring, target reticle and subdued targeting state in charge of emphasis. */
-#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.ally:is(.skirmisher,.support) img.body {
+/* Preserve fabric and metal midtones. The small, dark foot shadow anchors
+   each family independently of the focus ring and invisible hit target. */
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token:is(.skirmisher,.support,.leader,.pet-actor) img.body {
   position: relative;
-  filter: contrast(.90) brightness(1.32) drop-shadow(0 -.6px .85px rgba(211,218,222,.66));
+  filter: brightness(1.07) drop-shadow(0 -1px 1px rgba(192,207,212,.36)) drop-shadow(0 1px 1px #091017);
 }
-#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.ally:is(.skirmisher,.support)::before {
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token:is(.skirmisher,.support,.leader,.pet-actor)::before {
   content: "";
   position: absolute;
   inset: auto 13% -2px;
   height: 7px;
   background: radial-gradient(ellipse, rgba(1,6,10,.76), transparent 72%);
+}
+#tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.pet-actor img.body {
+  max-height: 8cqh;
+  object-fit: contain;
+  object-position: center bottom;
 }
 #tacticalOpsRoot .t-battle[data-projection="relay-overhead-v1"] .t-token.directional-alpha img.body {
   filter: brightness(1.07) drop-shadow(0 -.5px .75px rgba(205,215,220,.54));

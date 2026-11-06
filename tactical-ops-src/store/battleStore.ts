@@ -206,18 +206,18 @@ function stageFromProgression(state: FoundationProgressionState): OnboardingEnco
 
 export const useBattleStore = create<Store>((set, get) => {
   const publishMoment = (moment: CombatMoment | null, generation: number) => {
-    if (!moment) return;
+    if (!moment || generation !== runGen) return;
     set({ combatMoment: moment });
     void wait(1150).then(() => {
-      if (generation === runGen && get().combatMoment?.id === moment.id) set({ combatMoment: null });
+      if (get().combatMoment?.id === moment.id) set({ combatMoment: null });
     });
   };
   const publishFx = (effects: CombatFx[], generation: number) => {
-    if (!effects.length) return;
+    if (!effects.length || generation !== runGen) return;
     const capped=effects.slice(0,5);
     set({ combatFx: capped });
     void wait(Math.max(...capped.map(effect=>effect.durationMs))+70).then(()=>{
-      if(generation===runGen && get().combatFx[0]?.id===capped[0].id)set({combatFx:[]});
+      if(get().combatFx[0]?.id===capped[0].id)set({combatFx:[]});
     });
   };
   const showEnemyScene = async (scene:EnemyScene|null,g:number) => {
@@ -247,7 +247,7 @@ export const useBattleStore = create<Store>((set, get) => {
     if(!raw||g!==runGen)return;
     const item={...raw,id:impactSeq++};
     set(st=>({consequences:[...st.consequences,item].slice(-4)}));
-    void wait(1050).then(()=>{if(g===runGen)set(st=>({consequences:st.consequences.filter(x=>x.id!==item.id)}));});
+    void wait(1050).then(()=>{set(st=>({consequences:st.consequences.filter(x=>x.id!==item.id)}));});
   };
   const pushFloat = (unitId: string, text: string, kind: string) => {
     const id = floatSeq++;

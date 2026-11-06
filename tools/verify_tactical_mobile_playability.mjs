@@ -120,6 +120,51 @@ try{
       }
     }
   }
+  // Real mastered CNC card, including the four-card RECOVER dock at 320 px.
+  if (phase === 'after') for (const width of [320, 360, 390, 412]) {
+    await page.setViewportSize({width,height:844});
+    await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/mobile-fixture?scene=recover`);
+    await page.locator('.t-act').first().waitFor();
+    await page.evaluate(() => {
+      const {store} = fixture;
+      const {battle} = store.getState();
+      const units = battle.units.map(u => u.id === 'ally-02'
+        ? {...u,c:1,r:3,combatMastery:{stage:3,selected:'B'}}
+        : u);
+      store.setState({battle:{...battle,units,activeId:'ally-02'}});
+    });
+    const card = page.locator('.t-act').filter({hasText:'PRESSURE'});
+    const checkCard = async (label) => {
+      assert.equal(await card.locator('.meta').textContent(),label);
+      assert.equal(await card.locator('.t-skill-rank').textContent(),'SIG');
+      assert.equal(await card.locator('.cd').count(),0,'Cooldown is presented once');
+      const bounds = await card.evaluate(el => {
+        const rect = e => e.getBoundingClientRect();
+        const card = rect(el);
+        const rows = ['.t-act-keyline','.t-act-art','.name','.meta'].map(s => rect(el.querySelector(s)));
+        const glyphs = ['.slot','.t-skill-rank','.name','.meta'].map(s => {
+          const range = document.createRange();
+          range.selectNodeContents(el.querySelector(s));
+          return range.getBoundingClientRect();
+        });
+        const inside = glyphs.every(r=>r.left>=card.left-.5&&r.right<=card.right+.5&&r.top>=card.top-.5&&r.bottom<=card.bottom+.5);
+        return {inside,distinct:rows.every((r,i)=>i===0||r.top>=rows[i-1].bottom-.5),width:card.width,height:card.height};
+      });
+      assert(bounds.inside && bounds.distinct && bounds.width>=44 && bounds.height>=44,`${width}px: ${label} ${JSON.stringify(bounds)}`);
+    };
+    await checkCard('READY');
+    await card.click();
+    await checkCard('AIMING');
+    await card.click();
+    await page.evaluate(() => {
+      const {store} = fixture;
+      const {battle} = store.getState();
+      const units = battle.units.map(u => u.id === 'ally-02' ? {...u,cooldowns:{...u.cooldowns,[u.skillIds[2]]:2}} : u);
+      store.setState({battle:{...battle,units}});
+    });
+    await checkCard('CD 2');
+    assert(await card.isDisabled(),'Existing cooldown legality');
+  }
   assert.deepEqual(errors,[]);
   console.log(`PASS mobile playability ${phase}: ${results.length} cases, ${cooldownChecks.length} cooldown checks, ${completionChecks.length} engine recovery completions; both grids, four widths, host insets, glyph bounds, inputs and art loading.`);
 }finally{
