@@ -5259,3 +5259,13 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
   border-inline-start:3px solid #98d4de;background:#102b38;
 }
 #tacticalOpsRoot .t-results .t-campaign-result-impact p {margin:0;color:#d4e8ed}
+
+.t-field-contract {
+  display: grid;
+  gap: .3rem;
+  padding: .65rem .8rem;
+  border-inline-start: 2px solid var(--t-accent, #e1aa59);
+  overflow-wrap: anywhere;
+}
+.t-field-contract p, .t-fr-next p { margin: 0; }
+.t-field-contract-honor { color: var(--t-accent, #e1aa59); }

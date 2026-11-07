@@ -23,6 +23,7 @@ const ACTION_IMAGES = {
 
 const SKILL_ASSET_ID: Record<string, keyof typeof ACTION_IMAGES> = {
   "alpha-strike": "action_alpha_strike",
+  "alpha-reach-rend": "action_alpha_rend",
   "alpha-rend": "action_alpha_rend",
   "alpha-howl": "action_alpha_howl",
   "u02-shot": "action_cnc_thrust",

@@ -1,11 +1,35 @@
 import { chapterNextMission } from '../data/campaignChapter';
 import { BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, missionForContext } from '../data/operations';
 import type { FoundationProgressionState } from '../host/foundationProgression';
+import { missionContract } from "../data/fieldContracts";
+import type { FieldOpsProgression } from "../host/foundationProgression";
 import type { FieldResult } from '../data/fieldOps';
 import { missionRewardTruth, nextFieldMission } from './missionPurpose';
 import { parseVeteranOpportunity } from '../data/progressionOpportunity';
 
 export type PurposeAction = { missionId: string; title: string; reason: string; tier: 'standard' | 'advanced'; resume: boolean; chapter?: boolean; masteryChallenge?: 'relay-lockdown-v1' };
+export function nextFieldContract(field?: FieldOpsProgression) {
+  if (!field?.fieldContracts?.enabled || !field.board || field.board.nextRotationAt * 1000 <= Date.now()) return null;
+  const missionId = field.fieldContracts.eligibleMissionIds[0];
+  const contract = missionId && missionContract(missionId);
+  return contract ? { missionId, title: contract.name, reason: contract.objective, tier: "standard", resume: false } as const : null;
+}
+
+export function fieldResultNext(p: FoundationProgressionState | null, result: FieldResult | null): PurposeAction | null {
+  const field = p?.fieldOps;
+  const board = field?.board;
+  const regular = commandPurpose(p).primary;
+  if (regular?.resume) return regular;
+  const contract = nextFieldContract(field);
+  if (contract) return contract;
+  if (result?.contractAward?.reward === "reach-rend" && field?.fieldContracts?.enabled
+      && board && board.nextRotationAt * 1000 > Date.now()) {
+    const missionId = board.activeMissionIds.find(id => id !== result.missionId);
+    if (missionId) return { missionId, title: "Try Reach Rend", reason: "Equip Reach Rend for your next Field Op.", tier: "standard", resume: false };
+  }
+  return regular;
+}
+
 /** A single read-only decision hierarchy. Never changes eligibility or the accepted run. */
 export function commandPurpose(p: FoundationProgressionState | null | undefined): { primary: PurposeAction | null; alternatives: PurposeAction[] } {
   if (!p?.completed) return { primary: null, alternatives: [] };
@@ -19,6 +43,10 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     if (id) primary = { ...action(id, saved ? 'FINISH YOUR ACCEPTED CHAPTER RUN' : 'CONTINUE GHOST SIGNAL', 'Complete the next chapter objective. Chapter progress and Intel advance only on an accepted server result.', saved?.fieldContext?.directiveTier || 'standard', Boolean(saved)), chapter: true };
   }
   if (!primary) for (const op of [BROKEN_SIGNAL, DEAD_RELAY]) {
+    if (op === DEAD_RELAY) {
+      primary = nextFieldContract(f);
+      if (primary) break;
+    }
     const id = op.orderedMissionIds.find(id => p.operations?.[op.operationId]?.missions[id] === 'available');
     if (id) { primary = action(id, 'CONTINUE THE STORY', id === 'dead-relay-courier' ? 'Defeat the courier to open Hold. An early first win can record Courier Trace for delayed Hold reinforcements.' : id.endsWith('hold') ? 'Control the relay to unlock the Guardian.' : id.endsWith('guardian') ? 'Defeat the Guardian to record The Dead Relay campaign completion.' : id.endsWith('commander') ? 'Defeat the commander to complete Broken Signal.' : 'Complete this story objective to unlock the next campaign mission.'); break; }
   }

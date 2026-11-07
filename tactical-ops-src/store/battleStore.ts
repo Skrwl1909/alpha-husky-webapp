@@ -3,6 +3,7 @@ import { recordFieldcraft } from "../ui/fieldcraft";
 import { growthPreviewBase, rankChanges } from "../data/buildPreview";
 import { growthHero } from "../data/playerGrowth";
 import { resolveGrowthSkill, type GrowthSnapshot } from "../data/playerGrowth";
+import { withFieldRend, type FieldRend } from "../data/fieldContracts";
 import { fieldReport, type DeploymentApproach, type DirectiveTier, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
 import type { BattleEvent, BattleState, CombatUnit, Screen } from "../combat/types";
@@ -22,6 +23,7 @@ import {
   startOperationMission,
   startFoundationRun,
   saveTeammateSidegrade,
+  saveFieldRend,
   savePackMastery,
   upgradePlayerGrowth,
   respecPlayerGrowth,
@@ -185,6 +187,7 @@ interface Store extends UiBattle {
   toggleCommanderTeammate: (unitId: string) => void;
   selectKodaSidegrade: (choice: KodaSidegrade) => Promise<void>;
   selectShadowSidegrade: (choice: ShadowSidegrade) => Promise<void>;
+  selectFieldRend: (choice: FieldRend) => Promise<void>;
   skipTurn: () => void;
   cancel: () => void;
   replay: () => void;
@@ -790,6 +793,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (current.fieldResult?.runId === current.currentRunKey && current.fieldResult.missionId === current.selectedMissionId) return;
       const report = fieldReport(current.battle);
       if (!report) return;
+      if (current.currentFieldContext?.fieldContractsVersion) report.fieldContractsVersion = current.currentFieldContext.fieldContractsVersion;
       if (current.currentFieldContext?.veteranChallenge) report.veteranChallenge = current.currentFieldContext.veteranChallenge;
       if (current.currentFieldContext?.lockdownPlan) report.lockdownPlan = current.currentFieldContext.lockdownPlan;
       if (current.currentFieldContext?.masteryChallenge) report.masteryChallenge = current.currentFieldContext.masteryChallenge;
@@ -799,7 +803,7 @@ export const useBattleStore = create<Store>((set, get) => {
         const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report, undefined, current.activeRulesetVersion || undefined);
         if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey || committed.fieldResult.missionId !== current.selectedMissionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
-        applyCanonicalProgression(committed.state);
+        if (committed.state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(committed.state);
         set({ fieldResult: committed.fieldResult, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
@@ -939,7 +943,11 @@ export const useBattleStore = create<Store>((set, get) => {
                 persisted.progression.revision,
                 mission.missionId,
                 squadIds,
-                mission.activity === "FIELD_OP" ? { cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach,
+                mission.activity === "FIELD_OP" ? {
+                  ...(!persisted.chapterMode && !persisted.selectedMasteryChallenge && !persisted.selectedVeteranChallenge &&
+                    (existing?.fieldContext?.fieldContractsVersion === 1 || (!existing && requestedRuleset && persisted.progression.fieldOps?.fieldContracts?.enabled))
+                    ? { fieldContractsVersion: 1 as const } : {}),
+                  cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach,
                   ...(persisted.selectedVeteranChallenge ? {reportVersion:6,directiveTier:"advanced" as const,veteranChallenge:"pack-extraction-v1" as const} : persisted.selectedMasteryChallenge ? { reportVersion: persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.reportVersion || (persisted.progression.fieldOps?.lockdownPlansAvailable ? 5 : 4), directiveTier: "advanced" as const, masteryChallenge: persisted.selectedMasteryChallenge,
                     ...(persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.lockdownPlan ? { lockdownPlan: persisted.progression.fieldOps.activeMissionRun.fieldContext.lockdownPlan } : !persisted.progression.fieldOps?.activeMissionRun && persisted.progression.fieldOps?.lockdownPlansAvailable ? { lockdownPlan: persisted.selectedLockdownPlan } : {}) }
                     : persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
@@ -967,7 +975,7 @@ export const useBattleStore = create<Store>((set, get) => {
               beginBattle(
                 g,
                 started.run.runId,
-                applyRunCombatProfile(withTeammateSidegrades(canonicalSpawns, { ...started.state, packMastery: started.run.packMastery || {} }), started.run.combatProfileV3 || null, started.run.combatProfileV2),
+                applyRunCombatProfile(withTeammateSidegrades(withFieldRend(canonicalSpawns, started.run.fieldContext?.fieldRend), { ...started.state, packMastery: started.run.packMastery || {} }), started.run.combatProfileV3 || null, started.run.combatProfileV2),
                 acceptedMission.objectiveType === "RECOVER" ? acceptedMission.terminal : undefined,
                 mission.objectiveType === "BOSS",
                 persisted.progression.intel?.routingTrace === true,
@@ -1203,6 +1211,24 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     selectKodaSidegrade: (choice) => selectTeammateSidegrade("koda", choice),
     selectShadowSidegrade: (choice) => selectTeammateSidegrade("shadow", choice),
+    selectFieldRend: async (choice) => {
+      const current = get();
+      const field = current.progression?.fieldOps;
+      if (current.screen !== "brief" || !current.progression || current.busy || current.kodaSavePending || current.shadowSavePending
+          || field?.activeMissionRun || !field?.fieldContracts?.enabled || !field.fieldContracts.sidegrade
+          || field.fieldContracts.selection === choice) return;
+      set({ busy: true, progressionError: null });
+      try {
+        const state = await saveFieldRend(createFoundationRequestId("field-rend"), current.progression.revision, choice);
+        if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
+      } catch (error) {
+        const state = error instanceof FoundationProgressionError ? error.state : null;
+        if (state && state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
+        set({ progressionError: "Loadout could not be saved. Try again." });
+      } finally {
+        set({ busy: false });
+      }
+    },
     toggleCommanderTeammate: (unitId) => {
       const current = get();
       if (current.progression?.fieldOps?.activeMissionRun?.fieldContext?.progressionVersion===2) return;

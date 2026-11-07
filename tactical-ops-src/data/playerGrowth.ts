@@ -82,6 +82,7 @@ export function validateGrowthSnapshot(value: unknown): GrowthSnapshot {
 export function canonicalGrowthSkillId(executableId: string): string {
   const id = executableId.split(":mastery:")[0];
   switch (id) {
+    case "alpha-reach-rend": return "alpha-rend";
     case "u02-lunge-vanguard": return "u02-burst";
     case "u02-pressure-disruptor": return "u02-suppress";
     case "u03-mend-restorer": return "u03-mend";

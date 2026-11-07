@@ -25,6 +25,8 @@ export interface MasteryPath {
   firstLockdownClear?: FirstLockdownClear | null;
 }
 export interface FieldContext {
+  fieldContractsVersion?: 1;
+  fieldRend?: import("./fieldContracts").FieldRend;
   progressionVersion?: 2;
   veteranChallenge?: "pack-extraction-v1";
   lockdownPlan?: LockdownPlan;
@@ -43,6 +45,7 @@ export interface MissionChallenge {
   required?: string[];
 }
 export interface FieldReport {
+  fieldContractsVersion?: 1;
   veteranChallenge?: "pack-extraction-v1";
   lockdownPlan?: LockdownPlan;
   masteryChallenge?: typeof MASTERY_CHALLENGE;
@@ -55,6 +58,7 @@ export interface FieldReport {
   squadDeployed: number;
 }
 export interface FieldResult {
+  contractAward?: import("./fieldContracts").FieldContractAward;
   veteranChallenge?: "pack-extraction-v1";
   veteranCareer?: import("./veteran").VeteranDelta;
   lockdownPlan?: LockdownPlan;
