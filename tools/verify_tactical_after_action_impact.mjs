@@ -53,10 +53,15 @@ try {
   const ui = readFileSync("tactical-ops-src/ui/FieldOpResults.tsx", "utf8");
   const impactIndex = ui.indexOf('className="t-fr-consequence t-fr-impact"');
   const nextIndex = ui.indexOf('className="t-fr-next"');
-  const ctaIndex = ui.indexOf('className="t-brief-actions t-result-actions"');
+  const ctaIndex = ui.indexOf('{!reachReward ? primaryAction : null}');
   const recordIndex = ui.indexOf('className="t-fr-ledger"');
   assert(impactIndex > 0 && impactIndex < nextIndex && nextIndex < ctaIndex && ctaIndex < recordIndex,
-    "impact → next → action → optional accounting must be the UI reading order");
+    "ordinary results must read impact → next → action → optional accounting");
+  const rewardStart = ui.indexOf('{reachReward ? <section className="t-fr-reach-reward"');
+  const rewardBenefit = ui.indexOf('{REACH_REND_TRADEOFF}', rewardStart);
+  const rewardAction = ui.indexOf('{primaryAction}', rewardStart);
+  assert(rewardStart > 0 && rewardStart < rewardBenefit && rewardBenefit < rewardAction && rewardAction < impactIndex,
+    "confirmed Reach Rend must show its trade-off and action before the mission record");
   assert(ui.includes("{receipt && impact ?"), "unrecorded or stale runs cannot display confirmation");
   assert(ui.includes("change.veteran && (change.veteran.unlocked || change.veteran.after > change.veteran.before)"),
     "unchanged companion Veteran status must not repeat the same no-credit explanation");

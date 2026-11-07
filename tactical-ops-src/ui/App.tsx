@@ -368,6 +368,37 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
+        {recommendedMission && primaryPurpose ? (() => {
+          const visual = missionPresentation(recommendedMission);
+          const contract = !primaryPurpose.resume && primaryPurpose.title === nextContract?.title ? nextContract : null;
+          const window = !primaryPurpose.resume && recommendedMission.activity === "FIELD_OP"
+            ? currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) : null;
+          return <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-command-order t-mission-tone-${visual.tone}`} aria-label="Recommended next operation" data-primary-purpose="true" data-purpose-mission={recommendedMission.missionId}>
+            <div className="t-wt-feature-art">
+              <img src={visual.art} alt="" />
+              <span className="t-wt-art-label">{visual.label}</span>
+            </div>
+            <div className="t-wt-feature-copy">
+              <div className="t-kicker t-cd-operation-label">{primaryPurpose.resume ? "ACCEPTED OPERATION" : "NEXT OPERATION"}</div>
+              <h2>{recommendedMission.name}</h2>
+              <p className="t-wt-objective">{contract?.reason ?? recommendedPurpose?.objectiveText}</p>
+              <div className="t-command-order-value">
+                <strong>{contract ? `FIELD CONTRACT · ${contract.title}` : primaryPurpose.resume ? "SQUAD SAVED" : primaryPurpose.title}</strong>
+                <p>{contract ? (contracts?.sidegrade ? "Complete the remaining contract to earn Field Tested honor."
+                  : contracts?.completed.length === 1 ? "Complete this contract to unlock Reach Rend."
+                  : "Complete two Field Contracts to unlock Reach Rend.")
+                  : primaryPurpose.resume ? "Resume with the accepted squad from round 1." : primaryPurpose.reason}</p>
+              </div>
+              {window ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{window.text}</p> : null}
+            </div>
+            <div className="t-wt-feature-cta">
+              <button className="t-btn t-btn-primary t-wt-main-cta t-command-hero-cta" type="button" disabled={loading} onClick={() => openPurpose(primaryPurpose)}>
+                {primaryPurpose.resume ? "RESUME OP" : primaryPurpose.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}
+                <ChevronRight className="t-ico" />
+              </button>
+            </div>
+          </section>;
+        })() : <p role="status">Refresh to see available operations.</p>}
         <section className="t-command-progress" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
           <div className="t-command-progress-line">
             <strong>{rankLabel}</strong>
@@ -382,45 +413,12 @@ function WarTable() {
             <small>Next · Rank {commanderRank + 1}</small>
           </> : null}
         </section>
-        {recommendedMission ? (() => {
-          const visual = missionPresentation(recommendedMission);
-          return (
-          <>
-          <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-mission-tone-${visual.tone}`} aria-label="Recommended next operation" data-primary-purpose="true" data-purpose-mission={recommendedMission.missionId}>
-            <div className="t-wt-feature-art">
-              <img src={visual.art} alt="" aria-hidden="true" />
-              <span className="t-wt-art-label">{visual.label}</span>
-            </div>
-            <div className="t-wt-feature-copy">
-              <div className="t-kicker t-cd-operation-label">{primaryPurpose?.resume ? "ACCEPTED OPERATION" : "NEXT UP / OPERATION"}</div>
-              <h2>{recommendedMission.name}</h2>
-              <p className="t-wt-objective">{recommendedPurpose?.objectiveText}</p>
-              {contracts?.enabled && primaryPurpose?.title === nextContract?.title && nextContract
-                ? <p className="t-brief-purpose-meta">{nextContract.title} · {nextContract.reason}</p> : null}
-              {primaryPurpose?.title === "RELAY MASTERY · 0/1" ? <p className="t-brief-purpose-meta">{primaryPurpose.title}</p> : null}
-              {primaryPurpose?.masteryChallenge && !primaryPurpose.resume && field?.lockdownPlansAvailable ? <p className="t-brief-purpose-meta">Choose Anchor or Crosslink in the brief.</p> : null}
-              {primaryPurpose?.resume ? <p className="t-player-next-reason">Your squad is saved. Restart from round 1.</p> : null}
-              {primaryPurpose && !primaryPurpose.resume && recommendedMission.activity === "FIELD_OP" && currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier)?.text}</p> : null}
-            </div>
-            <div className="t-wt-feature-cta">
-              <button className="t-btn t-btn-primary t-wt-main-cta t-command-hero-cta" type="button" disabled={loading} onClick={() => primaryPurpose && openPurpose(primaryPurpose)}>
-                {primaryPurpose?.resume ? "RESUME OP" : primaryPurpose?.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}
-                <ChevronRight className="t-ico" />
-              </button>
-            </div>
-          </section>
-          </>
-          );
-        })() : null}
-
-
-        {!primaryPurpose ? <p role="status">Refresh to see available operations.</p> : null}
-        {contracts?.enabled || contracts?.honor ? <section className="t-panel t-field-contract" aria-label="Field Contracts">
-          <div className="t-kicker">FIELD CONTRACTS · {contracts.completed.length}/3</div>
+        {contracts?.enabled || contracts?.honor ? <details className="t-purpose-memory t-command-records t-cd-records" aria-label="Field Contracts">
+          <summary>FIELD CONTRACTS <span>{contracts.completed.length}/3</span></summary><div className="t-cd-record-body">
           <strong>{contracts.honor ? `Field Honor · ${FIELD_HONOR}` : contracts.sidegrade ? "Next reward · Field Tested honor" : "2 contracts unlock Reach Rend"}</strong>
           {nextContract && primaryPurpose?.title !== nextContract.title ? <p>{nextContract.title} · {nextContract.reason}</p> : null}
           {!nextContract && contracts.completed.length < 3 ? <p>Check the next rotation for an unfinished contract.</p> : null}
-        </section> : null}
+        </div></details> : null}
         {purposeRoute.alternatives.length ? <details className="t-purpose-alternatives" aria-label="Optional alternatives">
           <summary>Other operations</summary>
           {purposeRoute.alternatives.map(action => <article key={action.missionId} data-purpose-mission={action.missionId}>
@@ -989,19 +987,23 @@ function Brief() {
                   {(["rend", "reach-rend"] as const).map(choice => {
                     const skill = resolveGrowthSkill(getSkill(`alpha-${choice}`), growthHero(previewGrowth, unit.defId));
                     const damage = skill.effects.find(effect => effect.kind === "damage")?.multiplier;
+                    const bleed = skill.effects.find(effect => effect.kind === "status" && effect.status === "BLEED");
+                    const icon = tacticalActionImageForSkill(skill.id);
                     const equipped = equippedRend === choice;
                     return <button type="button" key={choice} aria-pressed={equipped}
                       disabled={!canEquipFieldRend || busy || fieldRendSavePending || kodaSavePending || shadowSavePending}
                       onClick={() => { if (rotationLive()) void selectFieldRend(choice); }}>
+                      {icon ? <img src={icon} alt="" /> : null}
                       <strong>{skill.name}</strong>
-                      <small>{loadoutRange(skill)} {skill.maxRange === 1 ? "cell" : "cells"} · {Math.round((damage ?? 0) * 100)}% direct hit</small>
+                      <small>{loadoutRange(skill)} {skill.maxRange === 1 ? "cell" : "cells"}<br />{Math.round((damage ?? 0) * 100)}% direct hit</small>
+                      {bleed ? <small className="t-field-rend-bleed">Bleed · {bleed.duration} turns</small> : null}
                       <span className="t-field-rend-state">{equipped ? "EQUIPPED" : canEquipFieldRend ? "AVAILABLE" : field?.activeMissionRun ? "LOCKED" : "UNAVAILABLE"}</span>
                     </button>;
                   })}
                 </div>
                 {field?.activeMissionRun ? <p><strong>Locked for current run.</strong> Finish the accepted Field Op to change A2.</p>
                   : !canEquipFieldRend ? <p>Choose a current regular Field Op on the War Table to change A2.</p>
-                  : <p role="status">{fieldRendSavePending ? "Saving A2…" : `${equippedRend === "reach-rend" ? "Reach Rend" : "Rend"} equipped for new Field Ops. Both apply Bleed.`}</p>}
+                  : <p role="status">{fieldRendSavePending ? "Saving A2…" : `${equippedRend === "reach-rend" ? "Reach Rend" : "Rend"} equipped for new compatible Field Ops.`}</p>}
                 {progressionError ? <p role="alert">{progressionError}</p> : null}
               </section> : null}
               {variantOwner ? <section className="t-loadout-variants" aria-label={`${loadoutName(unit)} variants`}>
@@ -1216,12 +1218,12 @@ function Results() {
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
   const resultNext = fieldResultNext(progression);
-  const reachRendUnlocked = recordedFieldResult?.contractAward?.reward === "reach-rend";
+  const reachRendUnlocked = recordedFieldResult?.victory && recordedFieldResult.contractAward?.reward === "reach-rend";
   const rewardBrief = reachRendLoadoutMission(progression, recordedFieldResult);
   const acceptedFieldRun = progression?.fieldOps?.activeMissionRun;
   const rewardResume = acceptedFieldRun && getMissionDef(acceptedFieldRun.missionId);
   const reachRendNext = rewardBrief
-    ? "Choose it in Loadout. On ALPHA’s turn, select A2 and target an enemy in range."
+    ? "Equip it in Loadout, then select A2 on ALPHA’s turn."
     : acceptedFieldRun ? "A2 is locked for the accepted Field Op. Finish that run to equip Reach Rend."
     : "Equip it in ALPHA’s Loadout when a regular Field Op is available.";
   const nextSuggested = resultNext || nextFieldMission(progression?.fieldOps, selectedMissionId);
@@ -1252,7 +1254,7 @@ function Results() {
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
       failure={fieldFailureCopy(fieldFailure, mission.objectiveType)} consequence={s3Proof}
-      contractNext={nextFieldContract(progression?.fieldOps)?.reason}
+      nextObjective={recordedFieldResult?.victory ? resultNext?.reason : undefined}
       reachRendNext={reachRendNext}
       replayAction={<button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button>}
       actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> :
@@ -1271,7 +1273,7 @@ function Results() {
           }
           const next = recordedFieldResult.victory ? fieldResultNext(store.progression) : null;
           if (next) openPurposeBrief(next);
-        }}>{reachRendUnlocked ? rewardBrief ? "CHOOSE ALPHA’S A2" : rewardResume ? "RESUME FIELD OP" : "WAR TABLE"
+        }}>{reachRendUnlocked ? rewardBrief ? "EQUIP REACH REND" : rewardResume ? "RESUME FIELD OP" : "WAR TABLE"
           : recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>}>
       {recordedFieldResult ? <details className="t-detail"><summary>Progression & eligibility</summary>
         <p>{fieldResultPurpose(recordedFieldResult).future}</p>

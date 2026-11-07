@@ -5279,3 +5279,133 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 }
 .t-field-contract p, .t-fr-next p { margin: 0; }
 .t-field-contract-honor { color: var(--t-accent, #e1aa59); }
+
+/* Field reward, A2 comparison and the next Command order. */
+#tacticalOpsRoot .t-field-results .t-fr-reach-reward {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #ac8752;
+  border-radius: 8px;
+  background: #0c1219;
+}
+#tacticalOpsRoot .t-fr-reward-portrait {
+  position: absolute;
+  z-index: -2;
+  inset: 0 0 auto;
+  width: 100%;
+  height: 232px;
+  object-fit: cover;
+  object-position: center 64%;
+  opacity: .88;
+}
+#tacticalOpsRoot .t-fr-reach-reward::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: linear-gradient(180deg, #10151d80 0%, #15161a12 33%, #0a1019ed 61%, #0a1019 78%);
+}
+#tacticalOpsRoot .t-fr-reward-copy {
+  display: grid;
+  justify-items: center;
+  padding: 14px clamp(10px, 4vw, 22px);
+  text-align: center;
+}
+#tacticalOpsRoot .t-fr-reward-copy > .t-kicker {
+  justify-self: start;
+  padding: 5px 7px;
+  background: #0a1019db;
+  color: #e9dabf;
+}
+#tacticalOpsRoot .t-fr-reward-copy > .t-fr-reward-icon {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  justify-self: end;
+  margin-top: clamp(28px, 10vh, 84px);
+  margin-inline-end: 4px;
+  filter: drop-shadow(0 0 10px #e6b65e80);
+}
+#tacticalOpsRoot .t-fr-reward-copy h2 {
+  margin: 4px 0;
+  font: 850 clamp(29px, 8.4vw, 52px)/1 var(--t-font-display);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #ffe0a2;
+  text-shadow: 0 2px 16px #0a1019;
+}
+#tacticalOpsRoot .t-fr-reward-copy > strong {
+  color: #a4eafb;
+  font-size: 11px;
+  letter-spacing: .23em;
+  text-transform: uppercase;
+}
+#tacticalOpsRoot .t-field-results .t-fr-reward-copy .t-fr-reward-stats {
+  margin-top: 10px;
+  padding-block: 5px;
+  border-block: 1px solid #a5814980;
+  color: #f4e5c7;
+}
+#tacticalOpsRoot .t-field-results .t-fr-reward-copy .t-result-actions { width: 100%; padding-bottom: 8px; }
+#tacticalOpsRoot .t-field-results .t-fr-reward-copy .t-result-actions .t-btn-primary {
+  border-color: #ffe0a2;
+  color: #20190d;
+  background: linear-gradient(160deg, #ffe2a4, #d2a75d);
+  font-weight: 850;
+}
+#tacticalOpsRoot .t-fr-reward-copy > small { font-size: 10px; color: #afc2cc; }
+#tacticalOpsRoot .t-field-results .t-fr-major-unlock {
+  margin-block: 8px;
+  color: #ffe0a2;
+  font: 800 16px/1.25 var(--t-font-display);
+}
+@media (prefers-reduced-motion: no-preference) {
+  #tacticalOpsRoot .t-fr-reward-copy h2 { animation: t-reach-title-in 280ms ease-out; }
+}
+@keyframes t-reach-title-in {
+  from { opacity: .72; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+#tacticalOpsRoot .t-field-rend .t-loadout-choices button {
+  position: relative;
+  padding: 9px;
+  border-color: #765e38;
+  background: radial-gradient(ellipse at 20% 0, #3a3024, #111b25 75%);
+  text-align: start;
+}
+#tacticalOpsRoot .t-field-rend .t-loadout-choices button[aria-pressed="true"] {
+  border-color: #92e7ff;
+  background: radial-gradient(ellipse at 20% 0, #183f50, #101f2b 75%);
+}
+#tacticalOpsRoot .t-field-rend .t-loadout-choices button:disabled { opacity: 1; cursor: default; }
+#tacticalOpsRoot .t-field-rend .t-loadout-choices button:disabled[aria-pressed="false"] { border-color: #586875; background: #15202b; }
+#tacticalOpsRoot .t-field-rend .t-loadout-choices button img {
+  display: block;
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  margin-bottom: 4px;
+}
+#tacticalOpsRoot .t-field-rend .t-loadout-choices strong { font: 800 13px/1.2 var(--t-font-display); }
+#tacticalOpsRoot .t-field-rend .t-field-rend-bleed { color: #a4eafb; }
+#tacticalOpsRoot .t-field-rend button:enabled[aria-pressed="false"] .t-field-rend-state { color: #ffe0a2; }
+#tacticalOpsRoot .t-field-rend button:focus-visible { outline: 2px solid #e1faff; outline-offset: -3px; }
+
+#tacticalOpsRoot .t-command-order .t-command-order-value {
+  margin-top: 9px;
+  padding-inline-start: 9px;
+  border-inline-start: 2px solid #bd985f;
+}
+#tacticalOpsRoot .t-command-order .t-command-order-value strong {
+  color: #ffe0a2;
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+#tacticalOpsRoot .t-command-order .t-command-order-value p {
+  margin: 3px 0 0;
+  color: #c4d8e1;
+  font-size: 12px;
+  line-height: 1.35;
+}

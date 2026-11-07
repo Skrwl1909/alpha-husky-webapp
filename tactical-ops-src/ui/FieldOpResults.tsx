@@ -1,4 +1,4 @@
-import { contractName, FIELD_HONOR } from "../data/fieldContracts";
+import { contractName, FIELD_HONOR, REACH_REND_TRADEOFF } from "../data/fieldContracts";
 import type { ReactNode } from "react";
 import { Check, Shield, AlertTriangle } from "lucide-react";
 import type { FieldResult } from "../data/fieldOps";
@@ -6,18 +6,22 @@ import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
 import { veteranReceiptReason } from "../data/progressionOpportunity";
 import { recordedImpact } from "./afterActionImpact";
+import { UNIT_DEFS } from "../data/units";
+import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
-  consequence, contractNext, reachRendNext, actions, replayAction, children }: {
+  consequence, nextObjective, reachRendNext, actions, replayAction, children }: {
   victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
   pending: boolean; error: string | null; failure: string;
   consequence: { label: string; detail: string } | null;
-  contractNext?: string;
+  nextObjective?: string;
   reachRendNext?: string;
   actions: ReactNode; replayAction?: ReactNode; children: ReactNode;
 }) {
-  const award = receipt?.contractAward;
+  const award = receipt?.victory ? receipt.contractAward : undefined;
+  const reachReward = award?.reward === "reach-rend";
+  const rewardIcon = reachReward ? tacticalActionImageForSkill("alpha-reach-rend") : null;
   const state = receipt ? "confirmed" : pending ? "pending" : error ? "failed" : "unrecorded";
   const meaning = receipt ? fieldResultPurpose(receipt) : null;
   const amountsAvailable = receipt && receipt.rewardAmountsAvailable !== false &&
@@ -38,31 +42,46 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     : receipt && receipt.progressEarned > 0 ? `+${receipt.progressEarned} COMMANDER ${receipt.progressEarned === 1 ? "POINT" : "POINTS"}`
     : "RUN RECORDED";
   const progressOnly = impact?.kind === "recorded" && (masteryGain || (receipt?.progressEarned ?? 0) > 0);
-  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-recording={state} data-milestone={milestone ? "confirmed" : undefined}>
-    <header className="t-outcome-hero">
+  const majorUnlock = award?.reward === "field-tested" ? `FIELD HONOR · ${FIELD_HONOR}`
+    : receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone ? achievement : null;
+  const primaryAction = <div className="t-brief-actions t-result-actions">{actions}</div>;
+  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={milestone ? "confirmed" : undefined}>
+    {reachReward ? <section className="t-fr-reach-reward" aria-label="Confirmed field contract">
+      <img className="t-fr-reward-portrait" src={UNIT_DEFS.alpha.portrait} alt="" />
+      <div className="t-fr-reward-copy">
+        <span className="t-kicker">VICTORY · ALPHA / A2</span>
+        {rewardIcon ? <img className="t-fr-reward-icon" src={rewardIcon} alt="" /> : null}
+        <h2>Reach Rend</h2>
+        <strong>Unlocked</strong>
+        <p className="t-fr-reward-stats">{REACH_REND_TRADEOFF}</p>
+        <p>{reachRendNext}</p>
+        {primaryAction}
+        <small>{missionName} · {contractName(award.id)} completed · {award.count}/3</small>
+      </div>
+    </section> : <header className="t-outcome-hero">
       <img className="t-results-plate" src={plate} alt="" aria-hidden="true" />
       <div className="t-kicker">{missionName}</div>
       <h2 className="t-title">{victory ? "VICTORY" : "DEFEAT"}</h2>
       {!victory ? <p className="t-fr-outcome">{failure}</p> : null}
-    </header>
+    </header>}
     <div className="t-fr-record" role="status" aria-live="polite" aria-atomic="true">
       {receipt ? <Check aria-hidden="true" /> : state === "failed" ? <AlertTriangle aria-hidden="true" /> : <Shield aria-hidden="true" />}
       <div><strong>{receipt ? "SERVER RECORDED" : pending ? "RECORDING RESULT…" : error ? "RECORDING FAILED" : "RESULT NOT RECORDED"}</strong>
         <p>{receipt ? "Receipt-confirmed progress below." : pending ? "Waiting for confirmation. Earnings are not confirmed yet." : "Earnings are not confirmed. Retry saving this result."}</p></div>
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
-    {award ? <section className="t-fr-consequence t-field-contract" aria-label="Confirmed field contract">
+    {award && !reachReward ? <section className="t-fr-consequence t-field-contract" aria-label="Confirmed field contract">
       <div className="t-kicker">{contractName(award.id)} completed · {award.count}/3</div>
-      <strong>{award.reward === "reach-rend" ? "Reach Rend unlocked" : award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
-      {award.reward === "reach-rend" ? <><p>ALPHA’s A2 hits from farther away for less direct damage. Same Bleed.</p><p>{reachRendNext}</p></> : null}
+      <strong className={majorUnlock ? "t-fr-major-unlock" : undefined}>{award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
     </section> : null}
+    {majorUnlock && !award ? <div className="t-fr-major-unlock">{majorUnlock}</div> : null}
     {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline">WHAT CHANGED</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}
-    {receipt && award?.reward !== "reach-rend" ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{contractNext ? <p>{contractNext}</p> : null}</div> : null}
-    <div className="t-brief-actions t-result-actions">{actions}</div>
+    {receipt && !reachReward ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{nextObjective ? <p>{nextObjective}</p> : null}</div> : null}
+    {!reachReward ? primaryAction : null}
     {receipt ? <details className="t-fr-ledger">
       <summary><span>MISSION RECORD</span><small>Commander · Veteran · Mastery · Rewards</small></summary>
       <section className="t-fr-earned" aria-label="Confirmed mission earnings">
