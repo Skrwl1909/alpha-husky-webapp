@@ -50,7 +50,7 @@ try {
  assert(brief.includes('mission?.directive?.recoverEveryRounds'),"do not invent a fixed timing");
  assert(brief.includes('const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);'),"special Recover modes not overwritten");
  assert(brief.includes('data-opportunity-status={veteranBrief.status}'),"Veteran status still server-owned");
- assert(brief.includes('NEXT UP /'),"War Table speaks clearly");
+ assert(brief.includes('primaryPurpose.resume ? "ACCEPTED OPERATION" : "NEXT OPERATION"'),"War Table speaks clearly");
  assert(battle.includes('acceptedWindow?.delayed && activeHound'),"no claimed battlefield advantage without engine timing");
  assert(battle.includes('acceptedWindow.actualRound === activeHound.triggerRound'),"match actual combat round");
  assert(battle.includes('data-player-voice-hound'),"visible HUD benefit");
