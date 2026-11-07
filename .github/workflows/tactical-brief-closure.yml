@@ -45,6 +45,7 @@ jobs:
           BRIEF_PRODUCTION=1 node tools/verify_tactical_brief_closure_browser.mjs
           node tools/verify_tactical_loadout_browser.mjs
           node tools/verify_tactical_field_contracts_browser.mjs
+          node tools/verify_tactical_browser_exit_browser.mjs
         env:
           CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
