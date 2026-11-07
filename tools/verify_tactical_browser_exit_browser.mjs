@@ -70,6 +70,16 @@ try {
     await exit.click();
     assert.equal(await page.evaluate(() => window.fixture.getState().open), true, "pending save must block exit");
     await page.evaluate(() => window.fixture.pending(false));
+    await page.evaluate(() => window.fixture.store.setState({
+      screen: "results", currentRunKey: "unrecorded_001", fieldResult: null,
+      campaignResult: null, chapterResult: null,
+    }));
+    await exit.click();
+    assert.equal(await page.evaluate(() => window.fixture.getState().open), true, "unrecorded result must block exit");
+    await page.evaluate(() => window.fixture.store.setState({ screen: "battle", currentRunKey: "qa_combat_001" }));
+    await exit.click();
+    assert.equal(await page.evaluate(() => window.fixture.getState().open), true, "dismissed combat confirmation must keep Tactical Ops open");
+    await page.evaluate(() => window.fixture.store.setState({ screen: "hub", currentRunKey: null }));
 
     const runId = await page.evaluate(() => window.fixture.savedRun());
     await exit.click();
