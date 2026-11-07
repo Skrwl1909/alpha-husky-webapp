@@ -318,8 +318,12 @@ const fieldContractBlobs=Object.freeze({
  'tactical-ops-src/ui/returnPurpose.ts':'d457a609abbdb23cfee8a9294cb48c45a9c69793',
  'tactical-ops-src/ui/tacticalActionIcons.ts':'707d2c922443ae148039fdae3bcd8429c34c2766',
 });
+const fieldContractsMerge='1a9e41436c364e2bf0c557f74b1e11e57a47084f';
+const legacyFieldBriefFix='8634d6e5150b31476c2a1c05e8b8e6573baaf8be';
+git('merge-base','--is-ancestor',fieldContractsMerge,'HEAD');
 for(const [path,expected] of Object.entries(fieldContractBlobs)){
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Field Contracts source: '+path);
+ assert.equal(git('rev-parse',`${fieldContractsMerge}:${path}`).trim(),expected,'unreviewed merged Field Contracts source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),path===app ? legacyFieldBriefFix : expected,'unreviewed Field Contracts source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path),'unreviewed runtime mutation in Field Contracts V1: '+path);

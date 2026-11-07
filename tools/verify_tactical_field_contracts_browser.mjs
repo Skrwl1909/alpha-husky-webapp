@@ -41,6 +41,14 @@ window.apiPost = async (path, body) => {
 window.fixture = { store, apply, async progress(count) {
   field.fieldContracts = projection(count);
   await apply();
+}, async legacyBrief() {
+  field.fieldContracts = { ...projection(2), completed:keys.slice(1),
+    eligibleMissionIds:[ids[0]], selection:"reach-rend" };
+  field.activeMissionRun = { runId:"field_legacy", missionId:ids[2], squadIds:squad,
+    fieldContext:{ cycleId:8, approach:"standard", pressure:2, reportVersion:3,
+      directiveTier:"standard", directiveSet:"pursuit" } };
+  await apply();
+  store.getState().openOperationBrief(ids[0]);
 }, async results(count, match) {
   const missionId = count===3 ? "field-relay-intercept" : ids[count-1];
   await this.progress(count);
@@ -104,6 +112,8 @@ try {
     assert.match(await reward.innerText(),/1\/3.*One more contract/s);
     await fit(reward);
     assert.match(await page.locator(".t-fr-next").innerText(),/all three allies standing/);
+    await page.getByRole("button",{name:/^NEXT:/}).tap();
+    assert.match(await contract.innerText(),/Hold Together.*all three allies standing/is);
     await page.evaluate(() => fixture.results(2,true));
     assert.match(await reward.innerText(),/Reach Rend unlocked/);
     await page.evaluate(() => {
@@ -125,6 +135,12 @@ try {
     assert.match(await reward.innerText(),/Field Honor earned · Field Tested/);
     await page.evaluate(() => fixture.store.setState({screen:"war-table"}));
     assert.match(await command.innerText(),/3\/3.*Field Honor · Field Tested/s);
+    await page.evaluate(() => fixture.legacyBrief());
+    assert.match(await contract.innerText(),/Finish the accepted Field Op/);
+    await page.getByLabel("Mission preparation sections").getByRole("button",{name:/LOADOUT/}).tap();
+    assert.match(await page.locator('[data-slot="A2"]').innerText(),/REND/);
+    assert.doesNotMatch(await page.locator('[data-slot="A2"]').innerText(),/REACH REND/);
+    assert.equal(await page.getByLabel("ALPHA Field Rend").getByRole("button",{name:/REACH REND/}).getAttribute("aria-pressed"),"false");
     assert.deepEqual(errors,[]);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
     console.log(`PASS ${width}px COMMAND → BRIEF → matched Results → saved Loadout → Field Honor`);
