@@ -44,6 +44,21 @@ export const SKILLS: Record<string, SkillDef> = {
       { kind: "status", status: "BLEED", duration: 2, value: 8, on: "hits" },
     ],
   },
+  "alpha-reach-rend": {
+    id: "alpha-reach-rend",
+    name: "REACH REND",
+    desc: "Cut from up to 2 cells away. Weaker direct hit than Rend, with the same Bleed.",
+    slot: "A2",
+    cooldownMax: 3,
+    targetType: "ENEMY_SINGLE",
+    minRange: 1,
+    maxRange: 2,
+    radius: 0,
+    effects: [
+      { kind: "damage", multiplier: 1.05, on: "hits" },
+      { kind: "status", status: "BLEED", duration: 2, value: 8, on: "hits" },
+    ],
+  },
   "alpha-howl": {
     id: "alpha-howl",
     name: "HOWL",

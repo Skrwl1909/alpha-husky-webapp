@@ -26,6 +26,7 @@ try {
     "/tactical-ops-src/combat/intentScheduler.ts",
     "/tactical-ops-src/combat/missionRules.ts",
   ].map(v=>vite.ssrLoadModule(v)));
+  const { withFieldRend } = await vite.ssrLoadModule("/tactical-ops-src/data/fieldContracts.ts");
   const pet={id:"s2-test-pet",name:"S2 PET",img:"https://example.test/unused.png"};
   const variants=[
     ["alpha","ally-02","ally-03"],
@@ -154,7 +155,7 @@ try {
     const spawns=ops.missionSpawnsForSquad(mission,squad,pet,profile.context?.approach);
     assert(spawns,mission.missionId+": cannot deploy "+squad);
     const pack=Object.fromEntries(squad.filter(id=>id!=="alpha").map(id=>[id,{progress:8,stage:3,selected:profile.build?.signature||"B"}]));
-    const altered=sidegrades.withTeammateSidegrades(spawns,{kodaSidegrade:profile.sidegrades?.kodaSidegrade || profile.build?.koda||"B",shadowSidegrade:profile.sidegrades?.shadowSidegrade || profile.build?.shadow||"B",packMastery:profile.accepted?.packMastery || (profile.noMastery?{}:pack)});
+    const altered=sidegrades.withTeammateSidegrades(withFieldRend(spawns, profile.context?.fieldRend),{kodaSidegrade:profile.sidegrades?.kodaSidegrade || profile.build?.koda||"B",shadowSidegrade:profile.sidegrades?.shadowSidegrade || profile.build?.shadow||"B",packMastery:profile.accepted?.packMastery || (profile.noMastery?{}:pack)});
     const v3={version:3,mode:"battle-v1",alpha:profile.alpha,pet:squad.some(x=>x.startsWith("pet:"))?{...pet,...profile.pet}:null};
     const applied=profiles.applyRunCombatProfile(altered,profile.accepted?.combatProfileV3 || v3,profile.accepted?.combatProfileV2 || {pet:v3.pet});
     const spec=ops.missionBattleRules(mission,false,profile.context || (mission.activity==="FIELD_OP"?{reportVersion:3,pressure:2,directiveTier:profile.tier||"standard"}:undefined));
@@ -293,11 +294,41 @@ try {
     const accepted=JSON.parse(readFileSync(process.env.DEPTH01_ACCEPTED,'utf8'));
     const run=accepted.run,contract=run.rulesContract||null;
     types.selectAcceptedBattleRules(contract);intents.selectAcceptedIntentRules(contract);
-    const m=ops.missionForContext(ops.getMissionDef(run.missionId),run.fieldContext);
-    const row=fullRun(m,run.squadIds,{name:'exact-http-snapshot',accepted:run,sidegrades:accepted.data,
-      alpha:run.combatProfileV3?.alpha||{hp:120,atk:28,def:12,spd:14},context:run.fieldContext},run.fieldContext.reportVersion===4?'control':'precise');
-    writeFileSync(process.env.DEPTH01_ACCEPTED_OUT,JSON.stringify(row,null,2));
-    console.log('HTTP snapshot engine: '+row.outcome+' in '+row.rounds+' rounds');
+    const m=ops.missionForContext(ops.getMissionDef(run.missionId),run.fieldContext,contract?.missionRevision);
+    const simulate = (policy, context = run.fieldContext) => fullRun(m,run.squadIds,{name:'exact-http-snapshot',accepted:run,sidegrades:accepted.data,
+      alpha:run.combatProfileV3?.alpha||{hp:120,atk:28,def:12,spd:14},context},policy);
+    if (process.env.FIELD_CONTRACTS_ENGINE) {
+      const policies = ["tempo", "convoy", "control", "precise", "evade"];
+      const rows = policies.map(policy => simulate(policy));
+      const comparison = run.fieldContext.fieldRend === "reach-rend"
+        ? policies.map(policy => simulate(policy, { ...run.fieldContext, fieldRend: "rend" })) : [];
+      const profile = run.combatProfileV3;
+      const probe = (choice, distance) => {
+        const adjusted = withFieldRend([{ id: "alpha", defId: "alpha", c: 0, r: 0 },
+          { id: "hostile", defId: "h1", c: distance, r: 0 }], choice);
+        const [alpha] = profiles.applyRunCombatProfile(adjusted, profile, run.combatProfileV2);
+        const enemy = { ...adjusted[1], defId: "h1" };
+        const enemyDef = ops.missionSpawnsForSquad(m, run.squadIds, pet, run.fieldContext.approach).find(spawn => spawn.id === "h1");
+        assert(enemyDef, "Missing field hostile");
+        const initial = battle.createBattle(null, [alpha, { ...enemyDef, c: enemy.c, r: enemy.r }], undefined, undefined, null, undefined, run.playerGrowth);
+        const state = { ...initial, activeId: "alpha", units: initial.units.map(unit => ({
+          ...unit, c: unit.id === "alpha" ? 0 : distance, r: 0,
+        })) };
+        const skill = skills.availableSkills(state, state.units.find(unit => unit.id === "alpha")).find(skill => skill.slot === "A2");
+        const action = battle.trySkill(state, skill.id, enemyDef.id);
+        return { hit: action.ok, damage: action.events?.find(event => event.type === "damage")?.amount ?? 0,
+          bleed: action.state?.units.find(unit => unit.id === enemyDef.id)?.statuses.find(status => status.type === "BLEED")?.duration ?? null };
+      };
+      const tradeoff = run.fieldContext.fieldRend === "reach-rend" ? {
+        reachNear: probe("reach-rend", 1), baseNear: probe("rend", 1),
+        reachFar: probe("reach-rend", 2), baseFar: probe("rend", 2),
+      } : null;
+      writeFileSync(process.env.DEPTH01_ACCEPTED_OUT, JSON.stringify({rows, comparison, tradeoff}));
+    } else {
+      const row = simulate(run.fieldContext.reportVersion === 4 ? "control" : "precise");
+      writeFileSync(process.env.DEPTH01_ACCEPTED_OUT,JSON.stringify(row,null,2));
+      console.log('HTTP snapshot engine: '+row.outcome+' in '+row.rounds+' rounds');
+    }
     process.exitCode=0;
   } else {
   const base=ops.getMissionDef("field-relay-hold");

@@ -112,9 +112,11 @@ for(const head of heads)for(const path of changed(head)){
   const additions=[
    "      - 'tools/verify_tactical_loadout_browser.mjs'\n",
    "          node tools/verify_tactical_loadout_browser.mjs\n",
+   "      - 'tools/verify_tactical_field_contracts_browser.mjs'\n",
+   "          node tools/verify_tactical_field_contracts_browser.mjs\n",
   ];
   for(const addition of additions){
-   assert.equal(source.split(addition).length,2,'missing or repeated Loadout browser coverage');
+   assert.equal(source.split(addition).length,2,'missing or repeated mobile browser coverage');
    source=source.replace(addition,'');
   }
  }
@@ -284,21 +286,43 @@ const loadoutBlobs=Object.freeze({
  [app]:'5471fbdcd94f8d85fde692a1c7060d7797ecab5d',
  'tactical-ops-src/tactical.css':'9a6688d0e234519ac9a83ea7ad3d8aae16e8fe23',
 });
+const loadoutHead='faff4e740061b213a0960d5ed737eecd46a48d90';
+git('merge-base','--is-ancestor',loadoutHead,'HEAD');
 const cooldownRules='tactical-ops-src/combat/missionRules.ts';
 for(const [path,expected] of Object.entries(loadoutBlobs)){
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Loadout presentation: '+path);
+ assert.equal(git('rev-parse',`${loadoutHead}:${path}`).trim(),expected,'unreviewed Loadout presentation: '+path);
 }
 for(const [path,expected] of Object.entries(finalPlayerBlobs)){
  assert.equal(git('rev-parse',`${loadoutBase}:${path}`).trim(),expected,'unreviewed V1 player presentation: '+path);
- if(!Object.hasOwn(loadoutBlobs,path)) assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed post-V1 change: '+path);
+ if(!Object.hasOwn(loadoutBlobs,path)) assert.equal(git('rev-parse',`${loadoutHead}:${path}`).trim(),expected,'unreviewed post-V1 change: '+path);
 }
-for(const path of git('diff','--name-only','--no-renames',loadoutBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+for(const path of git('diff','--name-only','--no-renames',loadoutBase,loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(loadoutBlobs,path)||path===cooldownRules,'unreviewed runtime mutation in Loadout V1: '+path);
 }
-assert.equal(readFileSync(cooldownRules,'utf8').replace('unit: Pick<CombatUnit, "team">','unit: CombatUnit'),
+assert.equal(git('show',`${loadoutHead}:${cooldownRules}`).replace('unit: Pick<CombatUnit, "team">','unit: CombatUnit'),
  git('show',`${loadoutBase}:${cooldownRules}`),'Loadout may only narrow the cooldown helper input type');
 for(const path of git('diff','--name-only','--no-renames',finalPlayerBase,loadoutBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(finalPlayerBlobs,path),'unreviewed runtime mutation in V1 player presentation: '+path);
+}
+const fieldContractBlobs=Object.freeze({
+ 'tactical-ops-src/data/fieldContracts.ts':'542ac9214f879dcda09d9261e3c1ae352452c2f7',
+ 'tactical-ops-src/data/fieldOps.ts':'372a87e197721142d8798144c868febb736683be',
+ 'tactical-ops-src/data/playerGrowth.ts':'a5813cccf5def1f2702b195a4e8266ca1547442f',
+ 'tactical-ops-src/data/skills.ts':'44c4066fd052cd8e60939c20817d210d43f55f6c',
+ 'tactical-ops-src/host/foundationProgression.ts':'e0d40d7ba1e7abda509334f88d09d36c1d84d2c5',
+ 'tactical-ops-src/store/battleStore.ts':'fcac9e21866b210e7a880672d78dfdfb722e805f',
+ 'tactical-ops-src/tactical.css':'d6d687f4382cfc247c9c6c9836b14311ed837019',
+ 'tactical-ops-src/ui/App.tsx':'d3109ccecb3780a67858a9d0dec0d48a37665483',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'2f38645a391b9cbde582f351d8ebbda5c9823534',
+ 'tactical-ops-src/ui/PlayerIdentity.tsx':'5b896ceba522a2ea23886ceafe3b923ca75e57b3',
+ 'tactical-ops-src/ui/returnPurpose.ts':'d457a609abbdb23cfee8a9294cb48c45a9c69793',
+ 'tactical-ops-src/ui/tacticalActionIcons.ts':'707d2c922443ae148039fdae3bcd8429c34c2766',
+});
+for(const [path,expected] of Object.entries(fieldContractBlobs)){
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Field Contracts source: '+path);
+}
+for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+ assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');

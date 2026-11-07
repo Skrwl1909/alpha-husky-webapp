@@ -7,6 +7,7 @@ import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "..
 import type { CampaignContext, ChapterIntel } from "../data/operations";
 import {parseChapterSnapshot,type ChapterSnapshot} from "../data/campaignChapter";
 import { parseTacticalPet, type TacticalPet } from "../data/companion";
+import { parseContractAward, parseFieldContracts, type FieldContracts, type FieldRend } from "../data/fieldContracts";
 import type { KodaSidegrade } from "../data/kodaSidegrade";
 import type { ShadowSidegrade } from "../data/shadowSidegrade";
 import { parsePackMastery, type PackMastery } from "../data/packMastery";
@@ -54,6 +55,7 @@ export interface FoundationProgressionState {
 }
 
 export interface FieldOpsProgression {
+  fieldContracts?: FieldContracts;
   veteranOpportunity?: VeteranOpportunity;
   interceptRevisionAvailable?: 2;
   veteranProgressionAvailable?: boolean;
@@ -74,6 +76,8 @@ export interface FieldOpsProgression {
 function parseFieldContext(raw: unknown): FieldContext | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const value = raw as FieldContext;
+  const contracts = value.fieldContractsVersion === 1 && value.reportVersion === 3 && ["rend", "reach-rend"].includes(value.fieldRend!);
+  if ((value.fieldContractsVersion != null || value.fieldRend != null) && !contracts) return undefined;
   if (value.reportVersion === 6) {
     return value.veteranChallenge === "pack-extraction-v1" && value.masteryChallenge == null && value.lockdownPlan == null && value.progressionVersion === 2 && Number.isInteger(value.cycleId) && value.pressure === 2 && ["standard","south"].includes(value.approach) && value.directiveTier === "advanced" && value.directiveSet === "pursuit" ? {...value} : undefined;
   }
@@ -88,7 +92,7 @@ function parseFieldContext(raw: unknown): FieldContext | undefined {
   if (value.masteryChallenge != null) return undefined;
   if (!Number.isInteger(value.cycleId) || !Number.isInteger(value.pressure) || value.pressure < 0 || value.pressure > 3 || !["standard", "south"].includes(value.approach) || ![1, 2, 3].includes(value.reportVersion)) return undefined;
   if (value.reportVersion === 3 && (!["standard", "advanced"].includes(value.directiveTier!) || !["pursuit", "attrition"].includes(value.directiveSet!))) return undefined;
-  return { cycleId: value.cycleId, pressure: value.pressure, approach: value.approach, reportVersion: value.reportVersion, ...(value.reportVersion === 3 ? { directiveTier: value.directiveTier, directiveSet: value.directiveSet, ...(value.progressionVersion===2 ? {progressionVersion:2 as const} : {}) } : {}) };
+  return { ...(contracts ? { fieldContractsVersion: 1, fieldRend: value.fieldRend } : {}), cycleId: value.cycleId, pressure: value.pressure, approach: value.approach, reportVersion: value.reportVersion, ...(value.reportVersion === 3 ? { directiveTier: value.directiveTier, directiveSet: value.directiveSet, ...(value.progressionVersion===2 ? {progressionVersion:2 as const} : {}) } : {}) };
 }
 
 function parseFieldResult(raw: unknown): FieldResult | null {
@@ -105,6 +109,8 @@ function parseFieldResult(raw: unknown): FieldResult | null {
       value.firstLockdownClear?.cycleId !== value.cycleId || value.firstLockdownClear?.recordedAt !== value.recordedAt)) return null;
   return {
     ...value,
+    contractAward: value.victory && !value.legacyReport && !value.masteryChallenge && !value.veteranChallenge
+      ? parseContractAward(value.contractAward, value.missionId) : undefined,
     rewardAmountsAvailable: Number.isInteger(value.xpGranted) && Number.isInteger(value.bonesGranted),
     xpGranted: Number.isInteger(value.xpGranted) ? Number(value.xpGranted) : 0,
     bonesGranted: Number.isInteger(value.bonesGranted) ? Number(value.bonesGranted) : 0,
@@ -300,6 +306,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
         if (career.lastSecuredCycle != null && !Number.isInteger(career.lastSecuredCycle)) return null;
       }
       Object.assign(state.fieldOps, { board, commander, region, ...(rotation ? { rotationProgress: rotation } : {}), ...(career ? { careerRecord: career } : {}), lastResult: parseFieldResult(field.lastResult) });
+      state.fieldOps.fieldContracts = parseFieldContracts(field.fieldContracts, board);
       const opportunity = parseVeteranOpportunity(field.veteranOpportunity, board.cycleId);
       if (opportunity && opportunity.missionIds.every(id => board.activeMissionIds.includes(id))) state.fieldOps.veteranOpportunity = opportunity;
     }
@@ -507,7 +514,7 @@ export async function startOperationMission(
   expectedRevision: number,
   missionId: string,
   squadIds?: string[],
-  fieldOptions?: { cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
+  fieldOptions?: { fieldContractsVersion?: 1; cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
   rulesetVersion?: string,
   chapterMode = false,
   chapterIntelVersion?: 1,
@@ -562,6 +569,10 @@ export async function continueOperationMission(
     campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
 }
 
+export async function saveFieldRend(requestId: string, expectedRevision: number, choice: FieldRend): Promise<FoundationProgressionState> {
+  return responseState(await request("/webapp/tactical-foundation/field-rend", { requestId, expectedRevision, choice }));
+}
+
 export async function saveKodaSidegrade(requestId: string, expectedRevision: number, kodaSidegrade: KodaSidegrade): Promise<FoundationProgressionState> {
   return saveTeammateSidegrade(requestId, expectedRevision, "koda", kodaSidegrade);
 }
@@ -588,7 +599,7 @@ export async function savePackMastery(requestId: string, expectedRevision: numbe
   return responseState(await request("/webapp/tactical-foundation/pack-mastery", { requestId, expectedRevision, unitId, choice }));
 }
 
-export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "chapter-choose" | "chapter-start" | "chapter-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec"): string {
+export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "chapter-choose" | "chapter-start" | "chapter-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec" | "field-rend"): string {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);
