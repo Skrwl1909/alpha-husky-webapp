@@ -1,6 +1,6 @@
 /** Real Tactical UI and wire parser with synthetic responses. Settlement is tested separately in Python. */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { createServer } from "vite";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
 
@@ -71,7 +71,8 @@ window.fixture = { store, apply, async progress(count) {
       directiveTier:"standard", directiveSet:"pursuit" } };
   await apply();
   store.getState().openOperationBrief(ids[0]);
-}, async results(count, match, locked = false) {
+}, async results(count, match, locked = false, duplicate = false, expired = false) {
+  field.board.nextRotationAt = Math.floor(Date.now()/1000) + (expired ? -1 : 86400);
   field.activeMissionRun = locked ? {runId:"field_locked", missionId:ids[2], squadIds:squad,
     fieldContext:{cycleId:8, approach:"standard", pressure:2, reportVersion:3,
       directiveTier:"standard", directiveSet:"pursuit"}} : null;
@@ -80,7 +81,7 @@ window.fixture = { store, apply, async progress(count) {
   field.lastResult = {runId:"field_real", missionId, victory:true, cycleId:8, challengeSuccess:true, challengeBonus:0,
     progressEarned:0, progressBefore:6, progressAfter:6, rankBefore:2, rankAfter:2, pressureBefore:2, pressureAfter:2,
     regionalApplied:true, unlockedApproaches:[], legacyReport:false, recordedAt:10, xpGranted:8, bonesGranted:16,
-    contractAward:{id:keys[count-1], count, reward:count===2?"reach-rend":count===3?"field-tested":null}};
+    contractAward:duplicate ? undefined : {id:keys[count-1], count, reward:count===2?"reach-rend":count===3?"field-tested":null}};
   await apply();
   store.setState({screen:"results", selectedMissionId:missionId, currentRunKey:match?"field_real":"field_stale",
     fieldResult:store.getState().progression.fieldOps.lastResult,
@@ -121,11 +122,22 @@ try {
     await page.setViewportSize({ width, height });
     await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/field-contracts-fixture`);
     const fit = async locator => assert(await locator.evaluate(e => e.scrollWidth <= e.clientWidth+1), `${width}px horizontal overflow`);
-    const command = page.getByRole("region",{name:"Field Contracts",exact:true});
-    assert.match(await command.innerText(),/0\/3.*2 contracts unlock Reach Rend/s);
-    await fit(command);
-    const cta = page.locator("[data-primary-purpose] button");
-    assert.equal(await cta.count(),1);
+    const capture = async name => {
+      if (width !== 390 || !process.env.REWARD_UX_SCREENSHOTS) return;
+      mkdirSync(process.env.REWARD_UX_SCREENSHOTS, {recursive:true});
+      await page.screenshot({path:`${process.env.REWARD_UX_SCREENSHOTS}/${name}.png`});
+    };
+    const order = page.getByRole("region",{name:"Recommended next operation"});
+    const command = page.getByLabel("Field Contracts",{exact:true});
+    const cta = order.getByRole("button",{name:"VIEW BRIEF"});
+    const aboveFold = async locator => {
+      const bounds = await locator.boundingBox();
+      assert(bounds && bounds.y >= 0 && bounds.y + bounds.height <= height, `${width}px primary action is outside the first viewport`);
+    };
+    assert.match(await order.innerText(),/Recover the signal and win by round 4.*Rapid Recovery.*Complete two Field Contracts to unlock Reach Rend/s);
+    await fit(order);
+    await aboveFold(cta);
+    await capture("command");
     await cta.tap();
     const contract = page.getByLabel("Mission contract");
     assert.match(await contract.innerText(),/Rapid Recovery.*round 4/is);
@@ -141,14 +153,23 @@ try {
     assert.match(await contract.innerText(),/Hold Together.*all three allies standing/is);
     await page.evaluate(() => fixture.results(2,true,true));
     assert.match(await reward.innerText(),/Finish that run to equip Reach Rend/);
-    assert.equal(await page.getByRole("button",{name:/CHOOSE ALPHA/}).count(),0);
+    assert.equal(await page.getByRole("button",{name:/EQUIP REACH REND/}).count(),0);
     await page.getByRole("button",{name:"RESUME FIELD OP"}).tap();
     assert.equal(await page.evaluate(() => fixture.store.getState().selectedMissionId),"field-squad-survival");
 
+    await page.evaluate(() => fixture.results(2,true,false,false,true));
+    assert.match(await reward.innerText(),/when a regular Field Op is available/);
+    assert.equal(await page.getByRole("button",{name:"EQUIP REACH REND"}).count(),0);
+    await page.getByRole("button",{name:"WAR TABLE",exact:true}).tap();
+
     await page.evaluate(() => fixture.results(2,true));
-    assert.match(await reward.innerText(),/Reach Rend unlocked.*farther away for less direct damage.*select A2/s);
+    assert.match(await reward.innerText(),/Reach Rend\s+Unlocked.*145% → 105%.*Same Bleed.*select A2/is);
     await fit(reward);
-    await page.getByRole("button",{name:"CHOOSE ALPHA’S A2"}).tap();
+    const equip = page.getByRole("button",{name:"EQUIP REACH REND"});
+    await aboveFold(equip);
+    await capture("victory");
+    if (width === 1280) await equip.press("Enter");
+    else await equip.tap();
     const loadout = page.getByRole("region",{name:"ALPHA Field Rend"});
     const loadoutTab = page.getByLabel("Mission preparation sections").getByRole("button",{name:/LOADOUT/});
     const reach = loadout.getByRole("button",{name:/^REACH REND/});
@@ -156,10 +177,12 @@ try {
     const deploy = page.getByRole("button",{name:"DEPLOY SQUAD",exact:true});
     assert.equal(await loadoutTab.getAttribute("aria-pressed"),"true");
     assert.equal(await loadout.getByRole("heading",{name:"ALPHA · A2"}).evaluate(e => document.activeElement === e),true);
-    assert.match(await rend.innerText(),/Range 1 cell · 145% direct hit.*EQUIPPED/s);
-    assert.match(await reach.innerText(),/Range 1–2 cells · 105% direct hit.*AVAILABLE/s);
+    assert.match(await rend.innerText(),/Range 1 cell\s+145% direct hit.*Bleed · 2 turns.*EQUIPPED/s);
+    assert.match(await reach.innerText(),/Range 1–2 cells\s+105% direct hit.*Bleed · 2 turns.*AVAILABLE/s);
     assert.equal(await reach.getAttribute("aria-pressed"),"false");
     assert((await reach.boundingBox()).height >= 44);
+    await aboveFold(reach);
+    await capture("loadout");
 
     await reach.tap();
     await loadout.getByText("Saving A2…",{exact:true}).waitFor();
@@ -171,7 +194,7 @@ try {
     await reach.tap();
     await loadout.getByText("Saving A2…",{exact:true}).waitFor();
     await page.evaluate(() => window.finishSave(true));
-    await loadout.getByText(/Reach Rend equipped for new Field Ops/).waitFor();
+    await loadout.getByText(/Reach Rend equipped for new compatible Field Ops/).waitFor();
     assert.equal(await reach.getAttribute("aria-pressed"),"true");
     await fit(loadout);
 
@@ -199,6 +222,25 @@ try {
     };
     await deploy.tap();
     await assertReachInBattle();
+    if (width === 390) {
+      // Exercise the real A2 and engine with a deterministic two-cell encounter.
+      const target = await page.evaluate(() => {
+        const {battle} = fixture.store.getState();
+        const alpha = battle.units.find(unit => unit.defId === "alpha");
+        const enemy = battle.units.find(unit => unit.team === "enemy" && !unit.defeated);
+        fixture.store.setState({battle:{...battle, activeId:alpha.id, mode:"selected",
+          units:battle.units.map(unit => unit.id === alpha.id ? {...unit,c:0,r:0,hasActed:false} :
+            unit.id === enemy.id ? {...unit,c:2,r:0} : unit)}});
+        return {id:enemy.id,hp:enemy.hp};
+      });
+      await page.getByRole("button",{name:/^A2 REACH REND/i}).tap();
+      const dealt = await page.evaluate(({id,hp}) => {
+        fixture.store.getState().selectTarget(id);
+        const enemy = fixture.store.getState().battle.units.find(unit => unit.id === id);
+        return {damage:hp-enemy.hp,bleed:enemy.statuses.some(status => status.type === "BLEED")};
+      },target);
+      assert(dealt.damage > 0 && dealt.bleed,"A2 hits and applies Bleed from two cells");
+    }
     await page.evaluate(() => fixture.store.getState().backToHub());
     await page.locator("[data-primary-purpose] button").tap();
     await loadoutTab.tap();
@@ -212,7 +254,13 @@ try {
     await page.evaluate(() => fixture.results(3,true));
     assert.match(await reward.innerText(),/Field Honor earned · Field Tested/);
     await page.evaluate(() => fixture.store.setState({screen:"war-table"}));
+    await command.locator("summary").tap();
     assert.match(await command.innerText(),/3\/3.*Field Honor · Field Tested/s);
+    await page.evaluate(() => fixture.results(2,true,false,true));
+    assert.equal(await reward.count(),0,"an ordinary repeat receipt cannot re-award Reach Rend");
+    assert.match(await page.locator(".t-fr-next").innerText(),/first win here is still up for grabs/i);
+    await page.getByRole("button",{name:/^NEXT:/}).tap();
+    assert.equal(await page.evaluate(() => fixture.store.getState().screen),"brief");
     await page.evaluate(() => fixture.legacyBrief());
     assert.match(await contract.innerText(),/Finish the accepted Field Op/);
     await page.getByLabel("Mission preparation sections").getByRole("button",{name:/LOADOUT/}).tap();

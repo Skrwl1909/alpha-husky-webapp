@@ -327,13 +327,20 @@ const reachRendUxBlobs=Object.freeze({
  'tactical-ops-src/ui/returnPurpose.ts':'794ca9210a81fc31585ae12a5e43be22b123fee7',
  'tactical-ops-src/version.ts':'2d63b34176e49b8b7962d30e64227abc6fbd9983',
 });
+// Pin the presentation-only changes on top of the Reach Rend handoff.
+const rewardCommandBlobs=Object.freeze({
+ 'tactical-ops-src/tactical.css':'8450c47a6d52bcc5cc1c4ebba8b7b46cbb2e9718',
+ 'tactical-ops-src/ui/App.tsx':'467b8c0590c336addbf06686a7fc1d7ffc46452f',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'0fc39edc4065338ba8afbd412da53f9c2eb70ea4',
+ 'tactical-ops-src/version.ts':'940f6446d625faff824ad839102f01e989c6e446',
+});
 const fieldContractsMerge='1a9e41436c364e2bf0c557f74b1e11e57a47084f';
 const legacyFieldBriefFix='8634d6e5150b31476c2a1c05e8b8e6573baaf8be';
 git('merge-base','--is-ancestor',fieldContractsMerge,'HEAD');
 for(const [path,expected] of Object.entries(fieldContractBlobs)){
  assert.equal(git('rev-parse',`${fieldContractsMerge}:${path}`).trim(),expected,'unreviewed merged Field Contracts source: '+path);
  const fieldContractsBaseline=path===app ? legacyFieldBriefFix : expected;
- assert.equal(sourceBlob(readFileSync(path)),reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
 }
 // Browser Guest Exit V1: approve only these exact, separately reviewed host/version blobs.
 // Keep the merged exit source pinned and allow the Reach Rend release to advance the version.
@@ -345,7 +352,7 @@ for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','inde
  assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
-  assert.equal(sourceBlob(readFileSync(path)),reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
+  assert.equal(sourceBlob(readFileSync(path)),rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
  }
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
