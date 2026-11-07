@@ -186,6 +186,8 @@ export interface BossObjective {
 
 export interface TimedObjective {
   type: "HOLD" | "SURVIVE";
+  /** Advanced SURVIVE revision 2 uses the existing tracking intent. */
+  trackingMarksman?: true;
   duration: number;
   terminal?: Cell;
   radius?: number;
@@ -219,6 +221,8 @@ export interface MissionDirective {
 export interface BattleReinforcement {
   spawn: { defId: string; id: string; c: number; r: number };
   triggerRound: number;
+  /** Initiative carried into a telegraphed arrival. Unset for legacy encounters. */
+  entryMeter?: number;
   telegraphed: boolean;
   spawned: boolean;
 }

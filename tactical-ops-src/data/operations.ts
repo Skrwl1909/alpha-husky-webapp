@@ -1,3 +1,4 @@
+import { isSurviveMission, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import { DEPLOYMENT_APPROACHES, type DeploymentApproach, type FieldContext, type MissionChallenge } from "./fieldOps";
 import type { SpawnSpec } from "./units";
 import type { BattleObjective, MissionDirective, Cell } from "../combat/types";
@@ -318,7 +319,51 @@ export function courierTraceHoldVariant(mission: MissionDef, revision: number, c
   };
 }
 
+/** Capability opts new Field Ops in. A resumed run always uses its accepted revision. */
+export function surviveRevisionForRequest(missionId: string, ruleset: string | undefined,
+  board: { reportVersion?: number; surviveRevisionAvailable?: 2 } | undefined,
+  active?: { rulesContract?: RunRulesContract | null } | null): 2 | undefined {
+  if (!isSurviveMission(missionId) || ruleset !== TACTICAL_VNEXT_RULESET) return;
+  if (active) return active.rulesContract?.missionId === missionId && active.rulesContract.missionRevision === 2 ? 2 : undefined;
+  return board?.reportVersion === 3 && board.surviveRevisionAvailable === 2 ? 2 : undefined;
+}
+
+function surviveTensionVariant(mission: MissionDef, context: Partial<FieldContext>): MissionDef {
+  const rearguard = mission.missionId === "field-rearguard";
+  const advanced = context.directiveTier === "advanced";
+  const north = advanced && context.directiveSet === "pursuit";
+  const entry = { c: 5, r: north ? 0 : 4 };
+  const triggerRound = rearguard ? 4 : 3;
+  const advancedMarksman = advanced ? { unitDef: { ...UNIT_DEFS.hostile, atk: 24 } } : {};
+  return {
+    ...mission,
+    briefCopy: `Keep all three allies standing for ${rearguard ? 5 : 4} rounds. Break the patrol’s crossfire, then cover the marked flank before the reserve arrives.`,
+    ...(advanced && mission.objective?.type === "SURVIVE" ? { objective: { ...mission.objective, trackingMarksman: true } } : {}),
+    spawns: [
+      { defId: "hostile", id: "h1", c: 4, r: 1 },
+      { defId: "hostile", id: "h2", c: 6, r: north ? 3 : 1, ...advancedMarksman },
+      { defId: "hostile", id: "h3", c: 4, r: 2 },
+      ...(rearguard || advanced ? [{ defId: "hostile", id: "h4", c: 3, r: 0 }] : []),
+    ],
+    directive: {
+      type: "REINFORCEMENTS",
+      name: "FLANK REINFORCEMENT",
+      copy: `A HOUND enters at the marked ${north ? "north" : "south"} flank in round ${triggerRound}, one round later at reduced Signal Pressure. Occupied entries use the nearest free cell.` +
+        (rearguard ? "" : " Healing and allied support recharge one personal turn slower."),
+      ...(rearguard ? {} : { supportCooldownExtra: 1 }),
+      reinforcement: { spawn: { defId: "hostile", id: "field-reinforcement", ...entry },
+        triggerRound, telegraphed: true, spawned: false, entryMeter: advanced ? 65 : 50 },
+    },
+    squadHint: advanced
+      ? "TARGET LOCK tracks its marked ally. Close inside minimum range, break range, interrupt or guard. Screen injured allies from the reserve."
+      : "Move off marked tiles or close inside the Marksman’s firing range. Screen injured allies with CNC control, PET slows or SHADOW support.",
+  };
+}
+
 export function missionForContext(mission: MissionDef, context?: Partial<FieldContext>, missionRevision = 1, campaignContext?: CampaignContext | null): MissionDef {
+  if (context?.reportVersion === 3 && missionRevision === 2 && isSurviveMission(mission.missionId)) {
+    return surviveTensionVariant(mission, context);
+  }
   if (mission.missionId === "dead-relay-hold") return courierTraceHoldVariant(mission, missionRevision, campaignContext);
   if (mission.missionId === "field-relay-intercept" && context?.reportVersion === 3 && missionRevision === 2) {
     return {...mission,

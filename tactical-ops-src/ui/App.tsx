@@ -6,7 +6,7 @@ import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
-import { g2HoldRevisionForRequest, missionForContext } from "../data/operations";
+import { g2HoldRevisionForRequest, missionForContext, surviveRevisionForRequest } from "../data/operations";
 import type { FoundationProgressionState } from "../host/foundationProgression";
 import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
@@ -293,7 +293,7 @@ function WarTable() {
   const rankLabel = commanderRank >= 4 ? "RANK 4 · VETERAN" : commanderRank === 3 ? "RANK 3 · CERTIFIED" : commanderRank ? `COMMANDER RANK ${commanderRank}` : "COMMANDER STATUS UNAVAILABLE";
   const areaPressure = field?.region ? pressureLabel(field.region.pressure) : "UNKNOWN";
   const pressureCopy = field?.region ? pressureEffect(field.region.pressure) : "Refresh to load current field conditions.";
-  const highlightedFieldWindow = activeMissionIds.map(id => ({ id, window: currentFieldWindow(id, field?.board, field?.region) })).find(item => item.window) || null;
+  const highlightedFieldWindow = activeMissionIds.map(id => ({ id, window: currentFieldWindow(id, field?.board, field?.region, Date.now(), "standard", progression?.vnextStartAvailable === true) })).find(item => item.window) || null;
   const currentDirective = field?.board?.reportVersion === 3 ? directiveSetLabel(field.board.directiveSet) : null;
   const deadRelayNextMissionId = deadRelay?.activeMissionRun?.missionId || DEAD_RELAY.orderedMissionIds.find((id) => deadRelay?.missions[id] === "available") || null;
   const firstClearMessage = operation?.status === "cleared"
@@ -372,7 +372,7 @@ function WarTable() {
           const visual = missionPresentation(recommendedMission);
           const contract = !primaryPurpose.resume && primaryPurpose.title === nextContract?.title ? nextContract : null;
           const window = !primaryPurpose.resume && recommendedMission.activity === "FIELD_OP"
-            ? currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier) : null;
+            ? currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier, !primaryPurpose.chapter && progression?.vnextStartAvailable === true) : null;
           return <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-command-order t-mission-tone-${visual.tone}`} aria-label="Recommended next operation" data-primary-purpose="true" data-purpose-mission={recommendedMission.missionId}>
             <div className="t-wt-feature-art">
               <img src={visual.art} alt="" />
@@ -513,7 +513,7 @@ function WarTable() {
               const contextualMission = missionForContext(mission, { reportVersion: field?.board?.reportVersion || 2 });
               const visual = missionPresentation(contextualMission);
               const cardPurpose = deriveMissionPresentation(contextualMission, field);
-              const tacticalWindow = currentFieldWindow(mission.missionId, field?.board, field?.region);
+              const tacticalWindow = currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), "standard", progression?.vnextStartAvailable === true);
               return (
                 <article className={`t-wt-mission-card t-panel t-mission-tone-${visual.tone} ${securedToday ? "is-cleared" : "is-active"}`} key={mission.missionId}>
                   <div className="t-wt-mission-art">
@@ -732,7 +732,9 @@ function Brief() {
   useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
   const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
-  const mission = hold?.mission ?? (baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, savedRun?.campaignContext) : null);
+  const previewRevision = resuming ? savedRun?.rulesContract?.missionRevision : !chapterMode && !savedRun && progression?.vnextStartAvailable && baseMission
+    ? surviveRevisionForRequest(baseMission.missionId, TACTICAL_VNEXT_RULESET, field?.board) : undefined;
+  const mission = hold?.mission ?? (baseMission ? missionForContext(baseMission, fieldContext, previewRevision, savedRun?.campaignContext) : null);
   const fieldOp = mission?.activity === "FIELD_OP";
   const contracts = field?.fieldContracts;
   const fieldLoadout = fieldOp && !chapterMode && !selectedMasteryChallenge && !selectedVeteranChallenge;
@@ -749,7 +751,7 @@ function Brief() {
   const fieldRendSavePending = useBattleStore(s => s.fieldRendSavePending);
   const selectFieldRend = useBattleStore(s => s.selectFieldRend);
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
-  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
+  const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier, !chapterMode && !savedRun && progression?.vnextStartAvailable === true) : null;
   const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!

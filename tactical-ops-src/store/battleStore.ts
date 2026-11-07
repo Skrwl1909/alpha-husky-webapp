@@ -44,7 +44,7 @@ import {
   resolveDeploySpawns,
   type OnboardingEncounterId,
 } from "../data/onboarding";
-import { g2HoldRevisionForRequest, missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
+import { g2HoldRevisionForRequest, surviveRevisionForRequest, missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
@@ -964,7 +964,8 @@ export const useBattleStore = create<Store>((set, get) => {
                    requestedRuleset === TACTICAL_VNEXT_RULESET ? 1:undefined,
                 persisted.progression.fieldOps?.veteranProgressionAvailable ? 2 : undefined,
                 (mission.missionId==="field-relay-intercept" && requestedRuleset===TACTICAL_VNEXT_RULESET && (persisted.progression.fieldOps?.interceptRevisionAvailable===2 || (persisted.chapterMode ? persisted.progression.chapterActiveMission?.rulesContract?.missionRevision : existing?.rulesContract?.missionRevision)===2)) ? 2 :
-                g2HoldRevisionForRequest(mission.missionId,requestedRuleset,persisted.progression.deadRelayHoldRevisionAvailable,existing),
+                g2HoldRevisionForRequest(mission.missionId,requestedRuleset,persisted.progression.deadRelayHoldRevisionAvailable,existing) ??
+                (!persisted.chapterMode ? surviveRevisionForRequest(mission.missionId, requestedRuleset, persisted.progression.fieldOps?.board, existing) : undefined),
               );
               if (g !== runGen) return;
               applyCanonicalProgression(started.state);
