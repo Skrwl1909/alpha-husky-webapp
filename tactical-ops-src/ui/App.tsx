@@ -732,13 +732,14 @@ function Brief() {
   const mission = hold?.mission ?? (baseMission ? missionForContext(baseMission, fieldContext, resuming ? savedRun?.rulesContract?.missionRevision : undefined, savedRun?.campaignContext) : null);
   const fieldOp = mission?.activity === "FIELD_OP";
   const contracts = field?.fieldContracts;
-  const fieldContract = fieldOp && mission && contracts?.enabled && !chapterMode && !selectedMasteryChallenge && !selectedVeteranChallenge
-    ? missionContract(mission.missionId) : null;
+  const fieldLoadout = fieldOp && !chapterMode && !selectedMasteryChallenge && !selectedVeteranChallenge;
+  const canStartFieldContracts = !savedRun && progression?.vnextStartAvailable && fieldContext.reportVersion === 3;
+  const fieldContract = fieldLoadout && mission && contracts?.enabled ? missionContract(mission.missionId) : null;
   const contractCompleted = fieldContract && contracts?.completed.includes(fieldContract.id);
   const contractEligible = fieldContract && (resuming ? savedRun?.fieldContext?.fieldContractsVersion === 1
-    : field?.board && field.board.nextRotationAt * 1000 > Date.now() && contracts?.eligibleMissionIds.includes(mission!.missionId));
-  const fieldLoadout = fieldOp && !chapterMode && !selectedMasteryChallenge && !selectedVeteranChallenge;
-  const fieldRend = resuming ? savedRun?.fieldContext?.fieldRend : fieldLoadout && contracts?.enabled ? contracts.selection : undefined;
+    : canStartFieldContracts && field?.board && field.board.nextRotationAt * 1000 > Date.now() && contracts?.eligibleMissionIds.includes(mission!.missionId));
+  const fieldRend = resuming ? savedRun?.fieldContext?.fieldRend
+    : fieldLoadout && canStartFieldContracts && contracts?.enabled ? contracts.selection : undefined;
   const selectFieldRend = useBattleStore(s => s.selectFieldRend);
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
   const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
@@ -872,7 +873,10 @@ function Brief() {
             {fieldContract ? <div className="t-field-contract" aria-label="Mission contract">
               <div className="t-kicker">FIELD CONTRACT · {fieldContract.name}</div>
               <p>{contractCompleted ? "Completed · permanent record" : contractEligible ? fieldContract.objective
-                : resuming ? "This run was accepted before contracts were available." : "Unavailable for this rotation. Refresh the War Table for current eligibility."}</p>
+                : resuming ? "This accepted run does not count toward Field Contracts."
+                : savedRun ? "Finish the accepted Field Op before starting a contract run."
+                : !canStartFieldContracts ? "Contracts require a compatible Field Op."
+                : "Unavailable for this rotation. Refresh the War Table for current eligibility."}</p>
             </div> : null}
             {deploymentWindow ? <p className="t-brief-purpose-meta" data-g4-brief-window="true">{resuming ? "ACCEPTED TIMING · " : ""}{deploymentWindow.text}</p> : null}
             {purpose && !fieldContext.masteryChallenge && !recoverBrief ? <p className="t-brief-purpose-meta"><b>WATCH FOR:</b> {hold?.copy ?? (mission?.missionId === "dead-relay-guardian" ? missionIntel : purpose.tacticalThreat)}</p> : null}
