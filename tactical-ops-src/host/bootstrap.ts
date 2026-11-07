@@ -225,6 +225,63 @@ function unlockScroll(): void {
   document.documentElement.style.overflow = M.prevHtmlOverflow;
 }
 
+const BROWSER_EXIT_ID = "tacticalOpsBrowserExit";
+
+/** Browser Guest only: keep native Telegram / packaged APK navigation unchanged. */
+function browserGuestActive(): boolean {
+  const w = window as unknown as { AlphaBrowserGuestV1?: { active?: boolean } };
+  return w.AlphaBrowserGuestV1?.active === true;
+}
+
+function onBrowserExit(): void {
+  if (!M.isOpen || document.querySelector('.tsa-dialog[aria-modal="true"]')) return;
+  const state = useBattleStore.getState();
+  if (state.progressionCommitPending || state.busy || state.kodaSavePending || state.shadowSavePending) {
+    window.alert("Finish the current action before leaving Tactical Ops.");
+    return;
+  }
+  const savedResult = [state.fieldResult, state.campaignResult, state.chapterResult]
+    .some(result => result?.runId === state.currentRunKey);
+  if (state.screen === "results" && state.currentRunKey && !savedResult) {
+    window.alert("This mission result is not yet server-recorded. Save or retry before exiting.");
+    return;
+  }
+  if (state.screen === "battle" && !window.confirm(
+    "Exit Tactical Ops? Unsaved combat actions may be lost. Your accepted run can be resumed from its saved start.",
+  )) return;
+  closeView();
+}
+
+/** Outside React's root: its rerenders cannot remove the host exit control. */
+function showBrowserExit(): void {
+  if (!browserGuestActive()) return;
+  let button = document.getElementById(BROWSER_EXIT_ID) as HTMLButtonElement | null;
+  if (button) return;
+  button = document.createElement("button");
+  button.id = BROWSER_EXIT_ID;
+  button.type = "button";
+  button.textContent = "× Exit";
+  button.setAttribute("aria-label", "Exit Tactical Ops");
+  button.title = "Return to Alpha Husky Dashboard";
+  button.style.cssText = [
+    "position:fixed",
+    "top:calc(env(safe-area-inset-top, 0px) + 10px)",
+    "right:calc(env(safe-area-inset-right, 0px) + 10px)",
+    "z-index:2147483000",
+    "min-height:44px",
+    "min-width:76px",
+    "padding:9px 13px",
+    "border:1px solid #7da9c4",
+    "border-radius:11px",
+    "background:rgba(8,21,36,.96)",
+    "color:#edf6ff",
+    "font:700 14px system-ui,sans-serif",
+    "cursor:pointer",
+  ].join(";");
+  button.addEventListener("click", onBrowserExit);
+  document.body.appendChild(button);
+}
+
 function onKey(e: KeyboardEvent): void {
   if (!M.isOpen || e.key !== "Escape") return;
   // The Atlas confirmation owns Escape before the surrounding host can close.
@@ -274,6 +331,7 @@ function ensureRoot(): HTMLElement {
 }
 
 function hardClose(): void {
+  document.getElementById(BROWSER_EXIT_ID)?.remove();
   M.isOpen = false;
   unbindKeys();
   unbindResize();
@@ -364,6 +422,7 @@ export async function open(missionId?: string): Promise<void> {
   if (!M.reactRoot) M.reactRoot = createRoot(el);
   M.reactRoot.render(createElement(TacticalApp));
   pushHostNav();
+  showBrowserExit();
   try {
     M.tg?.expand?.();
   } catch {

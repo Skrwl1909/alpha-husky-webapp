@@ -325,8 +325,15 @@ for(const [path,expected] of Object.entries(fieldContractBlobs)){
  assert.equal(git('rev-parse',`${fieldContractsMerge}:${path}`).trim(),expected,'unreviewed merged Field Contracts source: '+path);
  assert.equal(sourceBlob(readFileSync(path)),path===app ? legacyFieldBriefFix : expected,'unreviewed Field Contracts source: '+path);
 }
+// Browser Guest Exit V1: approve only these exact, separately reviewed host/version blobs.
+// All other Field Contracts runtime paths retain their strict allowlist and hash checks.
+const browserExitApproved=Object.freeze({
+ 'tactical-ops-src/host/bootstrap.ts':'ca52e1165f7e9c9f523eb36f9de9506558280960',
+ 'tactical-ops-src/version.ts':'5796d8fc6abef65e7ecc86eeb30120c5ef8237d8',
+});
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ if(Object.hasOwn(browserExitApproved,path)) assert.equal(sourceBlob(readFileSync(path)),browserExitApproved[path],'unreviewed Browser Guest exit source: '+path);
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');
