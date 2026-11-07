@@ -1,7 +1,7 @@
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { FIELD_HONOR, missionContract, REACH_REND_TRADEOFF, withFieldRend } from "../data/fieldContracts";
-import { commandPurpose, fieldResultNext, fieldResultPurpose, nextFieldContract, type PurposeAction } from "./returnPurpose";
+import { commandPurpose, fieldResultNext, fieldResultPurpose, nextFieldContract, reachRendLoadoutMission, type PurposeAction } from "./returnPurpose";
 import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
@@ -683,7 +683,12 @@ function variantPreview(skill: ReturnType<typeof getSkill>) {
 }
 
 function Brief() {
-  const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">("mission");
+  const briefEntry = useBattleStore(s => s.briefEntry);
+  const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">(briefEntry === "alpha-a2" ? "loadout" : "mission");
+  const a2Heading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (briefEntry === "alpha-a2") a2Heading.current?.focus();
+  }, [briefEntry]);
   const [loadoutUnit, setLoadoutUnit] = useState<string>("alpha");
   const [showBriefMastery, setShowBriefMastery] = useState(false);
   const identity = useBattleStore(s => s.identity);
@@ -738,8 +743,12 @@ function Brief() {
   const contractCompleted = fieldContract && contracts?.completed.includes(fieldContract.id);
   const contractEligible = fieldContract && (resuming ? savedRun?.fieldContext?.fieldContractsVersion === 1
     : canStartFieldContracts && field?.board && field.board.nextRotationAt * 1000 > Date.now() && contracts?.eligibleMissionIds.includes(mission!.missionId));
+  const rotationLive = () => Boolean(field?.board && field.board.nextRotationAt * 1000 > Date.now()
+    && selectedMissionId && field.board.activeMissionIds.includes(selectedMissionId));
+  const canEquipFieldRend = fieldLoadout && canStartFieldContracts && contracts?.enabled && contracts.sidegrade && rotationLive();
   const fieldRend = resuming ? savedRun?.fieldContext?.fieldRend
     : fieldLoadout && canStartFieldContracts && contracts?.enabled ? contracts.selection : undefined;
+  const fieldRendSavePending = useBattleStore(s => s.fieldRendSavePending);
   const selectFieldRend = useBattleStore(s => s.selectFieldRend);
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
   const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier) : null;
@@ -766,6 +775,9 @@ function Brief() {
       kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery,
     })).map(def => applyIdentityToAlpha(def, identity));
   const unit = loadoutAllies.find(def => def.defId === loadoutUnit) || loadoutAllies[0];
+  const showFieldRend = unit?.defId === "alpha" && fieldLoadout &&
+    (Boolean(contracts?.enabled && contracts.sidegrade) || fieldRend === "reach-rend");
+  const equippedRend = resuming ? fieldRend ?? "rend" : canEquipFieldRend ? fieldRend : undefined;
   const variantOwner = mission && (unit?.defId === "ally-02" || unit?.defId === "ally-03") ? unit.defId : null;
   const isCnc = variantOwner === "ally-02";
   const savedVariant = isCnc ? kodaSidegrade : shadowSidegrade;
@@ -823,7 +835,7 @@ function Brief() {
   const deployActions = (
     <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
       <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
-      <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
+      <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || fieldRendSavePending || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
         {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
         <ChevronRight className="t-ico" />
       </button>
@@ -971,15 +983,27 @@ function Brief() {
                   {mission && (def.defId === "ally-02" || def.defId === "ally-03") && sidegradesUnlocked && !resuming ? <small>Variants</small> : null}
                 </button>)}
               </nav>
-              {unit.defId === "alpha" && fieldLoadout && (contracts?.enabled && contracts.sidegrade || fieldRend === "reach-rend")
-                ? <section className="t-loadout-variants" aria-label="ALPHA Field Rend">
-                  <p>{REACH_REND_TRADEOFF}</p>
-                  <div className="t-loadout-choices">
-                    <button type="button" aria-pressed={fieldRend !== "reach-rend"} disabled={busy || Boolean(field?.activeMissionRun)} onClick={() => void selectFieldRend("rend")}><strong>REND</strong><small>Stronger hit</small></button>
-                    <button type="button" aria-pressed={fieldRend === "reach-rend"} disabled={busy || Boolean(field?.activeMissionRun)} onClick={() => void selectFieldRend("reach-rend")}><strong>REACH REND</strong><small>One extra cell</small></button>
-                  </div>
-                  <p>{resuming ? "A2 locked for this accepted run." : field?.activeMissionRun ? "Finish the accepted Field Op to change A2." : "Applies to new regular Field Ops."}</p>
-                </section> : null}
+              {showFieldRend ? <section className="t-loadout-variants t-field-rend" aria-label="ALPHA Field Rend" data-slot="A2">
+                <h2 ref={a2Heading} tabIndex={-1} className="t-kicker">ALPHA · A2</h2>
+                <div className="t-loadout-choices">
+                  {(["rend", "reach-rend"] as const).map(choice => {
+                    const skill = resolveGrowthSkill(getSkill(`alpha-${choice}`), growthHero(previewGrowth, unit.defId));
+                    const damage = skill.effects.find(effect => effect.kind === "damage")?.multiplier;
+                    const equipped = equippedRend === choice;
+                    return <button type="button" key={choice} aria-pressed={equipped}
+                      disabled={!canEquipFieldRend || busy || fieldRendSavePending || kodaSavePending || shadowSavePending}
+                      onClick={() => { if (rotationLive()) void selectFieldRend(choice); }}>
+                      <strong>{skill.name}</strong>
+                      <small>{loadoutRange(skill)} {skill.maxRange === 1 ? "cell" : "cells"} · {Math.round((damage ?? 0) * 100)}% direct hit</small>
+                      <span className="t-field-rend-state">{equipped ? "EQUIPPED" : canEquipFieldRend ? "AVAILABLE" : field?.activeMissionRun ? "LOCKED" : "UNAVAILABLE"}</span>
+                    </button>;
+                  })}
+                </div>
+                {field?.activeMissionRun ? <p><strong>Locked for current run.</strong> Finish the accepted Field Op to change A2.</p>
+                  : !canEquipFieldRend ? <p>Choose a current regular Field Op on the War Table to change A2.</p>
+                  : <p role="status">{fieldRendSavePending ? "Saving A2…" : `${equippedRend === "reach-rend" ? "Reach Rend" : "Rend"} equipped for new Field Ops. Both apply Bleed.`}</p>}
+                {progressionError ? <p role="alert">{progressionError}</p> : null}
+              </section> : null}
               {variantOwner ? <section className="t-loadout-variants" aria-label={`${loadoutName(unit)} variants`}>
                 {resuming ? <p>Variants locked for this run.</p> : !sidegradesUnlocked ? <p>Variants unlock after Broken Signal.</p> : <>
                   <div className="t-loadout-choices">
@@ -993,7 +1017,7 @@ function Brief() {
                       const skill = variant.skillIds.map(getSkill).find(skill => skill.slot === slot)!;
                       const preview = resolveGrowthSkill(skill, growthHero(previewGrowth, variantOwner));
                       return <button type="button" key={choice} aria-pressed={savedVariant === choice}
-                        disabled={busy || kodaSavePending || shadowSavePending}
+                        disabled={busy || fieldRendSavePending || kodaSavePending || shadowSavePending}
                         onClick={() => void saveVariant(choice)}>
                         <strong>{name}</strong>
                         <small>{variantPreview(preview)} · {loadoutRange(preview)}</small>
@@ -1003,8 +1027,9 @@ function Brief() {
                   <p role="status">{savingVariant ? "Saving variant…" : savedVariant ? `Saved · ${LOADOUT_VARIANTS[variantOwner][savedVariant === "A" ? 0 : 1].name}` : "Base loadout equipped"}</p>
                 </>}
               </section> : null}
-              <div className="t-loadout-slots" aria-label={`${loadoutName(unit)} equipped abilities`}>
+              <div className={`t-loadout-slots${showFieldRend ? " t-loadout-slots-with-a2-picker" : ""}`} aria-label={`${loadoutName(unit)} equipped abilities`}>
                 {(["A1", "A2", "A3"] as const).map(slot => {
+                  if (slot === "A2" && showFieldRend) return null;
                   const equipped = activeSlots.find(row => row.unitId === unit.defId && row.slot === slot);
                   const skill = equipped && resolveGrowthSkill(getSkill(equipped.skillId), growthHero(previewGrowth, unit.defId));
                   const icon = equipped && tacticalActionImageForSkill(equipped.skillId);
@@ -1117,7 +1142,7 @@ function Brief() {
             </section>
           </div>
         </details> : null}
-        {progressionError ? <p style={{ color: "var(--t-enemy)", marginTop: "0.8rem" }}>{progressionError}</p> : null}
+        {progressionError && !(briefTab === "loadout" && showFieldRend) ? <p style={{ color: "var(--t-enemy)", marginTop: "0.8rem" }}>{progressionError}</p> : null}
       </div>
     </div>
   );
@@ -1190,7 +1215,15 @@ function Results() {
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
-  const resultNext = fieldResultNext(progression, recordedFieldResult);
+  const resultNext = fieldResultNext(progression);
+  const reachRendUnlocked = recordedFieldResult?.contractAward?.reward === "reach-rend";
+  const rewardBrief = reachRendLoadoutMission(progression, recordedFieldResult);
+  const acceptedFieldRun = progression?.fieldOps?.activeMissionRun;
+  const rewardResume = acceptedFieldRun && getMissionDef(acceptedFieldRun.missionId);
+  const reachRendNext = rewardBrief
+    ? "Choose it in Loadout. On ALPHA’s turn, select A2 and target an enemy in range."
+    : acceptedFieldRun ? "A2 is locked for the accepted Field Op. Finish that run to equip Reach Rend."
+    : "Equip it in ALPHA’s Loadout when a regular Field Op is available.";
   const nextSuggested = resultNext || nextFieldMission(progression?.fieldOps, selectedMissionId);
   const nextSuggestedBase = getMissionDef(nextSuggested.missionId);
   const nextSuggestedMission = nextSuggestedBase && resultNext?.masteryChallenge ? missionForContext(nextSuggestedBase,{reportVersion:4,masteryChallenge:resultNext.masteryChallenge}) : nextSuggestedBase;
@@ -1219,16 +1252,27 @@ function Results() {
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
       failure={fieldFailureCopy(fieldFailure, mission.objectiveType)} consequence={s3Proof}
-      contractNext={nextFieldContract(progression?.fieldOps)?.reason ||
-        (resultNext?.title === "Try Reach Rend" ? resultNext.reason : undefined)}
+      contractNext={nextFieldContract(progression?.fieldOps)?.reason}
+      reachRendNext={reachRendNext}
       replayAction={<button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button>}
       actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> :
         <button type="button" className="t-btn t-btn-primary" onClick={() => {
           continueOnboarding();
           const store = useBattleStore.getState();
-          const next = recordedFieldResult.victory ? fieldResultNext(store.progression, recordedFieldResult) : null;
-          if (next && store.screen === "war-table") openPurposeBrief(next);
-        }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>}>
+          if (store.screen !== "war-table") return;
+          if (reachRendUnlocked) {
+            const missionId = reachRendLoadoutMission(store.progression, recordedFieldResult);
+            if (missionId) store.openOperationBrief(missionId, undefined, "alpha-a2");
+            else if (rewardResume) {
+              const run = store.progression?.fieldOps?.activeMissionRun;
+              if (run) store.openOperationBrief(run.missionId, run.fieldContext?.masteryChallenge);
+            }
+            return;
+          }
+          const next = recordedFieldResult.victory ? fieldResultNext(store.progression) : null;
+          if (next) openPurposeBrief(next);
+        }}>{reachRendUnlocked ? rewardBrief ? "CHOOSE ALPHA’S A2" : rewardResume ? "RESUME FIELD OP" : "WAR TABLE"
+          : recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>}>
       {recordedFieldResult ? <details className="t-detail"><summary>Progression & eligibility</summary>
         <p>{fieldResultPurpose(recordedFieldResult).future}</p>
         <p>Challenge: {recordedFieldResult.legacyReport ? "Unmeasured in this receipt" : recordedFieldResult.challengeSuccess ? `Met · +${recordedFieldResult.challengeBonus} Commander bonus recorded` : "Not met"}.</p>

@@ -318,22 +318,35 @@ const fieldContractBlobs=Object.freeze({
  'tactical-ops-src/ui/returnPurpose.ts':'d457a609abbdb23cfee8a9294cb48c45a9c69793',
  'tactical-ops-src/ui/tacticalActionIcons.ts':'707d2c922443ae148039fdae3bcd8429c34c2766',
 });
+// Pin the scoped Reach Rend UI and save feedback while retaining the original Field Contracts baseline.
+const reachRendUxBlobs=Object.freeze({
+ 'tactical-ops-src/store/battleStore.ts':'3a1fcc3bf0fc4a3cf501bca4f3ed4a5f0bd9f157',
+ 'tactical-ops-src/tactical.css':'78a7d30b49701f3ca22b17fdf9c2c0016b9357b9',
+ 'tactical-ops-src/ui/App.tsx':'efaeebaf040f97337a622d810043a72909e20381',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'ac30691e28cd337724040a11407d021ced7e75bf',
+ 'tactical-ops-src/ui/returnPurpose.ts':'794ca9210a81fc31585ae12a5e43be22b123fee7',
+ 'tactical-ops-src/version.ts':'2d63b34176e49b8b7962d30e64227abc6fbd9983',
+});
 const fieldContractsMerge='1a9e41436c364e2bf0c557f74b1e11e57a47084f';
 const legacyFieldBriefFix='8634d6e5150b31476c2a1c05e8b8e6573baaf8be';
 git('merge-base','--is-ancestor',fieldContractsMerge,'HEAD');
 for(const [path,expected] of Object.entries(fieldContractBlobs)){
  assert.equal(git('rev-parse',`${fieldContractsMerge}:${path}`).trim(),expected,'unreviewed merged Field Contracts source: '+path);
- assert.equal(sourceBlob(readFileSync(path)),path===app ? legacyFieldBriefFix : expected,'unreviewed Field Contracts source: '+path);
+ const fieldContractsBaseline=path===app ? legacyFieldBriefFix : expected;
+ assert.equal(sourceBlob(readFileSync(path)),reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
 }
 // Browser Guest Exit V1: approve only these exact, separately reviewed host/version blobs.
-// All other Field Contracts runtime paths retain their strict allowlist and hash checks.
+// Keep the merged exit source pinned and allow the Reach Rend release to advance the version.
 const browserExitApproved=Object.freeze({
  'tactical-ops-src/host/bootstrap.ts':'ca52e1165f7e9c9f523eb36f9de9506558280960',
  'tactical-ops-src/version.ts':'5796d8fc6abef65e7ecc86eeb30120c5ef8237d8',
 });
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
- if(Object.hasOwn(browserExitApproved,path)) assert.equal(sourceBlob(readFileSync(path)),browserExitApproved[path],'unreviewed Browser Guest exit source: '+path);
+ if(Object.hasOwn(browserExitApproved,path)){
+  assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
+  assert.equal(sourceBlob(readFileSync(path)),reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
+ }
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
 assert(!/pointer-events:\s*auto/.test(cameraCss),'overhead layer may not intercept touch');

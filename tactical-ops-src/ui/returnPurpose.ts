@@ -15,18 +15,27 @@ export function nextFieldContract(field?: FieldOpsProgression) {
   return contract ? { missionId, title: contract.name, reason: contract.objective, tier: "standard", resume: false } as const : null;
 }
 
-export function fieldResultNext(p: FoundationProgressionState | null, result: FieldResult | null): PurposeAction | null {
+export function reachRendLoadoutMission(p: FoundationProgressionState | null, result: FieldResult | null) {
+  if (result?.contractAward?.reward !== "reach-rend") return;
   const field = p?.fieldOps;
   const board = field?.board;
+  if (!p?.completed || !p.vnextStartAvailable || field?.activeMissionRun || !field?.fieldContracts?.enabled ||
+      !field.fieldContracts.sidegrade || board?.reportVersion !== 3 || board.nextRotationAt * 1000 <= Date.now()) return;
+  const regular = board.activeMissionIds.filter(id => {
+    const mission = getMissionDef(id);
+    return mission?.activity === "FIELD_OP" && mission.executable;
+  });
+  const contract = nextFieldContract(field);
+  return (contract && regular.includes(contract.missionId) ? contract.missionId : undefined)
+    || regular.find(id => id !== result.missionId) || regular[0];
+}
+
+export function fieldResultNext(p: FoundationProgressionState | null): PurposeAction | null {
+  const field = p?.fieldOps;
   const regular = commandPurpose(p).primary;
   if (regular?.resume) return regular;
   const contract = nextFieldContract(field);
   if (contract) return contract;
-  if (result?.contractAward?.reward === "reach-rend" && field?.fieldContracts?.enabled
-      && board && board.nextRotationAt * 1000 > Date.now()) {
-    const missionId = board.activeMissionIds.find(id => id !== result.missionId);
-    if (missionId) return { missionId, title: "Try Reach Rend", reason: "Equip Reach Rend for your next Field Op.", tier: "standard", resume: false };
-  }
   return regular;
 }
 

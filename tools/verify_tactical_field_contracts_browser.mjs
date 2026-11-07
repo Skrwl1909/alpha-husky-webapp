@@ -1,8 +1,12 @@
 /** Real Tactical UI and wire parser with synthetic responses. Settlement is tested separately in Python. */
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { createServer } from "vite";
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
 
+const { run: { combatProfileV2, combatProfileV3 } } = JSON.parse(readFileSync(
+  new URL("./fixtures/intercept-accepted.json", import.meta.url), "utf8",
+));
 const entry = `
 import React from "react";
 import { createRoot } from "react-dom/client";
@@ -32,9 +36,27 @@ const projection = count => ({
 });
 window.apiPost = async (path, body) => {
   if (path.endsWith("/field-rend")) {
+    const allow = await new Promise(resolve => { window.finishSave = resolve; });
+    if (!allow) return {ok:false, code:"sidegrade_locked"};
     window.saved = body.choice;
     canonical.revision++;
     field.fieldContracts.selection = body.choice;
+  }
+  if (path.endsWith("/mission/start")) {
+    const started = !field.activeMissionRun;
+    if (started) {
+      const missionId = body.missionId;
+      const fieldContext = {...body.fieldOptions, pressure:2, directiveSet:"pursuit",
+        fieldRend:field.fieldContracts.selection};
+      const rulesContract = {rulesetVersion:body.rulesetVersion, missionId, missionRevision:1,
+        combatProfileVersion:3, masterySnapshotVersion:1, rewardPolicyVersion:1, source:"BACKEND_SNAPSHOT"};
+      field.activeMissionRun = {runId:"field_next", missionId, squadIds:body.squadIds,
+        fieldContext, rulesContract, combatProfileV2:${JSON.stringify(combatProfileV2)},
+        combatProfileV3:${JSON.stringify(combatProfileV3)}};
+      canonical.revision++;
+    }
+    window.starts = (window.starts || 0) + 1;
+    return {ok:true, data:canonical, run:{...field.activeMissionRun, started}};
   }
   return {ok:true,data:canonical};
 };
@@ -49,7 +71,10 @@ window.fixture = { store, apply, async progress(count) {
       directiveTier:"standard", directiveSet:"pursuit" } };
   await apply();
   store.getState().openOperationBrief(ids[0]);
-}, async results(count, match) {
+}, async results(count, match, locked = false) {
+  field.activeMissionRun = locked ? {runId:"field_locked", missionId:ids[2], squadIds:squad,
+    fieldContext:{cycleId:8, approach:"standard", pressure:2, reportVersion:3,
+      directiveTier:"standard", directiveSet:"pursuit"}} : null;
   const missionId = count===3 ? "field-relay-intercept" : ids[count-1];
   await this.progress(count);
   field.lastResult = {runId:"field_real", missionId, victory:true, cycleId:8, challengeSuccess:true, challengeBonus:0,
@@ -92,7 +117,7 @@ try {
   const errors = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*", route => new URL(route.request().url()).hostname==="127.0.0.1" ? route.continue() : route.abort());
-  for (const [width,height] of [[320,568],[390,844],[430,932]]) {
+  for (const [width,height] of [[320,568],[390,844],[430,932],[1280,800]]) {
     await page.setViewportSize({ width, height });
     await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/field-contracts-fixture`);
     const fit = async locator => assert(await locator.evaluate(e => e.scrollWidth <= e.clientWidth+1), `${width}px horizontal overflow`);
@@ -114,23 +139,76 @@ try {
     assert.match(await page.locator(".t-fr-next").innerText(),/all three allies standing/);
     await page.getByRole("button",{name:/^NEXT:/}).tap();
     assert.match(await contract.innerText(),/Hold Together.*all three allies standing/is);
+    await page.evaluate(() => fixture.results(2,true,true));
+    assert.match(await reward.innerText(),/Finish that run to equip Reach Rend/);
+    assert.equal(await page.getByRole("button",{name:/CHOOSE ALPHA/}).count(),0);
+    await page.getByRole("button",{name:"RESUME FIELD OP"}).tap();
+    assert.equal(await page.evaluate(() => fixture.store.getState().selectedMissionId),"field-squad-survival");
+
     await page.evaluate(() => fixture.results(2,true));
-    assert.match(await reward.innerText(),/Reach Rend unlocked/);
-    await page.evaluate(() => {
-      fixture.store.setState({screen:"war-table"});
-      fixture.store.getState().openOperationBrief("field-relay-hold");
-    });
-    await page.getByLabel("Mission preparation sections").getByRole("button",{name:/LOADOUT/}).tap();
-    const loadout = page.getByLabel("ALPHA Field Rend");
-    const reach = loadout.getByRole("button",{name:/REACH REND/});
+    assert.match(await reward.innerText(),/Reach Rend unlocked.*farther away for less direct damage.*select A2/s);
+    await fit(reward);
+    await page.getByRole("button",{name:"CHOOSE ALPHA’S A2"}).tap();
+    const loadout = page.getByRole("region",{name:"ALPHA Field Rend"});
+    const loadoutTab = page.getByLabel("Mission preparation sections").getByRole("button",{name:/LOADOUT/});
+    const reach = loadout.getByRole("button",{name:/^REACH REND/});
+    const rend = loadout.getByRole("button",{name:/^REND/});
+    const deploy = page.getByRole("button",{name:"DEPLOY SQUAD",exact:true});
+    assert.equal(await loadoutTab.getAttribute("aria-pressed"),"true");
+    assert.equal(await loadout.getByRole("heading",{name:"ALPHA · A2"}).evaluate(e => document.activeElement === e),true);
+    assert.match(await rend.innerText(),/Range 1 cell · 145% direct hit.*EQUIPPED/s);
+    assert.match(await reach.innerText(),/Range 1–2 cells · 105% direct hit.*AVAILABLE/s);
     assert.equal(await reach.getAttribute("aria-pressed"),"false");
     assert((await reach.boundingBox()).height >= 44);
+
     await reach.tap();
-    await page.waitForFunction(() => window.saved === "reach-rend");
-    await page.evaluate(() => fixture.apply());
+    await loadout.getByText("Saving A2…",{exact:true}).waitFor();
+    assert(await deploy.isDisabled());
+    assert.equal(await reach.getAttribute("aria-pressed"),"false","pending writes cannot appear equipped");
+    await page.evaluate(() => window.finishSave(false));
+    await loadout.getByRole("alert").getByText(/could not be saved/).waitFor();
+    assert.equal(await reach.getAttribute("aria-pressed"),"false","failed writes cannot appear equipped");
+    await reach.tap();
+    await loadout.getByText("Saving A2…",{exact:true}).waitFor();
+    await page.evaluate(() => window.finishSave(true));
+    await loadout.getByText(/Reach Rend equipped for new Field Ops/).waitFor();
     assert.equal(await reach.getAttribute("aria-pressed"),"true");
-    assert.match(await page.locator('[data-slot="A2"]').innerText(),/REACH REND.*2/s);
     await fit(loadout);
+
+    await page.getByRole("button",{name:"BACK",exact:true}).tap();
+    await page.evaluate(() => fixture.apply());
+    await page.getByRole("button",{name:/MISSIONS/}).tap();
+    await page.getByRole("region",{name:"Current Field Ops"}).getByRole("button",{name:"VIEW BRIEF"}).tap();
+    await loadoutTab.tap();
+    assert.equal(await reach.getAttribute("aria-pressed"),"true","canonical selection survives reopening");
+    const assertReachInBattle = async () => {
+      await page.waitForFunction(() => {
+        const state = fixture.store.getState();
+        return state.screen === "battle" || state.progressionError;
+      });
+      assert.equal(await page.evaluate(() => fixture.store.getState().progressionError),null);
+      const run = await page.evaluate(() => {
+        const state = fixture.store.getState();
+        return {id:state.currentRunKey, fieldRend:state.currentFieldContext.fieldRend,
+          alphaSkills:Object.values(state.battle.units).find(unit => unit.defId === "alpha").skillIds};
+      });
+      assert.equal(run.id,"field_next");
+      assert.equal(run.fieldRend,"reach-rend");
+      assert(run.alphaSkills.includes("alpha-reach-rend"));
+      assert(!run.alphaSkills.includes("alpha-rend"));
+    };
+    await deploy.tap();
+    await assertReachInBattle();
+    await page.evaluate(() => fixture.store.getState().backToHub());
+    await page.locator("[data-primary-purpose] button").tap();
+    await loadoutTab.tap();
+    assert.match(await loadout.innerText(),/Locked for current run.*Finish the accepted Field Op/s);
+    assert.equal(await reach.getAttribute("aria-pressed"),"true");
+    assert(await reach.isDisabled());
+    assert(await rend.isDisabled());
+    await deploy.tap();
+    await assertReachInBattle();
+    assert.equal(await page.evaluate(() => window.starts),2);
     await page.evaluate(() => fixture.results(3,true));
     assert.match(await reward.innerText(),/Field Honor earned · Field Tested/);
     await page.evaluate(() => fixture.store.setState({screen:"war-table"}));
@@ -138,12 +216,13 @@ try {
     await page.evaluate(() => fixture.legacyBrief());
     assert.match(await contract.innerText(),/Finish the accepted Field Op/);
     await page.getByLabel("Mission preparation sections").getByRole("button",{name:/LOADOUT/}).tap();
-    assert.match(await page.locator('[data-slot="A2"]').innerText(),/REND/);
-    assert.doesNotMatch(await page.locator('[data-slot="A2"]').innerText(),/REACH REND/);
-    assert.equal(await page.getByLabel("ALPHA Field Rend").getByRole("button",{name:/REACH REND/}).getAttribute("aria-pressed"),"false");
+    assert.match(await loadout.innerText(),/Locked for current run/);
+    assert(await reach.isDisabled());
+    assert.equal(await reach.getAttribute("aria-pressed"),"false","saved Reach Rend is not equipped in a different accepted run");
+    assert.equal(await rend.getAttribute("aria-pressed"),"false","no equipped claim for a blocked new brief");
     assert.deepEqual(errors,[]);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
-    console.log(`PASS ${width}px COMMAND → BRIEF → matched Results → saved Loadout → Field Honor`);
+    console.log(`PASS ${width}px confirmed reward → ALPHA A2 → failed save/retry → reopen → deploy and resume → Field Honor`);
   }
   await page.close();
 } finally {

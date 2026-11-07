@@ -1,4 +1,4 @@
-import { contractName, FIELD_HONOR, REACH_REND_TRADEOFF } from "../data/fieldContracts";
+import { contractName, FIELD_HONOR } from "../data/fieldContracts";
 import type { ReactNode } from "react";
 import { Check, Shield, AlertTriangle } from "lucide-react";
 import type { FieldResult } from "../data/fieldOps";
@@ -9,11 +9,12 @@ import { recordedImpact } from "./afterActionImpact";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
-  consequence, contractNext, actions, replayAction, children }: {
+  consequence, contractNext, reachRendNext, actions, replayAction, children }: {
   victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
   pending: boolean; error: string | null; failure: string;
   consequence: { label: string; detail: string } | null;
   contractNext?: string;
+  reachRendNext?: string;
   actions: ReactNode; replayAction?: ReactNode; children: ReactNode;
 }) {
   const award = receipt?.contractAward;
@@ -53,14 +54,14 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     {award ? <section className="t-fr-consequence t-field-contract" aria-label="Confirmed field contract">
       <div className="t-kicker">{contractName(award.id)} completed · {award.count}/3</div>
       <strong>{award.reward === "reach-rend" ? "Reach Rend unlocked" : award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
-      {award.reward === "reach-rend" ? <p>Equip it in ALPHA’s Loadout. {REACH_REND_TRADEOFF}.</p> : null}
+      {award.reward === "reach-rend" ? <><p>ALPHA’s A2 hits from farther away for less direct damage. Same Bleed.</p><p>{reachRendNext}</p></> : null}
     </section> : null}
     {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline">WHAT CHANGED</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}
-    {receipt ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{contractNext ? <p>{contractNext}</p> : null}</div> : null}
+    {receipt && award?.reward !== "reach-rend" ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{contractNext ? <p>{contractNext}</p> : null}</div> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     {receipt ? <details className="t-fr-ledger">
       <summary><span>MISSION RECORD</span><small>Commander · Veteran · Mastery · Rewards</small></summary>

@@ -113,6 +113,7 @@ interface UiBattle {
   currentChapterIntel: import("../data/operations").ChapterIntel | null;
   currentCampaignContext: CampaignContext | null;
   kodaSavePending: boolean;
+  fieldRendSavePending: boolean;
   shadowSavePending: boolean;
 }
 
@@ -174,7 +175,8 @@ interface Store extends UiBattle {
   saveChapterResult: () => Promise<void>;
   chooseDoctrine: () => Promise<void>;
   openChapterBrief: () => void;
-  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1") => void;
+  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1", entry?: "alpha-a2") => void;
+  briefEntry: "alpha-a2" | null;
   activeRulesetVersion: string | null;
   backToHub: () => void;
   deploy: () => void;
@@ -485,7 +487,7 @@ export const useBattleStore = create<Store>((set, get) => {
 
   const selectTeammateSidegrade = async (teammate: "koda" | "shadow", choice: KodaSidegrade | ShadowSidegrade) => {
     const current = get();
-    if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || current.progression?.operations?.["broken-signal"]?.status !== "cleared") return;
+    if (current.screen !== "brief" || current.busy || current.fieldRendSavePending || current.kodaSavePending || current.shadowSavePending || current.progression?.operations?.["broken-signal"]?.status !== "cleared") return;
     if (choice !== "A" && choice !== "B") return;
     const pendingKey = teammate === "koda" ? "kodaSavePending" : "shadowSavePending";
     set({ [pendingKey]: true, progressionError: null });
@@ -605,6 +607,8 @@ export const useBattleStore = create<Store>((set, get) => {
     currentChapterIntel:null,
     currentCampaignContext: null,
     kodaSavePending: false,
+    fieldRendSavePending: false,
+    briefEntry: null,
     shadowSavePending: false,
 
     configureOnboarding: (opts) => {
@@ -866,7 +870,7 @@ export const useBattleStore = create<Store>((set, get) => {
       get().openOperationBrief("field-relay-recovery");
       set({selectedVeteranChallenge:true,selectedMasteryChallenge:null,screen:"brief",selectedMissionId:"field-relay-recovery",selectedDirectiveTier:"advanced",selectedSquadIds:["alpha","ally-02","ally-03"]});
     },
-    openOperationBrief: (missionId, masteryChallenge) => {
+    openOperationBrief: (missionId, masteryChallenge, entry) => {
       const current = get();
       const mission = getMissionDef(missionId);
       if (masteryChallenge && (missionId !== "field-relay-hold" || current.progression?.fieldOps?.masteryPath?.unlockedChallenge !== masteryChallenge)) return;
@@ -885,7 +889,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
       const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, current.progression?.equippedPet)
         ? [...savedSquad] : ["alpha", "ally-02", "ally-03"];
-      set({ screen: "brief", chapterMode:false, currentChapterIntel:null, selectedMissionId: missionId, campaignResult: null, currentCampaignContext: active?.campaignContext || null, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : masteryChallenge ? "advanced" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
+      set({ screen: "brief", briefEntry: entry ?? null, chapterMode:false, currentChapterIntel:null, selectedMissionId: missionId, campaignResult: null, currentCampaignContext: active?.campaignContext || null, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : masteryChallenge ? "advanced" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
       const current = get();
@@ -898,6 +902,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({
         screen: get().foundationCompleted && get().progression?.operations?.["broken-signal"] ? "war-table" : "hub",
         battle: emptyBattle(),
+        briefEntry: null,
         activeRulesetVersion: null,
         chapterMode:false,currentChapterIntel:null,chapterResult:null,
         banner: null,
@@ -913,7 +918,7 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     deploy: () => {
       if (get().busy || get().progressionCommitPending) return;
-      if (get().kodaSavePending || get().shadowSavePending) return;
+      if (get().kodaSavePending || get().shadowSavePending || get().fieldRendSavePending) return;
       const g = ++runGen;
       const persisted = get();
       if (persisted.onboardingEnabled && persisted.progression) {
@@ -1214,10 +1219,10 @@ export const useBattleStore = create<Store>((set, get) => {
     selectFieldRend: async (choice) => {
       const current = get();
       const field = current.progression?.fieldOps;
-      if (current.screen !== "brief" || !current.progression || current.busy || current.kodaSavePending || current.shadowSavePending
+      if (current.screen !== "brief" || !current.progression || current.busy || current.fieldRendSavePending || current.kodaSavePending || current.shadowSavePending
           || field?.activeMissionRun || !field?.fieldContracts?.enabled || !field.fieldContracts.sidegrade
           || field.fieldContracts.selection === choice) return;
-      set({ busy: true, progressionError: null });
+      set({ fieldRendSavePending: true, progressionError: null });
       try {
         const state = await saveFieldRend(createFoundationRequestId("field-rend"), current.progression.revision, choice);
         if (state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
@@ -1226,7 +1231,7 @@ export const useBattleStore = create<Store>((set, get) => {
         if (state && state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(state);
         set({ progressionError: "Loadout could not be saved. Try again." });
       } finally {
-        set({ busy: false });
+        set({ fieldRendSavePending: false });
       }
     },
     toggleCommanderTeammate: (unitId) => {
