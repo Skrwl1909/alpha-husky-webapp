@@ -109,6 +109,65 @@ for(const config of [{native:true},{packaged:true},{telegram:"TEST_TELEGRAM_SIGN
   await t.button("Recover existing account").handlers.click();
   assert.equal(t.requests.length,0);
 }
+
+// Existing Telegram player: exchange one-time Sync Code for the same character.
+{
+  const t=setup({response:{ok:true,json:async()=>({
+    ok:true,session_token:"TEST_TELEGRAM_SESSION",expires_in:3600,
+    linkedTelegram:true,game_user_id:"12345",authMode:"telegram-sync-code"
+  })}});t.ready();
+  t.button("I already play on Telegram").handlers.click();
+  t.all().find(n=>n.tag==="input").value="ab12 cd34";
+  await Promise.all([t.button("Continue Existing Player").handlers.click(),t.button("Continue Existing Player").handlers.click()]);
+  assert.equal(t.requests.length,1);
+  assert.equal(t.requests[0].url,"https://api.alphahusky.win/mobile/auth/sync-code");
+  assert.equal(JSON.parse(t.requests[0].opts.body).code,"AB12-CD34");
+  assert.equal(t.window.__ahAlphaAccountSession.sessionToken,"TEST_TELEGRAM_SESSION");
+  assert.deepEqual(t.events,["ah:browser-guest-ready"]);
+  assert.equal(JSON.parse(t.memory.get(KEY)).authMode,"telegram-sync-code");
+  assert.equal(t.window.AlphaBrowserGuestV1.authMode(),"telegram-sync-code");
+}
+{
+  const t=setup();t.ready();
+  t.button("I already play on Telegram").handlers.click();
+  t.all().find(n=>n.tag==="input").value="short";
+  await t.button("Continue Existing Player").handlers.click();
+  assert.equal(t.requests.length,0);
+  assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
+}
+for (const response of [
+  {ok:false,json:async()=>({ok:false,reason:"CODE_ALREADY_USED"})},
+  {ok:true,json:async()=>({ok:true,session_token:"BAD",expires_in:3600,linkedTelegram:false,authMode:"telegram-sync-code"})},
+  {ok:true,json:async()=>({ok:true,session_token:"BAD",expires_in:3600,linkedTelegram:true,authMode:"standalone",game_user_id:"123"})}
+]) {
+  const t=setup({response});t.ready();
+  t.button("I already play on Telegram").handlers.click();
+  t.all().find(n=>n.tag==="input").value="AB12-CD34";
+  await t.button("Continue Existing Player").handlers.click();
+  assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
+  assert.ok(t.window.__ahAlphaAccountSession==null);
+  assert.equal(t.events.length,0);
+  assert.equal(t.memory.get(KEY),undefined);
+}
+{
+  const t=setup({storageBlocked:true,response:{ok:true,json:async()=>({
+    ok:true,session_token:"TEST",expires_in:3600,
+    linkedTelegram:true,game_user_id:"12345",authMode:"telegram-sync-code"
+  })}});t.ready();
+  t.button("I already play on Telegram").handlers.click();
+  t.all().find(n=>n.tag==="input").value="AB12-CD34";
+  await t.button("Continue Existing Player").handlers.click();
+  assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
+  assert.ok(t.window.__ahAlphaAccountSession==null);
+  assert.equal(t.events.length,0);
+}
+{
+  const t=setup({query:"",saved:{token:"TEST_TELEGRAM_RESUMED",expiresAt:Date.now()+3600000,authMode:"telegram-sync-code"}});t.ready();
+  assert.equal(t.window.__ahAlphaAccountSession.sessionToken,"TEST_TELEGRAM_RESUMED");
+  assert.equal(t.window.AlphaBrowserGuestV1.authMode(),"telegram-sync-code");
+  assert.equal(t.requests.length,0);
+}
+
 const fakeRecovery="TEST_RECOVERY_"+"A".repeat(52);
 {
   const t=setup({response:{ok:true,json:async()=>({
@@ -295,4 +354,7 @@ function earlyBootHarness({ tg = "", session = "", native = false } = {}) {
   assert.equal(t.calls.length, 0);
 }
 
-console.log("PASS: Browser Guest V1 offline isolation, creation, persistence and recovery");
+const profileSource = fs.readFileSync(new URL("../js/player_profile.js", import.meta.url), "utf8");
+assert.match(profileSource, /\/webapp\/mobile\/link-code/);
+assert.match(profileSource, /GENERATE BROWSER SYNC CODE/);
+console.log("PASS: Browser Guest and Existing Telegram Sync Code isolation, creation and recovery");
