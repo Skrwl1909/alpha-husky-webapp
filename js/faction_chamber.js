@@ -77,6 +77,7 @@
           if(awakening.completed !== true) {
             close();
             try { await global.Awakening?.checkState?.({force:true}); } catch(_) {}
+            if(global.Awakening?.isOpen?.() === true) { busy=false; return; }
             throw new Error("Finish Awakening and the Oath before binding a faction.");
           }
           close();
