@@ -59,7 +59,36 @@
   try { global.GuidedNavigation?.refresh?.(); } catch(e) { console.warn("[FactionChamber] guide refresh failed",e); }
  }
  async function bind(){const f=meta(active);if(!f||busy)return;busy=true;const btn=root.querySelector("[data-bind]");if(btn){btn.disabled=true;btn.querySelector("span").textContent="BINDING SIGNAL...";}
-  try{if(typeof apiPost!=="function")throw new Error("API_NOT_READY");const run_id="faction:"+Date.now()+":"+Math.random().toString(16).slice(2);const res=await apiPost("/webapp/faction/join",{faction:f.slug,faction_key:f.key,factionSlug:f.slug,run_id});if(!(res&&(res.ok===true||res.success===true||res.data?.ok===true)))throw new Error(res?.reason||res?.data?.reason||"JOIN_FAILED");
+  try{
+    if(typeof apiPost!=="function")throw new Error("API_NOT_READY");
+    // Browser Guest only: a fresh player must complete the narrative Oath before
+    // binding a faction. Telegram/APK and existing veteran faction state are untouched.
+    if(global.AlphaBrowserGuestV1?.active === true && global.AlphaBrowserGuestV1?.hasSession?.() === true) {
+      const tutorialReply = await apiPost("/webapp/tutorial/state", {});
+      if(!tutorialReply || tutorialReply.ok === false) throw new Error("TUTORIAL_STATE_UNAVAILABLE");
+      const tutorial = tutorialReply.data || tutorialReply.tutorial || tutorialReply;
+      const fresh = tutorial.first_signal || tutorial.firstSignal || {};
+      if(fresh.eligible === true) {
+        const oath = await apiPost("/webapp/oath/state", {});
+        if(!oath || oath.ok !== true) throw new Error("OATH_STATE_UNAVAILABLE");
+        if(oath.completed !== true && !oath.currentFaction) {
+          const awakening = await apiPost("/webapp/awakening/state", {});
+          if(!awakening || awakening.ok !== true) throw new Error("AWAKENING_STATE_UNAVAILABLE");
+          if(awakening.completed !== true) {
+            close();
+            try { await global.Awakening?.checkState?.({force:true}); } catch(_) {}
+            if(global.Awakening?.isOpen?.() === true) { busy=false; return; }
+            throw new Error("Finish Awakening and the Oath before binding a faction.");
+          }
+          close();
+          try { await global.Oath?.checkAndOpen?.({force:true}); } catch(_) {}
+          if(!global.Oath?.isOpen?.()) throw new Error("Complete the Oath before binding a faction.");
+          busy=false;
+          return;
+        }
+      }
+    }
+    const run_id="faction:"+Date.now()+":"+Math.random().toString(16).slice(2);const res=await apiPost("/webapp/faction/join",{faction:f.slug,faction_key:f.key,factionSlug:f.slug,run_id});if(!(res&&(res.ok===true||res.success===true||res.data?.ok===true)))throw new Error(res?.reason||res?.data?.reason||"JOIN_FAILED");
    try{localStorage.setItem("ah_faction",f.key)}catch(_){}
    if(global.PLAYER_STATE?.profile)global.PLAYER_STATE.profile.faction=f.key;if(global.PROFILE)global.PROFILE.faction=f.key;
    haptic("success");bottomBound(f);void refreshBoundJourney();setTimeout(()=>{close();global.FactionHQ?.open?.();},900);

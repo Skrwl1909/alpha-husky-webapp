@@ -53,7 +53,13 @@
   // Missing Awakening record / missing faction / missing optional fields are NOT freshness.
   function isAwakeningFreshEligible(awakening, tutorial) {
     if (isAwakeningCompleted(awakening)) return false;
-    if (firstSignalProgressBlocksAwakening(tutorial)) return false;
+    // Browser Guest may complete First Signal before identity recovery finishes.
+    // Preserve the legacy Telegram/APK suppression, but do not permanently suppress
+    // an explicitly enrolled, uncompleted Awakening for authenticated browser players.
+    if (firstSignalProgressBlocksAwakening(tutorial)) {
+      const browser = global.AlphaBrowserGuestV1;
+      if (!(browser?.active === true && browser?.hasSession?.() === true)) return false;
+    }
     if (isAwakeningInProgress(awakening)) return true;
     if (!isExplicitlyFreshEnrolled(awakening, tutorial)) return false;
     if (!awakening || typeof awakening !== "object") return false;
