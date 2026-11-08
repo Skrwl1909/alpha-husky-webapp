@@ -650,6 +650,7 @@
         align-items:center;
         justify-content:center;
       }
+      #badgeWallBack .ah-bw-detail-art.is-locked img{filter:grayscale(1);opacity:.65}
       #badgeWallBack .ah-bw-detail-art img{
         max-width:100%;
         max-height:100%;
@@ -1618,8 +1619,8 @@
     const canFeature = canBadgeBeFeatured(badge);
 
     detailBox.hidden = false;
-    if (badgeEmblemSource(badge) && badgeEmblemSource(badge) !== badgeIconSource(badge)) {
-      const art = newEl("div", "ah-bw-detail-art");
+    if (badgeEmblemSource(badge) && (toKey(key) === "FIELD-TESTED" || badgeEmblemSource(badge) !== badgeIconSource(badge))) {
+      const art = newEl("div", "ah-bw-detail-art" + (toKey(key) === "FIELD-TESTED" && !isOwned ? " is-locked" : ""));
       setBadgeImage(art, badge, key, true);
       detailBox.appendChild(art);
     }
@@ -1853,7 +1854,7 @@
     unbindTgBackButton();
   }
 
-  async function open() {
+  async function open(badgeKey) {
     if (!_apiPost) {
       init();
     }
@@ -1862,6 +1863,7 @@
       return;
     }
 
+    if (typeof badgeKey === "string") _selectedBadgeKey = toKey(badgeKey);
     setActiveTab("badges");
     if (wallBack) wallBack.style.display = "flex";
     bindTgBackButton();
