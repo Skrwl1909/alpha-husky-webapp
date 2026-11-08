@@ -123,7 +123,10 @@
     if (!uid || typeof global.PlayerProfile?.open !== "function") return false;
     const charBack = document.getElementById("charBack");
     if (charBack) charBack.style.display = "none";
-    return !!(await global.PlayerProfile.open(uid, { source: options.source || "field_record_self" }));
+    return !!(await global.PlayerProfile.open(uid, {
+      source: options.source || "field_record_self",
+      focusService: options.focusService === true,
+    }));
   }
 
   function resetPresentation() {
