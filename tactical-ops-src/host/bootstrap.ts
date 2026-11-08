@@ -1,12 +1,14 @@
 import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
-import { TacticalApp } from "../ui/App";
+import { openPurposeBrief, TacticalApp } from "../ui/App";
 import { TACTICAL_CSS } from "../styles";
 import { setHost } from "./bridge";
 import { snapshotState, useBattleStore } from "../store/battleStore";
 import * as Combat from "../combat";
 import { resolveTacticalLayout } from "../layout";
 import { VERSION } from "../version";
+import { serviceRecord } from "../ui/serviceRecord";
+import { commandPurpose } from "../ui/returnPurpose";
 
 export { VERSION };
 
@@ -412,7 +414,17 @@ export async function open(missionId?: string): Promise<void> {
     useBattleStore.getState().openOperationBrief(missionId);
   }
   const el = ensureRoot();
-  setHost({ requestClose: closeView, dbg: M.dbg });
+  const fieldRecord = (window as Window & {
+    FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
+  }).FieldRecord;
+  setHost({
+    requestClose: closeView,
+    openFieldRecord: fieldRecord?.openSelf ? () => {
+      closeView();
+      void fieldRecord.openSelf?.({ focusService: true });
+    } : undefined,
+    dbg: M.dbg,
+  });
   M.isOpen = true;
   el.setAttribute("data-open", "1");
   lockScroll();
@@ -455,7 +467,28 @@ export function getState() {
   return { ...snapshotState(), open: M.isOpen, version: VERSION };
 }
 
-export const API = { init, open, close: closeView, refresh: getState, getState };
+async function loadServiceRecord() {
+  await progressionReady;
+  const { progression, progressionStatus } = useBattleStore.getState();
+  if (progressionStatus !== "ready" || !progression) throw new Error("Service record unavailable");
+  return serviceRecord(progression);
+}
+
+async function openNextObjective() {
+  await progressionReady;
+  // A profile card may outlive the rotation or a newly accepted run.
+  // Re-read canonical state before routing; never follow a stale recommendation.
+  await useBattleStore.getState().loadFoundationProgression();
+  const { progression, progressionStatus, progressionError } = useBattleStore.getState();
+  if (progressionStatus !== "ready" || progressionError || !progression) {
+    throw new Error("Current Tactical Ops objective could not be verified");
+  }
+  const next = commandPurpose(progression).primary;
+  await open();
+  if (next) openPurposeBrief(next);
+}
+
+export const API = { init, open, close: closeView, refresh: getState, getState, loadServiceRecord, openNextObjective };
 
 export function attachGlobal(): typeof API {
   (window as unknown as { TacticalOps: typeof API }).TacticalOps = API;
