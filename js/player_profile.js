@@ -9,6 +9,7 @@
     profile: null,
     sending: false,
     selfView: false,
+    requestId: 0,
     syncCodeBusy: false,
   };
   const DEFAULT_DAILY_PACK_SIGNALS = 3;
@@ -274,6 +275,38 @@
       .pp-chip.pp-signal::before{content:"";width:7px;height:7px;border-radius:50%;margin-right:6px;background:rgba(248,203,105,.96);box-shadow:0 0 13px rgba(248,203,105,.36)}
       .pp-quote{margin-top:13px;font-family:Georgia,"Times New Roman",serif;font-size:12px;font-style:italic;line-height:1.4;color:rgba(178,196,211,.52)}
       .pp-section{margin-top:13px;padding:13px;border:1px solid rgba(125,211,252,.11);border-radius:13px;background:linear-gradient(180deg,rgba(5,17,27,.78),rgba(4,12,20,.80));box-shadow:inset 0 1px rgba(255,255,255,.025)}
+      .pp-service{
+        border-color:rgba(156,197,207,.4);
+        background:radial-gradient(circle at 82% 7%,rgba(166,122,57,.13),transparent 42%),linear-gradient(142deg,#26343b 0%,#111e28 39%,#0b151f 77%,#1c262d);
+        position:relative;
+        box-shadow:inset 0 1px #ffffff29,inset 0 -1px #0009,0 8px 20px #0004;
+        color:#eaf3f5;
+      }
+      .pp-hero-shell + .pp-service{margin-top:24px}
+      .pp-service::before{content:"";position:absolute;left:16px;right:16px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(233,192,121,.66),rgba(112,225,236,.55),transparent);pointer-events:none}
+      .pp-service .pp-service-label{margin:0;color:#9be1e9;font-size:10px;font-weight:850;letter-spacing:.16em;text-transform:uppercase}
+      .pp-service h2{margin:3px 0 13px;font-size:clamp(18px,5.5vw,24px);line-height:1.12;letter-spacing:-.02em}
+      .pp-service p{margin:5px 0 0;color:#bfced5;font-size:12px;line-height:1.45}
+      .pp-service-hero{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid #a1bac044}
+      .pp-service-hero strong{display:block;font-size:36px;line-height:1;color:#edf7f7;font-variant-numeric:tabular-nums}
+      .pp-service-hero span{font-size:12px;color:#bfced5}
+      .pp-service-honor{display:flex;align-items:center;gap:6px;padding:0;background:none;border:0;text-align:left;color:#f2ce98;cursor:pointer}
+      .pp-service-honor img{width:58px;height:58px;flex:none;filter:drop-shadow(0 3px 6px #0009) drop-shadow(0 0 8px rgba(224,174,102,.16))}
+      .pp-service-honor.is-locked img{filter:grayscale(1);opacity:.65}
+      .pp-service-honor b,.pp-service-honor small{display:block;line-height:1.25}
+      .pp-service-honor small{color:#bfced5;font-size:11px;margin-top:3px}
+      .pp-service-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px 9px;margin:0 0 10px}
+      .pp-service-grid div{display:flex;justify-content:space-between;gap:4px;align-items:baseline;padding:7px 9px;background:linear-gradient(125deg,rgba(13,27,37,.96),rgba(6,14,22,.88));border:1px solid rgba(148,198,209,.16);border-radius:6px}
+      .pp-service-grid dt{font-size:10px;color:#b8cbd2}
+      .pp-service-grid dd{margin:0;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums}
+      .pp-service-rank{display:flex;flex-wrap:wrap;gap:4px 10px;padding:7px 0;color:#deecf0;font-size:11px}
+      .pp-service-rank span{color:#bfced5}
+      .pp-service-rank small{flex-basis:100%;color:#bfced5;font-size:11px}
+      .pp-service-next{border-top:1px solid rgba(215,181,122,.31);margin-top:10px;padding-top:12px}
+      .pp-service-next strong{display:block;margin-top:4px;font-size:14px;color:#edf7f7}
+      .pp-service-cta{width:100%;min-height:46px;margin-top:10px;padding:9px 12px;border:1px solid #9ae4eb;border-radius:8px;background:linear-gradient(180deg,#b9f1f2,#78cbd6);color:#10242d;font-weight:850;letter-spacing:.02em;box-shadow:inset 0 1px rgba(255,255,255,.64),0 5px 16px rgba(27,150,174,.15);cursor:pointer}
+      .pp-service-cta:disabled{opacity:.7}
+      .pp-service button:focus-visible{outline:2px solid #f4d69e;outline-offset:3px}
       .pp-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
       .pp-section-title{position:relative;padding-left:13px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.20em;color:rgba(238,247,255,.9);margin:0}
       .pp-section-title::before{content:"";position:absolute;left:0;top:1px;bottom:1px;width:3px;border-radius:999px;background:#4bc8ff;box-shadow:0 0 13px rgba(75,200,255,.42)}
@@ -483,7 +516,7 @@
 
   function renderRecordedHistory(fieldRecord) {
     const marks = Array.isArray(fieldRecord?.marks) ? fieldRecord.marks : [];
-    if (!marks.length) return `<div class="pp-empty">No verified history recorded yet</div>`;
+    if (!marks.length) return `<div class="pp-empty">No verified story milestones recorded yet. Tactical Ops clears are tracked in Commander Service Record above.</div>`;
     return `<div class="pp-history">${marks.map((mark) => {
       const date = mark?.dateKnown === true ? compactDate(mark?.occurredAt) : "";
       const proof = date || "VERIFIED";
@@ -504,7 +537,79 @@
     }).join("")}</div>`;
   }
 
-  function renderProfile(player) {
+  function renderServiceRecord(section, record) {
+    const count = value => value == null ? '<span aria-label="Unavailable">—</span>' : esc(value);
+    const contracts = record.contracts;
+    const metrics = [...record.objectives, { label: "Advanced clears", count: record.advanced },
+      { label: "Challenges", count: record.challenges }];
+    const commander = record.commander;
+    const veteran = record.veteran;
+    const next = record.next;
+    section.querySelector(".pp-service-content").innerHTML = `
+      ${record.fieldAvailable ? `
+        <div class="pp-service-hero">
+          <div><strong>${count(record.total)}</strong><span>Field Ops clears</span></div>
+          ${contracts ? `<button type="button" class="pp-service-honor${contracts.honor ? "" : " is-locked"}" aria-label="View Field Tested in Badge Wall">
+            <img src="/assets/badges/field-tested.svg" alt="">
+            <span><b>Field Tested</b><small>${contracts.honor ? "Earned · Permanent" : `Locked · ${esc(contracts.completed)}/3 contracts`}</small></span>
+          </button>` : ""}
+        </div>
+        <dl class="pp-service-grid">${metrics.map(row => `<div><dt>${esc(row.label)}</dt><dd>${count(row.count)}</dd></div>`).join("")}</dl>
+        ${commander ? `<div class="pp-service-rank">
+          <b>Commander Rank ${esc(commander.rank)}${commander.rank >= 4 ? " · Veteran" : ""}</b>
+          ${veteran ? `<span>${esc(veteran.credits)}/${esc(veteran.target)} Veteran credits</span>`
+            : commander.target ? `<span>${esc(commander.points)}/${esc(commander.target)} points</span>` : ""}
+          ${veteran?.requirement ? `<small>${esc(veteran.requirement)}</small>` : ""}
+        </div>` : ""}
+        ${record.lockdown ? '<p>Relay Lockdown · First clear recorded</p>' : ""}
+      ` : '<p>Complete Broken Signal to unlock the Field Ops record.</p>'}
+      <div class="pp-service-next">
+        <div class="pp-service-label">Next objective</div>
+        ${next ? `<strong>${esc(next.mission)}</strong><p>${esc(next.title)} · ${esc(next.reason)}</p>`
+          : '<p>Open Tactical Ops for current orders.</p>'}
+        <button type="button" class="pp-service-cta">${esc(next?.action || "Open Tactical Ops")}</button>
+      </div>`;
+
+    section.querySelector(".pp-service-honor")?.addEventListener("click", () => {
+      if (typeof global.openBadgeWallModal !== "function") return;
+      close();
+      void global.openBadgeWallModal("field-tested");
+    });
+  }
+
+  async function loadServiceRecord(section) {
+    const isCurrent = () => section.isConnected && S.backEl?.style.display === "flex";
+    const content = section.querySelector(".pp-service-content");
+    const loadTactical = () => global.ensureTacticalOpsLoaded(S.apiPost, S.tg, S.dbg);
+    try {
+      await loadTactical();
+      const record = await global.TacticalOps.loadServiceRecord();
+      if (!isCurrent()) return;
+      renderServiceRecord(section, record);
+    } catch (err) {
+      if (!isCurrent()) return;
+      if (S.dbg) console.warn("[PlayerProfile] Service record unavailable", err);
+      content.innerHTML = '<p role="status">Service record is unavailable.</p><button type="button" class="pp-service-cta">Open Tactical Ops</button>';
+    }
+
+    const button = content.querySelector(".pp-service-cta");
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      try {
+        await loadTactical();
+        if (!isCurrent()) return;
+        await global.TacticalOps.openNextObjective();
+        if (isCurrent()) close();
+      } catch (err) {
+        if (isCurrent()) {
+          notice("Could not open Tactical Ops. Try again.");
+          button.disabled = false;
+        }
+      }
+    });
+  }
+
+  function renderProfile(player, { focusService = false } = {}) {
     const back = ensureModal();
     const body = back.querySelector(".pp-body");
     if (!body) return;
@@ -597,10 +702,16 @@
         </div>
       </div>
 
+      ${S.selfView ? `<section class="pp-section pp-service" aria-labelledby="pp-service-title">
+        <div class="pp-service-label">Tactical Ops · Personnel file</div>
+        <h2 id="pp-service-title" tabindex="-1">Commander Service Record</h2>
+        <div class="pp-service-content"><p role="status">Loading service record…</p></div>
+      </section>` : ""}
+
       <div class="pp-section">
         <div class="pp-section-head">
-          <div class="pp-section-title">Recorded History</div>
-          <div class="pp-section-note">Verified records only</div>
+          <div class="pp-section-title">Story Milestones</div>
+          <div class="pp-section-note">Verified story records</div>
         </div>
         ${renderRecordedHistory(fieldRecord)}
       </div>
@@ -672,6 +783,11 @@
       </footer>
     `;
 
+    const service = body.querySelector(".pp-service");
+    if (service) {
+      if (focusService) service.querySelector("h2")?.focus();
+      void loadServiceRecord(service);
+    }
     const codeButton = body.querySelector(".pp-generate-browser-code");
     if (codeButton) codeButton.addEventListener("click", () => { void generateBrowserSyncCode(); });
     const btn = body.querySelector(".pp-howl");
@@ -729,8 +845,7 @@
     if (!targetUid) return null;
     const raw = await api("/webapp/player/profile", { target_uid: targetUid });
     if (!raw || raw.ok === false) throw new Error(asText(raw?.reason) || "profile_failed");
-    S.profile = raw.player || null;
-    return S.profile;
+    return raw.player || null;
   }
 
   async function sendHowl(targetUid, source) {
@@ -770,6 +885,7 @@
   async function open(targetUid, opts = {}) {
     const uid = asText(targetUid);
     if (!uid) return false;
+    const requestId = ++S.requestId;
     S.activeUid = uid;
     const source = asText(opts?.source).toLowerCase();
     S.selfView = ["field_record_self", "hub_profile", "hero_profile", "character"].includes(source);
@@ -780,9 +896,12 @@
     try { global.navOpen?.("playerProfileBack"); } catch (_) {}
     try {
       const player = await loadProfile(uid);
-      renderProfile(player);
+      if (requestId !== S.requestId) return false;
+      S.profile = player;
+      renderProfile(player, { focusService: opts.focusService === true });
       return true;
     } catch (err) {
+      if (requestId !== S.requestId) return false;
       if (S.dbg) console.warn("[PlayerProfile] open failed", err);
       if (body) body.innerHTML = `<div class="pp-empty">Profile is not available.</div>`;
       return false;
@@ -790,6 +909,7 @@
   }
 
   function close() {
+    S.requestId++;
     if (S.backEl) S.backEl.style.display = "none";
     try { global.navClose?.("playerProfileBack"); } catch (_) {}
   }
