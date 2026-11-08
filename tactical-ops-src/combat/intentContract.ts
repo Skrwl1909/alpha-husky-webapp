@@ -6,6 +6,10 @@
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW, type BattleState, type Cell } from "./types";
 
 export const TACTICAL_VNEXT_RULESET = "tactical-intent-vnext.0" as const;
+
+export function isSurviveMission(missionId: unknown): boolean {
+  return missionId === "field-squad-survival" || missionId === "field-rearguard";
+}
 /** Experimental only in Battlefield Lab; legacy 8×5 and saved live runs keep previous behavior. */
 export let TACTICAL_VNEXT_ENABLED: boolean = BATTLEFIELD_VNEXT_PREVIEW;
 /** Re-evaluate scheduler selection at accepted-run boundaries, never during a battle. */
@@ -153,7 +157,7 @@ export function parseRunRulesContract(raw: unknown): RunRulesContract | null {
   if (Object.keys(x).length !== keys.length || !keys.every((k) => Object.prototype.hasOwnProperty.call(x, k))) {
     throw new Error("invalid_run_rules_contract");
   }
-  const supportsRevision2 = x.missionId === "field-relay-intercept" || x.missionId === "dead-relay-hold";
+  const supportsRevision2 = x.missionId === "field-relay-intercept" || x.missionId === "dead-relay-hold" || isSurviveMission(x.missionId);
   if (x.rulesetVersion !== TACTICAL_VNEXT_RULESET || x.source !== "BACKEND_SNAPSHOT" ||
       typeof x.missionId !== "string" || !x.missionId ||
       (x.missionRevision !== 1 && !(supportsRevision2 && x.missionRevision === 2)) ||

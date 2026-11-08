@@ -70,7 +70,10 @@ function forecast(state: BattleState, enemyId: string, action: AiAction, sequenc
   // Purely defensive enemy actions do not threaten allied tiles and resolve normally.
   if (definition && (definition.targetType === "SELF" || definition.targetType === "ALLY_AOE")) return null;
   const target = skill?.targetId ? state.units.find(u => u.id === skill.targetId) : null;
-  const tracking = state.objective?.type === "INTERCEPT" && state.objective.screenedEscape === true && action.type === "skill" && definition?.id === "hound-aim" && !!target;
+  const objective = state.objective;
+  const tracksTarget = (objective?.type === "INTERCEPT" && objective.screenedEscape)
+    || (objective?.type === "SURVIVE" && objective.trackingMarksman);
+  const tracking = tracksTarget === true && action.type === "skill" && definition?.id === "hound-aim" && !!target;
   const anchor = target ? tile(target) : skill?.cell ? tile(skill.cell) : action.type === "move" ? tile(action.to) : tile(enemy);
   const impactTiles: Cell[] = definition && ["AREA_RADIUS", "ENEMY_AOE"].includes(definition.targetType)
     ? Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) }))

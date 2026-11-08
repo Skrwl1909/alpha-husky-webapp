@@ -26,7 +26,7 @@ export function missionDirectives(mission: MissionDef, context?: Partial<FieldCo
   const pursuit = context.directiveSet === "pursuit";
   if (pursuit && mission.objectiveType === "SURVIVE") {
     const inbound = conditions.find((d) => d.reinforcement);
-    if (inbound?.reinforcement) {
+    if (inbound?.reinforcement && inbound.reinforcement.entryMeter == null) {
       inbound.reinforcement.triggerRound = 2;
       inbound.reinforcement.spawn.r = 0;
       inbound.copy = "A HOUND enters from the north-east in round 2, one round later with reduced/clear pressure. Occupied entries use the nearest free cell.";

@@ -299,6 +299,7 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
       entry = { ...entry, ...cells[0] };
     }
     const unit = spawnUnit(entry.defId, entry.id, entry.c, entry.r);
+    if (reinforcement.entryMeter != null) unit.meter = reinforcement.entryMeter;
     reinforced = { ...reinforced, units: [...reinforced.units, unit], reinforcement: { ...reinforcement, spawned: true } };
     events.push({ type: "ticker", text: "REINFORCEMENT INBOUND · HOUND MK-2" });
   }

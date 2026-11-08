@@ -1,4 +1,5 @@
-import { getMissionDef, missionBattleRules, type MissionDef } from "./operations";
+import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
+import { getMissionDef, missionBattleRules, missionForContext, surviveRevisionForRequest, type MissionDef } from "./operations";
 import type { FieldContext } from "./fieldOps";
 
 /** G4 is read-only presentation of the existing accepted-run combat contract.
@@ -28,10 +29,13 @@ export function fieldWindow(mission: MissionDef | null | undefined, context: Par
 /** Read only the active server rotation for previews. Previously accepted runs
  * must use their frozen FieldContext and must never inherit today's pressure. */
 export function currentFieldWindow(missionId: string, board: {cycleId:number;nextRotationAt:number;activeMissionIds:string[];reportVersion?:number;directiveSet?: "pursuit"|"attrition"} | undefined,
-  region: {cycleId:number;pressure:number} | undefined, now = Date.now(), tier: "standard" | "advanced" = "standard"): FieldWindow | null {
+  region: {cycleId:number;pressure:number} | undefined, now = Date.now(), tier: "standard" | "advanced" = "standard", vnextAvailable = false): FieldWindow | null {
   if (!board || !region || region.cycleId !== board.cycleId || board.nextRotationAt * 1000 <= now ||
       !board.activeMissionIds.includes(missionId)) return null;
   const mission = getMissionDef(missionId);
-  return fieldWindow(mission, { cycleId:board.cycleId, pressure:region.pressure,
-    reportVersion:board.reportVersion || 2, directiveTier:tier, directiveSet:board.directiveSet });
+  if (!mission) return null;
+  const context = { cycleId:board.cycleId, pressure:region.pressure,
+    reportVersion:board.reportVersion || 2, directiveTier:tier, directiveSet:board.directiveSet };
+  const revision = surviveRevisionForRequest(missionId, vnextAvailable ? TACTICAL_VNEXT_RULESET : undefined, board);
+  return fieldWindow(missionForContext(mission, context, revision), context);
 }

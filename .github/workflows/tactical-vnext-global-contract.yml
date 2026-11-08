@@ -6,6 +6,7 @@ on:
       - "tactical-ops-src/data/missionContracts.ts"
       - "tools/verify_tactical_ops_vnext_contract.mjs"
       - "tools/verify_tactical_vnext_run_contract_wire.mjs"
+      - "tools/simulate_tactical_s2_full_combat.mjs"
       - "tools/verify_tactical_vnext_step5_squad_matrix.mjs"
       - "tools/simulate_tactical_vnext_step0_legacy.mjs"
       - "docs/TACTICAL_VNEXT_GLOBAL_RULES_CONTRACT_2026-10-19.md"
@@ -29,6 +30,10 @@ jobs:
           node tools/verify_tactical_vnext_run_contract_wire.mjs
           node tools/verify_tactical_vnext_step5_squad_matrix.mjs
           node tools/simulate_tactical_vnext_step0_legacy.mjs
+      - name: SURVIVE encounter pacing by revision
+        run: |
+          TACTICAL_SURVIVE_REVISION=1 node tools/simulate_tactical_s2_full_combat.mjs
+          TACTICAL_SURVIVE_REVISION=2 node tools/simulate_tactical_s2_full_combat.mjs
       - name: Legacy real-unit and campaign regressions
         run: |
           node tools/verify_tactical_ops_pr1b.mjs

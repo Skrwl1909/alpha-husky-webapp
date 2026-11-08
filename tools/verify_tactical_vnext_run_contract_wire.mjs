@@ -13,25 +13,31 @@ assert(source.includes("rulesContract.missionId !== missionId"),"start contract 
 assert(source.includes("...(contract ? { rulesContract: contract } : {})"),"accepted rules are carried into run state");
 
 let acceptedRun=null;
+let fieldBoard;
+let requestMission="field-relay-hold";
+let requestRevision;
 const snapshot={version:1,foundationStage:"completed",completed:true,revision:5,activeRunId:null};
 globalThis.window={
  location:{search:""},
  localStorage:{getItem:()=>null},
  apiPost:async(path,body)=>{
   if(path==="/webapp/tactical-foundation/state") {
-   return {ok:true,data:{...snapshot,fieldOps:{records:{},activeMissionRun:structuredClone(acceptedRun)}}};
+   return {ok:true,data:{...snapshot,fieldOps:{records:{},activeMissionRun:structuredClone(acceptedRun),...fieldBoard}}};
   }
   assert.equal(path,"/webapp/tactical-foundation/mission/start");
-  assert.equal(body.missionId,"field-relay-hold");
+  assert.equal(body.missionId,requestMission);
+  assert.equal(body.missionRevision,requestRevision);
   return {ok:true,data:structuredClone(snapshot),run:structuredClone(acceptedRun)};
  }
 };
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 try {
- const [intent,types,foundation]=await Promise.all([
+ const [intent,types,foundation,ops,fieldWindow]=await Promise.all([
   vite.ssrLoadModule("/tactical-ops-src/combat/intentContract.ts"),
   vite.ssrLoadModule("/tactical-ops-src/combat/types.ts"),
   vite.ssrLoadModule("/tactical-ops-src/host/foundationProgression.ts"),
+  vite.ssrLoadModule("/tactical-ops-src/data/operations.ts"),
+  vite.ssrLoadModule("/tactical-ops-src/data/livingBattlefield.ts"),
  ]);
  const rules={rulesetVersion:"tactical-intent-vnext.0",missionId:"field-relay-hold",
   missionRevision:1,combatProfileVersion:3,masterySnapshotVersion:1,rewardPolicyVersion:1,
@@ -41,7 +47,7 @@ try {
  assert.equal(intent.parseRunRulesContract(null),null);
  assert.throws(()=>intent.parseRunRulesContract({...rules,source:"CLIENT"}),/unsupported/);
  assert.throws(()=>intent.parseRunRulesContract({...rules,extra:true}),/invalid/);
- for (const missionId of ["field-relay-intercept", "dead-relay-hold"]) {
+ for (const missionId of ["field-relay-intercept", "dead-relay-hold", "field-squad-survival", "field-rearguard"]) {
   for (const missionRevision of [1,2]) {
    assert.equal(intent.parseRunRulesContract({...rules,missionId,missionRevision}).missionRevision,missionRevision);
   }
@@ -112,5 +118,47 @@ try {
  assert.equal(types.GRID_COLS,10);
  assert.equal(types.GRID_ROWS,7);
  assert.equal(intent.TACTICAL_VNEXT_ENABLED,true);
+ for (const missionId of ["field-squad-survival","field-rearguard"]) {
+  const capability = {reportVersion:3,surviveRevisionAvailable:2,cycleId:1,
+   nextRotationAt:2000000000,directiveSet:"pursuit",
+   activeMissionIds:[missionId,"field-relay-hold","field-relay-recovery"]};
+  const context = {cycleId:1,pressure:0,approach:"standard",reportVersion:3,directiveTier:"advanced",directiveSet:"pursuit"};
+  const board = {board:capability,region:{pressure:0,cycleId:1},
+   commander:{rank:3,progress:18,unlockedApproaches:["standard"],unlockedDirectiveTiers:["standard","advanced"]}};
+  fieldBoard=board;
+  const ruleset=intent.TACTICAL_VNEXT_RULESET;
+  const base=ops.getMissionDef(missionId);
+  assert.equal(ops.surviveRevisionForRequest(missionId,ruleset,undefined),undefined);
+  assert.equal(ops.surviveRevisionForRequest(missionId,undefined,capability),undefined);
+  assert.equal(ops.surviveRevisionForRequest(missionId,ruleset,capability,{}),undefined);
+  assert.equal(ops.surviveRevisionForRequest(missionId,ruleset,capability,{rulesContract:{...rules,missionId}}),undefined);
+  assert.equal(ops.missionForContext(base,context,1),base);
+  assert.equal(ops.missionForContext(base,{...context,reportVersion:2},2),base);
+  assert.equal(ops.surviveRevisionForRequest(missionId,ruleset,capability),2);
+  requestMission=missionId;
+  requestRevision=2;
+  const revised=ops.missionForContext(base,context,2);
+  const duration=missionId==="field-rearguard" ? 5 : 4;
+  assert.equal(revised.objective.duration,duration);
+  assert.deepEqual(revised.challenge,base.challenge);
+  assert.equal(revised.objective.trackingMarksman,true);
+  assert.equal(ops.missionForContext(base,{...context,directiveTier:"standard"},2).objective.trackingMarksman,undefined);
+  assert.equal(ops.missionBattleRules(revised,false,context).reinforcement.triggerRound,duration);
+  assert.equal(ops.missionBattleRules(revised,false,{...context,pressure:2}).reinforcement.triggerRound,duration-1);
+  assert.equal(fieldWindow.currentFieldWindow(missionId,capability,board.region,0,"advanced",true).actualRound,duration);
+  acceptedRun={runId:"field-survive",missionId,squadIds:legacy.run.squadIds,
+   rulesContract:{...rules,missionId,missionRevision:2},fieldContext:context,combatProfileV3:profile};
+  const startSurvive=()=>foundation.startOperationMission("survive-start",5,missionId,acceptedRun.squadIds,
+   {cycleId:1,approach:"standard",reportVersion:3,directiveTier:"advanced"},ruleset,false,undefined,undefined,2);
+  const started=await startSurvive();
+  const reloaded=(await foundation.loadFoundationProgression()).fieldOps.activeMissionRun;
+  assert.deepEqual(reloaded.rulesContract,started.run.rulesContract);
+  assert.deepEqual(reloaded.fieldContext,context);
+  assert.equal(ops.surviveRevisionForRequest(missionId,ruleset,undefined,reloaded),2);
+  acceptedRun.fieldContext=undefined;
+  await assert.rejects(startSurvive(),/invalid_run_rules_contract/);
+  await assert.rejects(foundation.loadFoundationProgression(),/invalid_progression_response/);
+ }
+ assert.equal(ops.surviveRevisionForRequest("field-relay-hold",intent.TACTICAL_VNEXT_RULESET,{reportVersion:3,surviveRevisionAvailable:2}),undefined);
  console.log("PASS: start/resume preserve Legacy and frozen VNext profiles, reject invalid versions and missing/null/malformed V3, 10x7 -> 8x5 -> 10x7");
 } finally {await vite.close();}

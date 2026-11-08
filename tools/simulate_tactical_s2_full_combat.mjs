@@ -6,14 +6,17 @@
  * This is a deterministic benchmark of policies, NOT proof of human fun/retention.
  */
 import assert from "node:assert/strict";
-import {mkdirSync,writeFileSync} from "node:fs";
+import {mkdirSync,readFileSync,writeFileSync} from "node:fs";
 globalThis.window={location:{search:"?tacticalBattlefieldVNext=1"},localStorage:{getItem:()=>null}};
 const {createServer}=await import("vite");
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 const MAX_ACTIVATIONS=240;
-const g1 = process.env.TACTICAL_G1_MATRIX === "1";
+const accepted = process.env.TACTICAL_SURVIVE_ACCEPTED
+  ? JSON.parse(readFileSync(process.env.TACTICAL_SURVIVE_ACCEPTED,"utf8")) : null;
+const surviveRevision = accepted?.run.rulesContract?.missionRevision ?? Number(process.env.TACTICAL_SURVIVE_REVISION || 0);
+const g1 = process.env.TACTICAL_G1_MATRIX === "1" || Boolean(surviveRevision);
 try {
-  const [ops,battle,ai,move,skills,target,defs,profiles,sidegrades,scheduler,rules]=await Promise.all([
+  const [ops,battle,ai,move,skills,target,defs,profiles,sidegrades,scheduler,rules,contracts,field,wire]=await Promise.all([
     "/tactical-ops-src/data/operations.ts",
     "/tactical-ops-src/combat/battle.ts",
     "/tactical-ops-src/combat/ai.ts",
@@ -25,12 +28,16 @@ try {
     "/tactical-ops-src/data/shadowSidegrade.ts",
     "/tactical-ops-src/combat/intentScheduler.ts",
     "/tactical-ops-src/combat/missionRules.ts",
+    "/tactical-ops-src/data/fieldContracts.ts",
+    "/tactical-ops-src/data/fieldOps.ts",
+    "/tactical-ops-src/combat/intentContract.ts",
   ].map(v=>vite.ssrLoadModule(v)));
-  const pet={id:"s2-test-pet",name:"S2 PET",img:"https://example.test/unused.png"};
+  const pet=accepted ? accepted.run.combatProfileV2?.pet ?? accepted.data.equippedPet
+    : {id:"s2-test-pet",name:"S2 PET",img:"https://example.test/unused.png"};
   const variants=[
     ["alpha","ally-02","ally-03"],
-    ["alpha","ally-02",`pet:${pet.id}`],
-    ["alpha","ally-03",`pet:${pet.id}`],
+    ["alpha","ally-02",`pet:${pet?.id}`],
+    ["alpha","ally-03",`pet:${pet?.id}`],
   ];
   let profilesData=[
     {name:"fresh",alpha:{hp:120,atk:28,def:12,spd:14},pet:{hp:78,atk:18,def:6,spd:13}},
@@ -41,6 +48,7 @@ try {
     {name:"cut-courier",paths:["howlkeeper","pursuer","medic"],koda:"A",shadow:"A",signature:"A"},
     {name:"break-signal",paths:["howlkeeper","disruptor","medic"],koda:"B",shadow:"A",signature:"A"},
   ];
+  if (surviveRevision) builds.unshift({name:"foundation", noGrowth:true});
   if(g1) profilesData=profilesData.flatMap(p=>builds.flatMap(build=>["standard","advanced"].map(tier=>({...p,name:`${p.name}/${build.name}/${tier}`,build,tier}))));
   const manhattan=(a,b)=>Math.abs(a.c-b.c)+Math.abs(a.r-b.r);
   const nearest=(arr,score)=>[...arr].sort((a,b)=>score(a)-score(b)||a.c-b.c||a.r-b.r)[0];
@@ -122,7 +130,7 @@ try {
     if(!mustHold && !blocker && (policy==="control" || !wantsObjective)){
       const fired=strike(state,actor,preferred,policy,stats);if(fired)return fired;
     }
-    if(!actor.hasMoved){
+    if(!actor.hasMoved && policy !== "hold-position"){
       const reachable=move.reachableCells(actor,state.units);
       const aim=blockDestination || (wantsObjective?oPoint:preferred);
       if(aim){
@@ -152,31 +160,54 @@ try {
     return skipped.state;
   }
   function fullRun(mission,squad,profile,policy){
-    const spawns=ops.missionSpawnsForSquad(mission,squad,pet);
+    const context = accepted?.run.fieldContext ?? (mission.activity === "FIELD_OP" ? {reportVersion:3,pressure:profile.pressure ?? 2,
+      directiveTier:profile.tier || "standard",directiveSet:profile.directiveSet} : undefined);
+    if (surviveRevision) mission = ops.missionForContext(mission,context,surviveRevision);
+    const spawns=ops.missionSpawnsForSquad(mission,squad,pet,context?.approach ?? profile.approach);
     assert(spawns,mission.missionId+": cannot deploy "+squad);
     const pack=Object.fromEntries(squad.filter(id=>id!=="alpha").map(id=>[id,{progress:8,stage:3,selected:profile.build?.signature||"B"}]));
-    const altered=sidegrades.withTeammateSidegrades(spawns,{kodaSidegrade:profile.build?.koda||"B",shadowSidegrade:profile.build?.shadow||"B",packMastery:g1?pack:{}});
-    const v3={version:3,mode:"battle-v1",alpha:profile.alpha,pet:squad.some(x=>x.startsWith("pet:"))?{...pet,...profile.pet}:null};
-    const applied=profiles.applyRunCombatProfile(altered,v3,{pet:v3.pet});
-    const spec=ops.missionBattleRules(mission,false,mission.activity==="FIELD_OP"?{reportVersion:3,pressure:2,directiveTier:profile.tier||"standard"}:undefined);
-    const growth = g1 ? {version:2,revision:1,heroes:["alpha","ally-02","ally-03"].map((id,i)=>({heroId:id,discipline:profile.build.paths[i],ranks:Object.fromEntries((i===0?["alpha-strike","alpha-rend","alpha-howl"]:i===1?["u02-shot","u02-burst","u02-suppress"]:["u03-tap","u03-mend","u03-pack"]).map(id=>[id,2]))}))}:undefined;
-    let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive,growth);
+    const variants = accepted ? {...accepted.data,packMastery:accepted.run.packMastery || {}} : {
+      kodaSidegrade:profile.build?.noGrowth ? undefined : profile.build?.koda || "B",
+      shadowSidegrade:profile.build?.noGrowth ? undefined : profile.build?.shadow || "B",
+      packMastery:g1 && !profile.build?.noGrowth ? pack : {},
+    };
+    const altered=sidegrades.withTeammateSidegrades(contracts.withFieldRend(spawns,context?.fieldRend),variants);
+    const v3=accepted?.run.combatProfileV3 ?? {version:3,mode:"battle-v1",alpha:profile.alpha,
+      pet:squad.some(x=>x.startsWith("pet:"))?{...pet,...profile.pet}:null};
+    const applied=profiles.applyRunCombatProfile(altered,v3,accepted?.run.combatProfileV2 ?? {pet:v3.pet});
+    const spec=ops.missionBattleRules(mission,false,context);
+    const growth = !accepted && g1 && !profile.build?.noGrowth ? {version:2,revision:1,heroes:["alpha","ally-02","ally-03"].map((id,i)=>({heroId:id,discipline:profile.build.paths[i],ranks:Object.fromEntries((i===0?["alpha-strike","alpha-rend","alpha-howl"]:i===1?["u02-shot","u02-burst","u02-suppress"]:["u03-tap","u03-mend","u03-pack"]).map(id=>[id,2]))}))}:undefined;
+    let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive,accepted?.run.playerGrowth || growth);
     const stats={lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
+    const rounds = new Map();
+    let reinforcementRound = null;
     let cycle=scheduler.emptyThreatCycle(),stall=0,previous="",error=null,activations=0;
     for(;activations<MAX_ACTIVATIONS && state.outcome==="ongoing";activations++){
       const advanced=battle.advanceToNext(state);
       state=advanced.state;
+      if (state.reinforcement?.spawned && reinforcementRound === null) reinforcementRound = state.round;
       const unit=state.units.find(u=>u.id===state.activeId);
       if(state.outcome!=="ongoing")break;
       if(!unit){error="no_active_unit";break;}
+      const round = rounds.get(state.round) || {round:state.round, enemyPresent:false, attacks:0, warnings:0, enemyMoves:0, allyActions:0, emptySkips:0};
+      rounds.set(state.round,round);
+      const alive = state.units.some(u => u.team === "enemy" && !u.defeated);
+      round.enemyPresent ||= alive;
+      const before = state;
+      const beforeSkips = stats.skips;
+      const beforeWarnings = stats.telegraphs;
         {const oldCount=cycle.ledger.length; cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length;}
       if(unit.team==="ally") {
         cycle=scheduler.markAlliedReaction(cycle,state);
         // In the control policy, react to locked attacks by making a real legal evasive move.
-        const locked=cycle.pending.find(t=>t.plan.targetUnitId===unit.id && t.plan.targetTile);
+        const locked=cycle.pending.find(t=>t.plan.targetUnitId===unit.id &&
+          (t.plan.targetTile || (surviveRevision && t.action.type === "skill" && t.action.skillId === "hound-aim")));
         if(policy==="control" && locked && !unit.hasMoved && state.objective?.type!=="INTERCEPT"){
-          const cells=move.reachableCells(unit,state.units).filter(p=>p.c!==locked.plan.targetTile.c||p.r!==locked.plan.targetTile.r);
-          const safe=cells.filter(p=>!locked.plan.impactTiles.some(t=>t.c===p.c&&t.r===p.r));
+          const cells=move.reachableCells(unit,state.units);
+          const source=state.units.find(u=>u.id===locked.plan.enemyId);
+          const safe=cells.filter(p=>locked.plan.targetTile
+            ? !locked.plan.impactTiles.some(t=>t.c===p.c&&t.r===p.r)
+            : source && (move.chebyshev(p,source)<2 || move.chebyshev(p,source)>4));
           if(safe.length){
             const dest=nearest(safe,p=>move.chebyshev(p,unit)*10+ p.c/100 +p.r/1000);
             const moved=battle.tryMove(state,dest.c,dest.r);
@@ -219,6 +250,15 @@ try {
           }
         }
       }
+      if (unit.team === "ally") {
+        round.allyActions++;
+        if (!alive && stats.skips > beforeSkips) round.emptySkips++;
+      } else {
+        round.attacks += Number(state.units.some(u => u.team === "ally" && u.hp < before.units.find(v => v.id === u.id).hp));
+        const updated = state.units.find(u => u.id === unit.id);
+        round.enemyMoves += Number(updated.c !== unit.c || updated.r !== unit.r);
+        round.warnings += stats.telegraphs - beforeWarnings;
+      }
       if(state.outcome==="ongoing")state=battle.evaluateOutcome(state);
       const after=[state.units.map(u=>[u.id,u.c,u.r,u.hp,u.defeated]),state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null];
       const sig=JSON.stringify(after);
@@ -229,17 +269,76 @@ try {
         stats.roundProgress.push({round:state.round,progress:state.objective.progress});
       }
     }
-    return {build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
+    const pacing = [...rounds.values()];
+    return {pressure:profile.pressure,approach:profile.approach,directiveSet:profile.directiveSet,
+      damage:state.damageTaken,reinforcementRound,threatFreeRounds:pacing.filter(r=>!r.enemyPresent).length,
+      emptySkips:pacing.reduce((n,r)=>n+r.emptySkips,0),enemyDamageActions:pacing.reduce((n,r)=>n+r.attacks,0),
+      quietRounds:pacing.filter(r=>!r.attacks&&!r.warnings&&!r.enemyMoves).length,
+      ...(accepted ? {fieldReport:field.fieldReport(state)} : {}),
+      pacing,build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
   }
+  if (accepted) {
+    const {run} = accepted;
+    const contract = wire.parseRunRulesContract(run.rulesContract);
+    assert(contract && contract.missionId === run.missionId && wire.isSurviveMission(run.missionId));
+    assert(run.fieldContext?.reportVersion === 3);
+    const result = fullRun(ops.getMissionDef(run.missionId),run.squadIds,{name:"accepted-http"},"control");
+    assert(!result.error && result.outcome==="victory");
+    console.log(JSON.stringify(result));
+  } else {
   const all=[];
   for(const mission of Object.values(ops.MISSION_DEFS)){
+    if (surviveRevision && mission.objectiveType !== "SURVIVE") continue;
+    const scenarios = surviveRevision ? profilesData.flatMap(profile => [
+      {...profile,pressure:2,directiveSet:"pursuit",approach:"standard"},
+      {...profile,pressure:0,directiveSet:"attrition",approach:"south"},
+      {...profile,pressure:2,directiveSet:"attrition",approach:"standard"},
+      {...profile,pressure:0,directiveSet:"pursuit",approach:"south"},
+    ]) : profilesData;
     const squadOptions=mission.missionId==="broken-signal-breach"?[variants[0]]:
       mission.missionId==="broken-signal-recover"?variants.map(x=>x.slice(0,2)) : variants;
-    for(const squad of squadOptions)for(const profile of profilesData)for(const policy of ["tempo","control"]){
+    for(const squad of squadOptions)for(const profile of scenarios)for(const policy of surviveRevision ? ["tempo","control","hold-position"] : ["tempo","control"]){
       const row=fullRun(mission,squad,profile,policy);
       all.push(row);
     }
   }
+  if (surviveRevision) {
+    assert.equal(all.length,1152);
+    assert(all.every(r=>!r.error && r.outcome!=="ongoing"));
+    const report = Object.fromEntries(["field-squad-survival","field-rearguard"].flatMap(id=>["standard","advanced"].map(tier=>{
+      const matched=all.filter(r=>r.missionId===id && r.tier===tier);
+      const rows=matched.filter(r=>r.policy!=="hold-position");
+      const passive=matched.filter(r=>r.policy==="hold-position");
+      const mean=key=>Math.round(rows.reduce((n,row)=>n+row[key],0)/rows.length*100)/100;
+      return [id+"/"+tier,{runs:rows.length,wins:rows.filter(row=>row.outcome==="victory").length,
+        threatFreeRounds:mean("threatFreeRounds"),quietRounds:mean("quietRounds"),emptySkips:mean("emptySkips"),
+        enemyDamageActions:mean("enemyDamageActions"),damage:mean("damage"),activations:mean("activations"),
+        telegraphs:mean("telegraphs"),counters:mean("counters"),interrupts:mean("interrupts"),heals:mean("heals"),
+        passiveWins:passive.filter(row=>row.outcome==="victory").length,passiveRuns:passive.length,
+        passiveDamage:Math.round(passive.reduce((n,row)=>n+row.damage,0)/passive.length*100)/100,
+        finalRoundPressure:Math.round(rows.filter(row=>{const last=row.pacing.at(-1);return last.attacks+last.warnings+last.enemyMoves>0}).length/rows.length*100),
+        rounds:mean("rounds"),reinforcementRounds:[...new Set(rows.map(row=>row.reinforcementRound))].sort()}];
+    })));
+    if (surviveRevision === 2) {
+      for (const [name, metrics] of Object.entries(report)) {
+        assert(metrics.wins >= metrics.runs * 0.95, `${name}: active squad policy lost too often`);
+        assert.equal(metrics.threatFreeRounds,0,`${name}: fully empty rounds`);
+        assert(metrics.quietRounds < 0.6 && metrics.finalRoundPressure >= 75,`${name}: insufficient activity`);
+        assert(metrics.counters > 1 && metrics.interrupts > 0,`${name}: no practical counterplay`);
+      }
+      for (const row of all) {
+        const duration = row.missionId === "field-rearguard" ? 5 : 4;
+        if (row.outcome === "victory") {
+          assert.equal(row.rounds,duration+1);
+          assert.equal(row.squadStanding,3);
+          assert.equal(row.reinforcementRound,duration - Number(row.pressure >= 2));
+        }
+      }
+    }
+    mkdirSync("artifacts/survive",{recursive:true});
+    writeFileSync(`artifacts/survive/revision-${surviveRevision}.json`,JSON.stringify({report,runsData:all},null,2));
+    console.log(JSON.stringify(report,null,2));
+  } else {
   assert.equal(all.length,g1?816:136,"34 legal lineups × two profiles × two policies = 136 actual battles");
   assert(all.every(r=>r.activations<=MAX_ACTIVATIONS));
   assert(all.some(r=>r.telegraphs>0),"No live threat announcements were recorded");
@@ -280,4 +379,6 @@ try {
   assert(!stalledObjective.length,"Objective controller stalled: "+stalledObjective.map(r=>r.missionId+":"+r.squad+":"+r.error).slice(0,8).join(";"));
   // Any scripted policy stall is reported as a policy defect, not a proof of engine softlock.
   console.log("S2_FULL_COMBAT_MATRIX_PASS (tempo vs control; still requires genuine dual-win evidence)");
+  }
+  }
 }finally{await vite.close();}

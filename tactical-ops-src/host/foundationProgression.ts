@@ -1,5 +1,5 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
-import { parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
+import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import { parseVeteran } from "../data/veteran";
 import { parseVeteranOpportunity, type VeteranOpportunity } from "../data/progressionOpportunity";
@@ -65,7 +65,7 @@ export interface FieldOpsProgression {
   records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastClearCycle: number | null; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
   activeMissionRun: OperationMissionRun | null;
   lastCompletedMissionRunId: string | null;
-  board?: { cycleId: number; nextRotationAt: number; activeMissionIds: string[]; reportVersion?: number; directiveSet?: DirectiveSet };
+  board?: { cycleId: number; nextRotationAt: number; activeMissionIds: string[]; reportVersion?: number; directiveSet?: DirectiveSet; surviveRevisionAvailable?: 2 };
   commander?: { rank: number; progress: number; nextRankAt: number | null; certificationComplete?: boolean; unlockedApproaches: DeploymentApproach[]; unlockedDirectiveTiers?: DirectiveTier[] };
   rotationProgress?: { cycleId: number; securedCount: number; total: number; clearedMissionIds: string[]; challengeMissionIds: string[]; advancedMissionIds: string[]; frontSecured: boolean };
   careerRecord?: { version: 1; missionSecures: number; challenges: number; advancedClears: number; frontsSecured: number; lastSecuredCycle: number | null };
@@ -428,7 +428,8 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
             const fieldContext = parseFieldContext(activeValue.fieldContext);
       if (activeValue.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && activeValue.missionId !== 'field-relay-hold') || (fieldContext.veteranChallenge && activeValue.missionId !== 'field-relay-recovery'))) return null;
       const contract = parseRunRulesContract(activeValue.rulesContract);
-      if (contract && contract.missionId !== activeValue.missionId) return null;
+      if (contract && (contract.missionId !== activeValue.missionId ||
+          (contract.missionRevision === 2 && isSurviveMission(contract.missionId) && fieldContext?.reportVersion !== 3))) return null;
       activeMissionRun = { runId: activeValue.runId, missionId: activeValue.missionId, squadIds, ...(contract ? { rulesContract: contract } : {}), tacticalProfile: parseTacticalProfile(activeValue.tacticalProfile), packMastery: parsePackMastery(activeValue.packMastery), ...(activeValue.playerGrowth != null ? { playerGrowth: requireRunGrowth(activeValue.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(activeValue, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(activeValue.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(activeValue, contract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(activeValue.campaignContext) ? { campaignContext: parseCampaignContext(activeValue.campaignContext)! } : {}), ...(parseChapterContext(activeValue.chapterContext) ? {chapterContext:parseChapterContext(activeValue.chapterContext)} : {}), ...(parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string) ? {chapterIntel:parseChapterIntel(activeValue.chapterIntel, activeValue.missionId as string)} : {}) };
     }
     parsed[operationId] = {
@@ -540,7 +541,10 @@ export async function startOperationMission(
   if (fieldOptions?.lockdownPlan && fieldContext?.lockdownPlan !== fieldOptions.lockdownPlan) throw new FoundationProgressionError("invalid_progression_response");
   if (fieldOptions?.masteryChallenge && fieldContext?.masteryChallenge !== fieldOptions.masteryChallenge) throw new FoundationProgressionError("invalid_progression_response");
   const rulesContract = parseRunRulesContract(value.rulesContract);
-  if (rulesContract && rulesContract.missionId !== missionId) throw new FoundationProgressionError("invalid_run_rules_contract");
+  if (rulesContract && (rulesContract.missionId !== missionId ||
+      (rulesContract.missionRevision === 2 && isSurviveMission(missionId) && fieldContext?.reportVersion !== 3))) {
+    throw new FoundationProgressionError("invalid_run_rules_contract");
+  }
   return { state: responseState(response), run: { started:value.started===true, runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(value, rulesContract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
 }
 
