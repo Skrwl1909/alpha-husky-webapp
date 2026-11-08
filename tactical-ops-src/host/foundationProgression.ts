@@ -62,7 +62,7 @@ export interface FieldOpsProgression {
   veteranCareer?: import("../data/veteran").VeteranProgress;
   lockdownPlansAvailable?: boolean;
   masteryPath?: MasteryPath;
-  records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount: number; lastClearCycle: number | null; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
+  records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount?: number; lastClearCycle: number | null; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
   activeMissionRun: OperationMissionRun | null;
   lastCompletedMissionRunId: string | null;
   board?: { cycleId: number; nextRotationAt: number; activeMissionIds: string[]; reportVersion?: number; directiveSet?: DirectiveSet; surviveRevisionAvailable?: 2 };
@@ -260,9 +260,12 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       if (!rawRecord || typeof rawRecord !== "object") return null;
       const record = rawRecord as Record<string, unknown>;
       if (record.missionId !== id || !Number.isInteger(record.clearCount) || Number(record.clearCount) < 0) return null;
-      records[id] = { missionId: id, completed: Number(record.clearCount) > 0, clearCount: Number(record.clearCount), lastClearedAt: Number(record.lastClearedAt) || 0, failCount: Number(record.failCount) || 0, challengeCount: Number(record.challengeCount) || 0, lastClearCycle: Number.isInteger(record.lastClearCycle) ? Number(record.lastClearCycle) : null, lastChallengeCycle: Number.isInteger(record.lastChallengeCycle) ? Number(record.lastChallengeCycle) : null };
+      records[id] = { missionId: id, completed: Number(record.clearCount) > 0, clearCount: Number(record.clearCount), lastClearedAt: Number(record.lastClearedAt) || 0, failCount: Number(record.failCount) || 0, lastClearCycle: Number.isInteger(record.lastClearCycle) ? Number(record.lastClearCycle) : null, lastChallengeCycle: Number.isInteger(record.lastChallengeCycle) ? Number(record.lastChallengeCycle) : null };
       if (Array.isArray(record.squadIds) && record.squadIds.every((unit: unknown) => typeof unit === "string")) records[id].squadIds = [...record.squadIds];
-      records[id].advancedClearCount = Number.isInteger(record.advancedClearCount) && Number(record.advancedClearCount) >= 0 ? Number(record.advancedClearCount) : 0;
+      for (const key of ["challengeCount", "advancedClearCount"] as const) {
+        const count = record[key];
+        if (typeof count === "number" && Number.isSafeInteger(count) && count >= 0) records[id][key] = count;
+      }
       records[id].lastAdvancedCycle = Number.isInteger(record.lastAdvancedCycle) ? Number(record.lastAdvancedCycle) : null;
     }
     const parsed = parseOperations({ field: { ...field, status: "active", missions: {} } });
