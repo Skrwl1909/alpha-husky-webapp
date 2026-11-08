@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="steel" x2=".8" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#728893"/><stop offset=".35" stop-color="#263b47"/><stop offset=".7" stop-color="#0c1820"/><stop offset="1" stop-color="#4b606b"/>
+    </linearGradient>
+    <linearGradient id="brass" x2=".8" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#ffdda0"/><stop offset=".32" stop-color="#ac7b46"/><stop offset=".56" stop-color="#60462f"/><stop offset=".82" stop-color="#e3b477"/><stop offset="1" stop-color="#8a663d"/>
+    </linearGradient>
+    <pattern id="etch" width="4" height="4" patternUnits="userSpaceOnUse">
+      <path d="M0 1h4" stroke="#d3e5e8" stroke-opacity=".1"/>
+    </pattern>
+    <path id="shield" d="M64 5 113 25v45c0 18-17 37-49 53C32 107 15 88 15 70V25Z"/>
+  </defs>
+  <path d="M15 34 5 39v32l14 12m94-49 10 5v32l-14 12" fill="#132632" stroke="#536c78" stroke-width="3"/>
+  <use href="#shield" fill="url(#brass)" stroke="#101a20" stroke-width="2"/>
+  <path d="M64 13 105 30v40c0 14-14 31-41 45-27-14-41-31-41-45V30Z" fill="url(#steel)" stroke="#16242b" stroke-width="3"/>
+  <path d="M64 13 105 30v40c0 14-14 31-41 45-27-14-41-31-41-45V30Z" fill="url(#etch)"/>
+  <path d="M32 40 64 25l32 15v29L64 91 32 69Z" fill="#0a1b24" stroke="#657a7e"/>
+  <path d="m36 52 13 5 15 19 15-19 13-5-7 14-21 17-21-17Z" fill="url(#brass)" stroke="#efc68d" stroke-width=".7"/>
+  <path d="m48 42 16 7 16-7-4 11-12 14-12-14Z" fill="url(#brass)" stroke="#efc68d" stroke-width=".7"/>
+  <path d="m64 32 5 5-5 5-5-5Z" fill="#8de4e8"/>
+  <path d="M52 95h5m4 0h6m4 0h5" stroke="#9ce9e7" stroke-width="2.5"/>
+  <path d="M27 32h5m64 0h5M29 73h5m60 0h5" stroke="#e8c186" stroke-width="1.5"/>
+</svg>
