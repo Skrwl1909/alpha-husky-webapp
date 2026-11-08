@@ -348,8 +348,28 @@ const surviveTensionBlobs=Object.freeze({
  'tactical-ops-src/ui/App.tsx':'90a1bc114a60a3dd353d4058968930c776b7eece',
  'tactical-ops-src/version.ts':'e99121a31dcbc9b2922cb7b8c5d63797e486a1f4',
 });
+// Commander Service Record may advance only these presentation and read-model leaves.
+const surviveTensionMerge='b9e837361d8b1f67edd57375eccc36d4c9c21141';
+const serviceRecordBlobs=Object.freeze({
+ 'index.html':'3487ac8c4d454599b9e6d859cc995fa1065e3884',
+ 'js/badges.js':'f50f3d0c2fcf1d1c71ddd0ef858d548c1384d146',
+ 'js/field_record.js':'d74da15d195dec78f74e98b1643369b3642740c2',
+ 'js/player_profile.js':'0059b92622bde72b365f4a245da11c2358e66d23',
+ 'tactical-ops-src/host/bootstrap.ts':'a028d30bffd3b74e6537f3343a4b33e4924e062d',
+ 'tactical-ops-src/host/bridge.ts':'e0898b35229f09e77ec7a563278681d298081a6b',
+ 'tactical-ops-src/host/foundationProgression.ts':'a82c57698c3863b09ac75c62e2935645dad14ef3',
+ 'tactical-ops-src/ui/App.tsx':'5bfba5b748a9da6ddf65b8b4de6fe5379f772ffd',
+ 'tactical-ops-src/ui/serviceRecord.ts':'296f0372793d65ec7a4cf4498425ad08ab543c5d',
+ 'tactical-ops-src/version.ts':'fa57cf997d77121b2fc500d3d27a5ab1885a6cc2',
+ 'assets/badges/field-tested.svg':'3e41fcbd5e71b7f5d4ec6d42c6ce6dd21b462a6b',
+});
+git('merge-base','--is-ancestor',surviveTensionMerge,'HEAD');
+for(const [path,expected] of Object.entries(serviceRecordBlobs)){
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Commander Service Record source: '+path);
+}
 for(const [path,expected] of Object.entries(surviveTensionBlobs)){
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed SURVIVE source: '+path);
+ assert.equal(git('rev-parse',`${surviveTensionMerge}:${path}`).trim(),expected,'unreviewed merged SURVIVE source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),serviceRecordBlobs[path] ?? expected,'unreviewed SURVIVE source: '+path);
 }
 const fieldContractsMerge='1a9e41436c364e2bf0c557f74b1e11e57a47084f';
 const legacyFieldBriefFix='8634d6e5150b31476c2a1c05e8b8e6573baaf8be';
@@ -357,7 +377,7 @@ git('merge-base','--is-ancestor',fieldContractsMerge,'HEAD');
 for(const [path,expected] of Object.entries(fieldContractBlobs)){
  assert.equal(git('rev-parse',`${fieldContractsMerge}:${path}`).trim(),expected,'unreviewed merged Field Contracts source: '+path);
  const fieldContractsBaseline=path===app ? legacyFieldBriefFix : expected;
- assert.equal(sourceBlob(readFileSync(path)),surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
 }
 // Browser Guest Exit V1: approve only these exact, separately reviewed host/version blobs.
 // Keep the merged exit source pinned and allow the Reach Rend release to advance the version.
@@ -365,11 +385,24 @@ const browserExitApproved=Object.freeze({
  'tactical-ops-src/host/bootstrap.ts':'ca52e1165f7e9c9f523eb36f9de9506558280960',
  'tactical-ops-src/version.ts':'5796d8fc6abef65e7ecc86eeb30120c5ef8237d8',
 });
+// Browser Sync and Browser FTUE fixes were merged on main after this verifier's original baseline.
+// Pin their exact approved source blobs to the 8 Nov 2026 main integration commit.
+const reviewedBrowserMain=Object.freeze({
+ 'js/browser_guest_entry_v1.js':'61da4d7d8b749641ca55e7a293472f8e6cf25611',
+ 'js/faction_chamber.js':'dd44874d8738de7f88b23e2319d634a1451ba32d',
+ 'js/ftue_continuity.js':'8c6d67be8bdc8a950b1a8905a3e0a1607b8843a2',
+});
+git('merge-base','--is-ancestor','0cb25488080cd16494d57ceb231fa9a4495e15f7','HEAD');
+git('merge-base','--is-ancestor','e1a11d12a4cbc3bc4d1ade3fd277a92f7ca368d3','HEAD');
+for(const [path,expected] of Object.entries(reviewedBrowserMain)){
+ assert.equal(git('rev-parse',`d4da1a3f7ecc894e6295bd2b7ccd0f3d31107979:${path}`).trim(),expected,'unreviewed merged browser baseline: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed browser sync or FTUE source: '+path);
+}
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
-  assert.equal(sourceBlob(readFileSync(path)),surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
+  assert.equal(sourceBlob(readFileSync(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
  }
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');

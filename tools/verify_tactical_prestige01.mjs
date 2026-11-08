@@ -14,11 +14,11 @@ for(const a of assets){assert.equal(a.status,200);assert.equal(a.format,'WEBP');
 const source=readFileSync('js/badges.js','utf8');
 assert(!source.includes('relay_sentinel'),'generic renderer must not hard-code badge key or URL');
 const index=readFileSync('index.html','utf8');
-const openSource=index.match(/async function openBadges\(\) \{[\s\S]+?\n\}/)?.[0];assert(openSource);
+const openSource=index.match(/async function openBadges\(badgeKey\) \{[\s\S]+?\n\}/)?.[0];assert(openSource);
 const loadRequests=[];
 const loaderScope={window:{Badges:{init(){},open(){}}},document:{getElementById(){return null}},loadScriptOnce:async src=>loadRequests.push(src),apiPost(){},_tg:null,_dbg:false,console};
 vm.runInNewContext(openSource+';openBadges()',loaderScope);await new Promise(resolve=>setImmediate(resolve));
-assert.deepEqual(loadRequests,['js/badges.js?prestige=relay-sentinel-v1'],'production entry uses reviewed Badge Wall cache key');
+assert.deepEqual(loadRequests,['js/badges.js?prestige=field-tested-v1'],'production entry uses reviewed Badge Wall cache key');
 const out='artifacts/prestige01/browser';mkdirSync(out,{recursive:true});
 const html=`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 *{box-sizing:border-box}body{margin:0;background:#080d15;color:white;font-family:Arial}.sheet-back{position:fixed;inset:0;align-items:center;justify-content:center}.btn{background:#152333;color:#fff;border:1px solid #496078;padding:5px 9px;font:inherit;font-size:11px}.sheet-card{color:#fff}

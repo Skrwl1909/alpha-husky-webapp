@@ -1,5 +1,6 @@
 export interface HostBridge {
   requestClose: () => void;
+  openFieldRecord?: () => void;
   dbg: boolean;
 }
 

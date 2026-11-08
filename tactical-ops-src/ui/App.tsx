@@ -1,3 +1,4 @@
+import { getHost } from "../host/bridge";
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { FIELD_HONOR, missionContract, REACH_REND_TRADEOFF, withFieldRend } from "../data/fieldContracts";
@@ -54,7 +55,7 @@ const PRESENTATION = {
   reinforcementWarning: "/images/tactical_ops/presentation/tactical_ops_reinforcement_warning.png",
 } as const;
 
-function openPurposeBrief(action: PurposeAction) {
+export function openPurposeBrief(action: PurposeAction) {
   const store = useBattleStore.getState();
   if (action.chapter) { store.openChapterBrief(); return; }
   store.openOperationBrief(action.missionId, action.masteryChallenge);
@@ -428,6 +429,7 @@ function WarTable() {
         </details> : null}
         <details className="t-purpose-memory t-command-records t-cd-records" aria-label="Permanent records and squad opportunity"><summary>FIELD ARCHIVE <span>RECORDS &amp; SQUAD INTEL</span></summary><div className="t-cd-record-body">
           <span className="t-kicker">PERMANENT FIELD RECORD</span>
+          {getHost().openFieldRecord ? <button type="button" className="t-btn" onClick={getHost().openFieldRecord}>VIEW SERVICE RECORD</button> : null}
           {field?.veteranProgressionAvailable && commanderRank >= 3 ? <div data-opportunity-status={veteranView.status}>
             {veteranCareer ? <p>{veteranRequirement(veteranCareer)}</p> : null}<p>{veteranView.copy}</p>
             {commanderRank >= 4 ? <button type="button" className="t-btn" disabled={Boolean(field?.activeMissionRun)} onClick={()=>useBattleStore.getState().openVeteranBrief()}>PLAY PACK EXTRACTION</button> : null}
