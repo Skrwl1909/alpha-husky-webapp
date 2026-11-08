@@ -9,6 +9,7 @@
     profile: null,
     sending: false,
     selfView: false,
+    syncCodeBusy: false,
   };
   const DEFAULT_DAILY_PACK_SIGNALS = 3;
   const DEFAULT_PROFILE_PORTRAIT = "/assets/skins/lunarhowl_skin.webp";
@@ -547,6 +548,8 @@
     const limit = dailyLimit(social);
     const left = dailyLeft(social);
     const button = howlButtonState(social, isSelf);
+    // Codes can only be generated with a real Telegram initData session, never from Browser Guest.
+    const canGenerateBrowserCode = S.selfView && !!asText(global.Telegram?.WebApp?.initData);
 
     // Display fallback only: equipped cosmetics and player data remain unchanged.
     const defaultPortrait = `<img class="pp-default-portrait" src="${DEFAULT_PROFILE_PORTRAIT}" alt="" onerror="this.remove();">`;
@@ -602,6 +605,15 @@
         ${renderRecordedHistory(fieldRecord)}
       </div>
 
+      ${canGenerateBrowserCode ? `<div class="pp-section" data-browser-sync-section>
+        <div class="pp-section-head"><div class="pp-section-title">PLAY ON PC</div><div class="pp-section-note">Existing account · Same progress</div></div>
+        <p class="pp-social-note">Use a one-time code to continue this same character in your browser. Only generate it when you are ready to sign in. Never share it with anyone.</p>
+        <div class="pp-action-card">
+          <button type="button" class="pp-generate-browser-code" ${S.syncCodeBusy ? "disabled" : ""}>GENERATE BROWSER SYNC CODE</button>
+          <p class="pp-browser-code-status" role="status" aria-live="polite"></p>
+          <code class="pp-browser-code" style="display:none;user-select:all;word-break:break-word;font-size:20px;font-weight:800;letter-spacing:.12em"></code>
+        </div>
+      </div>` : ""}
       <div class="pp-section">
         <div class="pp-section-head">
           <div class="pp-section-title">Pack Recognition</div>
@@ -660,6 +672,8 @@
       </footer>
     `;
 
+    const codeButton = body.querySelector(".pp-generate-browser-code");
+    if (codeButton) codeButton.addEventListener("click", () => { void generateBrowserSyncCode(); });
     const btn = body.querySelector(".pp-howl");
     if (btn) {
       btn.addEventListener("click", () => { void sendHowl(); });
@@ -674,6 +688,40 @@
         }
       });
     });
+  }
+
+  async function generateBrowserSyncCode() {
+    if (S.syncCodeBusy || !S.selfView || !asText(global.Telegram?.WebApp?.initData)) return false;
+    const btn = S.backEl?.querySelector?.(".pp-generate-browser-code");
+    const status = S.backEl?.querySelector?.(".pp-browser-code-status");
+    const codeEl = S.backEl?.querySelector?.(".pp-browser-code");
+    if (!btn || !status || !codeEl) return false;
+    S.syncCodeBusy = true;
+    btn.disabled = true;
+    codeEl.textContent = "";
+    codeEl.style.display = "none";
+    status.textContent = "Creating one-time browser code…";
+    try {
+      const out = await api("/webapp/mobile/link-code", {});
+      const code = asText(out?.code).toUpperCase();
+      if (!out || out.ok !== true || !/^[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)) {
+        throw new Error(asText(out?.reason) || "CODE_UNAVAILABLE");
+      }
+      const ttl = Number(out.expires_in);
+      codeEl.textContent = code;
+      codeEl.style.display = "block";
+      status.textContent = "Enter this code at app.alphahusky.win/?browser_guest=1. Expires in " +
+        (Number.isFinite(ttl) && ttl > 0 ? Math.ceil(ttl / 60) + " minutes." : "a few minutes.") +
+        " Never share it.";
+      return true;
+    } catch (err) {
+      status.textContent = "Could not create a code. Check that Sync Code is enabled in Telegram and try again.";
+      if (S.dbg) console.warn("[PlayerProfile] browser sync-code unavailable:", String(err?.message || "unknown"));
+      return false;
+    } finally {
+      S.syncCodeBusy = false;
+      btn.disabled = false;
+    }
   }
 
   async function loadProfile(uid) {
