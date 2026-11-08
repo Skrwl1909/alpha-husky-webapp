@@ -139,7 +139,7 @@
         syncButton.disabled = true;
         status.textContent = "Checking your one-time Sync Code…";
         try {
-          var base = String(global.API_BASE || "https://api.alphahusky.win").replace(/\\/$/, "");
+          var base = String(global.API_BASE || "https://api.alphahusky.win").replace(/\/$/, "");
           var response = await global.fetch(base + "/mobile/auth/sync-code", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
