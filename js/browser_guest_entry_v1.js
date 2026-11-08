@@ -31,6 +31,8 @@
   var busy = false;
   var pendingRecovery = "";
   var recovering = false;
+  var syncing = false;
+  var authMode = "guest";
 
   function stored() {
     try {
@@ -43,6 +45,7 @@
     token = "";
     expiresAt = 0;
     persisted = false;
+    authMode = "guest";
     if (active) global.__ahAlphaAccountSession = null;
   }
 
@@ -56,6 +59,7 @@
     token = String(state.token);
     expiresAt = Number(state.expiresAt);
     persisted = true;
+    authMode = state.authMode === "telegram-sync-code" ? "telegram-sync-code" : "guest";
     global.__ahAlphaAccountSession = { sessionToken: token };
   }
 
@@ -98,16 +102,18 @@
     if (!active || !global.document || !global.document.body) return;
     var old = global.document.getElementById(ROOT_ID);
     if (old) old.remove();
-    if (token && !pendingRecovery && !recovering) return;
+    if (token && !pendingRecovery && !recovering && !syncing) return;
 
-    var overlay = el("div", { id: ROOT_ID, role: "dialog", "aria-modal": "true", "aria-label": "Alpha Husky browser guest entry" });
+    var overlay = el("div", { id: ROOT_ID, role: "dialog", "aria-modal": "true", "aria-label": "Alpha Husky browser entry" });
     overlay.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:18px;background:rgba(2,6,12,.97);color:#ecf4ff;font:15px/1.5 system-ui,sans-serif";
     var panel = el("div", {});
     panel.style.cssText = "width:min(100%,430px);border:1px solid #38516e;border-radius:18px;padding:24px;background:#0b1522;box-shadow:0 24px 60px #000a";
     var title = el("h1", {}, "ALPHA HUSKY");
     title.style.cssText = "margin:0 0 10px;font-size:25px;letter-spacing:.08em";
     panel.appendChild(title);
-    panel.appendChild(el("p", {}, recovering
+    panel.appendChild(el("p", {}, syncing
+      ? "Already play on Telegram? Open your Alpha Husky Field Record in Telegram, tap Generate Browser Sync Code, and enter the one-time code here. This opens your existing character, not a new account."
+      : recovering
       ? "Recover your existing guest account using the code you saved. Never share it. Recovery does not create a new account."
       : pendingRecovery
       ? "Your guest has been created. Save this one-time recovery code before continuing. Anyone holding this code may be able to recover your account."
@@ -116,7 +122,61 @@
     status.style.cssText = "min-height:22px;color:#b8cbe0;font-size:13px";
     var action = el("button", { type: "button" }, pendingRecovery ? "Copy recovery code" : "Play as Guest");
     action.style.cssText = "width:100%;border:1px solid #6ca8c8;border-radius:10px;background:#164764;color:white;padding:13px;cursor:pointer;font-size:15px;font-weight:700";
-    if (recovering) {
+    if (syncing) {
+      var syncInput = el("input", { type: "text", autocomplete: "one-time-code", autocapitalize: "characters", spellcheck: "false", "aria-label": "Telegram Browser Sync Code", placeholder: "ABCD-EFGH", maxlength: "20" });
+      syncInput.style.cssText = "width:100%;box-sizing:border-box;border:1px solid #38516e;border-radius:10px;background:#06101c;color:white;padding:13px;text-transform:uppercase";
+      panel.appendChild(syncInput);
+      var syncButton = el("button", { type: "button" }, "Continue Existing Player");
+      syncButton.style.cssText = action.style.cssText;
+      syncButton.addEventListener("click", async function () {
+        if (busy) return;
+        var compact = String(syncInput.value || "").replace(/[^a-z0-9]/gi, "").toUpperCase();
+        if (!/^[A-Z0-9]{8}$/.test(compact)) {
+          status.textContent = "Enter the 8-character code shown in Telegram.";
+          return;
+        }
+        busy = true;
+        syncButton.disabled = true;
+        status.textContent = "Checking your one-time Sync Code…";
+        try {
+          var base = String(global.API_BASE || "https://api.alphahusky.win").replace(/\\/$/, "");
+          var response = await global.fetch(base + "/mobile/auth/sync-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code: compact.slice(0, 4) + "-" + compact.slice(4) }),
+            credentials: "omit",
+            cache: "no-store"
+          });
+          var body = await response.json();
+          if (!response.ok || body.ok !== true || body.linkedTelegram !== true || body.authMode !== "telegram-sync-code" || !body.game_user_id || !body.session_token || !Number.isFinite(Number(body.expires_in)) || Number(body.expires_in) <= 0) {
+            throw new Error(String(body.reason || "Existing player sign-in was not confirmed."));
+          }
+          var nextToken = String(body.session_token);
+          var nextExpiry = Date.now() + Number(body.expires_in) * 1000;
+          // Never expose a session or change accounts if browser persistence is blocked.
+          global.sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ token: nextToken, expiresAt: nextExpiry, authMode: "telegram-sync-code" }));
+          token = nextToken;
+          expiresAt = nextExpiry;
+          persisted = true;
+          authMode = "telegram-sync-code";
+          syncing = false;
+          syncInput.value = "";
+          global.__ahAlphaAccountSession = { sessionToken: token };
+          render();
+          signalReady();
+        } catch (err) {
+          status.textContent = "Unable to sign in: " + String(err && err.message || "connection error");
+        } finally {
+          busy = false;
+          syncButton.disabled = false;
+        }
+      });
+      panel.appendChild(syncButton);
+      var syncBack = el("button", { type: "button" }, "Back to browser entry");
+      syncBack.style.cssText = "width:100%;margin-top:10px;border:1px solid #718299;border-radius:10px;background:#203046;color:white;padding:12px;cursor:pointer";
+      syncBack.addEventListener("click", function () { if (!busy) { syncing = false; syncInput.value = ""; render(); } });
+      panel.appendChild(syncBack);
+    } else if (recovering) {
       var input = el("input", { type: "password", autocomplete: "off", autocapitalize: "none", spellcheck: "false", "aria-label": "Guest recovery code", placeholder: "Paste your saved recovery code" });
       input.style.cssText = "width:100%;box-sizing:border-box;border:1px solid #38516e;border-radius:10px;background:#06101c;color:white;padding:13px";
       panel.appendChild(input);
@@ -157,6 +217,7 @@
           expiresAt = nextExpiry;
           persisted = true;
           recovering = false;
+          authMode = "guest";
           input.value = "";
           global.__ahAlphaAccountSession = { sessionToken: token };
           render();
@@ -263,6 +324,10 @@
         render();
       });
       panel.appendChild(recoverExistingButton);
+      var syncExistingButton = el("button", { type: "button" }, "I already play on Telegram");
+      syncExistingButton.style.cssText = recoverExistingButton.style.cssText;
+      syncExistingButton.addEventListener("click", function () { if (!busy) { syncing = true; render(); } });
+      panel.appendChild(syncExistingButton);
     }
     panel.appendChild(status);
     overlay.appendChild(panel);
@@ -275,6 +340,7 @@
     shouldHoldBoot: holdBoot,
     render: render,
     hasSession: function () { return Boolean(token && persisted); },
+    authMode: function () { return authMode; },
     clear: clear
   });
   if (active) {
