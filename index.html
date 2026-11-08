@@ -8158,7 +8158,7 @@ body.bc-open #ahCommunityBtn{
   })(window.WEBAPP_VER);
 </script>
 
-  <script>document.write('<script src="/js/boot_loaders.js?v=' + encodeURIComponent(window.WEBAPP_VER + '-ftue-tactical-hub-pr93') + '"><\/script>');</script>
+  <script>document.write('<script src="/js/boot_loaders.js?v=' + encodeURIComponent(window.WEBAPP_VER + '-field-record-v1') + '"><\/script>');</script>
   <script>document.write('<script src="/js/map_activity_router.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
   <script src="/js/level_up_monitor_v2.js?v=levelup-global-v2-20261014"></script>
   <!-- 4) Główny skrypt aplikacji -->
@@ -8643,7 +8643,7 @@ async function openFrames() {
 }
 window.openFramesModal = openFrames;
 
-async function openBadges() {
+async function openBadges(badgeKey) {
   const charBack = document.getElementById("charBack");
   if (charBack && charBack.style.display !== "none") {
     charBack.style.display = "none";
@@ -8657,7 +8657,7 @@ async function openBadges() {
   }
 
   try {
-    await loadScriptOnce("js/badges.js?prestige=relay-sentinel-v1");
+    await loadScriptOnce("js/badges.js?prestige=field-tested-v1");
   } catch (e) {
     console.warn("Badge Wall script load failed", e);
     try { _tg?.showAlert?.("Failed to load Badge Wall."); } catch (_) {}
@@ -8671,7 +8671,7 @@ async function openBadges() {
   }
 
   if (window.Badges?.open) {
-    return window.Badges.open();
+    return window.Badges.open(badgeKey);
   }
 
   console.warn("window.Badges.open missing after script load");
@@ -13027,8 +13027,8 @@ document.getElementById('qClose')?.addEventListener('click', () => {
 <script>document.write('<script src="js/map_interaction_geometry.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/lunar_world.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/map_sections_v2.js?v=' + encodeURIComponent(window.WEBAPP_VER + '-ftue-bloodmoon-marker-20261012') + '"><\/script>');</script>
-<script>document.write('<script src="js/player_profile.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
-<script>document.write('<script src="js/field_record.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/player_profile.js?service=1&v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
+<script>document.write('<script src="js/field_record.js?service=1&v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script src="js/mailbox.js?v=WEBAPP_VER"></script>
 <script>document.write('<script src="js/campaign.js?v=' + encodeURIComponent(window.WEBAPP_VER) + '"><\/script>');</script>
 <script>document.write('<script src="js/story_delivery.js?v=' + encodeURIComponent(window.WEBAPP_VER + '-ftue-tactical-open-20261011') + '"><\/script>');</script>
