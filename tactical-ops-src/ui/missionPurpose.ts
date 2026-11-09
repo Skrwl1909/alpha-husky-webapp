@@ -1,5 +1,5 @@
 import type { BattleState } from "../combat/types";
-import { holdControlled, recoverSignalOpen } from "../combat/missionRules";
+import { holdControlled, holdZoneStatus, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionForContext, missionBattleRules, type MissionDef } from "../data/operations";
 import type { FieldContext } from "../data/fieldOps";
 import type { FieldResult } from "../data/fieldOps";
@@ -67,6 +67,21 @@ export function missionLiveProgress(b: BattleState): string {
 export function objectiveDirective(b: BattleState): { status: string; action: string; progress: number | null; total: number | null } {
   const o = b.objective;
   if (o?.type === "RECOVER" && o.squadExtractionRadius!=null) return recoverGuidance(b);
+  if (o?.type === "HOLD" && o.relayPressure && o.terminal) {
+    const flank = o.relayPressure.flank;
+    const main = holdZoneStatus(b, o.terminal);
+    const secondary = flank && holdZoneStatus(b, flank.tile);
+    const needFlank = flank && b.round >= flank.activeRound;
+    const blocked = main !== "CONTROLLED" ? { name: o.relayRoute ? "ACTIVE RELAY" : "MAIN RELAY", state: main }
+      : needFlank && secondary !== "CONTROLLED" ? { name: "FLANK", state: secondary } : null;
+    const status = blocked ? `${blocked.name} · ${blocked.state}`
+      : flank && !needFlank ? `FLANK OPENS ROUND ${flank.activeRound}` : "CHECKPOINT READY";
+    const action = blocked?.state === "CONTESTED" ? "Clear the adjacent hostiles before the round ends."
+      : blocked ? "Move an ally onto the marked tile before the round ends."
+      : flank && !needFlank ? "Send a second holder to the marked flank."
+      : "Keep the required tiles clear and occupied through the end of the round.";
+    return { status, action, progress: o.progress, total: o.duration };
+  }
   if (o?.type === "HOLD" && o.relayRoute) return { status: `RELAY ${Math.min(o.progress + 1, 3)} · ${["NORTH", "EAST", "SOUTH"][Math.min(o.progress, 2)]}`, action: `Occupy relay ${Math.min(o.progress + 1, 3)} at ${o.terminal!.c + 1},${o.terminal!.r + 1} and clear adjacent enemies before the next round change.`, progress:o.progress, total:o.duration };
   if (o?.type === "HOLD") {
     if (holdControlled(b)) return { status:"CONTROLLED", action:"Keep an ally in the relay zone through the next round change.", progress:o.progress, total:o.duration };

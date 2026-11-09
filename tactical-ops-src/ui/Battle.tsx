@@ -696,8 +696,14 @@ export function BattleScreen() {
             const pos = fieldPercent(cell.c, cell.r);
             const anchor = objective.holderRadius === 0;
             const center = cell.c === objective.terminal!.c && cell.r === objective.terminal!.r;
-            return <div key={`hold-${cell.c}-${cell.r}`} className={`t-hold-cell ${anchor ? center ? "is-lockdown-anchor" : "is-contest-zone" : "is-hold-area"}${center ? " is-hold-center" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{!center ? "" : objective.relayRoute ? `R${Math.min(objective.progress + 1, 3)}` : "HOLD"}</div>;
+            return <div key={`hold-${cell.c}-${cell.r}`} className={`t-hold-cell ${anchor ? center ? "is-lockdown-anchor" : "is-contest-zone" : "is-hold-area"}${center ? " is-hold-center" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label={anchor ? center ? "Required relay holder tile" : "Enemy contest area" : "Hold area"}>{!center ? "" : objective.relayRoute ? `R${Math.min(objective.progress + 1, objective.duration)}` : "HOLD"}</div>;
           }) : null}
+          {objective?.type === "HOLD" && objective.relayPressure?.flank ? (() => {
+            const { tile, activeRound } = objective.relayPressure.flank;
+            const pos = fieldPercent(tile.c, tile.r);
+            return <div className="t-hold-cell is-lockdown-anchor is-hold-center" style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
+              aria-label={`Flank relay, required from round ${activeRound}`}>FLANK</div>;
+          })() : null}
           {objective?.type === "RECOVER" ? (() => {
             const pos = fieldPercent(objective.terminal.c, objective.terminal.r);
             return <div className={`t-terminal ${objective.completed ? "complete" : ""}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-label="Relay terminal"><img className="t-objective-marker-art" src={PRESENTATION.signalRecovery} alt="" /><span>RELAY</span><small>{objective.completed ? "RECOVERED" : "RECOVER"}</small></div>;

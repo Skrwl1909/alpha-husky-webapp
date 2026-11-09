@@ -1,4 +1,4 @@
-import type { BattleState, MissionDirective, SkillDef, CombatUnit } from "./types";
+import type { BattleState, Cell, MissionDirective, SkillDef, CombatUnit } from "./types";
 
 /** Mission conditions wrap existing actions; they never change unit definitions. */
 export function recoverSignalOpen(state: BattleState): boolean {
@@ -12,18 +12,32 @@ export function supportCooldownExtra(directive: MissionDirective | null | undefi
     ? directive?.supportCooldownExtra || 0 : 0;
 }
 
+export function holdZoneStatus(state: BattleState, tile: Cell): "CONTESTED" | "UNOCCUPIED" | "CONTROLLED" {
+  const objective = state.objective;
+  if (objective?.type !== "HOLD") return "UNOCCUPIED";
+  const distance = (u: CombatUnit) => Math.abs(u.c - tile.c) + Math.abs(u.r - tile.r);
+  const radius = objective.radius ?? 0;
+  if (state.units.some(u => !u.defeated && u.team === "enemy" && distance(u) <= radius)) return "CONTESTED";
+  return state.units.some(u => !u.defeated && u.team === "ally" && distance(u) <= (objective.holderRadius ?? radius))
+    ? "CONTROLLED" : "UNOCCUPIED";
+}
+
 export function holdControlled(state: BattleState): boolean {
   const objective = state.objective;
   if (objective?.type !== "HOLD" || !objective.terminal) return false;
-  const inArea = state.units.filter((u) => !u.defeated && Math.abs(u.c - objective.terminal!.c) + Math.abs(u.r - objective.terminal!.r) <= (objective.radius ?? 0));
-  return inArea.some((u) => u.team === "ally" &&
-    Math.abs(u.c - objective.terminal!.c) + Math.abs(u.r - objective.terminal!.r) <= (objective.holderRadius ?? objective.radius ?? 0)) && !inArea.some((u) => u.team === "enemy");
+  const flank = objective.relayPressure?.flank;
+  // The boundary enters the next round. Check the flank against the round that just ended.
+  return holdZoneStatus(state, objective.terminal) === "CONTROLLED"
+    && (!flank || objective.checkedRound < flank.activeRound || holdZoneStatus(state, flank.tile) === "CONTROLLED");
 }
 
 /** Round-boundary progress, with HOLD reset immediately when control is lost. */
 export function resolveTimedObjective(state: BattleState): { state: BattleState; result: "victory" | "defeat" | null } {
   const objective = state.objective;
-  if (state.directive?.maxRounds && state.round > state.directive.maxRounds) return { state: { ...state, failureReason: "DEADLINE" }, result: "defeat" };
+  const deadline = state.directive?.maxRounds;
+  const windowClosed = Boolean(deadline && state.round > deadline);
+  const trial = objective?.type === "HOLD" && objective.relayPressure;
+  if (windowClosed && !trial) return { state: { ...state, failureReason: "DEADLINE" }, result: "defeat" };
   if (objective?.type === "INTERCEPT") {
     const target = state.units.find((u) => u.id === objective.targetId);
     if (target?.defeated) return { state, result: state.units.some((u) => u.team === "ally" && !u.defeated) ? "victory" : "defeat" };
@@ -34,12 +48,18 @@ export function resolveTimedObjective(state: BattleState): { state: BattleState;
   const allies = state.units.filter((u) => u.team === "ally");
   if (!allies.some((u) => !u.defeated) || (objective.type === "SURVIVE" && allies.some((u) => u.defeated))) return { state, result: "defeat" };
   const boundary = state.round > objective.checkedRound;
-  if (objective.type === "HOLD" && objective.relayRoute?.length) {
+  if (objective.type === "HOLD" && (objective.relayRoute?.length || trial)) {
     if (!boundary) return { state, result: null };
     const progress = holdControlled(state) ? objective.progress + 1 : 0;
-    const terminal = objective.relayRoute[Math.min(progress, objective.relayRoute.length - 1)];
-    return { state: { ...state, objective: { ...objective, progress, checkedRound: state.round, terminal: { ...terminal } } },
-      result: progress >= objective.duration ? "victory" : null };
+    const route = objective.relayRoute;
+    const terminal = route?.[Math.min(progress, route.length - 1)] ?? objective.terminal;
+    const complete = progress >= objective.duration;
+    const expired = !complete && windowClosed;
+    return {
+      state: { ...state, objective: { ...objective, progress, checkedRound: state.round, terminal: { ...terminal! } },
+        ...(expired ? { failureReason: "DEADLINE" as const } : {}) },
+      result: complete ? "victory" : expired ? "defeat" : null,
+    };
   }
   const progress = objective.type === "SURVIVE" ? state.round - 1
     : !holdControlled(state) ? 0 : objective.progress + (boundary ? 1 : 0);
@@ -50,7 +70,7 @@ export function resolveTimedObjective(state: BattleState): { state: BattleState;
 export function missionHud(state: BattleState): string {
   const objective = state.objective;
   const rule = state.directive;
-  const progress = objective?.type === "HOLD" && objective.relayRoute ? `CROSSLINK ${objective.progress}/3 · RELAY ${Math.min(objective.progress + 1, 3)} AT ${objective.terminal!.c + 1},${objective.terminal!.r + 1} · ${holdControlled(state) ? "READY FOR ROUND CHANGE" : "OCCUPY TILE / CLEAR ADJACENT ENEMIES"}`
+  const progress = objective?.type === "HOLD" && objective.relayRoute ? `CROSSLINK ${objective.progress}/${objective.duration} · RELAY ${Math.min(objective.progress + 1, objective.duration)} AT ${objective.terminal!.c + 1},${objective.terminal!.r + 1} · ${holdControlled(state) ? "READY FOR ROUND CHANGE" : "OCCUPY TILE / CLEAR ADJACENT ENEMIES"}`
     : objective?.type === "HOLD" ? `HOLD ${objective.progress}/${objective.duration} · ${holdControlled(state) ? "CONTROLLED" : objective.holderRadius === 0 ? "OCCUPY RELAY TILE / CLEAR ADJACENT ENEMIES" : "OCCUPY / CLEAR AREA"}`
     : objective?.type === "SURVIVE" ? `SURVIVE ${objective.progress}/${objective.duration} · ALL SQUAD MUST STAND`
     : objective?.type === "RECOVER" && objective.squadExtractionRadius != null ? `PACK EXTRACTION · ${state.units.filter(u=>u.team==="ally"&&!u.defeated&&Math.abs(u.c-objective.terminal.c)+Math.abs(u.r-objective.terminal.r)<=objective.squadExtractionRadius!).length}/3 IN RANGE · EVEN ROUNDS ONLY`

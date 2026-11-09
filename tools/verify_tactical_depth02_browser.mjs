@@ -7,6 +7,7 @@ const out='artifacts/depth02/browser';mkdirSync(out,{recursive:true});
 const entry=`import React from 'react';import{createRoot}from'react-dom/client';
 import{TacticalApp}from'/tactical-ops-src/ui/App.tsx';import{useBattleStore as store}from'/tactical-ops-src/store/battleStore.ts';import{TACTICAL_CSS}from'/tactical-ops-src/styles.ts';
 import{missionForContext,getMissionDef,missionBattleRules,missionSpawnsForSquad}from'/tactical-ops-src/data/operations.ts';
+import{relayPressureMission}from'/tactical-ops-src/data/relayPressure.ts';
 import{createBattle,advanceToNext}from'/tactical-ops-src/combat/battle.ts';import{selectAcceptedBattleRules}from'/tactical-ops-src/combat/types.ts';import{selectAcceptedIntentRules}from'/tactical-ops-src/combat/intentContract.ts';
 const style=document.createElement('style');style.textContent=TACTICAL_CSS;document.head.append(style);
 const q=new URLSearchParams(location.search),mode=q.get('mode')||'brief',plan=q.get('plan')||'anchor',old=q.has('old'),legacy=q.has('legacy');
@@ -21,7 +22,9 @@ if(mode==='brief')store.getState().selectLockdownPlan(plan);
 if(mode==='results')store.setState({screen:'results',currentRunKey:'field_depth02',fieldResult:result,battle:{...store.getState().battle,outcome:'victory',results:{victory:true,turns:5,hostilesEliminated:2,squadStanding:3,squadDeployed:3,damageTaken:20,bonesRecovered:0,objectiveComplete:true}}});
 if(mode==='battle'){
  const contract=legacy?null:{rulesetVersion:'tactical-intent-vnext.0'};selectAcceptedBattleRules(contract);selectAcceptedIntentRules(contract);
- const m=missionForContext(getMissionDef('field-relay-hold'),context),rules=missionBattleRules(m,false,context);
+ const trial=q.get('trial');
+ const m=trial?relayPressureMission(Number(trial),1):missionForContext(getMissionDef('field-relay-hold'),context);
+ const rules=missionBattleRules(m,false,trial?undefined:context);
  const b=advanceToNext(createBattle(null,missionSpawnsForSquad(m,['alpha','ally-02','ally-03']),rules.objective,rules.reinforcement,null,rules.directive)).state;
  store.setState({screen:'battle',battle:b,currentFieldContext:context,selectedMissionId:'field-relay-hold',busy:false});
 }
@@ -82,6 +85,23 @@ try{
    if(mode==='brief')assert.equal(await page.locator('[data-lockdown-plan]').count(),0,'old backend offers no unsupported choice');
    if(mode==='battle')assert.equal(await page.getByLabel('Required relay holder tile').count(),1);
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));cases.push({width,height,mode,regression:true});await page.close();
+  }
+ }
+ if(process.env.RELAY_PRESSURE_BROWSER){
+  for(const [width,height] of [[320,740],[390,844],[430,932],[1280,900]]) for(const level of [1,2,3,4,5,6]){
+   const page=await browser.newPage({viewport:{width,height},hasTouch:width<500,reducedMotion:'reduce'}),errors=[];
+   page.on('pageerror',e=>errors.push(e.message));
+   await page.goto('http://127.0.0.1:'+server.httpServer.address().port+'/depth02-fixture?mode=battle&trial='+level);
+   await page.locator('.t-shell').waitFor();
+   assert.equal(await page.getByLabel('Required relay holder tile').count(),1);
+   assert.equal(await page.getByLabel(/^Flank relay/).count(),[2,5].includes(level)?1:0);
+   if([3,6].includes(level))assert.match(await page.locator('.t-obj-chip').innerText(),/CROSSLINK 0\/4/);
+   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal overflow');
+   const marker=await page.getByLabel('Required relay holder tile').boundingBox();
+   assert(marker && marker.x>=0 && marker.x+marker.width<=width && marker.y>=0 && marker.y+marker.height<=height);
+   assert.deepEqual(errors,[]);
+   cases.push({width,height,level,mode:'trial-battle-fixture'});
+   await page.close();
   }
  }
  writeFileSync(out+'/results.json',JSON.stringify({cases,limits:'Real React/store and engine; synthetic server state; Chromium touch emulation. Physical Telegram Android/iPhone remains open.'},null,2));
