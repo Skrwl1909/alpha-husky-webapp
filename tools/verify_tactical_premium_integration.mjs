@@ -46,6 +46,11 @@ const nextDecisionApproved=Object.freeze({
  'tools/verify_tactical_purpose_return.mjs':'9624a6f893339c86e10b3cff2ecf01efe9e09e73',
  'tools/verify_tactical_purpose_return_browser.mjs':'b2b5ce44b53d2cc796090a1ef76be126f41d7a4c',
 });
+const approvedBrowserEntryMainBlobs=Object.freeze({
+ 'index.html':'7714f383bce8b96811aaa21ccbc13b6a4bb98921',
+ 'js/browser_guest_entry_v1.js':'d7edb7742a0b44e03deede83700737debf2634c3',
+ 'tools/verify_browser_guest_entry_v1.mjs':'1f5d2d378ba2486245eb556643b4c408465d2f4b',
+});
 const approvedSignalTrialsBlobs=Object.freeze({
  '.github/workflows/tactical-depth02.yml':'9ccb70cd3736c6024a99bc9ebe5b2a57fbb107fa',
  'tactical-ops-src/combat/ai.ts':'b5660c3a96b7deda0bde28ed9ecaab2403714cf6',
@@ -67,10 +72,12 @@ const nextDecisionHistoricSource=path=>Object.hasOwn(nextDecisionApproved,path)
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
+for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs))
+ assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Browser Public Entry main blob: '+path);
 for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs))
  assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Signal Trials blob: '+path);
 for(const [path,sha] of Object.entries(nextDecisionApproved))
