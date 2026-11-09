@@ -1,6 +1,7 @@
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
+import { relayPressureMission } from "../data/relayPressure";
 import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -390,7 +391,9 @@ function StatusStrip() {
 function ObjectiveChip() {
   const battle = useBattleStore((s) => s.battle);
   const [expanded, setExpanded] = useState(false);
-  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const missionId = useBattleStore((s) => s.selectedMissionId);
+  const trialLevel = useBattleStore((s) => s.selectedTrialLevel);
+  const mission = trialLevel!==null ? relayPressureMission(trialLevel,1) : getMissionDef(missionId);
   const acceptedContext = useBattleStore((s) => s.currentFieldContext);
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
