@@ -33,7 +33,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
   const careerAdvance = receipt?.veteranCareer && receipt.veteranCareer.after > receipt.veteranCareer.before;
   const masteryGain = receipt?.masteryChanges?.some(change => change.gained > 0);
   const missionImpact = receipt ? recordedImpact(receipt, consequence) : null;
-  const impact = award && ["recorded", "secured"].includes(missionImpact?.kind || "") ? null : missionImpact;
+  const impact = award ? null : missionImpact;
   const achievement = receipt?.veteranCareer?.unlocked ? "VETERAN EARNED"
     : rankAdvance ? `RANK ${receipt.rankAfter} EARNED`
     : masteryMilestone ? `${masteryDef(masteryMilestone.unitId)?.name || masteryMilestone.unitId} · ${masteryMilestone.veteran?.unlocked ? "VETERAN" : `STAGE ${masteryMilestone.stage}`}`
@@ -76,7 +76,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       <strong className={majorUnlock ? "t-fr-major-unlock" : undefined}>{award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
     </section> : null}
     {majorUnlock && !award && !impact ? <div className="t-fr-major-unlock">{majorUnlock}</div> : null}
-    {receipt && impact && !award ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
+    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline">WHAT CHANGED</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
