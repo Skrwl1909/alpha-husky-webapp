@@ -978,7 +978,7 @@ export const useBattleStore = create<Store>((set, get) => {
             const pet=started.run.combatProfileV2?.pet;
             const squad=missionSpawnsForSquad(mission,started.run.squadIds,pet ? {id:pet.id,name:pet.name,img:pet.img}:started.state.equippedPet,"standard");
             if(!squad)throw new FoundationProgressionError("invalid_trial_squad");
-            const accepted=[...squad.slice(0,3),...mission.spawns!];
+            const accepted=squad;
             beginBattle(g,started.run.runId,applyRunCombatProfile(withTeammateSidegrades(withFieldRend(accepted,started.run.fieldRend),{...started.state,packMastery:started.run.packMastery}),started.run.combatProfileV3,started.run.combatProfileV2),undefined,false,false,null,mission,undefined,null,started.run.playerGrowth,started.run.rulesContract);
           }catch(error){if(g!==runGen)return;const canonical=error instanceof FoundationProgressionError?error.state:null;if(canonical)applyCanonicalProgression(canonical);set({busy:false,ticker:null,progressionError:error instanceof FoundationProgressionError?error.code:"trial_start_failed"});}
         })();
