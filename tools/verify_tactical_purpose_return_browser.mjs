@@ -73,6 +73,11 @@ try{
     if(scenario==='victory'){
      await review.click();
      assert(await page.getByLabel('Squad composition and mastery').isVisible(),'Review Squad opens the actual Squad tab');
+     await page.reload();
+     await primary.click();
+     assert(await page.getByLabel('Mission overview',{exact:true}).isVisible(),'Recommended action opens the Mission tab');
+     assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMissionId),'field-relay-hold');
+     assert.equal(await page.evaluate(()=>fixture.store.getState().busy),false,'Results navigation must not accept or deploy the run');
     }else if(['defeat','resume'].includes(scenario)){
      await primary.click();
      const brief=await page.evaluate(()=>{const s=fixture.store.getState();return {screen:s.screen,id:s.selectedMissionId,tier:s.selectedDirectiveTier,squad:s.selectedSquadIds}});
