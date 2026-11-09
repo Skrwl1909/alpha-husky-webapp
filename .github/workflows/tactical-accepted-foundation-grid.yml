@@ -1,8 +1,5 @@
 name: Tactical accepted Foundation grid
 
-permissions:
-  contents: write
-
 on:
   pull_request:
     paths:
@@ -33,17 +30,3 @@ jobs:
       - run: node tools/benchmark_tactical_vnext_grids.mjs
       - run: npm run build:tactical-ops
       - run: node --check js/tactical_ops.js
-      # One-off review-branch bundle sync. Remove after the generated files are committed.
-      - name: Sync built bundle to Foundation Bridge review branch
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/tactical-foundation-character-bridge-v1-20261109' }}
-        run: |
-          git fetch origin fix/tactical-foundation-character-bridge-v1-20261109
-          git checkout -B fix/tactical-foundation-character-bridge-v1-20261109 origin/fix/tactical-foundation-character-bridge-v1-20261109
-          npm run build:tactical-ops
-          if ! git diff --quiet -- js/tactical_ops.js js/boot_loaders.js; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add js/tactical_ops.js js/boot_loaders.js
-            git commit -m "build(tactical): sync Foundation Bridge production bundle"
-            git push origin HEAD:refs/heads/fix/tactical-foundation-character-bridge-v1-20261109
-          fi
