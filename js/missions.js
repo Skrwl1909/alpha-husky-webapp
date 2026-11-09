@@ -6377,7 +6377,7 @@ function _normalizeRareDropObj(obj) {
     const inputs = window.StoryDelivery?.gatherInputs?.();
     const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
     if (!fs || fs.eligible !== true || fs.state !== "COMPLETED" ||
-        fs.world_discovery !== "pending" || fs.completion?.completed === false) return false;
+        fs.world_discovery !== "pending" || fs.completion?.completed !== true) return false;
     const apiPost = window.S?.apiPost || window.apiPost || _apiPost;
     if (typeof apiPost !== "function") return false;
     try {
