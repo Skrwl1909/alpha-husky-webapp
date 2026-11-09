@@ -6372,12 +6372,32 @@ function _normalizeRareDropObj(obj) {
     return true;
   }
 
+  // UI-only bridge. Backend owns Foundation entry and accepted runs.
+  async function firstPlayableBridgeEligible() {
+    const inputs = window.StoryDelivery?.gatherInputs?.();
+    const fs = inputs?.firstSignal || inputs?.tutorial?.first_signal;
+    if (!fs || fs.eligible !== true || fs.state !== "COMPLETED" ||
+        fs.world_discovery !== "pending" || fs.completion?.completed === false) return false;
+    const apiPost = window.S?.apiPost || window.apiPost || _apiPost;
+    if (typeof apiPost !== "function") return false;
+    try {
+      const response = await apiPost("/webapp/tactical-foundation/state", {});
+      if (!response || response.ok !== true) return false;
+      const foundation = response.data || response;
+      return foundation.completed === false &&
+        ["solo-1", "solo-2", "ally-koda", "full-broken-signal"].includes(foundation.foundationStage) &&
+        (foundation.activeRunId == null || typeof foundation.activeRunId === "string");
+    } catch (_) { return false; }
+  }
+
   let _tacticalOpening = false, _tacticalEntryFocused = false;
-  async function openTacticalOps() {
+  async function openTacticalOps(options = {}) {
     if (_tacticalOpening) return false;
     _tacticalOpening = true;
     try {
-      if (!await window.StoryDelivery.refreshReturn() || !tacticalAccess(window.StoryDelivery.gatherInputs())) return false;
+      const bridgeApproved = options.firstPlayableBridge === true && await firstPlayableBridgeEligible();
+      if (!bridgeApproved &&
+          (!await window.StoryDelivery.refreshReturn() || !tacticalAccess(window.StoryDelivery.gatherInputs()))) return false;
       const ensureLoaded = window.ensureTacticalOpsLoaded || window.AHBootLoaders?.ensureTacticalOpsLoaded;
       if (typeof ensureLoaded !== "function") throw Error("Tactical Ops is unavailable. Try again.");
       await ensureLoaded(window.S?.apiPost || window.apiPost, window.Telegram?.WebApp || null, false);
@@ -6923,6 +6943,7 @@ try { _tg?.HapticFeedback?.impactOccurred?.("light"); } catch (_) {}
     tacticalAccess,
     openTacticalEntry,
     openTacticalOps,
+    openFirstPlayableBridge: () => openTacticalOps({ firstPlayableBridge: true }),
     openGuided,
     refreshGuided: () => { if (_modal?.classList.contains("is-open")) render(); },
     renderScoutVoice: line => { if (window.ScoutComms?.render) return window.ScoutComms.render(line); ensureStyles(); return renderMissionDebriefVoice("scout", line, ""); },

@@ -539,6 +539,17 @@
         await openGuided();
         return;
       } else if (action === "next") {
+        // Offer combat after confirmed Rustfang equip. No client progress is granted.
+        const current = focusedState();
+        if (current.state === "COMPLETED" && current.completion?.completed === true &&
+            current.world_discovery === "pending" &&
+            typeof window.Missions?.openFirstPlayableBridge === "function") {
+          let opened = false;
+          try { opened = await window.Missions.openFirstPlayableBridge() === true; }
+          catch (error) { log("First playable bridge unavailable", error); }
+          if (opened) { close(false); return; }
+          showToast("Tactical training is unavailable. Continue world discovery.");
+        }
         await showForgeDiscovery();
         return;
       } else if (action === "forge_continue") {
@@ -636,7 +647,7 @@
         <div class="ob-note"><strong>${escapeHtml(reward.displayName || "Rustfang Fangs")} equipped</strong></div>
         <div class="ob-note ob-gain"><strong>Strength: ${escapeHtml(completion.before)} → ${escapeHtml(completion.after)}</strong></div>`;
       action = "next";
-      label = "Continue Journey";
+      label = "Enter Your First Battle";
     }
 
     bodyEl.innerHTML = `
