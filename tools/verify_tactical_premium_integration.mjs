@@ -81,7 +81,7 @@ for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs))
 for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs))
  assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Signal Trials blob: '+path);
 for(const [path,sha] of Object.entries(nextDecisionApproved))
- assert.equal(sourceBlob(git('show',`${nextDecisionBase}:${path}`)),sha,'unreviewed historical Next Decision blob: '+path);
+ assert.equal(sourceBlob(git('show',`182778165eab8ddde44cb3bfe4fe5d25d44145ee:${path}`)),sha,'unreviewed merged Next Decision blob: '+path);
 const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/styles.ts':'b1b7e0729b289ee646695257ffcb0e76b84722c2',
  'tactical-ops-src/ui/Battle.tsx':'18edd840fb2ff963ca99e96d7499f61a72cdef96',
