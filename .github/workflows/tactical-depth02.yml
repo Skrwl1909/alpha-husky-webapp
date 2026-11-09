@@ -24,20 +24,24 @@ jobs:
         run: |
           node tools/verify_tactical_depth02.mjs
           node tools/verify_tactical_depth02_combat.mjs
+          RELAY_PRESSURE_MATRIX=1 node tools/verify_tactical_depth01_combat.mjs
           node tools/verify_tactical_depth01.mjs
           node tools/verify_tactical_vnext_run_contract_wire.mjs
+      - name: Legacy flow and Relay Pressure battlefield at mobile and desktop widths
+        run: node tools/verify_tactical_depth02_browser.mjs
+        env:
+          RELAY_PRESSURE_BROWSER: "1"
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - name: Production bundle parity
         run: |
           npm run build:tactical-ops
           node --check js/tactical_ops.js
           git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
-      - name: Brief, combat, Results and resume at 320 and 390 pixels
-        run: node tools/verify_tactical_depth02_browser.mjs
-        env:
-          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tactical-depth02-evidence
-          path: artifacts/depth02
+          path: |
+            artifacts/depth02
+            artifacts/relay-pressure
           if-no-files-found: error

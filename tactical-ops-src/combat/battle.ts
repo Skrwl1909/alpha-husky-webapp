@@ -110,6 +110,15 @@ export function createBattle(
     const hero = unit.team === "ally" ? growthHero(roster, unit.defId) : undefined;
     return hero ? { ...unit, growth: { ...hero, ranks: { ...hero.ranks } } } : unit;
   });
+  const placedObjective = objective ? structuredClone(objective) : null;
+  if (placedObjective?.type === "INTERCEPT") placedObjective.exit = previewPoint(placedObjective.exit);
+  if (placedObjective?.type === "RECOVER") placedObjective.terminal = previewPoint(placedObjective.terminal);
+  if (placedObjective?.type === "HOLD") {
+    if (placedObjective.terminal) placedObjective.terminal = previewPoint(placedObjective.terminal);
+    if (placedObjective.relayRoute) placedObjective.relayRoute = placedObjective.relayRoute.map(previewPoint);
+    const flank = placedObjective.relayPressure?.flank;
+    if (flank) flank.tile = previewPoint(flank.tile);
+  }
   return {
     units,
     activeId: null,
@@ -124,7 +133,7 @@ export function createBattle(
     healingActions: 0,
     hostilesEliminated: 0,
     results: null,
-    objective: objective ? (() => { const o = structuredClone(objective); if(o.type==="RECOVER" || o.type==="HOLD"){if(o.terminal)o.terminal=previewPoint(o.terminal); if(o.type==="HOLD" && o.relayRoute)o.relayRoute=o.relayRoute.map(previewPoint);} if(o.type==="INTERCEPT")o.exit=previewPoint(o.exit); return o; })() : null,
+    objective: placedObjective,
     reinforcement: reinforcement ? { ...reinforcement, spawn: { ...reinforcement.spawn, ...previewPoint(reinforcement.spawn) } } : null,
     signalCarrierId,
     directive: directive ? structuredClone(directive) : null,
@@ -272,6 +281,11 @@ export function advanceToNext(state: BattleState): { state: BattleState; events:
   let round = state.round;
   if (actionsLeft <= 0) {
     round += 1;
+    // Resolve the checkpoint before new-round bleed or reserve entry can change control.
+    if (state.objective?.type === "HOLD" && state.objective.relayPressure) {
+      state = evaluateOutcome({ ...state, round });
+      if (state.outcome !== "ongoing") return { state, events: [] };
+    }
     actionsLeft = Math.max(1, living(units).length);
   }
   actionsLeft -= 1;

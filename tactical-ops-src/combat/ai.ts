@@ -131,14 +131,16 @@ export function objectiveAwareEnemyAction(state: BattleState): AiAction | null {
   const objective = state.objective;
   if (objective?.type !== "HOLD") return null;
   if (caster.archetype === "MARKSMAN" || caster.archetype === "COURIER") return null;
-  const d = (c: Cell) => Math.abs(c.c - objective.terminal.c) + Math.abs(c.r - objective.terminal.r);
+  const flank = objective.relayPressure?.flank;
+  const target = flank?.enemyId === caster.id ? flank.tile : objective.terminal;
+  const d = (c: Cell) => Math.abs(c.c - target.c) + Math.abs(c.r - target.r);
   const current = d(caster);
   if (current <= objective.radius) return null;
   const candidates = reachableCells(caster, state.units).filter(cell => d(cell) < current);
   if (!candidates.length) return null;
   const allies = living(state.units, "ally");
   // Contesting the relay only matters when it can be reached, or an ally is already defending it.
-  if (!allies.some(a => d(a) <= objective.radius) && current > caster.move + objective.radius + 1) return null;
+  if (!objective.relayPressure && !allies.some(a => d(a) <= objective.radius) && current > caster.move + objective.radius + 1) return null;
   const ranked = candidates.map(cell => {
     const distance = d(cell);
     const exposure = allies.reduce((sum, ally) => sum + (chebyshev(cell, ally) <= 1 ? 1 : 0), 0);
@@ -175,6 +177,10 @@ export function encounterPressureAction(state:BattleState):AiAction|null {
   if(state.objective?.type==="HOLD") {
     const objective=state.objective;
     const defending=living(state.units,"ally").some(a=>Math.abs(a.c-objective.terminal.c)+Math.abs(a.r-objective.terminal.r)<=objective.radius);
+    if (objective.relayPressure) {
+      const contest = objectiveAwareEnemyAction(state);
+      if (contest) return contest;
+    }
     // Attack a reachable holder rather than waste a move into an occupied contested tile.
     if(defending) {
       const ready=availableSkills(state,actor).filter(s=>s.ready&&s.targetType==="ENEMY_SINGLE");
@@ -184,7 +190,7 @@ export function encounterPressureAction(state:BattleState):AiAction|null {
         if(victim&&inSkillRange(actor,victim,skill))return {type:"skill",skillId:skill.id,targetId:victim.id};
       }
     }
-    return objectiveAwareEnemyAction(state);
+    return objective.relayPressure ? null : objectiveAwareEnemyAction(state);
   }
   if(state.objective?.type==="RECOVER")return relayDenialAction(state);
   return null;

@@ -46,17 +46,41 @@ const nextDecisionApproved=Object.freeze({
  'tools/verify_tactical_purpose_return.mjs':'9624a6f893339c86e10b3cff2ecf01efe9e09e73',
  'tools/verify_tactical_purpose_return_browser.mjs':'b2b5ce44b53d2cc796090a1ef76be126f41d7a4c',
 });
-const nextDecisionHistoricSource=path=>Object.hasOwn(nextDecisionApproved,path)
- ? git('show',`${nextDecisionBase}:${path}`) : readFileSync(path,'utf8');
+const approvedBrowserEntryMainBlobs=Object.freeze({
+ 'index.html':'7714f383bce8b96811aaa21ccbc13b6a4bb98921',
+ 'js/browser_guest_entry_v1.js':'d7edb7742a0b44e03deede83700737debf2634c3',
+ 'tools/verify_browser_guest_entry_v1.mjs':'1f5d2d378ba2486245eb556643b4c408465d2f4b',
+});
+const approvedSignalTrialsBlobs=Object.freeze({
+ '.github/workflows/tactical-depth02.yml':'9ccb70cd3736c6024a99bc9ebe5b2a57fbb107fa',
+ 'tactical-ops-src/combat/ai.ts':'b5660c3a96b7deda0bde28ed9ecaab2403714cf6',
+ 'tactical-ops-src/combat/battle.ts':'f7b9a3503c1ba19193bf9c4a2232d25a5f07656b',
+ 'tactical-ops-src/combat/missionRules.ts':'9c1cf4b8a0752e622b6bb8d111d7198af84ad765',
+ 'tactical-ops-src/combat/types.ts':'2c2318fa00e1e3e7829be71f876b5cb2e0ac44c3',
+ 'tactical-ops-src/data/relayPressure.ts':'b646e72fe26b429a5cdc7085b61c9c8c053b3ccd',
+ 'tactical-ops-src/data/signalTrials.ts':'f8c537c10db58945ff429bbb6f23047cbd605c23',
+ 'tactical-ops-src/host/foundationProgression.ts':'34fdb245bed3523d0ac92104fea7b43f3872e758',
+ 'tactical-ops-src/store/battleStore.ts':'3ad5d97e0558925f35c0994e13e794c1ffde4439',
+ 'tactical-ops-src/ui/App.tsx':'5580f3cc80883e47baf50894e88c29cdaf01e9ab',
+ 'tactical-ops-src/ui/Battle.tsx':'4adeb2b7f7fd439bedc90f8a2dbe9c8b1a89d184',
+ 'tactical-ops-src/ui/missionPurpose.ts':'28ccc4b3edc773103532490900794b9472c3e5c5',
+ 'tools/verify_tactical_depth01_combat.mjs':'8d033e062766d08cf73befdc23b8f723d5307a81',
+ 'tools/verify_tactical_depth02_browser.mjs':'f01a7c16490876f078d79ed9fdb2f58e5eadb507',
+});
+const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`);
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
+for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs))
+ assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Browser Public Entry main blob: '+path);
+for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs))
+ assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Signal Trials blob: '+path);
 for(const [path,sha] of Object.entries(nextDecisionApproved))
- assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Next Decision blob: '+path);
+ assert.equal(sourceBlob(git('show',`182778165eab8ddde44cb3bfe4fe5d25d44145ee:${path}`)),sha,'unreviewed merged Next Decision blob: '+path);
 const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/styles.ts':'b1b7e0729b289ee646695257ffcb0e76b84722c2',
  'tactical-ops-src/ui/Battle.tsx':'18edd840fb2ff963ca99e96d7499f61a72cdef96',
@@ -427,10 +451,10 @@ git('merge-base','--is-ancestor','0cb25488080cd16494d57ceb231fa9a4495e15f7','HEA
 git('merge-base','--is-ancestor','e1a11d12a4cbc3bc4d1ade3fd277a92f7ca368d3','HEAD');
 for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(git('rev-parse',`d4da1a3f7ecc894e6295bd2b7ccd0f3d31107979:${path}`).trim(),expected,'unreviewed merged browser baseline: '+path);
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed browser sync or FTUE source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
   assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);

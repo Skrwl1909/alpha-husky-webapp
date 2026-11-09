@@ -195,6 +195,8 @@ export interface TimedObjective {
   holderRadius?: number;
   /** Crosslink samples control only at round changes, then moves the relay. */
   relayRoute?: Cell[];
+  /** Relay Pressure V1 checks control at round end, including the final round. */
+  relayPressure?: { flank?: { tile: Cell; activeRound: number; enemyId: string } };
   progress: number;
   checkedRound: number;
 }

@@ -41,6 +41,7 @@ import { PackMasteryPanel, MasteryFeedback } from "./PackMastery";
 import { SkillbookPanel } from "./Skillbook";
 import { activeProtocolSlots, counterplayReadiness, equippedSignalCodex, SIGNAL_FAMILIES } from "../data/signalCodex";
 import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
+import { relayPressureMission } from "../data/relayPressure";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -243,6 +244,7 @@ function WarTable() {
   const progression = useBattleStore((s) => s.progression);
   const openOperationBrief = useBattleStore((s) => s.openOperationBrief);
   const chooseDoctrine = useBattleStore((s) => s.chooseDoctrine);
+  const openTrialBrief = useBattleStore((s) => s.openTrialBrief);
   const openChapterBrief = useBattleStore((s) => s.openChapterBrief);
   const chapterSaving = useBattleStore((s) => s.progressionCommitPending);
   const progressionError = useBattleStore((s) => s.progressionError);
@@ -250,6 +252,7 @@ function WarTable() {
   const operation = progression?.operations?.[BROKEN_SIGNAL.operationId];
   const deadRelay = progression?.operations?.[DEAD_RELAY.operationId];
   const field = progression?.fieldOps;
+  const trials = progression?.signalTrials;
   const contracts = field?.fieldContracts;
   const nextContract = nextFieldContract(field);
   const purposeRoute = commandPurpose(progression);
@@ -415,6 +418,12 @@ function WarTable() {
             <small>Next · Rank {commanderRank + 1}</small>
           </> : null}
         </section>
+        {trials?.enabled ? <section className="t-panel t-field-contract" aria-label="Signal Trials" data-signal-trials="true">
+          <div className="t-kicker">SIGNAL TRIALS · RELAY PRESSURE</div>
+          <h2 className="t-title">{trials.highestCleared}/6 LEVELS CLEARED</h2>
+          <p>Hold the relay under pressure. Contest → Flank → Reposition. Each level changes the tactical decision; no extra currency or rewards.</p>
+          <button className="t-btn t-btn-primary" type="button" disabled={loading} onClick={()=>openTrialBrief(trials.activeRun?.level || Math.min(6,trials.highestCleared+1))}>{trials.activeRun ? `RESUME TRIAL ${trials.activeRun.level}` : trials.highestCleared===6 ? "REPLAY TRIAL 6" : `PLAY TRIAL ${trials.highestCleared+1}`}</button>
+        </section> : null}
         {contracts?.enabled || contracts?.honor ? <details className="t-purpose-memory t-command-records t-cd-records" aria-label="Field Contracts">
           <summary>FIELD CONTRACTS <span>{contracts.completed.length}/3</span></summary><div className="t-cd-record-body">
           <strong>{contracts.honor ? `Field Honor · ${FIELD_HONOR}` : contracts.sidegrade ? "Next reward · Field Tested honor" : "2 contracts unlock Reach Rend"}</strong>
@@ -488,6 +497,15 @@ function WarTable() {
         </section> : null}
 
         {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
+        {trials?.enabled ? <section className="t-panel t-wt-section" aria-label="Relay Pressure levels">
+          <div className="t-wt-section-head"><div><span className="t-kicker">SIX TACTICAL TESTS</span><h2 className="t-title">SIGNAL TRIALS</h2></div><strong>{trials.highestCleared}/6</strong></div>
+          <div className="t-brief-grid t-wt-canon-grid">{Array.from({length:6},(_,i)=>i+1).map(level=>{
+            const mission=relayPressureMission(level,1);
+            const unlocked=level<=trials.highestCleared+1 || trials.activeRun?.level===level;
+            const accepted=trials.activeRun?.level===level;
+            return <div className="t-panel t-brief-block" key={level}><span className="t-kicker">TRIAL {String(level).padStart(2,"0")}</span><strong>{mission.name}</strong><small>{level<=trials.highestCleared?"CLEARED":accepted?"ACCEPTED":unlocked?"AVAILABLE":"LOCKED"}</small><p>{mission.squadHint}</p><button className="t-btn" type="button" disabled={!unlocked||loading||Boolean(trials.activeRun&&!accepted)} onClick={()=>openTrialBrief(level)}>{accepted?"RESUME":level<=trials.highestCleared?"REPLAY":"VIEW BRIEF"}</button></div>;
+          })}</div>
+        </section>:null}
 
 
         <section className="t-panel t-wt-section t-wt-current-ops t-cd-current-ops" aria-label="Current Field Ops">
@@ -698,6 +716,7 @@ function Brief() {
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const selectedMissionId = useBattleStore((s) => s.selectedMissionId);
+  const selectedTrialLevel = useBattleStore((s) => s.selectedTrialLevel);
   const selectedSquadIds = useBattleStore((s) => s.selectedSquadIds);
   const selectedApproach = useBattleStore((s) => s.selectedApproach);
   const selectedDirectiveTier = useBattleStore((s) => s.selectedDirectiveTier);
@@ -728,17 +747,18 @@ function Brief() {
   const progression = useBattleStore((s) => s.progression);
   const campaignRun = progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun;
   const hold = selectedMissionId === "dead-relay-hold" && !chapterMode ? holdBrief(progression) : null;
-  const baseMission = getMissionDef(selectedMissionId);
+  const baseMission = selectedTrialLevel!==null ? relayPressureMission(selectedTrialLevel,1) : getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
-  const savedRun = chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
+  const trialRun = selectedTrialLevel!==null ? progression?.signalTrials?.activeRun : null;
+  const savedRun = selectedTrialLevel!==null ? null : chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
   const briefPane = useRef<HTMLDivElement>(null);
   useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
-  const resuming = savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
+  const resuming = selectedTrialLevel!==null ? trialRun?.level===selectedTrialLevel : savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
   const previewRevision = resuming ? savedRun?.rulesContract?.missionRevision : !chapterMode && !savedRun && progression?.vnextStartAvailable && baseMission
     ? surviveRevisionForRequest(baseMission.missionId, TACTICAL_VNEXT_RULESET, field?.board) : undefined;
-  const mission = hold?.mission ?? (baseMission ? missionForContext(baseMission, fieldContext, previewRevision, savedRun?.campaignContext) : null);
-  const fieldOp = mission?.activity === "FIELD_OP";
+  const mission = selectedTrialLevel!==null ? baseMission : hold?.mission ?? (baseMission ? missionForContext(baseMission, fieldContext, previewRevision, savedRun?.campaignContext) : null);
+  const fieldOp = selectedTrialLevel===null && mission?.activity === "FIELD_OP";
   const contracts = field?.fieldContracts;
   const fieldLoadout = fieldOp && !chapterMode && !selectedMasteryChallenge && !selectedVeteranChallenge;
   const canStartFieldContracts = !savedRun && progression?.vnextStartAvailable && fieldContext.reportVersion === 3;
@@ -749,13 +769,13 @@ function Brief() {
   const rotationLive = () => Boolean(field?.board && field.board.nextRotationAt * 1000 > Date.now()
     && selectedMissionId && field.board.activeMissionIds.includes(selectedMissionId));
   const canEquipFieldRend = fieldLoadout && canStartFieldContracts && contracts?.enabled && contracts.sidegrade && rotationLive();
-  const fieldRend = resuming ? savedRun?.fieldContext?.fieldRend
-    : fieldLoadout && canStartFieldContracts && contracts?.enabled ? contracts.selection : undefined;
+  const fieldRend = trialRun?.fieldRend || (resuming ? savedRun?.fieldContext?.fieldRend
+    : fieldLoadout && canStartFieldContracts && contracts?.enabled ? contracts.selection : undefined);
   const fieldRendSavePending = useBattleStore(s => s.fieldRendSavePending);
   const selectFieldRend = useBattleStore(s => s.selectFieldRend);
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
   const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier, !chapterMode && !savedRun && progression?.vnextStartAvailable === true) : null;
-  const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS"));
+  const twoSlots = Boolean(mission && (fieldOp || campaignMission || selectedTrialLevel!==null || mission.objectiveType === "BOSS"));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
@@ -768,7 +788,7 @@ function Brief() {
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
-  const previewGrowth = resuming ? savedRun?.playerGrowth : playerGrowth;
+  const previewGrowth = trialRun?.playerGrowth || (resuming ? savedRun?.playerGrowth : playerGrowth);
   const frozenPet = resuming ? savedRun?.combatProfileV2?.pet : null;
   const loadoutSpawns = briefTab === "loadout" && mission
     ? missionSpawnsForSquad(mission, selectedSquadIds, frozenPet || equippedPet, selectedApproach)
@@ -821,14 +841,14 @@ function Brief() {
     : onboardingEnabled
       ? encounter.teaching
       : "Units act individually by Speed. Alpha must close to melee range 1 before Strike or Rend.";
-  const primaryObjective = fieldOp || campaignMission ? `PRIMARY OBJECTIVE: ${mission.objectiveType}` : mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
+  const primaryObjective = fieldOp || campaignMission || selectedTrialLevel!==null ? `PRIMARY OBJECTIVE: ${mission.objectiveType}` : mission?.objectiveType === "RECOVER" ? "PRIMARY OBJECTIVE: RECOVER THE SIGNAL" : mission?.objectiveType === "BOSS" ? "PRIMARY OBJECTIVE: DEFEAT THE SIGNAL COMMANDER" : mission?.objectiveType === "ELIMINATE" ? "PRIMARY OBJECTIVE: ELIMINATE HOSTILES" : null;
   const recruitMoment = !mission && onboardingEnabled && onboardingStageId === "ally-koda" ? "CNC JOINED · ROSTER UPDATED" : !mission && onboardingEnabled && onboardingStageId === "full-broken-signal" ? "SHADOW JOINED · FULL SQUAD READY" : null;
   const missionIntel = campaignMission
     ? mission?.missionId === "dead-relay-courier" ? "EARLY INTERCEPT: first win by round 4 grants Courier Trace. Slower victory still unlocks Hold."
       : hold ? hold.copy
       : "Guardian reinforcement arrives on round 3."
     : mission?.objectiveType === "BOSS" ? "Routing Trace telegraphs the fixed reinforcement." : mission?.missionId === "broken-signal-breach" ? "TRACE target can reveal Routing Trace." : "No Intel required.";
-  const purpose = mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
+  const purpose = selectedTrialLevel!==null ? null : mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
   const recoverBrief = mission?.objectiveType === "RECOVER";
   const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);
   const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
@@ -839,7 +859,7 @@ function Brief() {
     <div className="t-brief-actions t-deploy-actions t-deploy-actions-v29 t-command-action-dock">
       <button type="button" className="t-btn t-btn-ghost" onClick={backToHub}>BACK</button>
       <button type="button" className="t-btn t-btn-primary" onClick={deploy} disabled={busy || fieldRendSavePending || kodaSavePending || shadowSavePending || (Boolean(mission) && !missionSpawnsForSquad(mission!, selectedSquadIds, equippedPet))}>
-        {mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
+        {selectedTrialLevel!==null ? (trialRun ? "RESUME TRIAL" : "DEPLOY TRIAL") : mission?.missionId==="field-relay-intercept" && !resuming ? "LOCK SQUAD · REVIEW FORMATION" : "DEPLOY SQUAD"}
         <ChevronRight className="t-ico" />
       </button>
     </div>
@@ -851,7 +871,7 @@ function Brief() {
         <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
           <img src={missionVisual.art} alt="" aria-hidden="true" />
           <div className="t-deploy-hero-copy">
-            <div className="t-kicker">{fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
+            <div className="t-kicker">{selectedTrialLevel!==null ? `SIGNAL TRIAL ${selectedTrialLevel}/6` : fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
             <h1 className="t-title">{title}</h1>
           </div>
         </header>
@@ -876,8 +896,9 @@ function Brief() {
         <section className={`t-panel t-deploy-overview ${trainingSteps.length ? "t-training-overview" : ""}`} aria-label="Mission overview">
           <div className={`t-deploy-summary-main${recoverBrief ? " t-recover-objective" : ""}`}>
             <div className="t-kicker">{trainingSteps.length ? "YOUR TRAINING GOAL" : fieldContext.masteryChallenge ? fieldContext.lockdownPlan === "crosslink" ? "LOCKDOWN · RELAY CHECKPOINTS" : "LOCKDOWN · EXACT TILE CONTROL" : recoverBrief ? "WIN CONDITION · RECOVER THE SIGNAL" : "OBJECTIVE"}</div>
-            <strong>{fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : quickRecover ? "GET TO THE RELAY. USE RECOVER." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
+            <strong>{selectedTrialLevel!==null ? mission?.briefCopy : fieldContext.lockdownPlan ? mission?.briefCopy : fieldContext.masteryChallenge ? "Hold the exact relay tile · 3 consecutive round changes · finish by round 6." : quickRecover ? "GET TO THE RELAY. USE RECOVER." : purpose?.objectiveText || (primaryObjective ? primaryObjective.replace("PRIMARY OBJECTIVE: ", "") : objective)}</strong>
             {quickRecover ? <p className="t-brief-purpose-meta">Get within range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens every ${mission.directive.recoverEveryRounds} rounds. ` : ""}Recover before acting.</p> : null}
+            {selectedTrialLevel!==null ? <p className="t-brief-purpose-meta"><b>TACTICAL HINT:</b> {mission?.squadHint} {trialRun?"This accepted run restarts at round 1 with the frozen squad.":""}</p> : null}
             {trainingSteps.length ? (
               <ol className="t-training-steps" aria-label="How to complete this training">
                 {trainingSteps.map((step, index) => <li key={step}><span aria-hidden="true">{String(index + 1).padStart(2, "0")}</span><p>{step}</p></li>)}
@@ -1188,6 +1209,9 @@ function Sector() {
 
 function Results() {
   const resultFieldContext = useBattleStore((s) => s.currentFieldContext);
+  const selectedTrialLevel = useBattleStore((s) => s.selectedTrialLevel);
+  const trialResult = useBattleStore((s) => s.trialResult);
+  const saveTrialResult = useBattleStore((s) => s.saveTrialResult);
   const selectedMasteryChallenge = useBattleStore((s) => s.selectedMasteryChallenge);
   const selectedVeteranChallenge = useBattleStore((s) => s.selectedVeteranChallenge);
   const failureReason = useBattleStore((s) => s.battle.failureReason);
@@ -1281,6 +1305,17 @@ function Results() {
   const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
   const buildEvidence = fieldcraftResults(s3CombatProof,currentRunKey,selectedMissionId);
   if (!results) return null;
+  if (selectedTrialLevel!==null) {
+    const verified=trialResult?.runId===currentRunKey ? trialResult : null;
+    const next=verified?.victory ? Math.min(6,selectedTrialLevel+1) : selectedTrialLevel;
+    return <div className="t-fill"><Background dim={0.6}/><div className="t-overlay t-results-overlay"><div className={`t-modal t-panel t-results ${results.victory?"is-victory":"is-failure"}`} data-signal-trial-result={selectedTrialLevel}>
+      <span className="t-kicker">SIGNAL TRIAL {selectedTrialLevel}/6 · RELAY PRESSURE</span><h2 className="t-title">{verified ? verified.victory ? "TRIAL CLEARED" : "TRIAL FAILED" : "RECORDING TRIAL"}</h2>
+      <p>{verified ? verified.victory ? `Level ${selectedTrialLevel} recorded. ${selectedTrialLevel<6?"Next pressure level unlocked.":"All six Trials cleared."}` : verified.failureReason==="DEADLINE" ? "The relay was not secured before the deadline. Reposition earlier and protect the holder." : "Your squad fell before securing the relay." : "The result must be recorded by the server before advancing."}</p>
+      <p>Turns: {results.turns} · Squad standing: {results.squadStanding}/{results.squadDeployed} · No currency or Commander rewards.</p>
+      {verified ? <div className="t-brief-actions"><button className="t-btn t-btn-primary" type="button" onClick={()=>continueOnboarding(verified.victory)}>{verified.victory ? selectedTrialLevel===6 ? "REPLAY FINAL TRIAL" : `NEXT TRIAL ${next}` : "RETRY TRIAL"}</button><button className="t-btn" type="button" onClick={backToHub}>WAR TABLE</button></div> : <button className="t-btn t-btn-primary" type="button" disabled={progressionCommitPending} onClick={()=>void saveTrialResult()}>{progressionCommitPending?"RECORDING…":"RETRY RECORDING"}</button>}
+      {progressionError ? <p role="alert">{progressionError}</p>:null}
+    </div></div></div>;
+  }
   const fieldVictory = recordedFieldResult?.victory ?? results.victory;
   const campaignVictory = campaignConfirmed?.victory ?? results.victory;
   const failure = objectiveDefeat((recordedFieldResult || campaignConfirmed)?.failureReason ?? failureReason,

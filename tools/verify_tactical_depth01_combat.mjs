@@ -102,15 +102,20 @@ try {
     }
     let preferred=targetPriority(state,actor,policy.startsWith("rotate-")?"control":policy);
     const rotating=policy.startsWith('rotate-');
-    const screenEast=rotating && !o?.relayRoute && actor.defId==='ally-02';
+    const trial = o?.relayPressure;
+    const flankHolder = rotating && trial?.flank && actor.defId !== "alpha" && actor.defId !== "ally-02";
+    const flankScreen = rotating && trial?.flank && actor.defId === "ally-02";
+    const flankThreat = state.units.find(u => u.id === trial?.flank?.enemyId && !u.defeated);
+    const screenEast=rotating && !trial && !o?.relayRoute && actor.defId==='ally-02';
+    if (flankHolder || flankScreen) preferred = flankThreat ?? preferred;
     if(screenEast) preferred=state.units.find(u=>u.id==='field-reinforcement'&&!u.defeated)||preferred;
     const tacticalPolicy=rotating?'control':policy;
-    const oPoint=policy==='static' ? (o?.relayRoute ? {c:Math.round(o.relayRoute[0].c),r:o.relayRoute[1].r} : o?.terminal) : o?.type==="HOLD"||o?.type==="RECOVER"?o.terminal:null;
+    const oPoint=flankHolder ? trial.flank.tile : policy==='static' ? (o?.relayRoute ? {c:Math.round(o.relayRoute[0].c),r:o.relayRoute[1].r} : o?.terminal) : o?.type==="HOLD"||o?.type==="RECOVER"?o.terminal:null;
     const remaining=state.units.filter(u=>u.team==="enemy"&&!u.defeated).length;
     const nextHolder=state.units.find(u=>u.team==="ally"&&!u.defeated);
-    const wantsObjective=Boolean(oPoint)&&(
+    const wantsObjective=Boolean(oPoint)&&policy!=="assault"&&(
       policy==="convoy" || policy==="tempo" || policy==="adjacent" || (o?.holderRadius===0 || policy==="precise") || remaining===0 || (o?.type==="RECOVER"&&state.round>=3) || (o?.type==="HOLD"&&state.round>=4)
-    ) && (o?.type==="RECOVER" || (actor.id === (policy === "rotate-shadow" ? "ally-03" : "alpha") || actor.id===nextHolder?.id && policy !== "rotate-shadow"));
+    ) && (o?.type==="RECOVER" || (actor.id === (policy === "rotate-shadow" ? "ally-03" : "alpha") || actor.id===nextHolder?.id && policy !== "rotate-shadow" || flankHolder));
     // CONTROL wins interceptions by body-blocking the legal courier exit lane
     // while the remainder of the squad suppresses its approach.
     const courier=o?.type==="INTERCEPT"?state.units.find(u=>u.id===o.targetId&&!u.defeated):null;
@@ -167,7 +172,14 @@ try {
       const advanced=battle.advanceToNext(state);
       state=advanced.state;
       const unit=state.units.find(u=>u.id===state.activeId);
-      if(state.outcome!=="ongoing")break;
+      if (state.outcome !== "ongoing") {
+        if (state.objective?.relayPressure) stats.roundProgress.push({
+          round: state.round, progress: state.objective.progress, terminal: state.objective.terminal,
+          units: state.units.map(u => ({ id: u.id, c: u.c, r: u.r, hp: u.hp })),
+          failureReason: state.failureReason, reinforcement: state.reinforcement?.spawned,
+        });
+        break;
+      }
       if(!unit){error="no_active_unit";break;}
         {const oldCount=cycle.ledger.length; cycle=scheduler.pruneInvalidThreats(cycle,state);stats.counters+=cycle.ledger.slice(oldCount).filter(e=>e.type==="threat_countered").length;}
       if(unit.team==="ally") {
@@ -229,7 +241,7 @@ try {
       if(stall>65){error="policy_stalled_66_activations";break}
       stats.hostiles=state.hostilesEliminated;
       if((state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE") && (!stats.roundProgress.length||stats.roundProgress.at(-1).round!==state.round)){
-        stats.roundProgress.push({round:state.round,progress:state.objective.progress,units:state.units.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp})),terminal:state.objective.terminal});
+        stats.roundProgress.push({round:state.round,progress:state.objective.progress,units:state.units.map(u=>({id:u.id,c:u.c,r:u.r,hp:u.hp})),terminal:state.objective.terminal,...(state.objective.relayPressure ? {reinforcement:state.reinforcement?.spawned, contested: state.units.filter(u=>u.team==="enemy"&&!u.defeated).filter(u=>[state.objective.terminal,state.objective.relayPressure.flank?.tile].some(t=>t&&manhattan(u,t)<=state.objective.radius)).map(u=>u.id)} : {})});
       }
     }
     return {actions:stats.actions,trace:stats.roundProgress,positions:[...stats.positions],report:{victory:state.results?.victory,objectiveComplete:state.results?.objectiveComplete,turns:state.results?.turns,healingActions:state.healingActions||0,squadStanding:state.results?.squadStanding,squadDeployed:state.results?.squadDeployed,...(state.failureReason?{failureReason:state.failureReason}:{}),...(profile.context?.masteryChallenge?{masteryChallenge:profile.context.masteryChallenge}:{}),...(profile.context?.lockdownPlan?{lockdownPlan:profile.context.lockdownPlan}:{}),...(profile.context?.veteranChallenge?{veteranChallenge:profile.context.veteranChallenge}:{})},build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
@@ -239,7 +251,68 @@ try {
   const types=await vite.ssrLoadModule('/tactical-ops-src/combat/types.ts');
   const intents=await vite.ssrLoadModule('/tactical-ops-src/combat/intentContract.ts');
   const missionRules=await vite.ssrLoadModule('/tactical-ops-src/combat/missionRules.ts');
-  if(process.env.PROGRESSION_V2){
+  if (process.env.RELAY_PRESSURE_MATRIX) {
+    const contract = { rulesetVersion: "tactical-intent-vnext.0" };
+    types.selectAcceptedBattleRules(contract);
+    intents.selectAcceptedIntentRules(contract);
+    const rows = [];
+    const baseline = ["field-relay-hold", "field-isolated-hold"].map(ops.getMissionDef);
+    for (const mission of baseline) {
+      for (const tier of ["standard", "advanced"]) {
+        for (const [i, squad] of variants.slice(0, 2).entries()) {
+          const context = { cycleId: 0, reportVersion: 3, pressure: 2, approach: "standard", directiveTier: tier, directiveSet: "pursuit" };
+          const profile = { name: "developed", tier, build: builds[i], context,
+            alpha: { hp: 138, atk: 39, def: 21, spd: 16 }, pet: { hp: 91, atk: 25, def: 11, spd: 15 } };
+          for (const policy of ["tempo", "control"]) {
+            const started = performance.now();
+            const result = fullRun(mission, squad, profile, policy);
+            rows.push({ ...result, simulationMs: Math.round(performance.now() - started) });
+          }
+        }
+      }
+    }
+    if (process.env.RELAY_PRESSURE_MATRIX !== "baseline") {
+      const { relayPressureMission, RELAY_PRESSURE_REVISION } = await vite.ssrLoadModule("/tactical-ops-src/data/relayPressure.ts");
+      for (let level = 1; level <= 6; level++) {
+        const mission = relayPressureMission(level, RELAY_PRESSURE_REVISION);
+        for (const [i, squad] of variants.slice(0, 2).entries()) {
+          for (const fieldRend of ["rend", "reach-rend"]) {
+            const context = { cycleId: 0, reportVersion: 3, pressure: 2, approach: "standard", directiveTier: "standard", fieldRend };
+            const profile = { name: "developed", build: builds[i], context,
+              alpha: { hp: 138, atk: 39, def: 21, spd: 16 }, pet: { hp: 91, atk: 25, def: 11, spd: 15 } };
+            for (const policy of ["rotate-alpha", "static", "assault"]) {
+              const started = performance.now();
+              const result = fullRun(mission, squad, profile, policy);
+              rows.push({ ...result, level, fieldRend, simulationMs: Math.round(performance.now() - started) });
+            }
+          }
+        }
+      }
+    }
+    assert.equal(rows.slice(0, 16).filter(row => row.outcome === "victory").length, 14);
+    assert(rows.every(row => !row.error && row.outcome !== "ongoing"));
+    for (let level = 1; level <= 6 && process.env.RELAY_PRESSURE_MATRIX !== "baseline"; level++) {
+      const runs = rows.filter(row => row.level === level);
+      const adaptiveWins = runs.filter(row => row.policy === "rotate-alpha" && row.outcome === "victory");
+      assert(adaptiveWins.length > 0, `Trial ${level}: no legal winning strategy`);
+      assert(runs.some(row => row.report.failureReason === "DEADLINE" && row.squadStanding === 3),
+        `Trial ${level}: no demonstrated objective defeat with a full squad`);
+      assert(runs.some(row => row.trace.some(frame => frame.contested?.length)),
+        `Trial ${level}: enemy never contested a relay`);
+      assert(runs.every(row => row.policy !== "assault" || row.outcome === "defeat"),
+        `Trial ${level}: eliminate-only exploit`);
+      if ([2, 3, 5, 6].includes(level)) assert(runs.every(row => row.policy !== "static" || row.outcome === "defeat"),
+        `Trial ${level}: static formation bypasses the movement requirement`);
+      if (level > 3) {
+        const easier = rows.filter(row => row.level === level - 3 && row.policy === "rotate-alpha" && row.outcome === "victory");
+        assert(adaptiveWins.length < easier.length, `Trial ${level}: escalation does not change outcomes`);
+      }
+    }
+    mkdirSync("artifacts/relay-pressure", { recursive: true });
+    writeFileSync("artifacts/relay-pressure/combat.json", JSON.stringify(rows, null, 2));
+    console.log(rows.map(({ missionId, level, fieldRend, tier, policy, squad, outcome, rounds, activations, squadStanding }) =>
+      [level ? "trial-" + level : missionId, fieldRend ?? tier, policy, squad, outcome, rounds, activations, squadStanding].join(" ")).join("\n"));
+  } else if(process.env.PROGRESSION_V2){
     const base=ops.getMissionDef('field-relay-recovery');
     const context={cycleId:0,reportVersion:6,progressionVersion:2,pressure:2,approach:'standard',directiveTier:'advanced',directiveSet:'pursuit',veteranChallenge:'pack-extraction-v1'};
     const rows=[];

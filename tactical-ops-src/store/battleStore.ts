@@ -31,6 +31,8 @@ import {
   type CampaignReport,
   type ChapterResult,
   chooseTacticalDoctrine,
+  startSignalTrial,
+  continueSignalTrial,
 } from "../host/foundationProgression";
 import { VERSION } from "../version";
 import { confirmedPathfinderMove, confirmedSkillMoment, type CombatMoment } from "../ui/combatIdentity";
@@ -46,6 +48,8 @@ import {
 } from "../data/onboarding";
 import { g2HoldRevisionForRequest, surviveRevisionForRequest, missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
+import { relayPressureMission } from "../data/relayPressure";
+import { SIGNAL_TRIAL_RULESET, type SignalTrialResult } from "../data/signalTrials";
 import { applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
 import { selectAcceptedBattleRules } from "../combat/types";
@@ -109,6 +113,8 @@ interface UiBattle {
   fieldResult: FieldResult | null;
   campaignResult: CampaignResult | null;
   chapterResult: ChapterResult | null;
+  selectedTrialLevel: number | null;
+  trialResult: SignalTrialResult | null;
   chapterMode: boolean;
   currentChapterIntel: import("../data/operations").ChapterIntel | null;
   currentCampaignContext: CampaignContext | null;
@@ -165,6 +171,8 @@ function emptyBattle(): BattleState {
 
 interface Store extends UiBattle {
   openBrief: () => void;
+  openTrialBrief: (level: number) => void;
+  saveTrialResult: () => Promise<void>;
   selectApproach: (approach: DeploymentApproach) => void;
   selectDirectiveTier: (tier: DirectiveTier) => void;
   selectMastery: (unitId: string, choice: import("../data/packMastery").MasteryChoice) => Promise<void>;
@@ -324,9 +332,10 @@ export const useBattleStore = create<Store>((set, get) => {
       await wait(1200);
       if (g !== runGen) return true;
       const selected = getMissionDef(get().selectedMissionId);
-      const recordedMission = get().chapterMode || selected?.activity === "FIELD_OP" || selected?.operationId === DEAD_RELAY.operationId;
+      const recordedMission = get().selectedTrialLevel != null || get().chapterMode || selected?.activity === "FIELD_OP" || selected?.operationId === DEAD_RELAY.operationId;
       set({ screen: recordedMission ? "results" : "defeat", busy: false, banner: null });
-      if(get().chapterMode)void get().saveChapterResult();
+      if(get().selectedTrialLevel != null && typeof get().saveTrialResult === "function") void get().saveTrialResult();
+      else if(get().chapterMode)void get().saveChapterResult();
       else if (selected?.activity === "FIELD_OP") void get().saveFieldResult();
       return true;
     }
@@ -603,6 +612,8 @@ export const useBattleStore = create<Store>((set, get) => {
     fieldResult: null,
     campaignResult: null,
     chapterResult: null,
+    selectedTrialLevel: null,
+    trialResult: null,
     chapterMode: false,
     currentChapterIntel:null,
     currentCampaignContext: null,
@@ -791,6 +802,28 @@ export const useBattleStore = create<Store>((set, get) => {
         set({progressionCommitPending:false,progressionError:"Chapter result not confirmed. Retry saving or refresh."});
       }
     },
+    saveTrialResult: async () => {
+      const s = get();
+      if (s.selectedTrialLevel === null || s.screen !== "results" || s.progressionCommitPending || !s.currentRunKey || !s.progression || !s.battle.results) return;
+      if (s.trialResult?.runId === s.currentRunKey) return;
+      const result = s.battle.results;
+      const report = { trialLevel:s.selectedTrialLevel,trialRevision:1 as const,victory:s.battle.outcome==="victory",objectiveComplete:s.battle.outcome==="victory",turns:result.turns,squadStanding:result.squadStanding,squadDeployed:result.squadDeployed,...(s.battle.failureReason==="DEADLINE"?{failureReason:"DEADLINE" as const}:{}) };
+      const requestId=s.continueRequestId || createFoundationRequestId("trial-continue");
+      set({progressionCommitPending:true,progressionError:null,continueRequestId:requestId});
+      try {
+        const committed=await continueSignalTrial(requestId,s.progression.revision,s.currentRunKey,report);
+        if(get().currentRunKey!==s.currentRunKey)return;
+        applyCanonicalProgression(committed.state);
+        set({trialResult:committed.trialResult,progressionCommitPending:false});
+      } catch(error) {
+        if(get().currentRunKey!==s.currentRunKey)return;
+        const canonical=error instanceof FoundationProgressionError?error.state:null;
+        if(canonical)applyCanonicalProgression(canonical);
+        const receipt=canonical?.signalTrials?.lastResult;
+        if(receipt?.runId===s.currentRunKey)set({trialResult:receipt,progressionCommitPending:false,progressionError:null});
+        else set({progressionCommitPending:false,progressionError:"Trial result not saved. Retry recording before leaving."});
+      }
+    },
     saveFieldResult: async () => {
       const current = get();
       if (current.chapterMode || current.screen !== "results" || current.progressionCommitPending || !current.currentRunKey || !current.progression || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
@@ -857,6 +890,15 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ progressionCommitPending: false, progressionError: "Campaign record not saved. Retry before exiting or deploying again." });
       }
     },
+    openTrialBrief: (level) => {
+      const s = get(), trials = s.progression?.signalTrials;
+      if (!s.foundationCompleted || !trials?.enabled || !Number.isInteger(level) || level < 1 || level > 6 ||
+        (level > trials.highestCleared + 1 && trials.activeRun?.level !== level)) return;
+      if (trials.activeRun && trials.activeRun.level !== level) { set({progressionError:"Finish the accepted Trial first."}); return; }
+      if (!trials.activeRun && (s.progression?.fieldOps?.activeMissionRun || s.progression?.chapterActiveMission || Object.values(s.progression?.operations || {}).some(op => op.activeMissionRun))) {set({progressionError:"Finish the accepted operation before starting a Trial."});return;}
+      const squad = trials.activeRun?.squadIds || ["alpha","ally-02","ally-03"];
+      set({screen:"brief",selectedTrialLevel:level,selectedMissionId:"field-relay-hold",selectedSquadIds:[...squad],selectedApproach:"standard",selectedMasteryChallenge:null,selectedVeteranChallenge:false,chapterMode:false,fieldResult:null,trialResult:null,progressionError:null,briefEntry:null});
+    },
     openBrief: () => {
       const current = get();
       if (current.foundationCompleted || current.progressionStatus === "error") return;
@@ -872,6 +914,7 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     openOperationBrief: (missionId, masteryChallenge, entry) => {
       const current = get();
+      if (current.progression?.signalTrials?.activeRun) {set({progressionError:"Finish the accepted Signal Trial first."});return;}
       const mission = getMissionDef(missionId);
       if (masteryChallenge && (missionId !== "field-relay-hold" || current.progression?.fieldOps?.masteryPath?.unlockedChallenge !== masteryChallenge)) return;
       if (mission?.activity === "FIELD_OP" && !masteryChallenge && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && !(current.selectedVeteranChallenge && missionId==="field-relay-recovery" && (current.progression?.fieldOps?.commander?.rank||0)>=4) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
@@ -889,11 +932,12 @@ export const useBattleStore = create<Store>((set, get) => {
       const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
       const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, current.progression?.equippedPet)
         ? [...savedSquad] : ["alpha", "ally-02", "ally-03"];
-      set({ screen: "brief", briefEntry: entry ?? null, chapterMode:false, currentChapterIntel:null, selectedMissionId: missionId, campaignResult: null, currentCampaignContext: active?.campaignContext || null, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : masteryChallenge ? "advanced" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
+      set({ screen: "brief", briefEntry: entry ?? null, selectedTrialLevel:null, trialResult:null, chapterMode:false, currentChapterIntel:null, selectedMissionId: missionId, campaignResult: null, currentCampaignContext: active?.campaignContext || null, selectedDirectiveTier: active?.missionId === missionId ? active.fieldContext?.directiveTier || "standard" : masteryChallenge ? "advanced" : "standard", selectedApproach: active?.missionId === missionId ? active.fieldContext?.approach || "standard" : "standard", fieldResult: null, missionFirstClear: null, selectedSquadIds: mission.squadCap === 3 ? commanderSquad : [], progressionError: null, identity: identityCache(resolvePlayerIdentity()) });
     },
     backToHub: () => {
       const current = get();
       if (current.progressionCommitPending) return;
+      if(current.screen==="results"&&current.selectedTrialLevel != null&&!current.trialResult){void current.saveTrialResult();return;}
       if(current.screen==="results"&&current.chapterMode&&!current.chapterResult){void current.saveChapterResult();return;}
       if (!current.chapterMode && current.screen === "results" && getMissionDef(current.selectedMissionId)?.activity === "FIELD_OP" && !current.fieldResult) { void current.saveFieldResult(); return; }
       if (!current.chapterMode && current.screen === "results" && getMissionDef(current.selectedMissionId)?.operationId === DEAD_RELAY.operationId && !current.campaignResult) { void current.saveCampaignResult(); return; }
@@ -904,7 +948,7 @@ export const useBattleStore = create<Store>((set, get) => {
         battle: emptyBattle(),
         briefEntry: null,
         activeRulesetVersion: null,
-        chapterMode:false,currentChapterIntel:null,chapterResult:null,
+        chapterMode:false,currentChapterIntel:null,chapterResult:null,selectedTrialLevel:null,trialResult:null,
         banner: null,
         ticker: null,
         busy: false,
@@ -921,6 +965,25 @@ export const useBattleStore = create<Store>((set, get) => {
       if (get().kodaSavePending || get().shadowSavePending || get().fieldRendSavePending) return;
       const g = ++runGen;
       const persisted = get();
+      if (persisted.selectedTrialLevel != null && persisted.progression && persisted.progressionStatus==="ready") {
+        const level=persisted.selectedTrialLevel,trial=persisted.progression.signalTrials;
+        if (!trial?.enabled || (trial.activeRun && trial.activeRun.level!==level)) return;
+        set({busy:true,ticker:"Preparing Signal Trial…",progressionError:null});
+        void (async()=>{
+          try {
+            const started=await startSignalTrial(createFoundationRequestId("trial-start"),persisted.progression!.revision,level,persisted.selectedSquadIds);
+            if(g!==runGen)return;
+            applyCanonicalProgression(started.state);
+            const mission=relayPressureMission(level,1);
+            const pet=started.run.combatProfileV2?.pet;
+            const squad=missionSpawnsForSquad(mission,started.run.squadIds,pet ? {id:pet.id,name:pet.name,img:pet.img}:started.state.equippedPet,"standard");
+            if(!squad)throw new FoundationProgressionError("invalid_trial_squad");
+            const accepted=squad;
+            beginBattle(g,started.run.runId,applyRunCombatProfile(withTeammateSidegrades(withFieldRend(accepted,started.run.fieldRend),{...started.state,packMastery:started.run.packMastery}),started.run.combatProfileV3,started.run.combatProfileV2),undefined,false,false,null,mission,undefined,null,started.run.playerGrowth,started.run.rulesContract);
+          }catch(error){if(g!==runGen)return;const canonical=error instanceof FoundationProgressionError?error.state:null;if(canonical)applyCanonicalProgression(canonical);set({busy:false,ticker:null,progressionError:error instanceof FoundationProgressionError?error.code:"trial_start_failed"});}
+        })();
+        return;
+      }
       if (persisted.onboardingEnabled && persisted.progression) {
         if (persisted.progressionStatus !== "ready") return;
         if (persisted.foundationCompleted) {
@@ -1274,6 +1337,11 @@ export const useBattleStore = create<Store>((set, get) => {
     replay: () => {
       const current = get();
       if (current.progressionCommitPending) return;
+      if(current.selectedTrialLevel != null){
+        if(current.screen==="results"&&!current.trialResult){void current.saveTrialResult();return;}
+        const level=current.selectedTrialLevel;
+        get().backToHub();get().openTrialBrief(level);return;
+      }
       if(current.chapterMode){
         if(current.screen==="results"&&!current.chapterResult){void current.saveChapterResult();return;}
         get().backToHub();get().openChapterBrief();return;
@@ -1293,6 +1361,11 @@ export const useBattleStore = create<Store>((set, get) => {
     continueOnboarding: (replayAfter = false) => {
       const s = get();
       if (s.screen !== "results") return;
+      if(s.selectedTrialLevel != null){
+        if(!s.trialResult){void get().saveTrialResult();return;}
+        const next=s.trialResult.victory ? Math.min(6,s.selectedTrialLevel+1) : s.selectedTrialLevel;
+        get().backToHub();if(replayAfter||s.trialResult.victory)get().openTrialBrief(next);return;
+      }
       if(s.chapterMode){if(!s.chapterResult){void s.saveChapterResult();return;}get().backToHub();return;}
       if (getMissionDef(s.selectedMissionId)?.activity === "FIELD_OP") {
         if (!s.fieldResult || s.fieldResult.runId !== s.currentRunKey || s.fieldResult.missionId !== s.selectedMissionId) { void get().saveFieldResult(); return; }
@@ -1456,7 +1529,8 @@ export const useBattleStore = create<Store>((set, get) => {
     dismissSector: () => {
       sfx("ui");
       set({ screen: "results" });
-      if(get().chapterMode)void get().saveChapterResult();
+      if(get().selectedTrialLevel != null)void get().saveTrialResult();
+      else if(get().chapterMode)void get().saveChapterResult();
       else if (getMissionDef(get().selectedMissionId)?.activity === "FIELD_OP") void get().saveFieldResult();
       if (!get().chapterMode && getMissionDef(get().selectedMissionId)?.operationId === DEAD_RELAY.operationId) void get().saveCampaignResult();
     },
