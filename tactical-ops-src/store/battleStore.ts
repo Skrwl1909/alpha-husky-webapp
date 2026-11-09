@@ -334,7 +334,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const selected = getMissionDef(get().selectedMissionId);
       const recordedMission = get().selectedTrialLevel !== null || get().chapterMode || selected?.activity === "FIELD_OP" || selected?.operationId === DEAD_RELAY.operationId;
       set({ screen: recordedMission ? "results" : "defeat", busy: false, banner: null });
-      if(get().selectedTrialLevel !== null) void get().saveTrialResult();
+      if(get().selectedTrialLevel != null && typeof get().saveTrialResult === "function") void get().saveTrialResult();
       else if(get().chapterMode)void get().saveChapterResult();
       else if (selected?.activity === "FIELD_OP") void get().saveFieldResult();
       return true;
