@@ -116,8 +116,8 @@ try{
    await page.getByText('Progression & eligibility',{exact:true}).click();assert.match(await page.locator('.t-field-results').innerText(),/Total unspent balance, not points earned this run/);
    await page.locator('.t-result-actions button').first().click();assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
   }
-  if(phase==='after'&&scenario==='zero'){await page.getByRole('button',{name:'Replay / Squad',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');}
-  if(phase==='after'&&scenario==='failure'){await page.getByRole('button',{name:'REGROUP AT WAR TABLE',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'war-table');}
+  if(phase==='after'&&scenario==='zero'){await page.getByRole('button',{name:'Review Squad',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');}
+  if(phase==='after'&&scenario==='failure'){await page.getByRole('button',{name:'RETRY MISSION',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');}
   cases.push({width,height,motion,scenario});
  }
  if(phase==='after'){

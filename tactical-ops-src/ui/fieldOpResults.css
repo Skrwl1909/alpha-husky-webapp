@@ -266,3 +266,12 @@
   font-size: .65rem;
   letter-spacing: .06em;
 }
+
+#tacticalOpsRoot .t-results [data-next-decision="primary"] {
+  min-height: 44px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+#tacticalOpsRoot .t-results .t-result-actions:has([data-next-decision]) .t-btn {
+  min-height: 44px;
+}

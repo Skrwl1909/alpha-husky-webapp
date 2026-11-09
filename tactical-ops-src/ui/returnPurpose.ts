@@ -3,14 +3,19 @@ import { BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, missionForContext } from '../
 import type { FoundationProgressionState } from '../host/foundationProgression';
 import { missionContract } from "../data/fieldContracts";
 import type { FieldOpsProgression } from "../host/foundationProgression";
-import type { FieldResult } from '../data/fieldOps';
+import type { FieldResult, LockdownPlan } from '../data/fieldOps';
 import { missionRewardTruth, nextFieldMission } from './missionPurpose';
 import { parseVeteranOpportunity } from '../data/progressionOpportunity';
 
-export type PurposeAction = { missionId: string; title: string; reason: string; tier: 'standard' | 'advanced'; resume: boolean; chapter?: boolean; masteryChallenge?: 'relay-lockdown-v1' };
+export type PurposeAction = { missionId: string; title: string; reason: string; tier: 'standard' | 'advanced'; resume: boolean; chapter?: boolean; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: LockdownPlan; masteryChallenge?: 'relay-lockdown-v1' };
 export function nextFieldContract(field?: FieldOpsProgression) {
   if (!field?.fieldContracts?.enabled || !field.board || field.board.nextRotationAt * 1000 <= Date.now()) return null;
-  const missionId = field.fieldContracts.eligibleMissionIds[0];
+  if (field.board.reportVersion !== 3) return null;
+  const missionId = field.fieldContracts.eligibleMissionIds.find(id => {
+    const contract = missionContract(id);
+    return contract && field.board!.activeMissionIds.includes(id) && getMissionDef(id)?.executable
+      && !field.fieldContracts!.completed.includes(contract.id);
+  });
   const contract = missionId && missionContract(missionId);
   return contract ? { missionId, title: contract.name, reason: contract.objective, tier: "standard", resume: false } as const : null;
 }
@@ -34,7 +39,7 @@ export function fieldResultNext(p: FoundationProgressionState | null): PurposeAc
   const field = p?.fieldOps;
   const regular = commandPurpose(p).primary;
   if (regular?.resume) return regular;
-  const contract = nextFieldContract(field);
+  const contract = p?.vnextStartAvailable ? nextFieldContract(field) : null;
   if (contract) return contract;
   return regular;
 }
@@ -53,7 +58,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
   }
   if (!primary) for (const op of [BROKEN_SIGNAL, DEAD_RELAY]) {
     if (op === DEAD_RELAY) {
-      primary = nextFieldContract(f);
+      primary = p.vnextStartAvailable ? nextFieldContract(f) : null;
       if (primary) break;
     }
     const id = op.orderedMissionIds.find(id => p.operations?.[op.operationId]?.missions[id] === 'available');

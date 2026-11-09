@@ -11,13 +11,13 @@ import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
 export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
-  consequence, nextObjective, reachRendNext, actions, replayAction, children }: {
+  consequence, nextObjective, reachRendNext, actions, children }: {
   victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
   pending: boolean; error: string | null; failure: string;
   consequence: { label: string; detail: string } | null;
   nextObjective?: string;
   reachRendNext?: string;
-  actions: ReactNode; replayAction?: ReactNode; children: ReactNode;
+  actions: ReactNode; children: ReactNode;
 }) {
   const award = receipt?.victory ? receipt.contractAward : undefined;
   const reachReward = award?.reward === "reach-rend";
@@ -55,6 +55,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <strong>Unlocked</strong>
         <p className="t-fr-reward-stats">{REACH_REND_TRADEOFF}</p>
         <p>{reachRendNext}</p>
+        {nextObjective ? <p>{nextObjective}</p> : null}
         {primaryAction}
         <small>{missionName} · {contractName(award.id)} completed · {award.count}/3</small>
       </div>
@@ -74,8 +75,8 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       <div className="t-kicker">{contractName(award.id)} completed · {award.count}/3</div>
       <strong className={majorUnlock ? "t-fr-major-unlock" : undefined}>{award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
     </section> : null}
-    {majorUnlock && !award ? <div className="t-fr-major-unlock">{majorUnlock}</div> : null}
-    {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
+    {majorUnlock && !award && !impact ? <div className="t-fr-major-unlock">{majorUnlock}</div> : null}
+    {receipt && impact && !award ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline">WHAT CHANGED</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
@@ -112,7 +113,6 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
       </section>
     </details> : null}
     <div className="t-fr-details">{children}</div>
-    {receipt ? replayAction : null}
   </div>;
 }
 
@@ -123,10 +123,10 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
  * Existing detailed evidence and gameplay actions are passed through unchanged.
  */
 export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
-  kind, actions, children }: {
+  kind, nextObjective, actions, children }: {
   victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
   pending: boolean; error: string | null; failure: string;
-  kind: "lockdown" | "extraction"; actions: ReactNode; children: ReactNode;
+  kind: "lockdown" | "extraction"; nextObjective?: string; actions: ReactNode; children: ReactNode;
 }) {
   const state = receipt ? "confirmed" : pending ? "pending" : error ? "failed" : "unrecorded";
   const lockdown = kind === "lockdown";
@@ -158,7 +158,7 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pe
           lockdown ? `Optional practice accepted${plan ? ` · ${plan} plan` : ""}. No new currency or progression rewards.` :
           "Optional Veteran practice accepted. No currency, Commander, Veteran or Pack Mastery progress."}</p>
       </section>
-      <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span></div>
+      <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{nextObjective ? <p>{nextObjective}</p> : null}</div>
     </> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
     <div className="t-fr-details">{children}</div>

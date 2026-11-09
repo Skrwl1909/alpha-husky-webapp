@@ -75,7 +75,7 @@ try{
      if(profile==='completed')assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/FIRST LOCKDOWN CLEAR RECORDED/);
      if(profile==='replayed'||profile==='failed-after-clear')assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/LOCKDOWN COMPLETION RECORDED/);
      assert.match(await page.getByLabel('Recorded Field Op result').innerText(),/No currency, Commander or Pack Mastery progress/);
-     await page.getByRole('button',{name:'Replay / Squad',exact:true}).click();
+     await page.getByRole('button',{name:'Review Squad',exact:true}).click();
      assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMasteryChallenge),'relay-lockdown-v1','replay retains optional variant outside rotation');
      assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
     }
