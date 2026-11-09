@@ -30,3 +30,16 @@ export function applyRunCombatProfile(spawns:SpawnSpec[],v3:TacticalCombatProfil
  });
  if(alphaCount!==1||petCount>1||(petCount>0&&!v3.pet))throw Error("combat_squad_mismatch");return result;
 }
+
+/** Apply only the server-frozen Foundation projection bound to its accepted run.
+ * Historical snapshots without V3 retain their original authored unit stats.
+ */
+export function applyFoundationCombatProfile(
+ spawns:SpawnSpec[],
+ run:{activeRunId:string|null;foundationRunRules?:{runId:string;rulesContract:{combatProfileVersion:number}};
+  activeCombatProfileV2?:TacticalCombatProfileV2|null;activeCombatProfileV3?:TacticalCombatProfileV3|null}
+):SpawnSpec[] {
+ const accepted=!!run.activeRunId&&run.foundationRunRules?.runId===run.activeRunId
+  &&run.foundationRunRules.rulesContract.combatProfileVersion===3;
+ return applyRunCombatProfile(spawns,accepted ? run.activeCombatProfileV3||null : null,run.activeCombatProfileV2);
+}
