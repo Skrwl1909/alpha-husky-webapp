@@ -103,7 +103,7 @@ interface UiBattle {
   selectedLockdownPlan: import("../data/fieldOps").LockdownPlan;
   selectLockdownPlan: (plan: import("../data/fieldOps").LockdownPlan) => void;
   selectedVeteranChallenge: boolean;
-  openVeteranBrief: () => void;
+  openVeteranBrief: (entry?: "squad") => void;
   selectedMasteryChallenge: "relay-lockdown-v1" | null;
   currentFieldContext: FieldContext | null;
   fieldResult: FieldResult | null;
@@ -174,9 +174,9 @@ interface Store extends UiBattle {
   saveCampaignResult: () => Promise<void>;
   saveChapterResult: () => Promise<void>;
   chooseDoctrine: () => Promise<void>;
-  openChapterBrief: () => void;
-  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1", entry?: "alpha-a2") => void;
-  briefEntry: "alpha-a2" | null;
+  openChapterBrief: (entry?: "squad") => void;
+  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1", entry?: "alpha-a2" | "squad") => void;
+  briefEntry: "alpha-a2" | "squad" | null;
   activeRulesetVersion: string | null;
   backToHub: () => void;
   deploy: () => void;
@@ -747,7 +747,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({progressionError:"Doctrine selection not recorded. Refresh to verify before retrying."});
       }finally{set({progressionCommitPending:false})}
     },
-    openChapterBrief: () => {
+    openChapterBrief: (entry) => {
       const current=get(),chapter=current.progression?.tacticalChapter;
       if(!chapter||chapter.status!=="ACTIVE"||chapter.doctrine!=="RECON"||!current.foundationCompleted)return;
       const missionId=["field-relay-recovery","field-relay-intercept","dead-relay-courier"][chapter.completedMissionIds.length];
@@ -757,7 +757,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({progressionError:"Saved chapter run could not be restored. Refresh Tactical Ops."});return;
       }
       const currentSquad=active?.squadIds||["alpha","ally-02","ally-03"];
-      set({screen:"brief",chapterMode:true,selectedMasteryChallenge:null,selectedMissionId:missionId,selectedSquadIds:currentSquad,
+      set({screen:"brief",briefEntry:entry ?? null,chapterMode:true,selectedMasteryChallenge:null,selectedMissionId:missionId,selectedSquadIds:currentSquad,
         selectedApproach:active?.fieldContext?.approach||"standard",
         selectedDirectiveTier:active?.fieldContext?.directiveTier||"standard",
         currentCampaignContext:null,chapterResult:null,campaignResult:null,fieldResult:null,progressionError:null});
@@ -863,11 +863,11 @@ export const useBattleStore = create<Store>((set, get) => {
       sfx("ui");
       set({ screen: "brief", identity: identityCache(resolvePlayerIdentity()) });
     },
-    openVeteranBrief: () => {
+    openVeteranBrief: (entry) => {
       const s=get();
       if (!s.progression?.fieldOps?.veteranProgressionAvailable || (s.progression.fieldOps.commander?.rank || 0)<4 || s.progression.fieldOps.activeMissionRun) return;
       set({selectedVeteranChallenge:true});
-      get().openOperationBrief("field-relay-recovery");
+      get().openOperationBrief("field-relay-recovery", undefined, entry);
       set({selectedVeteranChallenge:true,selectedMasteryChallenge:null,screen:"brief",selectedMissionId:"field-relay-recovery",selectedDirectiveTier:"advanced",selectedSquadIds:["alpha","ally-02","ally-03"]});
     },
     openOperationBrief: (missionId, masteryChallenge, entry) => {

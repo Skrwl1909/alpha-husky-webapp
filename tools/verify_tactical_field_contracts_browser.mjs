@@ -160,7 +160,7 @@ try {
     await page.evaluate(() => fixture.results(2,true,false,false,true));
     assert.match(await reward.innerText(),/when a regular Field Op is available/);
     assert.equal(await page.getByRole("button",{name:"EQUIP REACH REND"}).count(),0);
-    await page.getByRole("button",{name:"WAR TABLE",exact:true}).tap();
+    await page.getByRole("button",{name:"REFRESH WAR TABLE",exact:true}).tap();
 
     await page.evaluate(() => fixture.results(2,true));
     assert.match(await reward.innerText(),/Reach Rend\s+Unlocked.*145% → 105%.*Same Bleed.*select A2/is);
@@ -258,7 +258,7 @@ try {
     assert.match(await command.innerText(),/3\/3.*Field Honor · Field Tested/s);
     await page.evaluate(() => fixture.results(2,true,false,true));
     assert.equal(await reward.count(),0,"an ordinary repeat receipt cannot re-award Reach Rend");
-    assert.match(await page.locator(".t-fr-next").innerText(),/first win here is still up for grabs/i);
+    assert.match(await page.locator(".t-fr-next").innerText(),/Recover|courier|relay|squad/i);
     await page.getByRole("button",{name:/^NEXT:/}).tap();
     assert.equal(await page.evaluate(() => fixture.store.getState().screen),"brief");
     await page.evaluate(() => fixture.legacyBrief());

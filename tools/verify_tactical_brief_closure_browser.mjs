@@ -92,7 +92,7 @@ try{
     await page.getByLabel('Mission overview',{exact:true}).waitFor();
     assert.equal(await page.locator('#petQuickActions').isVisible(),false);
     await page.evaluate(()=>fixture.store.setState({...fixture.completedRun,screen:'results'}));
-    await page.getByRole('button',{name:'Replay / Squad',exact:true}).click();
+    await page.getByRole('button',{name:'Review Squad',exact:true}).click();
     assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief','Replay returns to integrated squad preparation');
     assert.equal(await page.locator('#petQuickActions').isVisible(),false);
    }
