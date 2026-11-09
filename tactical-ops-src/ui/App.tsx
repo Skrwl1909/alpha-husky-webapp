@@ -1237,7 +1237,8 @@ function Results() {
     const presented = choice === "squad" ? decision?.reviewAction : decision?.action;
     const sameAction = action && presented && action.missionId === presented.missionId &&
       action.tier === presented.tier && action.resume === presented.resume && action.chapter === presented.chapter &&
-      action.masteryChallenge === presented.masteryChallenge && action.veteranChallenge === presented.veteranChallenge;
+      action.masteryChallenge === presented.masteryChallenge && action.veteranChallenge === presented.veteranChallenge &&
+      action.lockdownPlan === presented.lockdownPlan;
     store.continueOnboarding();
     if (useBattleStore.getState().screen !== "war-table") return;
     if (!sameAction || (choice === "equip" && next.equipMission !== decision?.equipMission)) {
