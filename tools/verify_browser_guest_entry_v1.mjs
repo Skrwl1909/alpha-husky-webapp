@@ -56,10 +56,30 @@ function setup({ host = "app.alphahusky.win", origin = "https://app.alphahusky.w
   };
 }
 for(const config of [{native:true},{packaged:true},{telegram:"TEST_TELEGRAM_SIGNATURE"},
-  {query:""},{host:"untrusted.example"}]){
+  {host:"untrusted.example"},{host:"untrusted.example",query:""}]){
   const t=setup(config);t.ready();
   assert.equal(t.window.AlphaBrowserGuestV1.active,false);
   assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),false);
+  assert.equal(t.requests.length,0);
+}
+// Clean production URL (including campaign UTM links) must show entry without an account request.
+for (const query of ["", "?utm_source=reddit", "?ref=invite&utm_campaign=alpha"]) {
+  const t=setup({query});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,true);
+  assert.equal(t.window.AlphaBrowserGuestV1.shouldHoldBoot(),true);
+  assert.ok(t.button("Play as Guest"));
+  assert.ok(t.button("I already play on Telegram"));
+  assert.ok(t.button("I already have a recovery code"));
+  assert.equal(t.requests.length,0,"public entry must not create accounts on boot");
+}
+// Preview builds stay opt-in; a clean preview link cannot silently enter guest mode.
+for (const {host,origin,query,allowed} of [
+  {host:"alpha-husky-webapp.vercel.app",origin:"https://alpha-husky-webapp.vercel.app",query:"",allowed:false},
+  {host:"alpha-husky-webapp.vercel.app",origin:"https://alpha-husky-webapp.vercel.app",query:"?browser_guest=1",allowed:true},
+  {host:"untrusted.example",origin:"https://untrusted.example",query:"?browser_guest=1",allowed:false}
+]) {
+  const t=setup({host,origin,query});t.ready();
+  assert.equal(t.window.AlphaBrowserGuestV1.active,allowed);
   assert.equal(t.requests.length,0);
 }
 {
@@ -271,7 +291,7 @@ assert.match(equippedSource, /equippedPost\("\/webapp\/equipped\/state"/);
 assert.match(equippedSource, /equippedPost\("\/webapp\/inventory\/state"/);
 
 // localhost is allowed only for the existing CORS-approved dev origin.
-// Explicit opt-in remains mandatory; native/Telegram cannot activate guest mode.
+// Local and preview origins remain opt-in; native/Telegram cannot activate guest mode.
 for (const { origin, query, native, telegram, allowed } of [
   {origin:"http://localhost:3000",query:"?browser_guest=1",allowed:true},
   {origin:"http://localhost:3000",query:"",allowed:false},
