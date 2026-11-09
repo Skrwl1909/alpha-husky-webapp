@@ -50,7 +50,7 @@ import { g2HoldRevisionForRequest, surviveRevisionForRequest, missionForContext,
 import type { SpawnSpec } from "../data/units";
 import { relayPressureMission } from "../data/relayPressure";
 import { SIGNAL_TRIAL_RULESET, type SignalTrialResult } from "../data/signalTrials";
-import { applyRunCombatProfile } from "../combat/combatProfileV3";
+import { applyFoundationCombatProfile, applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
 import { selectAcceptedBattleRules } from "../combat/types";
 import { emptyThreatCycle, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, interruptLockedThreatAfterControl, type ThreatCycle } from "../combat/intentScheduler";
@@ -1082,7 +1082,10 @@ export const useBattleStore = create<Store>((set, get) => {
               set({ screen: "war-table", battle: emptyBattle(), busy: false, ticker: null });
               return;
             }
-            beginBattle(g, progression.activeRunId, undefined, undefined, false, false, null, undefined, undefined, null, null, progression.foundationRunRules?.rulesContract || null);
+            const frozenFoundationSpawns = applyFoundationCombatProfile(
+              resolveDeploySpawns(true, stageFromProgression(progression)), progression,
+            );
+            beginBattle(g, progression.activeRunId, frozenFoundationSpawns, undefined, false, false, null, undefined, undefined, null, null, progression.foundationRunRules?.rulesContract || null);
           } catch (error) {
             if (g !== runGen) return;
             const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
