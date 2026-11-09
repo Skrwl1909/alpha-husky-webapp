@@ -1,6 +1,7 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
 import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
+import { parseSignalTrials, parseSignalTrialRun, parseSignalTrialResult, SIGNAL_TRIAL_RULESET, type SignalTrialProgress, type SignalTrialRun, type SignalTrialResult } from "../data/signalTrials";
 import { parseVeteran } from "../data/veteran";
 import { parseVeteranOpportunity, type VeteranOpportunity } from "../data/progressionOpportunity";
 import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "../data/fieldOps";
@@ -41,6 +42,7 @@ export interface FoundationProgressionState {
   lastCompletedRunId: string | null;
   updatedAt: number;
   fieldOps?: FieldOpsProgression;
+  signalTrials?: SignalTrialProgress;
   /** Read-only optional V1 from authoritative backend; absent = no new campaign UI. */
   tacticalChapter?: ChapterSnapshot;
   chapterActiveMission?: OperationMissionRun;
@@ -236,6 +238,11 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       typeof value.lastCompletedRunId === "string" && value.lastCompletedRunId ? value.lastCompletedRunId : null,
     updatedAt: Number.isFinite(Number(value.updatedAt)) ? Number(value.updatedAt) : 0,
   };
+  if (Object.prototype.hasOwnProperty.call(value, "signalTrials")) {
+    const trials = parseSignalTrials(value.signalTrials);
+    if (!trials) return null;
+    state.signalTrials = trials;
+  }
   // Optional rollout field: absent on legacy Foundation sessions.
   // Do not let a detached/stale contract switch another saved run to 10×7.
   if (value.foundationRunRules != null) {
@@ -574,6 +581,38 @@ export async function continueOperationMission(
   return { state: responseState(response), firstClear: response.firstClear === true,
     fieldResult: parseFieldResult(response.fieldResult),
     campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
+}
+
+/** Trial starts and settlements use separate endpoints; never route through Field Ops receipts. */
+export async function startSignalTrial(
+  requestId: string, expectedRevision: number, level: number, squadIds: string[],
+): Promise<{ state: FoundationProgressionState; run: SignalTrialRun; started: boolean }> {
+  const response = await request("/webapp/tactical-foundation/trial/start", {
+    requestId, expectedRevision, level, trialRevision: 1, squadIds, rulesetVersion: SIGNAL_TRIAL_RULESET,
+  });
+  const rawRun = response.run;
+  const run = parseSignalTrialRun(rawRun);
+  const raw = rawRun as Record<string, unknown> | null;
+  const state = responseState(response);
+  if (!run || run.level !== level || run.squadIds.join(",") !== squadIds.join(",") ||
+    run.rulesContract.missionId !== "field-relay-hold" ||
+    state.signalTrials?.activeRun?.runId !== run.runId) throw new FoundationProgressionError("invalid_trial_start_response");
+  return { state, run, started: raw?.started === true };
+}
+export async function continueSignalTrial(
+  requestId: string, expectedRevision: number, runId: string,
+  trialReport: { trialLevel: number; trialRevision: 1; victory: boolean; objectiveComplete: boolean;
+    turns: number; squadStanding: number; squadDeployed: number; failureReason?: "DEADLINE" },
+): Promise<{ state: FoundationProgressionState; trialResult: SignalTrialResult }> {
+  const response = await request("/webapp/tactical-foundation/trial/continue", {
+    requestId, expectedRevision, runId, completionIntent: trialReport.victory,
+    trialReport, rulesetVersion: SIGNAL_TRIAL_RULESET,
+  });
+  const result = parseSignalTrialResult(response.trialResult);
+  const state = responseState(response);
+  if (!result || result.runId !== runId || state.signalTrials?.lastResult?.runId !== runId)
+    throw new FoundationProgressionError("invalid_trial_result_receipt");
+  return { state, trialResult: result };
 }
 
 export async function saveFieldRend(requestId: string, expectedRevision: number, choice: FieldRend): Promise<FoundationProgressionState> {
