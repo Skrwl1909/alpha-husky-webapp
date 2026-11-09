@@ -1045,7 +1045,7 @@
       return scf;
     }
     var choices = hubActivityChoices(scf, gatherInputs());
-    if (choices.length > 1 || (choices.length === 1 && choices[0].id === "resume")) {
+    if (choices.length > 1 || (choices.length === 1 && (choices[0].id === "resume" || optionalHubNextMove(scf)))) {
       var index = hubActivitySelectedId
         ? choices.findIndex(function (item) { return item.id === hubActivitySelectedId; }) : -1;
       if (index < 0) {
