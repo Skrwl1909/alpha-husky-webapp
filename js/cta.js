@@ -1676,6 +1676,9 @@
         }
         return false;
 
+      case "first_playable_bridge":
+        return await window.Missions?.openFirstPlayableBridge?.() === true;
+
       case "tactical_discovery":
         try {
           return window.GuidedNavigation?.start("tactical") === true;

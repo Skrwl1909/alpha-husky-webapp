@@ -415,6 +415,21 @@
     }
     var worldHandoff = fs.eligible && fs.state === "COMPLETED" && !!fs.worldDiscovery;
     if (worldHandoff && fs.worldDiscovery === "pending") {
+      var foundationBridge = nextMoveState.foundation;
+      if (fs.eligible && foundationBridge && foundationBridge.completed === false &&
+          ["solo-1", "solo-2", "ally-koda", "full-broken-signal"].includes(foundationBridge.foundationStage) &&
+          global.Missions?.openFirstPlayableBridge) {
+        var nextStage = foundationBridge.foundationStage === "solo-2" ? "SPLIT CONTACT"
+          : foundationBridge.foundationStage === "ally-koda" ? "PACK LINK"
+          : foundationBridge.foundationStage === "full-broken-signal" ? "BROKEN SIGNAL" : "CONTACT";
+        return frame({ id: "S-FS-PLAYABLE-BRIDGE", situation: "BUILD IMPROVED",
+          changed: "Rustfang is equipped. Strength rose.",
+          why: "Your next training fight is " + nextStage + ". No currency reward is promised.",
+          nextLead: "TACTICAL OPS", nextAction: "Play " + nextStage,
+          target: { type: "open_action", action: "first_playable_bridge" },
+          ctaKind: "first_playable_bridge", firstSession: true, hideHubGoal: true,
+          goLabel: "ENTER " + nextStage });
+      }
       if (!fs.faction_selected) {
         return frame({ id: "S-FS-FACTION-HANDOFF", situation: "BUILD IMPROVED",
           changed: "Rustfang is equipped. Strength rose.",
@@ -764,7 +779,9 @@
   async function refreshNextMoveState() {
     // Read existing foundation state for established players even when an
     // unconsumed story handoff would otherwise suppress Next Move.
-    if (!nextMoveEligible(gatherInputs()) && !global.Missions?.tacticalAccess?.(gatherInputs())) return;
+    var fs = firstSignalOf(gatherInputs());
+    var pendingBridge = fs.eligible && fs.state === "COMPLETED" && fs.worldDiscovery === "pending";
+    if (!pendingBridge && !nextMoveEligible(gatherInputs()) && !global.Missions?.tacticalAccess?.(gatherInputs())) return;
     var api = global.S?.apiPost || global.apiPost;
     if (typeof api !== "function") return;
     nextMoveState.mission = null;
