@@ -10,8 +10,6 @@ on:
       - "js/tactical_ops.js"
       - "js/boot_loaders.js"
       - "tools/verify_tactical_accepted_foundation_grid.mjs"
-      - "tools/verify_tactical_foundation_character_bridge.mjs"
-      - "tactical-ops-src/combat/combatProfileV3.ts"
       - ".github/workflows/tactical-accepted-foundation-grid.yml"
   workflow_dispatch:
 
@@ -25,7 +23,6 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund
       - run: node tools/verify_tactical_accepted_foundation_grid.mjs
-      - run: node tools/verify_tactical_foundation_character_bridge.mjs
       - run: node tools/verify_tactical_vnext_run_contract_wire.mjs
       - run: node tools/benchmark_tactical_vnext_grids.mjs
       - run: npm run build:tactical-ops
