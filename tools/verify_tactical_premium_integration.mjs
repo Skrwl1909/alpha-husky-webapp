@@ -26,6 +26,37 @@ const actorFacingBlobs=Object.freeze({
 function sourceBlob(source) {
  return execFileSync('git',['hash-object','--stdin'],{input:source,encoding:'utf8'}).trim();
 }
+
+// PR #268: preserve historical approvals against reviewed main
+// and pin new changes separately.
+const nextDecisionBase='b32f4594d43cf6ceec105e8371ba29627645716a';
+const nextDecisionApproved=Object.freeze({
+ '.github/workflows/tactical-purpose-return.yml':'dc08b5361545e91c347251028c911dd52af7d8b2',
+ 'tactical-ops-src/store/battleStore.ts':'645ec8d94759f71487233929eddd696455de86c7',
+ 'tactical-ops-src/ui/App.tsx':'d5d115a1c24f2ccfaef2a73004b6b39932cba67a',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'e2b84b44a1b23e8cbe2437945a9044e4f2b967fb',
+ 'tactical-ops-src/ui/battleDecision.ts':'981c29ba30f1ccc1b5c446d019a994cc423832cf',
+ 'tactical-ops-src/ui/fieldOpResults.css':'a0d3242be9bbd12b4755ffc8873a6668e356db4f',
+ 'tactical-ops-src/ui/returnPurpose.ts':'c29ead1a306b20ffb9b5f5397843f1ca58ba5fda',
+ 'tactical-ops-src/version.ts':'9413c136d11e4ffea8d66a488e947926ea7b4d6d',
+ 'tools/verify_field_op_results_premium.mjs':'74f9fb7c1c30d1f8499459e6abdfdad214bed212',
+ 'tools/verify_tactical_brief_closure_browser.mjs':'176787f6603b54c988250e207e785bac5f9119c7',
+ 'tools/verify_tactical_depth01_browser.mjs':'1b45fed9d8146e8119a93ff38b33d11ebd3f8819',
+ 'tools/verify_tactical_field_contracts_browser.mjs':'62326bd65c639150d5e0d729ca4bef39cb78707b',
+ 'tools/verify_tactical_purpose_return.mjs':'9624a6f893339c86e10b3cff2ecf01efe9e09e73',
+ 'tools/verify_tactical_purpose_return_browser.mjs':'b2b5ce44b53d2cc796090a1ef76be126f41d7a4c',
+});
+const nextDecisionHistoricSource=path=>Object.hasOwn(nextDecisionApproved,path)
+ ? git('show',`${nextDecisionBase}:${path}`) : readFileSync(path,'utf8');
+git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
+for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
+  '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||generated.has(changedPath)||
+  changedPath==='tools/verify_tactical_premium_integration.mjs',
+  'unreviewed Next Decision path: '+changedPath);
+}
+for(const [path,sha] of Object.entries(nextDecisionApproved))
+ assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Next Decision blob: '+path);
 const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/styles.ts':'b1b7e0729b289ee646695257ffcb0e76b84722c2',
  'tactical-ops-src/ui/Battle.tsx':'18edd840fb2ff963ca99e96d7499f61a72cdef96',
@@ -365,11 +396,11 @@ const serviceRecordBlobs=Object.freeze({
 });
 git('merge-base','--is-ancestor',surviveTensionMerge,'HEAD');
 for(const [path,expected] of Object.entries(serviceRecordBlobs)){
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Commander Service Record source: '+path);
+ assert.equal(sourceBlob(nextDecisionHistoricSource(path)),expected,'unreviewed Commander Service Record source: '+path);
 }
 for(const [path,expected] of Object.entries(surviveTensionBlobs)){
  assert.equal(git('rev-parse',`${surviveTensionMerge}:${path}`).trim(),expected,'unreviewed merged SURVIVE source: '+path);
- assert.equal(sourceBlob(readFileSync(path)),serviceRecordBlobs[path] ?? expected,'unreviewed SURVIVE source: '+path);
+ assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? expected,'unreviewed SURVIVE source: '+path);
 }
 const fieldContractsMerge='1a9e41436c364e2bf0c557f74b1e11e57a47084f';
 const legacyFieldBriefFix='8634d6e5150b31476c2a1c05e8b8e6573baaf8be';
@@ -377,7 +408,7 @@ git('merge-base','--is-ancestor',fieldContractsMerge,'HEAD');
 for(const [path,expected] of Object.entries(fieldContractBlobs)){
  assert.equal(git('rev-parse',`${fieldContractsMerge}:${path}`).trim(),expected,'unreviewed merged Field Contracts source: '+path);
  const fieldContractsBaseline=path===app ? legacyFieldBriefFix : expected;
- assert.equal(sourceBlob(readFileSync(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
+ assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? fieldContractsBaseline,'unreviewed Field Contracts source: '+path);
 }
 // Browser Guest Exit V1: approve only these exact, separately reviewed host/version blobs.
 // Keep the merged exit source pinned and allow the Reach Rend release to advance the version.
@@ -399,10 +430,10 @@ for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
-  assert.equal(sourceBlob(readFileSync(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
+  assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
  }
 }
 assert(cameraCss.includes('relay-overhead-v1'),'missing reviewed camera selector');
