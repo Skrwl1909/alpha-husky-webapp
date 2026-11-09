@@ -2,7 +2,8 @@ import { getHost } from "../host/bridge";
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { FIELD_HONOR, missionContract, REACH_REND_TRADEOFF, withFieldRend } from "../data/fieldContracts";
-import { commandPurpose, fieldResultNext, fieldResultPurpose, nextFieldContract, reachRendLoadoutMission, type PurposeAction } from "./returnPurpose";
+import { commandPurpose, fieldResultPurpose, nextFieldContract, type PurposeAction } from "./returnPurpose";
+import { battleDecision, objectiveDefeat } from "./battleDecision";
 import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
@@ -14,7 +15,7 @@ import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
 import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
-import { deriveMissionPresentation, nextFieldMission, recordedResultMeaning } from "./missionPurpose";
+import { deriveMissionPresentation, recordedResultMeaning } from "./missionPurpose";
 import { composeDirectives, supportCooldownExtra } from "../combat/missionRules";
 import { missionDirectives } from "../data/directives";
 import { useEffect, useRef, useState } from "react";
@@ -480,7 +481,7 @@ function WarTable() {
             <div key={id}><strong>{id} · {def.title}</strong><p>{def.copy}</p>{id==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={()=>void chooseDoctrine()}>COMMIT TO GHOST SIGNAL</button> : <small>Future doctrine · not yet operational</small>}</div>)) :
             <><strong>{chapterView.stage} / {chapterView.total} OPERATIONS VERIFIED</strong>
             <p>{chapterView.nextMissionName ? `NEXT · ${chapterView.nextMissionName}` : "CHAPTER COMPLETE"}</p></>}</div>
-          {acceptedChapter.status==="ACTIVE" && acceptedChapter.doctrine==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={openChapterBrief}>{acceptedChapter.activeRunId?"RESUME CHAPTER RUN":"DEPLOY NEXT CHAPTER OP"}</button>:null}
+          {acceptedChapter.status==="ACTIVE" && acceptedChapter.doctrine==="RECON" ? <button type="button" className="t-btn t-btn-primary" disabled={loading||chapterSaving} onClick={() => openChapterBrief()}>{acceptedChapter.activeRunId?"RESUME CHAPTER RUN":"DEPLOY NEXT CHAPTER OP"}</button>:null}
           {acceptedChapter.status==="COMPLETED"?<strong>{acceptedChapter.intelConsumedByRunId?"INTEL DEPLOYED IN AN ACCEPTED RUN":"RECON INTEL READY · DELAY NEXT ELIGIBLE REINFORCEMENT"}</strong>:null}
           <p>{chapterView.consequence}</p>
           <small>{acceptedChapter.status === "AVAILABLE" ? "Doctrine selection becomes playable only after the server exposes a verified choice action. No client-only selection." : "Mission progress advances only on the next accepted server receipt. Existing Field Ops can still be played normally."}</small>
@@ -684,7 +685,7 @@ function variantPreview(skill: ReturnType<typeof getSkill>) {
 
 function Brief() {
   const briefEntry = useBattleStore(s => s.briefEntry);
-  const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">(briefEntry === "alpha-a2" ? "loadout" : "mission");
+  const [briefTab, setBriefTab] = useState<"mission" | "squad" | "loadout" | "intel">(briefEntry === "alpha-a2" ? "loadout" : briefEntry === "squad" ? "squad" : "mission");
   const a2Heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     if (briefEntry === "alpha-a2") a2Heading.current?.focus();
@@ -1221,20 +1222,57 @@ function Results() {
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
-  const resultNext = fieldResultNext(progression);
-  const reachRendUnlocked = recordedFieldResult?.victory && recordedFieldResult.contractAward?.reward === "reach-rend";
-  const rewardBrief = reachRendLoadoutMission(progression, recordedFieldResult);
-  const acceptedFieldRun = progression?.fieldOps?.activeMissionRun;
-  const rewardResume = acceptedFieldRun && getMissionDef(acceptedFieldRun.missionId);
-  const reachRendNext = rewardBrief
-    ? "Equip it in Loadout, then select A2 on ALPHA’s turn."
-    : acceptedFieldRun ? "A2 is locked for the accepted Field Op. Finish that run to equip Reach Rend."
-    : "Equip it in ALPHA’s Loadout when a regular Field Op is available.";
-  const nextSuggested = resultNext || nextFieldMission(progression?.fieldOps, selectedMissionId);
-  const nextSuggestedBase = getMissionDef(nextSuggested.missionId);
-  const nextSuggestedMission = nextSuggestedBase && resultNext?.masteryChallenge ? missionForContext(nextSuggestedBase,{reportVersion:4,masteryChallenge:resultNext.masteryChallenge}) : nextSuggestedBase;
   const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
   const campaignConfirmed = !chapterMode && campaignMission ? recordedCampaignResult : null;
+  const recordedChapterResult = chapterMode ? matchingAfterActionReceipt(chapterResult, currentRunKey, selectedMissionId) : null;
+  const receipt = chapterMode ? recordedChapterResult : recordedFieldResult || campaignConfirmed;
+  const decision = receipt ? battleDecision(progression, receipt, progressionCommitPending) : null;
+  const followDecision = (choice: "mission" | "squad" | "equip") => {
+    if (!receipt) return;
+    const store = useBattleStore.getState();
+    if (store.screen !== "results" || store.progressionCommitPending ||
+        !matchingAfterActionReceipt(receipt, store.currentRunKey, store.selectedMissionId)) return;
+    const next = battleDecision(store.progression, receipt);
+    const action = choice === "squad" ? next.reviewAction : next.action;
+    const presented = choice === "squad" ? decision?.reviewAction : decision?.action;
+    const sameAction = action && presented && action.missionId === presented.missionId &&
+      action.tier === presented.tier && action.resume === presented.resume && action.chapter === presented.chapter &&
+      action.masteryChallenge === presented.masteryChallenge && action.veteranChallenge === presented.veteranChallenge &&
+      action.lockdownPlan === presented.lockdownPlan;
+    store.continueOnboarding();
+    if (useBattleStore.getState().screen !== "war-table") return;
+    if (!sameAction || (choice === "equip" && next.equipMission !== decision?.equipMission)) {
+      if (next.refresh) void store.loadFoundationProgression();
+      return;
+    }
+    if (choice === "equip" && next.equipMission) {
+      store.openOperationBrief(next.equipMission, undefined, "alpha-a2");
+      return;
+    }
+    const entry = choice === "squad" ? "squad" : undefined;
+    if (action.chapter) { store.openChapterBrief(entry); return; }
+    if (action.veteranChallenge) { store.openVeteranBrief(entry); return; }
+    store.openOperationBrief(action.missionId, action.masteryChallenge, entry);
+    if (!action.resume && useBattleStore.getState().screen === "brief") {
+      store.selectDirectiveTier(action.tier);
+      if (next.retry) {
+        store.selectApproach(store.currentFieldContext?.approach ?? store.selectedApproach);
+      }
+      if (action.lockdownPlan) store.selectLockdownPlan(action.lockdownPlan);
+    }
+  };
+  const decisionActions = decision ? <>
+    <button type="button" className="t-btn t-btn-primary" data-next-decision="primary" disabled={progressionCommitPending}
+      onClick={() => followDecision(decision.equipMission ? "equip" : "mission")}>
+      {decision.equipMission ? "EQUIP REACH REND" : decision.label}
+    </button>
+    {decision.equipMission ? <button type="button" className="t-btn" onClick={() => followDecision("mission")}>{decision.label}</button>
+      : decision.reviewAction ? <button type="button" className="t-btn" onClick={() => followDecision("squad")}>Review Squad</button> : null}
+  </> : null;
+  const reachRendNext = decision?.equipMission
+    ? "Equip it in Loadout, then select A2 on ALPHA’s turn."
+    : decision?.action?.resume ? "Your setup is locked. Finish that run to equip Reach Rend."
+    : "Equip it in ALPHA’s Loadout when a regular Field Op is available.";
   const s3Proof = confirmedConsequence(recordedFieldResult, recordedCampaignResult, progression);
   const s3Return = confirmedReturnAction(recordedFieldResult, recordedCampaignResult, progression);
   const acceptedS3Run = recordedFieldResult?.runId || recordedCampaignResult?.runId || null;
@@ -1245,7 +1283,9 @@ function Results() {
   if (!results) return null;
   const fieldVictory = recordedFieldResult?.victory ?? results.victory;
   const campaignVictory = campaignConfirmed?.victory ?? results.victory;
-  const fieldFailure = recordedFieldResult?.failureReason ?? failureReason;
+  const failure = objectiveDefeat((recordedFieldResult || campaignConfirmed)?.failureReason ?? failureReason,
+    mission?.objectiveType || "", receipt && "squadStanding" in receipt && receipt.squadStanding != null ? receipt.squadStanding : results.squadStanding,
+    receipt && "squadDeployed" in receipt && receipt.squadDeployed != null ? receipt.squadDeployed : results.squadDeployed);
   const operationVictory = foundationCompleted && Boolean(mission) && results.victory;
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
@@ -1257,28 +1297,10 @@ function Results() {
     <FieldOpResults victory={fieldVictory} missionName={mission.name}
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(fieldFailure, mission.objectiveType)} consequence={s3Proof}
-      nextObjective={recordedFieldResult?.victory ? resultNext?.reason : undefined}
+      failure={failure} consequence={s3Proof}
+      nextObjective={decision?.detail}
       reachRendNext={reachRendNext}
-      replayAction={<button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button>}
-      actions={!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> :
-        <button type="button" className="t-btn t-btn-primary" onClick={() => {
-          continueOnboarding();
-          const store = useBattleStore.getState();
-          if (store.screen !== "war-table") return;
-          if (reachRendUnlocked) {
-            const missionId = reachRendLoadoutMission(store.progression, recordedFieldResult);
-            if (missionId) store.openOperationBrief(missionId, undefined, "alpha-a2");
-            else if (rewardResume) {
-              const run = store.progression?.fieldOps?.activeMissionRun;
-              if (run) store.openOperationBrief(run.missionId, run.fieldContext?.masteryChallenge);
-            }
-            return;
-          }
-          const next = recordedFieldResult.victory ? fieldResultNext(store.progression) : null;
-          if (next) openPurposeBrief(next);
-        }}>{reachRendUnlocked ? rewardBrief ? "EQUIP REACH REND" : rewardResume ? "RESUME FIELD OP" : "WAR TABLE"
-          : recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>}>
+      actions={recordedFieldResult ? decisionActions : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button>}>
       {recordedFieldResult ? <details className="t-detail"><summary>Progression & eligibility</summary>
         <p>{fieldResultPurpose(recordedFieldResult).future}</p>
         <p>Challenge: {recordedFieldResult.legacyReport ? "Unmeasured in this receipt" : recordedFieldResult.challengeSuccess ? `Met · +${recordedFieldResult.challengeBonus} Commander bonus recorded` : "Not met"}.</p>
@@ -1306,16 +1328,10 @@ function Results() {
     <SpecialFieldOpResults kind={specialKind} victory={fieldVictory} missionName={mission?.name || "FIELD OP"}
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
       receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
-      failure={fieldFailureCopy(fieldFailure, mission?.objectiveType || "HOLD")}
-      actions={!recordedFieldResult ?
+      failure={failure} nextObjective={decision?.detail}
+      actions={recordedFieldResult ? decisionActions :
         <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
-          onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-          <button type="button" className="t-btn t-btn-primary" onClick={() => {
-            continueOnboarding();
-            if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") openPurposeBrief(resultNext);
-          }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
-          <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
-        </>}>
+          onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button>}>
       <details className="t-detail" data-special-evidence="true"><summary>Full field record &amp; combat evidence</summary>
         {recordedFieldResult ? <FieldResultFeedback result={recordedFieldResult} /> : <p>Progress is not confirmed without a matching server receipt.</p>}
         {recordedFieldResult && s3Return ? <section className="t-panel t-s3-after-action" aria-label="Confirmed consequence and next tactical goal">
@@ -1380,10 +1396,10 @@ function Results() {
             <p style={{ color: "var(--t-muted)", margin: "0 0 1.1rem" }}>{fieldOp ? null : operationVictory ? mission?.objectiveType === "RECOVER" ? isFirstClear ? "Continue to unlock SIGNAL COMMANDER." : "SIGNAL RECOVERED." : mission?.objectiveType === "ELIMINATE" ? isFirstClear ? "RECOVER AVAILABLE." : null : null : encounter.resultsNote}</p>
           ) : null}
           {operationVictory && mission?.missionId === "broken-signal-breach" ? <p style={{ color: routingTraceAcquired || progression?.intel?.routingTrace ? "var(--t-accent)" : "var(--t-faint)", margin: "0 0 0.8rem" }}>ROUTING TRACE — {routingTraceAcquired || progression?.intel?.routingTrace ? "ACQUIRED" : "MISSED"}</p> : null}
-          {operationVictory && !campaignMission && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
+          {operationVictory && !campaignMission && !chapterMode && mission?.objectiveType === "BOSS" ? <p style={{ color: "var(--t-accent)", margin: "0 0 0.8rem" }}>{isFirstClear ? mission.resultsCopy : progression?.operations?.[DEAD_RELAY.operationId] ? "BROKEN SIGNAL CLEARED · THE DEAD RELAY CAMPAIGN AVAILABLE" : "BROKEN SIGNAL remains CLEARED · ARCHIVE AVAILABLE · NEXT OPERATION SLOT EMPTY / UNASSIGNED"}</p> : null}
           {chapterMode ? <div className="t-panel" role="status">
-            <strong>{chapterResult ? "CHAPTER RESULT RECORDED" : progressionCommitPending ? "RECORDING CHAPTER RESULT…" : "CHAPTER RESULT NOT YET RECORDED"}</strong>
-            <p>{chapterResult ? `GHOST SIGNAL · ${chapterResult.stageRecorded}/3 accepted operations. ${chapterResult.chapterComplete?"RECON Intel ready for a qualifying encounter.":"Return to War Table for the next mission."}` : "Only server-recorded results advance this chapter."}</p>
+            <strong>{recordedChapterResult ? "CHAPTER RESULT RECORDED" : progressionCommitPending ? "RECORDING CHAPTER RESULT…" : "CHAPTER RESULT NOT YET RECORDED"}</strong>
+            <p>{recordedChapterResult ? `GHOST SIGNAL · ${recordedChapterResult.stageRecorded}/3 operations recorded.${recordedChapterResult.chapterComplete?" RECON Intel ready for a qualifying encounter.":""}` : "Only server-recorded results advance this chapter."}</p>
           </div>:null}
           {!chapterMode && fieldOp ? <div>
 
@@ -1405,33 +1421,15 @@ function Results() {
             <div className="t-s3-next"><span className="t-kicker">ONE NEXT GOAL</span><strong>{s3Return.title}</strong><p>{s3Return.reason}</p></div>
           </section> : null}
           {!campaignConfirmed ? report : null}
-          {campaignConfirmed ? <div className="t-kicker t-campaign-next">WHAT’S NEXT</div> : null}
+          {receipt && !receipt.victory ? <p className="t-fr-outcome">{failure}</p> : null}
+          {decision ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span><p>{decision.detail}</p></div> : null}
           <div className="t-brief-actions t-result-actions">
-            {chapterMode ? (chapterResult ?
-              <button type="button" className="t-btn t-btn-primary" onClick={()=>continueOnboarding()}>RETURN TO CHAPTER</button>
+            {chapterMode ? (recordedChapterResult ? decisionActions
               : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={()=>void saveChapterResult()}>{progressionCommitPending?"RECORDING…":"RECORD CHAPTER RESULT"}</button>
-            ) : campaignMission ? (
-              recordedCampaignResult ? <>
-                <button type="button" className="t-btn t-btn-primary" onClick={() => {
-                  continueOnboarding();
-                  const store = useBattleStore.getState();
-                  if (s3Return?.missionId && store.screen === "war-table") store.openOperationBrief(s3Return.missionId);
-                }}>{s3Return?.missionId ? recordedCampaignResult.victory ? `NEXT: ${s3Return.title}` : "RETRY MISSION" : "BACK TO CAMPAIGN"}</button>
-              </> : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
-                {progressionCommitPending ? "Recording..." : results.victory ? "SAVE VICTORY" : "RECORD FAILURE / RETRY"}
+            ) : campaignMission ? (campaignConfirmed ? decisionActions
+              : <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveCampaignResult()}>
+                {progressionCommitPending ? "Recording..." : results.victory ? "SAVE VICTORY" : "RECORD FAILURE"}
               </button>
-            ) : fieldOp ? (
-              <>
-                {!recordedFieldResult ? <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending} onClick={() => void saveFieldResult()}>{progressionCommitPending ? "Recording..." : "Retry saving result"}</button> : <>
-                  <button type="button" className="t-btn t-btn-primary" onClick={() => {
-                    continueOnboarding();
-                    if (recordedFieldResult.victory && resultNext && useBattleStore.getState().screen === "war-table") {
-                      openPurposeBrief(resultNext);
-                    }
-                  }}>{recordedFieldResult.victory ? resultNext ? `${resultNext.tier === "advanced" ? "ADVANCED" : "NEXT"}: ${nextSuggestedMission?.name}` : "SEE FIELD OPS" : "REGROUP AT WAR TABLE"}</button>
-                  <button type="button" className="t-btn" onClick={replay}>Replay / Squad</button>
-                </>}
-              </>
             ) : sessionVictory ? (
               <>
                 <button type="button" className="t-btn t-btn-primary" onClick={() => continueOnboarding()} disabled={progressionCommitPending}>
@@ -1454,7 +1452,6 @@ function Results() {
             )}
           </div>
           {campaignConfirmed ? <details className="t-detail"><summary>Combat report · this device</summary>{report}</details> : null}
-          {campaignConfirmed ? <button type="button" className="t-btn t-fr-replay" onClick={replay}>Replay / Squad</button> : null}
           {progressionError ? <p style={{ color: "var(--t-enemy)", margin: "0.8rem 0 0" }}>{progressionError}</p> : null}
         </div>
       </div>

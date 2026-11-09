@@ -1,4 +1,4 @@
-/* Alpha Husky — opt-in browser guest entry V1.
+/* Alpha Husky — public browser entry on app.alphahusky.win; opt-in elsewhere.
  * Android/Telegram are intentionally untouched. Never auto-create accounts.
  * Browser guest tokens live only in sessionStorage (no persistent bearer in localStorage).
  */
@@ -11,6 +11,9 @@
   var originHost = String(global.location && global.location.hostname || "").toLowerCase();
   var params = new URLSearchParams(global.location && global.location.search || "");
   var requested = params.get("browser_guest") === "1";
+  // Public PC entry is the default only on the canonical game host.
+  // Keep preview/local browser entry explicitly opt-in.
+  var publicEntry = originHost === "app.alphahusky.win";
   var approvedHost = originHost === "app.alphahusky.win" || originHost.endsWith(".vercel.app") || global.location.origin === "http://localhost:3000";
   var nativeRuntime = Boolean(
     global.Capacitor && (
@@ -24,7 +27,7 @@
   function hasStoredGuest() {
     try { return Boolean(global.sessionStorage.getItem(STORAGE_KEY)); } catch (_) { return false; }
   }
-  var active = (requested || hasStoredGuest()) && approvedHost && !nativeRuntime && !tgInitData;
+  var active = (publicEntry || requested || hasStoredGuest()) && approvedHost && !nativeRuntime && !tgInitData;
   var token = "";
   var expiresAt = 0;
   var persisted = false;
@@ -117,7 +120,7 @@
       ? "Recover your existing guest account using the code you saved. Never share it. Recovery does not create a new account."
       : pendingRecovery
       ? "Your guest has been created. Save this one-time recovery code before continuing. Anyone holding this code may be able to recover your account."
-      : "Play in your browser without Telegram or a wallet. Guest access is currently an opt-in test."));
+      : "Play in your browser without Telegram or a wallet. Create a guest character or continue your existing one."));
     var status = el("p", { role: "status", "aria-live": "polite" }, "");
     status.style.cssText = "min-height:22px;color:#b8cbe0;font-size:13px";
     var action = el("button", { type: "button" }, pendingRecovery ? "Copy recovery code" : "Play as Guest");
