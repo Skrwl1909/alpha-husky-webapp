@@ -332,7 +332,7 @@ export const useBattleStore = create<Store>((set, get) => {
       await wait(1200);
       if (g !== runGen) return true;
       const selected = getMissionDef(get().selectedMissionId);
-      const recordedMission = get().selectedTrialLevel !== null || get().chapterMode || selected?.activity === "FIELD_OP" || selected?.operationId === DEAD_RELAY.operationId;
+      const recordedMission = get().selectedTrialLevel != null || get().chapterMode || selected?.activity === "FIELD_OP" || selected?.operationId === DEAD_RELAY.operationId;
       set({ screen: recordedMission ? "results" : "defeat", busy: false, banner: null });
       if(get().selectedTrialLevel != null && typeof get().saveTrialResult === "function") void get().saveTrialResult();
       else if(get().chapterMode)void get().saveChapterResult();
@@ -937,7 +937,7 @@ export const useBattleStore = create<Store>((set, get) => {
     backToHub: () => {
       const current = get();
       if (current.progressionCommitPending) return;
-      if(current.screen==="results"&&current.selectedTrialLevel!==null&&!current.trialResult){void current.saveTrialResult();return;}
+      if(current.screen==="results"&&current.selectedTrialLevel != null&&!current.trialResult){void current.saveTrialResult();return;}
       if(current.screen==="results"&&current.chapterMode&&!current.chapterResult){void current.saveChapterResult();return;}
       if (!current.chapterMode && current.screen === "results" && getMissionDef(current.selectedMissionId)?.activity === "FIELD_OP" && !current.fieldResult) { void current.saveFieldResult(); return; }
       if (!current.chapterMode && current.screen === "results" && getMissionDef(current.selectedMissionId)?.operationId === DEAD_RELAY.operationId && !current.campaignResult) { void current.saveCampaignResult(); return; }
@@ -965,7 +965,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (get().kodaSavePending || get().shadowSavePending || get().fieldRendSavePending) return;
       const g = ++runGen;
       const persisted = get();
-      if (persisted.selectedTrialLevel !== null && persisted.progression && persisted.progressionStatus==="ready") {
+      if (persisted.selectedTrialLevel != null && persisted.progression && persisted.progressionStatus==="ready") {
         const level=persisted.selectedTrialLevel,trial=persisted.progression.signalTrials;
         if (!trial?.enabled || (trial.activeRun && trial.activeRun.level!==level)) return;
         set({busy:true,ticker:"Preparing Signal Trial…",progressionError:null});
@@ -1337,7 +1337,7 @@ export const useBattleStore = create<Store>((set, get) => {
     replay: () => {
       const current = get();
       if (current.progressionCommitPending) return;
-      if(current.selectedTrialLevel!==null){
+      if(current.selectedTrialLevel != null){
         if(current.screen==="results"&&!current.trialResult){void current.saveTrialResult();return;}
         const level=current.selectedTrialLevel;
         get().backToHub();get().openTrialBrief(level);return;
@@ -1361,7 +1361,7 @@ export const useBattleStore = create<Store>((set, get) => {
     continueOnboarding: (replayAfter = false) => {
       const s = get();
       if (s.screen !== "results") return;
-      if(s.selectedTrialLevel!==null){
+      if(s.selectedTrialLevel != null){
         if(!s.trialResult){void get().saveTrialResult();return;}
         const next=s.trialResult.victory ? Math.min(6,s.selectedTrialLevel+1) : s.selectedTrialLevel;
         get().backToHub();if(replayAfter||s.trialResult.victory)get().openTrialBrief(next);return;
@@ -1529,7 +1529,7 @@ export const useBattleStore = create<Store>((set, get) => {
     dismissSector: () => {
       sfx("ui");
       set({ screen: "results" });
-      if(get().selectedTrialLevel!==null)void get().saveTrialResult();
+      if(get().selectedTrialLevel != null)void get().saveTrialResult();
       else if(get().chapterMode)void get().saveChapterResult();
       else if (getMissionDef(get().selectedMissionId)?.activity === "FIELD_OP") void get().saveFieldResult();
       if (!get().chapterMode && getMissionDef(get().selectedMissionId)?.operationId === DEAD_RELAY.operationId) void get().saveCampaignResult();
