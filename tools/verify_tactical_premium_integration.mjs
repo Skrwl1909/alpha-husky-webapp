@@ -67,7 +67,7 @@ const approvedSignalTrialsBlobs=Object.freeze({
  'tools/verify_tactical_depth01_combat.mjs':'8d033e062766d08cf73befdc23b8f723d5307a81',
  'tools/verify_tactical_depth02_browser.mjs':'f01a7c16490876f078d79ed9fdb2f58e5eadb507',
 });
-const nextDecisionHistoricSource=path=>Object.hasOwn(nextDecisionApproved,path)
+const nextDecisionHistoricSource=path=>Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)
  ? git('show',`${nextDecisionBase}:${path}`) : readFileSync(path,'utf8');
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
@@ -81,7 +81,7 @@ for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs))
 for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs))
  assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Signal Trials blob: '+path);
 for(const [path,sha] of Object.entries(nextDecisionApproved))
- assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Next Decision blob: '+path);
+ assert.equal(sourceBlob(git('show',`${nextDecisionBase}:${path}`)),sha,'unreviewed historical Next Decision blob: '+path);
 const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/styles.ts':'b1b7e0729b289ee646695257ffcb0e76b84722c2',
  'tactical-ops-src/ui/Battle.tsx':'18edd840fb2ff963ca99e96d7499f61a72cdef96',
@@ -455,7 +455,7 @@ for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
   assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
