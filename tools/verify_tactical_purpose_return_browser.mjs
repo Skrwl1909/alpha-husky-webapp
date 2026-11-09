@@ -79,6 +79,15 @@ try{
      assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMissionId),'field-relay-hold');
      assert.equal(await page.evaluate(()=>fixture.store.getState().busy),false,'Results navigation must not accept or deploy the run');
     }else if(['defeat','resume'].includes(scenario)){
+     if(scenario==='defeat'){
+      assert.equal(await review.count(),1,'defeat offers direct Review Squad before retry');
+      await review.click();
+      assert(await page.getByLabel('Squad composition and mastery').isVisible(),'defeat Review Squad opens the actual Squad tab');
+      assert.equal(await page.evaluate(()=>fixture.store.getState().selectedMissionId),'field-relay-recovery','review preserves the failed mission');
+      assert.equal(await page.evaluate(()=>fixture.store.getState().selectedDirectiveTier),'advanced','review preserves failed Advanced tier');
+      await page.reload();
+      await primary.waitFor();
+     }
      await primary.click();
      const brief=await page.evaluate(()=>{const s=fixture.store.getState();return {screen:s.screen,id:s.selectedMissionId,tier:s.selectedDirectiveTier,squad:s.selectedSquadIds}});
      assert.equal(brief.screen,'brief');
