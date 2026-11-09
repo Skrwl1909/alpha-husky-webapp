@@ -67,8 +67,7 @@ const approvedSignalTrialsBlobs=Object.freeze({
  'tools/verify_tactical_depth01_combat.mjs':'8d033e062766d08cf73befdc23b8f723d5307a81',
  'tools/verify_tactical_depth02_browser.mjs':'f01a7c16490876f078d79ed9fdb2f58e5eadb507',
 });
-const nextDecisionHistoricSource=path=>Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)
- ? git('show',`${nextDecisionBase}:${path}`) : readFileSync(path,'utf8');
+const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`);
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
