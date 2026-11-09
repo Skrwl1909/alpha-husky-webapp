@@ -24,8 +24,9 @@ try {
  assert.equal(deployed[0].unitDef.atk,28);
  assert.deepEqual(deployed[1],spawns[1],"enemy unchanged");
  assert.deepEqual(spawns[0],{id:"alpha",defId:"alpha",c:2,r:2},"authored spawn unchanged");
- assert.equal(applyFoundationCombatProfile(spawns,await load({...original,activeCombatProfileV3:undefined}))[0].unitDef?.hp,undefined);
- const old={...original,foundationRunRules:undefined,activeCombatProfileV3:undefined};
+ const {activeCombatProfileV3: _absentV3, ...olderVnext} = original;
+ assert.deepEqual(applyFoundationCombatProfile(spawns,await load(olderVnext)),spawns,"older VNext Foundation lacks V3 and stays authored");
+ const {foundationRunRules: _absentContract, ...old} = olderVnext;
  assert.deepEqual(applyFoundationCombatProfile(spawns,await load(old)),spawns,"legacy Foundation untouched");
  await assert.rejects(load({...original,activeCombatProfileV2:undefined}),/invalid_progression_response/);
  await assert.rejects(load({...original,foundationRunRules:{runId:"different-run",rulesContract:contract}}),/invalid_progression_response/);
