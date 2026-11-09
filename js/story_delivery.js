@@ -762,7 +762,9 @@
   }
 
   async function refreshNextMoveState() {
-    if (!nextMoveEligible(gatherInputs())) return;
+    // Read existing foundation state for established players even when an
+    // unconsumed story handoff would otherwise suppress Next Move.
+    if (!nextMoveEligible(gatherInputs()) && !global.Missions?.tacticalAccess?.(gatherInputs())) return;
     var api = global.S?.apiPost || global.apiPost;
     if (typeof api !== "function") return;
     nextMoveState.mission = null;
@@ -916,31 +918,69 @@
       .replace(/"/g, "&" + "quot;");
   }
 
-  // Optional player-directed activity rail. The canonical story/FTUE card always wins
-  // until the return handoff is consumed. This is navigation only, not new rewards.
-  var hubActivityIndex = 0;
+  // V2: show a small, truthful set of playable routes; never invent a reward.
+  // Nothing here changes a canonical objective, eligibility or server state.
+  var hubActivityVisit = -1;
+  var hubActivitySelectedId = null;
+  function optionalHubNextMove(scf) {
+    return !!(scf?.nextMove && ["daily", "forge", "skins"].includes(scf.nextMove.key));
+  }
+  function completedHubTraining(inputs) {
+    var f = nextMoveState.foundation;
+    if (!f || f.foundationStage !== "completed" || f.completed !== true) return false;
+    var fs = firstSignalOf(inputs);
+    if (fs.eligible && (fs.state !== "COMPLETED" || (fs.worldDiscovery && fs.worldDiscovery !== "done"))) return false;
+    return global.FirstSessionSpine?.graduated?.(f) !== false;
+  }
+  function acceptedTacticalRun() {
+    var f = nextMoveState.foundation;
+    if (!f) return false;
+    if (f.activeRunId || f.chapterActiveMission || f.tacticalChapter?.activeRunId
+        || f.fieldOps?.activeMissionRun) return true;
+    return Object.values(f.operations || {}).some(function (op) { return !!op?.activeMissionRun; });
+  }
   function hubActivityChoices(scf, inputs) {
-    if (!returnReady || returnPromise || !scf || scf.firstSession || scf.hideHubGoal
-        || scf.lockedBrief || scf.id === "S-TO-DISCOVERY" || !scf.target
-        || scf.nextMove || continuityFrame(inputs, scf)
+    if (!returnReady || returnPromise || !scf || scf.firstSession || scf.lockedBrief
+        || scf.id === "S-TO-DISCOVERY" || !scf.target
+        || (scf.nextMove && !optionalHubNextMove(scf))
         || ONBOARDING_CTA_KINDS[scf.ctaKind]
         || /^(mission_ready|bloodmoon_live|siege_running)/.test(scf.ctaKind || "")) return [];
-    var options = [{ id: "canonical", title: asText(scf.situation) || "Follow your current lead",
+    var postMark = scf.id === "S-CAMPAIGN-MARK"
+      && isMarkHandoffPending(campaignOf(inputs)) && completedHubTraining(inputs);
+    if ((scf.hideHubGoal && !postMark)
+        || (continuityFrame(inputs, scf) && !postMark)) return [];
+    var tactical = !!(global.Missions?.openTacticalOps && global.Missions?.tacticalAccess?.(inputs));
+    // A frozen run wins over optional browsing, even if the story handoff is open.
+    if (tactical && acceptedTacticalRun()) return [{ id: "resume", title: "Resume Your Operation",
+      detail: "Your accepted squad and mission are waiting. Continue the saved attempt.",
+      label: "RESUME TACTICAL OPS" }];
+    var options = [{ id: "canonical", sourceId: scf.id, nextMoveKey: scf.nextMove?.key || "",
+      title: asText(scf.situation) || "Follow your current lead",
       detail: asText(scf.why) || asText(scf.nextAction),
       label: asText(scf.goLabel) || asText(scf.nextAction) || "CONTINUE" }];
-    if (global.Missions && typeof global.Missions.openTacticalOps === "function"
-        && global.Missions.tacticalAccess?.(inputs)) {
-      options.push({ id: "tactical", title: "Lead the Next Operation",
-        detail: "Explore the missions available to your squad.", label: "TACTICAL OPS" });
-    }
+    if (tactical) options.push({ id: "tactical", title: "Take the Field",
+      detail: "Review real operations and prepare your squad at the War Table.", label: "OPEN TACTICAL OPS" });
     var facts = global.ContextualDiscovery?.nextMoveFacts?.() || {};
     if (facts.daily && global.Quests?.open) options.push({ id: "quests",
-      title: "Return to the Quest Board", detail: "Daily activities are waiting to be explored.", label: "QUEST BOARD" });
+      title: "Visit the Quest Board", detail: "Daily activities are available to explore.", label: "QUEST BOARD" });
     if (facts.forge && global.Forge?.open) options.push({ id: "forge",
-      title: "Strengthen Your Gear", detail: "Your equipped gear has an upgrade available.", label: "OPEN FORGE" });
+      title: "Strengthen Your Gear", detail: "An equipped item has a confirmed upgrade available.", label: "OPEN FORGE" });
     if (facts.skin && global.Skins?.open) options.push({ id: "skins",
-      title: "Change Your Look", detail: "An owned appearance is ready to equip.", label: "OPEN SKINS" });
-    return options;
+      title: "Change Your Look", detail: "You own another appearance ready to equip.", label: "OPEN SKINS" });
+    var extras = options.slice(1);
+    if (extras.length <= 2) return options;
+    // Two secondary choices per three Hub visits; all eligible choices rotate in.
+    var start = (Math.floor(Math.max(0, hubActivityVisit) / 3) * 2) % extras.length;
+    return [options[0], extras[start], extras[(start + 1) % extras.length]];
+  }
+  function setHubSignalHeading(rotating) {
+    // Change only the existing text node, preserving its decorative icon.
+    var head = document.querySelector("#hubBack .ahn-signal-top > span");
+    if (!head) return;
+    var label = Array.from(head.childNodes).find(function (node) {
+      return node.nodeType === 3 && /CURRENT SIGNAL|YOUR NEXT MOVE/.test(node.nodeValue || "");
+    });
+    if (label) label.nodeValue = rotating ? " YOUR NEXT MOVE" : " CURRENT SIGNAL";
   }
 
   function renderHub(scf) {
@@ -955,6 +995,7 @@
     if (hub) hub.classList.toggle("is-story-first-session", !!(scf && scf.hideHubGoal));
     if (hub) hub.classList.toggle("is-next-move", !!scf?.nextMove);
     if (!root) return scf;
+    setHubSignalHeading(false);
     var factionHandoff = !!(scf && scf.id === "S-FS-FACTION-HANDOFF");
     var factionHandoffSeen = false;
     if (factionHandoff) {
@@ -966,7 +1007,7 @@
       root.innerHTML = "";
       return scf;
     }
-    if (scf.nextMove) {
+    if (scf.nextMove && !optionalHubNextMove(scf)) {
       var returnHook = scf.returnHook
         ? '<div class="ahs-story-kicker">WORLD OPEN</div>'
           + '<div class="ahs-story-situation">You know why the Pack exists. You\'ve seen what this world became.</div>'
@@ -1004,47 +1045,68 @@
       return scf;
     }
     var choices = hubActivityChoices(scf, gatherInputs());
-    if (choices.length > 1) {
-      hubActivityIndex %= choices.length;
-      var selected = choices[hubActivityIndex];
+    if (choices.length > 1 || (choices.length === 1 && choices[0].id === "resume")) {
+      var index = hubActivitySelectedId
+        ? choices.findIndex(function (item) { return item.id === hubActivitySelectedId; }) : -1;
+      if (index < 0) {
+        index = choices.length > 1
+          ? (Math.max(0, hubActivityVisit) + 1) % choices.length : 0;
+      }
+      var selected = choices[index];
+      hubActivitySelectedId = selected.id;
+      setHubSignalHeading(true);
       root.innerHTML = '<div class="ahs-story-card ahs-activity-card"><div class="ahs-story-pad">'
         + '<div class="ahs-story-kicker">YOUR NEXT MOVE <small style="float:right">'
-        + (hubActivityIndex + 1) + '/' + choices.length + '</small></div>'
+        + (index + 1) + '/' + choices.length + '</small></div>'
         + '<div class="ahs-story-situation">' + esc(selected.title) + '</div>'
         + '<div class="ahs-story-next">' + esc(selected.detail) + '</div>'
         + '<button class="ahs-story-go" type="button" data-activity-go>' + esc(selected.label) + '</button>'
-        + '<div class="ahs-activity-switch">'
+        + (choices.length > 1 ? '<div class="ahs-activity-switch">'
         + '<button type="button" data-activity-prev aria-label="Previous activity">‹</button>'
         + '<span>CHOOSE YOUR TRAIL</span>'
         + '<button type="button" data-activity-next aria-label="Next activity">›</button>'
-        + '</div><small role="status" data-activity-status></small></div></div>';
-      var rotate = function (delta) {
-        hubActivityIndex = (hubActivityIndex + delta + choices.length) % choices.length;
-        renderHub(scf);
-      };
-      root.querySelector("[data-activity-prev]").onclick = function () { rotate(-1); };
-      root.querySelector("[data-activity-next]").onclick = function () { rotate(1); };
+        + '</div>' : '')
+        + '<small role="status" data-activity-status></small></div></div>';
+      if (choices.length > 1) {
+        var rotate = function (delta) {
+          hubActivitySelectedId = choices[(index + delta + choices.length) % choices.length].id;
+          renderHub(scf);
+        };
+        root.querySelector("[data-activity-prev]").onclick = function () { rotate(-1); };
+        root.querySelector("[data-activity-next]").onclick = function () { rotate(1); };
+      }
       var goActivity = root.querySelector("[data-activity-go]");
       goActivity.onclick = async function () {
         goActivity.disabled = true;
         try {
           if (!await refreshReturn()) throw new Error("State refresh failed");
-          var fresh = resolve(gatherInputs());
-          var available = hubActivityChoices(fresh, gatherInputs());
-          if (!available.some(function (item) { return item.id === selected.id; })) throw new Error("Activity changed");
+          var freshInputs = gatherInputs(), fresh = resolve(freshInputs);
+          var available = hubActivityChoices(fresh, freshInputs);
+          if (!available.some(function (item) { return item.id === selected.id; }))
+            throw new Error("Activity changed");
           var result = false;
-          if (selected.id === "canonical") result = await global.CTA?.openTarget?.(fresh.target);
-          else if (selected.id === "tactical") result = await global.Missions?.openTacticalOps?.();
-          else result = await global.ContextualDiscovery?.openDestination?.(selected.id);
+          if (selected.id === "canonical") {
+            if (fresh.id !== selected.sourceId
+                || (fresh.nextMove?.key || "") !== selected.nextMoveKey)
+              throw new Error("Story direction changed");
+            if (fresh.nextMove) result = await openNextMove(selected.nextMoveKey);
+            else if (fresh.id === "S-CAMPAIGN-MARK" && isMarkHandoffPending(campaignOf(freshInputs)))
+              result = await continueReturn();
+            else result = await global.CTA?.openTarget?.(fresh.target);
+          } else if (selected.id === "resume" || selected.id === "tactical") {
+            result = await global.Missions?.openTacticalOps?.();
+          } else {
+            result = await global.ContextualDiscovery?.openDestination?.(selected.id);
+          }
           if (result === false) throw new Error("Activity unavailable");
         } catch (_) {
           var status = root.querySelector("[data-activity-status]");
-          if (status) status.textContent = "Could not open this activity. Try another trail.";
+          if (status) status.textContent = "This route changed. Refresh the Hub or choose another trail.";
         } finally { goActivity.disabled = false; }
       };
       return scf;
     }
-    hubActivityIndex = 0;
+    hubActivitySelectedId = null;
     var storyLead = !!continuityFrame(gatherInputs(), scf);
     var go = factionHandoff ? (scf.goLabel || "Pick Faction") : (continuation ? "CONTINUE" : (scf.goLabel || scf.nextAction || "Go"));
     root.innerHTML = ""
@@ -1139,7 +1201,11 @@
     var hubWasOpen = false;
     function onHubReturn() {
       var open = !!(hub && hub.getClientRects().length && document.visibilityState !== "hidden");
-      if (open && !hubWasOpen) void refreshReturn();
+      if (open && !hubWasOpen) {
+        hubActivityVisit += 1;
+        hubActivitySelectedId = null;
+        void refreshReturn();
+      }
       hubWasOpen = open;
     }
     if (hub && typeof MutationObserver !== "undefined") {
