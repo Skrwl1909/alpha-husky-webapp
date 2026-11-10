@@ -1,6 +1,6 @@
 import { contractName, FIELD_HONOR, REACH_REND_TRADEOFF } from "../data/fieldContracts";
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, Shield, AlertTriangle } from "lucide-react";
+import { Check, Shield, AlertTriangle, ShieldCheck, Zap, Bone, Hammer, ArrowRight } from "lucide-react";
 import type { FieldResult } from "../data/fieldOps";
 import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
@@ -23,11 +23,21 @@ function NextForgeUpgrade() {
     return () => { current = false; };
   }, [forge]);
 
-  return <section className="t-fr-consequence t-fr-forge" aria-label="Next Forge upgrade">
+  const rows = upgrade && typeof upgrade === "object" ? upgrade.rows : [];
+  const materialsKnown = rows.length > 0;
+  const materialsReady = materialsKnown && rows.every(row => row.missing <= 0);
+  return <section className="t-fr-consequence t-fr-forge" aria-label="Next Forge upgrade"
+    data-materials={materialsKnown ? (materialsReady ? "ready" : "needed") : "unknown"}>
     <span className="t-kicker">NEXT FORGE UPGRADE</span>
     {forge && upgrade && typeof upgrade === "object" ? <>
-      <strong>{upgrade.name} · ★{upgrade.stars}</strong>
-      <ul>{upgrade.rows.map(row => <li key={row.label}>
+      <div className="t-fr-forge-head">
+        <span className="t-fr-forge-symbol" aria-hidden="true"><Hammer /></span>
+        <div className="t-fr-forge-identity">
+          <strong>{upgrade.name} · ★{upgrade.stars}</strong>
+          <span className="t-fr-forge-readiness">{materialsKnown ? (materialsReady ? "MATERIALS READY" : "MATERIALS NEEDED") : "CHECK MATERIALS IN FORGE"}</span>
+        </div>
+      </div>
+      <ul>{upgrade.rows.map(row => <li key={row.label} data-ready={row.missing <= 0 ? "yes" : "no"}>
         <span>{row.label} <b>{row.have.toLocaleString()} / {row.need.toLocaleString()}</b></span>
         {row.missing > 0 ? <small>Missing {row.missing.toLocaleString()} · {row.source}</small> : null}
       </li>)}</ul>
@@ -91,8 +101,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         {primaryAction}
         <small>{missionName} · {contractName(award.id)} completed · {award.count}/3</small>
       </div>
-    </section> : <header className="t-outcome-hero">
+    </section> : <header className={`t-outcome-hero${victory ? " t-fr-triumph" : ""}`}>
       <img className="t-results-plate" src={plate} alt="" aria-hidden="true" />
+      {victory ? <span className="t-fr-triumph-emblem" aria-hidden="true"><ShieldCheck /></span> : null}
       <div className="t-kicker">{missionName}</div>
       <h2 className="t-title">{victory ? "VICTORY" : "DEFEAT"}</h2>
       {!victory ? <p className="t-fr-outcome">{failure}</p> : null}
@@ -105,8 +116,16 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
     {receipt ? <section className="t-fr-consequence" aria-label="Character payout">
       <span className="t-kicker">{payout ? "CONFIRMED PAYOUT" : tacticalOnly ? "TACTICAL RESULT" : "CHARACTER PAYOUT"}</span>
-      {payout ? <strong>{[payout.xpGranted > 0 && `+${payout.xpGranted.toLocaleString()} EXP`,
-        payout.bonesGranted > 0 && `+${payout.bonesGranted.toLocaleString()} Bones`].filter(Boolean).join(" · ")}</strong>
+      {payout ? <div className="t-fr-payout-grid" aria-label="Receipt-confirmed rewards">
+        <div className="t-fr-reward-unit" data-reward="exp">
+          <Zap aria-hidden="true" />
+          <span><strong>+{payout.xpGranted.toLocaleString()}</strong><small>EXP</small></span>
+        </div>
+        <div className="t-fr-reward-unit" data-reward="bones">
+          <Bone aria-hidden="true" />
+          <span><strong>+{payout.bonesGranted.toLocaleString()}</strong><small>Bones</small></span>
+        </div>
+      </div>
         : <p>{tacticalOnly
           ? "No EXP or Bones awarded for this result." : "Character payout amounts are unavailable."}</p>}
     </section> : null}
@@ -118,6 +137,16 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline">WHAT CHANGED</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
+      {receipt.victory && impact.kind === "world" && receipt.regionalApplied &&
+        Number.isInteger(receipt.pressureBefore) && Number.isInteger(receipt.pressureAfter) &&
+        receipt.pressureBefore >= 0 && receipt.pressureAfter >= 0 &&
+        receipt.pressureBefore !== receipt.pressureAfter ?
+        <div className="t-fr-pressure-change" data-confirmed-pressure="true"
+          aria-label={`Confirmed pressure ${receipt.pressureBefore} to ${receipt.pressureAfter}`}>
+          <span>PRESSURE <strong>{receipt.pressureBefore}</strong></span>
+          <ArrowRight aria-hidden="true" />
+          <span>PRESSURE <strong>{receipt.pressureAfter}</strong></span>
+        </div> : null}
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}
     {payout && !pending ? <NextForgeUpgrade key={payout.runId} /> : null}
