@@ -76,7 +76,7 @@ const approvedFirstPlayableBridgeBlobs=Object.freeze({
  'js/cta.js':'22a529ab26125db3e1fc324c93cb41d5cda742f9',
  'js/missions.js':'32c9a3d9ed2bbeb9774e74adbfae2d6fc18e5d8d',
  'js/onboarding.js':'025dfb58574d93935b1f11c3e8724b6d5ff5b57c',
- 'js/story_delivery.js':'c0875e83dd101b806156fb3261e8433eebc379c',
+ 'js/story_delivery.js':'c0875e83dd101b806156fb3261e8433e3ebc379c',
  'tools/verify_first_playable_bridge_v1.mjs':'ac833abdd0193274897dc6319e409f0a1ba27104',
 });
 // PR #273 advances only the following authored sources. Compiled output is
