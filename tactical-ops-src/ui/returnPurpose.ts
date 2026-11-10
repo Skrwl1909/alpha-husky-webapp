@@ -1,6 +1,6 @@
 import { chapterNextMission } from '../data/campaignChapter';
 import { BROKEN_SIGNAL, DEAD_RELAY, getMissionDef, missionForContext } from '../data/operations';
-import type { FoundationProgressionState } from '../host/foundationProgression';
+import { isRecoverAuthorityRun, type FoundationProgressionState } from '../host/foundationProgression';
 import { missionContract } from "../data/fieldContracts";
 import type { FieldOpsProgression } from "../host/foundationProgression";
 import type { FieldResult, LockdownPlan } from '../data/fieldOps';
@@ -50,7 +50,9 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
   const f = p.fieldOps, b = f?.board;
   const action = (missionId: string, title: string, reason: string, tier: 'standard' | 'advanced' = 'standard', resume = false): PurposeAction => ({ missionId, title, reason, tier, resume });
   const saved = p.chapterActiveMission || f?.activeMissionRun || Object.values(p.operations || {}).find(op => op.activeMissionRun)?.activeMissionRun;
-  let primary = saved && getMissionDef(saved.missionId) ? action(saved.missionId, 'FINISH YOUR ACCEPTED MISSION', 'Your squad and mission are saved. Ready to go again from round 1?', saved.fieldContext?.directiveTier || 'standard', true) : null;
+  let primary = saved && getMissionDef(saved.missionId) ? action(saved.missionId, 'FINISH YOUR ACCEPTED MISSION',
+    isRecoverAuthorityRun(saved.runId) ? 'Resume from your last confirmed action.' : 'Your squad and mission are saved. Ready to go again from round 1?',
+    saved.fieldContext?.directiveTier || 'standard', true) : null;
   if (primary && saved?.fieldContext?.masteryChallenge) primary.masteryChallenge = saved.fieldContext.masteryChallenge;
   if (p.tacticalChapter?.status === 'ACTIVE' && p.tacticalChapter.doctrine === 'RECON' && (!saved || saved === p.chapterActiveMission)) {
     const id = chapterNextMission(p.tacticalChapter);

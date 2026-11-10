@@ -1,5 +1,5 @@
 import {DEAD_RELAY, getMissionDef} from "../data/operations";
-import type {FoundationProgressionState} from "../host/foundationProgression";
+import {isRecoverAuthorityRun, type FoundationProgressionState} from "../host/foundationProgression";
 
 export type TacticalOrder = {
   id:string; category:"STORY"|"FRONT"|"CHALLENGE"|"ADVANCED"|"RETURN";
@@ -31,7 +31,8 @@ export function tacticalCampaignOrders(p:FoundationProgressionState|null|undefin
   const run=f.activeMissionRun;
   const pendingRun=run && getMissionDef(run.missionId)?run:null;
   if(pendingRun){
-    result.push({id:"resume",category:"FRONT",missionId:pendingRun.missionId,title:"FINISH ACCEPTED OPERATION",goal:getMissionDef(pendingRun.missionId)?.name||pendingRun.missionId,consequence:"Resume the server-accepted run using its frozen conditions; the battle restarts at round 1.",status:"IN_PROGRESS"});
+    result.push({id:"resume",category:"FRONT",missionId:pendingRun.missionId,title:"FINISH ACCEPTED OPERATION",goal:getMissionDef(pendingRun.missionId)?.name||pendingRun.missionId,
+      consequence:isRecoverAuthorityRun(pendingRun.runId) ? "Resume from your last confirmed action." : "Resume the server-accepted run using its frozen conditions; the battle restarts at round 1.",status:"IN_PROGRESS"});
   }else if(remaining.length){
     const id=remaining[0];
     result.push({id:"front",category:"FRONT",missionId:id,title:"SECURE THE CURRENT FRONT",goal:`${remaining.length} of ${active.length} operations left · next: ${getMissionDef(id)?.name||id}`,consequence:"A server-confirmed first clear advances the rotation and can affect regional Signal Pressure.",status:"READY"});

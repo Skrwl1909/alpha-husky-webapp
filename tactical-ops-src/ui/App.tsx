@@ -9,7 +9,7 @@ import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { g2HoldRevisionForRequest, missionForContext, surviveRevisionForRequest } from "../data/operations";
-import type { FoundationProgressionState } from "../host/foundationProgression";
+import { isRecoverAuthorityRun, type FoundationProgressionState } from "../host/foundationProgression";
 import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
@@ -392,7 +392,8 @@ function WarTable() {
                 <p>{contract ? (contracts?.sidegrade ? "Complete the remaining contract to earn Field Tested honor."
                   : contracts?.completed.length === 1 ? "Complete this contract to unlock Reach Rend."
                   : "Complete two Field Contracts to unlock Reach Rend.")
-                  : primaryPurpose.resume ? "Resume with the accepted squad from round 1." : primaryPurpose.reason}</p>
+                  : primaryPurpose.resume ? isRecoverAuthorityRun(recommendedAccepted?.runId)
+                    ? "Resume from your last confirmed action." : "Resume with the accepted squad from round 1." : primaryPurpose.reason}</p>
               </div>
               {window ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{window.text}</p> : null}
             </div>

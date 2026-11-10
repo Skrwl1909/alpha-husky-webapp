@@ -3,7 +3,7 @@ import { holdControlled, holdZoneStatus, recoverSignalOpen } from "../combat/mis
 import { getMissionDef, missionForContext, missionBattleRules, type MissionDef } from "../data/operations";
 import type { FieldContext } from "../data/fieldOps";
 import type { FieldResult } from "../data/fieldOps";
-import type { FieldOpsProgression } from "../host/foundationProgression";
+import { isRecoverAuthorityRun, type FieldOpsProgression } from "../host/foundationProgression";
 
 /** Presentation of canonical rules, never a source of new rewards or saved progress. */
 export function missionGoal(m: MissionDef): string {
@@ -109,7 +109,8 @@ export type MissionPurposeView = {
 };
 export function nextFieldMission(field: FieldOpsProgression | undefined, currentMissionId?: string): { missionId: string | null; reason: string } {
   const board = field?.board;
-  if (field?.activeMissionRun && getMissionDef(field.activeMissionRun.missionId)) return { missionId:field.activeMissionRun.missionId, reason:"Resume your accepted mission under its original conditions; the battle restarts at round 1." };
+  if (field?.activeMissionRun && getMissionDef(field.activeMissionRun.missionId)) return { missionId:field.activeMissionRun.missionId,
+    reason: isRecoverAuthorityRun(field.activeMissionRun.runId) ? "Resume from your last confirmed action." : "Resume your accepted mission under its original conditions; the battle restarts at round 1." };
   if (!board?.activeMissionIds?.length) return { missionId:null, reason:"Refresh the War Table to see the next mission." };
   const nextClear = board.activeMissionIds.find(id => field?.records?.[id]?.lastClearCycle !== board.cycleId);
   if (nextClear) return { missionId:nextClear, reason:"Secure another Field Op to advance the current front." };
