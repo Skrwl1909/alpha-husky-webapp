@@ -2,7 +2,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
 import { openPurposeBrief, TacticalApp } from "../ui/App";
 import { TACTICAL_CSS } from "../styles";
-import { setHost } from "./bridge";
+import { setHost, type HostBridge } from "./bridge";
 import { snapshotState, useBattleStore } from "../store/battleStore";
 import * as Combat from "../combat";
 import { resolveTacticalLayout } from "../layout";
@@ -414,14 +414,22 @@ export async function open(missionId?: string): Promise<void> {
     useBattleStore.getState().openOperationBrief(missionId);
   }
   const el = ensureRoot();
-  const fieldRecord = (window as Window & {
+  const { FieldRecord: fieldRecord, Forge: forge } = window as Window & {
     FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
-  }).FieldRecord;
+    Forge?: HostBridge["forge"];
+  };
   setHost({
     requestClose: closeView,
     openFieldRecord: fieldRecord?.openSelf ? () => {
       closeView();
       void fieldRecord.openSelf?.({ focusService: true });
+    } : undefined,
+    forge: typeof forge?.nextUpgrade === "function" && typeof forge.openUpgrade === "function" ? {
+      nextUpgrade: () => forge.nextUpgrade(),
+      openUpgrade: (key) => {
+        closeView();
+        forge.openUpgrade(key);
+      },
     } : undefined,
     dbg: M.dbg,
   });

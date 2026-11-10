@@ -272,14 +272,16 @@
     }).join("");
   }
 
+  const upgradeMaterials = [
+    ["bones", "Bones", "Confirmed payouts from eligible Field Ops"],
+    ["scrap", "Scrap", "Salvage eligible gear in Inventory"],
+    ["rune_dust", "Rune Dust", "Check the Rune Dust yield when salvaging gear in Inventory"],
+  ];
+  const vaultBuildingId = "forgotten_tokens_vault_forge";
+
   function materialRows(cost, materials) {
     const balance = mats();
-    const order = [
-      ["bones", "Bones"],
-      ["scrap", "Scrap"],
-      ["rune_dust", "Rune Dust"],
-    ];
-    return order.map(([asset, label]) => {
+    return upgradeMaterials.map(([asset, label]) => {
       const need = Number((materials && materials.need && materials.need[asset]) ?? (cost && cost[asset]) ?? 0);
       const have = Number((materials && materials.have && materials.have[asset]) ?? balance[asset] ?? 0);
       const ok = (materials && materials.enough && Object.prototype.hasOwnProperty.call(materials.enough, asset))
@@ -1678,14 +1680,46 @@
     else renderCraft(body);
   }
 
-  async function loadState() {
-    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+  async function fetchState(buildingId) {
     const res = await post("/webapp/forge/state", {
-      buildingId: _ctx.buildingId,
+      buildingId,
       run_id: rid("forge_state")
     });
-    _state = (res && (res.data || res)) || null;
+    return (res && (res.data || res)) || null;
+  }
+
+  async function loadState() {
+    const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    _state = await fetchState(_ctx.buildingId);
     logActionPerf("forge_state", perfT0);
+  }
+
+  async function nextUpgrade() {
+    const state = await fetchState(vaultBuildingId);
+    if (!Array.isArray(state?.equipped)) throw new Error("Forge state unavailable");
+
+    const validAmount = (amount) => Number.isSafeInteger(amount) && amount >= 0;
+    let best = null;
+    let fewestMissing = Infinity;
+    for (const item of state.equipped) {
+      if (!item?.key || !item.name || !validAmount(item.stars) || !validAmount(item.maxStars) ||
+          item.stars >= item.maxStars || item.upgradePreview?.atCap || typeof item.canUpgrade !== "boolean") continue;
+      const cost = item.upgradePreview?.cost || item.costNext;
+      if (!cost || Object.keys(cost).some(asset => !upgradeMaterials.some(([known]) => asset === known)) ||
+          !upgradeMaterials.every(([asset]) => validAmount(cost[asset]))) continue;
+
+      const rows = upgradeMaterials.filter(([asset]) => cost[asset] > 0).map(([asset, label, source]) => {
+        const need = cost[asset];
+        const have = item.upgradePreview?.materials?.have?.[asset] ?? state.balances?.[asset];
+        return { label, source, have, need, missing: Math.max(0, need - have) };
+      });
+      if (!rows.length || rows.some(({ have }) => !validAmount(have))) continue;
+      const missingCount = rows.filter(row => row.missing > 0).length;
+      if (item.canUpgrade !== (missingCount === 0) || missingCount >= fewestMissing) continue;
+      best = { key: item.key, name: item.name, stars: item.stars + 1, rows };
+      fewestMissing = missingCount;
+    }
+    return best;
   }
 
   function isOpen() {
@@ -1810,9 +1844,17 @@
     if (_root && _root.isConnected) {
       closeViaNav("forge-reopen");
     }
+    if (ctx?.upgradeKey) {
+      _tab = "upgrade";
+      _selectedUpgradeKey = ctx.upgradeKey;
+      _useIceCrystal = false;
+    }
     mount();
     try {
       await loadState();
+      if (ctx?.upgradeKey && !_state?.equipped?.some(item => item.key === ctx.upgradeKey)) {
+        toast("That item is no longer equipped. Check your current gear in Forge.");
+      }
     } catch (e) {
       toast(`Forge load failed: ${e.message}`);
     } finally {
@@ -1824,6 +1866,8 @@
   window.Forge = {
     init,
     open,
+    nextUpgrade,
+    openUpgrade: (upgradeKey) => open({ buildingId: vaultBuildingId, upgradeKey }),
     close: () => closeViaNav("forge-api-close"),
     restoreMobileShellAfterForgeExit,
     debugBottomNavLayoutSnapshot,
