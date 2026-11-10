@@ -92,6 +92,36 @@ const approvedRewardExperienceBlobs=Object.freeze({
  'tactical-ops-src/version.ts':'c28cc421f3bbff792c7544a3500cba15de191800',
  'tools/verify_field_op_results_premium.mjs':'40457102f6a0fbf8172337f8dd83e4f05ce0ed54',
 });
+// PR #274 pins its exact source delta over merged Reward Experience. The
+// historical release pins still apply at their respective merge commits.
+const recoverAuthorityBase='982cb2e93306fc85e22fc2af196e9ef1325dc3c9';
+const signalTrialsMerge='a4e37998a5756dddad16e2cb97104a5263551601';
+const approvedRecoverAuthorityBlobs=Object.freeze({
+ '.github/workflows/tactical-purpose-return.yml':'71e073ad33b959994c92d3bcb020243c73c92c10',
+ 'package.json':'4cdafac1b9dc056df35a197086d258c50cdb6042',
+ 'tactical-ops-src/combat/effects.ts':'457df1933dfdbfe8e060d0db0019285a31e01afd',
+ 'tactical-ops-src/combat/recoverAuthority.ts':'4aef5670c1e25d869e2d71cea9ef06667938eaf1',
+ 'tactical-ops-src/host/foundationProgression.ts':'d42b87ae3d841dc52c36171835076d044f689108',
+ 'tactical-ops-src/store/battleStore.ts':'f6b0297d9b4f763556043135ded93d05568018e6',
+ 'tactical-ops-src/ui/App.tsx':'bec81cbdaef5748c4ff7464495291955fc14b709',
+ 'tactical-ops-src/ui/battleDecision.ts':'8d343ee9d05263587d0782258c1c7ea7e594a02c',
+ 'tactical-ops-src/ui/missionPurpose.ts':'1ba4253c1b410a1aa9800499284767432e950d5d',
+ 'tactical-ops-src/ui/returnPurpose.ts':'9bd52fb0610b869df6ec5741ec4fee5802e99006',
+ 'tactical-ops-src/ui/tacticalCampaignOrders.ts':'b6b048aca64e04f4d1f2cca802ee62d30a795437',
+ 'tactical-ops-src/version.ts':'4ebfa89fa01d23d46d60c770d94a640cdb783513',
+ 'tools/build_tactical_recover_engine_v1.mjs':'84de109532c99882b161c56de4e4cbfb1bec054f',
+ 'tools/tactical_recover_engine_v1.ts':'95741ee60d802f81c37a47b14a16e6c648023327',
+ 'tools/verify_tactical_recover_authority_client.mjs':'34855860e01aa12e171e881aef9b0beb02611f75',
+});
+git('merge-base','--is-ancestor',recoverAuthorityBase,'HEAD');
+for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,'HEAD','--',
+ '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
+ assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||generated.has(changedPath)||
+  changedPath==='tools/verify_tactical_premium_integration.mjs',
+  'unreviewed RECOVER Authority path: '+changedPath);
+}
+for(const [path,expected] of Object.entries(approvedRecoverAuthorityBlobs))
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed RECOVER Authority source: '+path);
 git('merge-base','--is-ancestor',firstPlayableBridgeMerge,'HEAD');
 for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
  assert.equal(git('rev-parse',`${firstPlayableBridgeMerge}:${path}`).trim(),expected,'unreviewed merged First Playable Bridge blob: '+path);
@@ -99,21 +129,23 @@ for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
 }
 for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,'HEAD','--',
  '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Reward Experience path: '+changedPath);
 }
 for(const [path,expected] of Object.entries(approvedRewardExperienceBlobs)){
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Reward Experience source: '+path);
+ assert.equal(git('rev-parse',`${recoverAuthorityBase}:${path}`).trim(),expected,'unreviewed merged Reward Experience blob: '+path);
+ const liveExpected=approvedRecoverAuthorityBlobs[path] ?? expected;
+ assert.equal(sourceBlob(readFileSync(path)),liveExpected,'unreviewed Reward Experience source: '+path);
  // An unapproved edit must never match the exact reviewed Git blob.
- assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed provenance mutation */'),expected,
+ assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed provenance mutation */'),liveExpected,
   'Reward Experience negative integrity guard: '+path);
 }
 const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`);
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
@@ -129,8 +161,10 @@ for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs)){
   assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Browser Public Entry main blob: '+path);
  }
 }
-for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs))
- assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Signal Trials blob: '+path);
+for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs)){
+ assert.equal(git('rev-parse',`${signalTrialsMerge}:${path}`).trim(),sha,'unreviewed merged Signal Trials blob: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),approvedRecoverAuthorityBlobs[path] ?? sha,'unreviewed Signal Trials source: '+path);
+}
 for(const [path,sha] of Object.entries(nextDecisionApproved))
  assert.equal(sourceBlob(git('show',`182778165eab8ddde44cb3bfe4fe5d25d44145ee:${path}`)),sha,'unreviewed merged Next Decision blob: '+path);
 const approvedHoundBlobs=Object.freeze({
@@ -506,7 +540,7 @@ for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(sourceBlob(readFileSync(path)),approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
   assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);

@@ -15,6 +15,7 @@ import { parsePackMastery, type PackMastery } from "../data/packMastery";
 import { parseTacticalProfile, type TacticalProfile } from "../combat/playerProfile";
 import { parseCombatProfileV2, type TacticalCombatProfileV2 } from "../combat/combatProfile";
 import { parseCombatProfileV3, type TacticalCombatProfileV3 } from "../combat/combatProfileV3";
+import type { RecoverCommand, RecoverView } from "../combat/recoverAuthority";
 
 export type FoundationStage =
   | "solo-1"
@@ -535,7 +536,8 @@ export async function startOperationMission(
   const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/start" : "/webapp/tactical-foundation/mission/start",
     { requestId, expectedRevision, missionId, ...(missionRevision ? {missionRevision} : {}), ...(masteryVersion ? {masteryVersion} : {}), ...(squadIds ? { squadIds } : {}),
       ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}),
-      ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}) });
+      ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}),
+      ...(!chapterMode && missionId === "field-relay-recovery" ? {recoverAuthorityVersion: 1} : {}) });
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
@@ -558,6 +560,32 @@ export async function startOperationMission(
   return { state: responseState(response), run: { started:value.started===true, runId: value.runId, missionId: value.missionId, squadIds: responseSquadIds, ...(rulesContract ? { rulesContract: rulesContract } : {}), tacticalProfile: parseTacticalProfile(value.tacticalProfile), packMastery: parsePackMastery(value.packMastery), ...(value.playerGrowth != null ? { playerGrowth: requireRunGrowth(value.playerGrowth) } : {}), ...(Object.prototype.hasOwnProperty.call(value, "combatProfileV2") ? { combatProfileV2: parseCombatProfileV2(value.combatProfileV2) } : {}), ...parseMissionCombatProfileV3(value, rulesContract), ...(fieldContext ? { fieldContext } : {}), ...(parseCampaignContext(value.campaignContext) ? { campaignContext: parseCampaignContext(value.campaignContext)! } : {}), ...(parseChapterContext(value.chapterContext) ? { chapterContext: parseChapterContext(value.chapterContext) } : {}), ...(parseChapterIntel(value.chapterIntel,value.missionId as string) ? {chapterIntel:parseChapterIntel(value.chapterIntel,value.missionId as string)} : {}) } };
 }
 
+export function isRecoverAuthorityRun(runId: string | null | undefined): boolean {
+  return typeof runId === "string" && runId.startsWith("field_recover_v1_");
+}
+
+async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>) {
+  const response = await request(`/webapp/tactical-foundation/recover/${path}`, { runId, ...body });
+  const view = response.recover as RecoverView | undefined;
+  if (view?.runId !== runId || !Number.isSafeInteger(view.revision) || typeof view.token !== "string" ||
+      view.battle?.objective?.type !== "RECOVER" || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
+    throw new FoundationProgressionError("invalid_progression_response");
+  }
+  return view;
+}
+
+export function loadRecoverBattle(runId: string) {
+  return recoverRequest("state", runId, {});
+}
+
+export async function sendRecoverCommand(view: RecoverView, command: RecoverCommand) {
+  const next = await recoverRequest("command", view.runId, { expectedRevision: view.revision, token: view.token, command });
+  if (next.revision !== view.revision + 1 || !Array.isArray(next.frames)) {
+    throw new FoundationProgressionError("invalid_progression_response");
+  }
+  return next;
+}
+
 export async function continueOperationMission(
   requestId: string,
   expectedRevision: number,
@@ -568,7 +596,11 @@ export async function continueOperationMission(
   rulesetVersion?: string,
   chapterMode = false,
 ): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
-  const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/continue" : "/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true, routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}), ...(rulesetVersion ? { rulesetVersion } : {}) });
+  const result = !chapterMode && isRecoverAuthorityRun(runId) ? {} : {
+    completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true,
+    routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}),
+  };
+  const response = await request(chapterMode ? "/webapp/tactical-foundation/chapter/mission/continue" : "/webapp/tactical-foundation/mission/continue", { requestId, expectedRevision, runId, ...result, ...(rulesetVersion ? { rulesetVersion } : {}) });
   const rawChapter = response.chapterResult as Record<string,unknown> | undefined;
   const chapterResult:ChapterResult|null = rawChapter?.version===1 && rawChapter.chapterId==="edge-relay" &&
     typeof rawChapter.runId==="string" && typeof rawChapter.missionId==="string" &&

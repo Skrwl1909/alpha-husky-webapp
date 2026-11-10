@@ -3,7 +3,7 @@ import type { FieldContext, FieldResult } from "../data/fieldOps";
 import { missionContract } from "../data/fieldContracts";
 import { DEAD_RELAY, getMissionDef, g2HoldRevisionForRequest, missionBattleRules, missionForContext, surviveRevisionForRequest } from "../data/operations";
 import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
-import type { CampaignResult, ChapterResult, FoundationProgressionState } from "../host/foundationProgression";
+import { isRecoverAuthorityRun, type CampaignResult, type ChapterResult, type FoundationProgressionState } from "../host/foundationProgression";
 import { missionGoal } from "./missionPurpose";
 import { commandPurpose, fieldResultNext, reachRendLoadoutMission, type PurposeAction } from "./returnPurpose";
 
@@ -32,7 +32,8 @@ export function battleDecision(p: FoundationProgressionState | null, receipt: Re
   const saved = p.chapterActiveMission || field?.activeMissionRun || Object.values(p.operations || {}).find(op => op.activeMissionRun)?.activeMissionRun;
   if (saved || p.tacticalChapter?.activeRunId) {
     if (!command?.resume || command.missionId !== saved?.missionId) return fallback;
-    return { action: command, label: getMissionDef(command.missionId)?.activity === "FIELD_OP" && !command.chapter ? "RESUME FIELD OP" : "RESUME ACCEPTED RUN", detail: "Resume from round 1 with your locked squad and mission setup." };
+    return { action: command, label: getMissionDef(command.missionId)?.activity === "FIELD_OP" && !command.chapter ? "RESUME FIELD OP" : "RESUME ACCEPTED RUN",
+      detail: isRecoverAuthorityRun(saved.runId) ? "Resume from your last confirmed action." : "Resume from round 1 with your locked squad and mission setup." };
   }
 
   const chapter = "chapterId" in receipt;
