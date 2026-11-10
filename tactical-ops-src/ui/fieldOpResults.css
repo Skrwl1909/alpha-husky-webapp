@@ -80,6 +80,10 @@
 #tacticalOpsRoot .t-field-results .t-fr-consequence>strong,#tacticalOpsRoot .t-field-results .t-fr-next>strong{display:block;margin-top:3px;font-size:13px;line-height:1.3;color:#e2f0f6}
 #tacticalOpsRoot .t-field-results .t-fr-next{padding-top:12px}
 #tacticalOpsRoot .t-field-results .t-fr-next p{font-size:11px;line-height:1.4}
+#tacticalOpsRoot .t-field-results .t-fr-forge ul{list-style:none;margin:6px 0;padding:0}
+#tacticalOpsRoot .t-field-results .t-fr-forge li{margin:5px 0;font-size:12px;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-field-results .t-fr-forge small{display:block;color:#bdcdd6}
+#tacticalOpsRoot .t-field-results .t-fr-forge .t-btn{min-height:44px;margin-top:4px}
 #tacticalOpsRoot .t-field-results .t-result-actions{margin:12px 0 0;grid-template-columns:minmax(0,1fr);background:none;padding:0 0 12px;gap:7px}
 #tacticalOpsRoot .t-field-results .t-result-actions .t-btn{min-height:44px;white-space:normal;overflow-wrap:anywhere}
 #tacticalOpsRoot .t-field-results .t-result-actions .t-btn-primary{min-height:48px;border-color:#8fcbd9;color:#ecfcff;background:linear-gradient(175deg,#294957,#172e3c 45%,#102330 55%,#23424e);box-shadow:inset 0 1px #d1f5ff38,inset 0 -2px #020c14,0 3px 12px #0004}
