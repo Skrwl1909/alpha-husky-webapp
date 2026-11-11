@@ -113,15 +113,42 @@ const approvedRecoverAuthorityBlobs=Object.freeze({
  'tools/tactical_recover_engine_v1.ts':'95741ee60d802f81c37a47b14a16e6c648023327',
  'tools/verify_tactical_recover_authority_client.mjs':'34855860e01aa12e171e881aef9b0beb02611f75',
 });
+// V2 authoring is pinned separately from all historical merge approvals.
+const victoryV2Base='83139a060bf1db35719020d4ce5fc533e3e856a7';
+const approvedVictoryV2Blobs=Object.freeze({
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'bedcf3dc1adb30907e562d1c26cde66c5e5082cf',
+ 'tactical-ops-src/ui/fieldOpResults.css':'7442ea4a63243baa6fae81eb738eed9d86c8bd38',
+ 'tactical-ops-src/version.ts':'001e53b74c52ffb9290a685d73fbbc0f8e08b371',
+ 'tools/verify_field_op_results_premium.mjs':'e7dd0155fb453782bf30ae0d1b4612f3b9956ac2',
+});
+const victoryV2BaseBlobs=Object.freeze({
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'9c8a76f1a4ab2476bea36fe71dd2ed12c1c895ac',
+ 'tactical-ops-src/ui/fieldOpResults.css':'bff06b494b0820b5ae325487ccd0cd222ec6d7f0',
+ 'tactical-ops-src/version.ts':'4ebfa89fa01d23d46d60c770d94a640cdb783513',
+ 'tools/verify_field_op_results_premium.mjs':'40457102f6a0fbf8172337f8dd83e4f05ce0ed54',
+});
+git('merge-base','--is-ancestor',victoryV2Base,'HEAD');
+for(const [path,expected] of Object.entries(victoryV2BaseBlobs))
+ assert.equal(git('rev-parse',`${victoryV2Base}:${path}`).trim(),expected,'unreviewed V2 base: '+path);
+for(const [path,expected] of Object.entries(approvedVictoryV2Blobs)){
+ assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed Victory V2 source: '+path);
+ assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed V2 mutation */'),expected,
+  'Victory V2 negative guard: '+path);
+}
+for(const changedPath of git('diff','--name-only','--no-renames',victoryV2Base,'HEAD','--',
+ '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
+ assert(Object.hasOwn(approvedVictoryV2Blobs,changedPath)||generated.has(changedPath)||
+  changedPath==='tools/verify_tactical_premium_integration.mjs','unreviewed Victory V2 path: '+changedPath);
+}
 git('merge-base','--is-ancestor',recoverAuthorityBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,'HEAD','--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed RECOVER Authority path: '+changedPath);
 }
 for(const [path,expected] of Object.entries(approvedRecoverAuthorityBlobs))
- assert.equal(sourceBlob(readFileSync(path)),expected,'unreviewed RECOVER Authority source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)),approvedVictoryV2Blobs[path] ?? expected,'unreviewed RECOVER Authority source: '+path);
 git('merge-base','--is-ancestor',firstPlayableBridgeMerge,'HEAD');
 for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
  assert.equal(git('rev-parse',`${firstPlayableBridgeMerge}:${path}`).trim(),expected,'unreviewed merged First Playable Bridge blob: '+path);
@@ -129,13 +156,13 @@ for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
 }
 for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,'HEAD','--',
  '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Reward Experience path: '+changedPath);
 }
 for(const [path,expected] of Object.entries(approvedRewardExperienceBlobs)){
  assert.equal(git('rev-parse',`${recoverAuthorityBase}:${path}`).trim(),expected,'unreviewed merged Reward Experience blob: '+path);
- const liveExpected=approvedRecoverAuthorityBlobs[path] ?? expected;
+ const liveExpected=approvedVictoryV2Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? expected;
  assert.equal(sourceBlob(readFileSync(path)),liveExpected,'unreviewed Reward Experience source: '+path);
  // An unapproved edit must never match the exact reviewed Git blob.
  assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed provenance mutation */'),liveExpected,
@@ -145,7 +172,7 @@ const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`)
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
@@ -540,7 +567,7 @@ for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(sourceBlob(readFileSync(path)),approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path)||Object.hasOwn(approvedVictoryV2Blobs,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
   assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
