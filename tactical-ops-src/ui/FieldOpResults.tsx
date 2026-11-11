@@ -26,6 +26,8 @@ function NextForgeUpgrade() {
   const rows = upgrade && typeof upgrade === "object" ? upgrade.rows : [];
   const materialsKnown = rows.length > 0;
   const materialsReady = materialsKnown && rows.every(row => row.missing <= 0);
+  const missingSalvageMaterial = rows.some(row => row.missing > 0 && (row.label === "Scrap" || row.label === "Rune Dust"));
+  const inventory = getHost().openInventory;
   return <section className="t-fr-consequence t-fr-forge" aria-label="Next Forge upgrade"
     data-materials={materialsKnown ? (materialsReady ? "ready" : "needed") : "unknown"}>
     <span className="t-kicker">NEXT FORGE UPGRADE</span>
@@ -41,7 +43,9 @@ function NextForgeUpgrade() {
         <span>{row.label} <b>{row.have.toLocaleString()} / {row.need.toLocaleString()}</b></span>
         {row.missing > 0 ? <small>Missing {row.missing.toLocaleString()} · {row.source}</small> : null}
       </li>)}</ul>
-      <button type="button" className="t-btn" onClick={() => forge.openUpgrade(upgrade.key)}>View upgrade in Forge</button>
+      {missingSalvageMaterial ? <p className="t-fr-material-route" data-next-resource="salvage">NEXT RESOURCE GOAL · Check salvage yields in Inventory for missing Scrap or Rune Dust. An eligible item is required; the yield is not guaranteed.</p> : null}
+      {missingSalvageMaterial && inventory ? <button type="button" className="t-btn" data-next-resource-action="inventory" onClick={inventory}>CHECK SALVAGE IN INVENTORY</button> : null}
+      <button type="button" className="t-btn" onClick={() => forge.openUpgrade(upgrade.key)}>{materialsReady ? "UPGRADE IN FORGE" : "VIEW UPGRADE IN FORGE"}</button>
     </> : <p role="status">{!forge || upgrade === "unavailable" ? "Forge details are unavailable. You can still choose your next operation."
       : upgrade === null ? "No equipped upgrade could be confirmed."
       : "Checking equipped gear and materials…"}</p>}
