@@ -416,10 +416,17 @@ export async function open(missionId?: string): Promise<void> {
   const el = ensureRoot();
   const { FieldRecord: fieldRecord, Forge: forge } = window as Window & {
     FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
+    Inventory?: { open?: () => Promise<unknown> };
+    HomeNav?: { openInventory?: () => unknown };
     Forge?: HostBridge["forge"];
   };
   setHost({
     requestClose: closeView,
+    openInventory: typeof window.HomeNav?.openInventory === "function" || typeof window.Inventory?.open === "function" ? () => {
+      closeView();
+      if (typeof window.HomeNav?.openInventory === "function") void window.HomeNav.openInventory();
+      else void window.Inventory?.open?.();
+    } : undefined,
     openFieldRecord: fieldRecord?.openSelf ? () => {
       closeView();
       void fieldRecord.openSelf?.({ focusService: true });
