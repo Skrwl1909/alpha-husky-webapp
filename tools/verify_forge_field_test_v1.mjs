@@ -31,4 +31,4 @@ assert.match(source, /FIELD TEST IN TACTICAL OPS/);
 assert.match(source, /window\.TacticalOps\.open\(\)/);
 assert.match(source, /closeViaNav\("forge-field-test"\)/);
 assert.doesNotMatch(source.slice(from, to), /Math\.random|localStorage|post\(/);
-console.log("Forge Field Test V1: 16 integrity assertions PASS");
+console.log("Forge Field Test V1: integrity assertions PASS");
