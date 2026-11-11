@@ -123,6 +123,7 @@ const approvedVictoryV2Blobs=Object.freeze({
 });
 const approvedVictoryArtKitV1Blobs=Object.freeze({
   "index.html": "f6a6680f08dfb3716c595cf4438b9ee9ef884bce",
+  "css/tactical_victory_art_v1.css": "24a2d8b88cb7d3ccdf69566ffd0c8a9e3c31a116",
   "images/tactical_ops/presentation/victory_triumph_overlay.png": "854d671a4ef93a459b3cf79fd087c82db6792487",
   "images/tactical_ops/presentation/reward_exp_plate.png": "5755164c00b8eb2903e76aa276842b33045f837a",
   "images/tactical_ops/presentation/reward_bones_plate.png": "8535b18b75d4a54aeb98450f2ddee8c3b48dd522",
