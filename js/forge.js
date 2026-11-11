@@ -768,6 +768,9 @@
       }
       .ah-btn:disabled{ opacity:.45; cursor:default; }
       .ah-btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
+      .ah-forge-field-test{border-color:rgba(142,240,176,.38);background:linear-gradient(130deg,rgba(21,52,42,.9),rgba(11,19,25,.95))}
+      .ah-forge-field-deltas{margin:9px 0;padding-left:17px;font-size:12px;line-height:1.5;color:var(--ah-text)}
+      .ah-forge-field-test .ah-btn{width:100%;margin-top:10px;min-height:48px;white-space:normal}
       .ah-note, .ah-panel{
         padding:12px;
         border:1px solid rgba(196,154,84,.18);
@@ -1009,6 +1012,7 @@
   let _pityOverride = {};
   let _lastCraft = { slot: null, made: [], spent: null, echo: null };
   let _selectedUpgradeKey = null;
+  let _lastForgeProof = null; // Only after accepted upgrade and fresh Forge state.
   let _useIceCrystal = false;
 
   function getCfg() {
@@ -1120,6 +1124,53 @@
     return "";
   }
 
+
+  // Read-only item-stat comparison, never a tactical damage forecast.
+  function confirmedForgeDelta(before, after) {
+    const valid = value => typeof value === "number" && Number.isFinite(value);
+    if (!before || !after || before.slot !== after.slot || !Number.isInteger(before.stars) ||
+        !Number.isInteger(after.stars) || after.stars <= before.stars) return null;
+    const oldStats = before.currentStats || before.upgradePreview?.currentStats || {};
+    const newStats = after.currentStats || after.upgradePreview?.currentStats || {};
+    const changes = Object.keys(oldStats).filter(key =>
+      valid(oldStats[key]) && valid(newStats[key]) && newStats[key] !== oldStats[key]
+    ).map(key => ({ key, before: oldStats[key], after: newStats[key] })).slice(0, 4);
+    return { name: String(after.name || before.name || "Equipped gear"),
+      slot: after.slot, beforeStars: before.stars, afterStars: after.stars, changes };
+  }
+
+  async function openFieldTest() {
+    const ensure = window.ensureTacticalOpsLoaded || window.AHBootLoaders?.ensureTacticalOpsLoaded;
+    try {
+      if (typeof ensure !== "function") throw Error("Tactical Ops loader unavailable");
+      await ensure(window.S?.apiPost || window.apiPost, window.Telegram?.WebApp || null, false);
+      if (typeof window.TacticalOps?.open !== "function") throw Error("Tactical Ops unavailable");
+      closeViaNav("forge-field-test");
+      await window.TacticalOps.open();
+    } catch (_) {
+      toast("Tactical Ops could not open. Try again from the game hub.");
+    }
+  }
+
+  function renderForgeFieldTest(body, proof) {
+    if (!proof) return;
+    const section = el("section", "ah-note ah-forge-field-test");
+    section.setAttribute("aria-label", "Confirmed Forge upgrade and next field test");
+    const lines = proof.changes.length
+      ? proof.changes.map(change => `<li>${esc(statLabel(change.key))}: <b>${esc(formatStatValue(change.before))} → ${esc(formatStatValue(change.after))}</b></li>`).join("")
+      : "";
+    section.innerHTML = `<div class="ah-kicker">FORGED · NEXT FIELD TEST</div>
+      <div class="ah-section-title">${esc(proof.name)} · ★${proof.beforeStars} → ★${proof.afterStars}</div>
+      ${lines ? `<ul class="ah-forge-field-deltas">${lines}</ul>`
+        : '<p class="ah-section-copy">Upgrade level confirmed. No numeric item-stat change was exposed for comparison.</p>'}
+      <p class="ah-section-copy">Item stats are not a damage forecast. Deploy to see the accepted combat build in action.</p>`;
+    const action = el("button", "ah-btn primary", "FIELD TEST IN TACTICAL OPS");
+    action.type = "button";
+    action.addEventListener("click", () => void openFieldTest());
+    section.appendChild(action);
+    body.appendChild(section);
+  }
+
   function renderUpgrade(body) {
     const eq = (_state && _state.equipped) || [];
     const dock = clearDock();
@@ -1142,9 +1193,10 @@
       const perfT0 = window.__ahPerf?.now?.() || Date.now();
       const crystalMeta = (it.upgradePreview && it.upgradePreview.iceCrystal) || {};
       const shouldUseIceCrystal = !!(_useIceCrystal && crystalMeta && crystalMeta.canUse);
+      _lastForgeProof = null;
       _busy = true;
       draw();
-
+      let accepted = false;
       try {
         await post("/webapp/forge/upgrade", {
           buildingId: _ctx.buildingId,
@@ -1152,14 +1204,21 @@
           run_id: rid("web_upg"),
           use_ice_crystal: shouldUseIceCrystal,
         });
+        accepted = true;
         _useIceCrystal = false;
-        await loadState();
         try {
           window.dispatchEvent(new CustomEvent("ah:session-state-changed", { detail: { source: "forge_upgrade" } }));
         } catch (_) {}
-        toast(`Forged ${it.slotLabel || it.slot} to ★${Number((it.upgradePreview && it.upgradePreview.nextLevel) || (Number(it.stars || 0) + 1))}.`);
+        try {
+          await loadState();
+          const updated = _state?.equipped?.find(item => item.slot === it.slot);
+          _lastForgeProof = confirmedForgeDelta(it, updated);
+          toast(_lastForgeProof ? "Upgrade recorded. Test your build in Tactical Ops." : "Upgrade accepted. Check refreshed gear in Forge.");
+        } catch (_) {
+          toast("Upgrade accepted, but refreshed stats are unavailable. Reopen Forge to check your gear.");
+        }
       } catch (e) {
-        toast(`Upgrade failed: ${e.message}`);
+        if (!accepted) toast(`Upgrade failed: ${e.message}`);
       } finally {
         _busy = false;
         draw();
@@ -1222,6 +1281,7 @@
     row.appendChild(nextBtn);
     selector.appendChild(row);
     body.appendChild(selector);
+    renderForgeFieldTest(body, _lastForgeProof);
 
     requestAnimationFrame(() => {
       const selTile = scroller.querySelector(".ah-gear-tile.selected");
@@ -1738,6 +1798,7 @@
     _state = null;
     _busy = false;
     _tab = "upgrade";
+    _lastForgeProof = null;
     restoreMobileShellAfterForgeExit("forge-teardown");
   }
 
@@ -1836,6 +1897,7 @@
 
   async function open(ctx) {
     const perfT0 = window.__ahPerf?.now?.() || Date.now();
+    _lastForgeProof = null;
     _ctx = {
       buildingId: ctx && ctx.buildingId ? ctx.buildingId : null,
       name: (ctx && ctx.name) || "Forgotten Tokens’ Vault",
