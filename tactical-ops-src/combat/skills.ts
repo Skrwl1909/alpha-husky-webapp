@@ -2,6 +2,7 @@ import { supportCooldownExtra } from "./missionRules";
 import type { BattleEvent, BattleState, Cell, CombatUnit, SkillDef } from "./types";
 import { applyStatus, effectiveAtk, incomingDamageMultiplier, STATUS_LABEL } from "./effects";
 import { computeHeal, mitigatedDamage } from "./damage";
+import { applyGearOffense, applyGearGuard } from "./gearImpactV31";
 import { resolveSkillTargets, skillNeedsTargetPick, validTargetIds } from "./targeting";
 import { getSkill } from "../data/skills";
 import { resolveGrowthSkill } from "../data/playerGrowth";
@@ -94,8 +95,20 @@ export function applySkill(
       if (spec.kind === "damage") {
         const mult = spec.multiplier ?? 1;
         let dmg = mitigatedDamage(atk, mult, current);
+        // Accrued from the server-frozen profile, never live inventory.
+        const striker = units.find(u => u.id === caster.id)!;
+        const offense = applyGearOffense(dmg, striker);
+        dmg = offense.damage;
+        if (offense.carry !== undefined) {
+          units = patch(units, caster.id, u => ({...u, gearOffenseCarryV31: offense.carry}));
+        }
         const withoutGuard = dmg;
         dmg = Math.max(1, Math.round(dmg * incomingDamageMultiplier(current)));
+        const guard = applyGearGuard(dmg, current);
+        dmg = guard.damage;
+        if (guard.carry !== undefined) {
+          units = patch(units, current.id, u => ({...u, gearGuardCarryV31: guard.carry}));
+        }
         const hp = Math.max(0, current.hp - dmg);
         const defeated = hp <= 0;
         if (current.team === "ally") damageTaken += dmg;
@@ -107,7 +120,9 @@ export function applySkill(
           statuses: defeated ? [] : u.statuses,
         }));
         events.push({ type: "damage", unitId: current.id, amount: dmg, text: `-${dmg}`, kind: "dmg",
-          ...(current.team === "ally" && withoutGuard > dmg ? { buildEvidence: `${current.name}: GUARD prevented ${withoutGuard - dmg} damage${withoutGuard >= current.hp && hp > 0 ? "; survived the blow" : ""}.` } : {}) });
+          ...(offense.bonus > 0 && caster.defId === "alpha" ? {buildEvidence: `ALPHA equipment impact dealt +${offense.bonus} damage.`} :
+            guard.saved > 0 && current.defId === "alpha" ? {buildEvidence: `ALPHA equipment impact prevented ${guard.saved} damage.`} :
+            current.team === "ally" && withoutGuard > dmg ? { buildEvidence: `${current.name}: defenses prevented ${withoutGuard - dmg} damage${withoutGuard >= current.hp && hp > 0 ? "; survived the blow" : ""}.` } : {}) });
         if (defeated) events.push({ type: "defeat", unitId: current.id, text: "DOWN", kind: "info" });
       } else if (spec.kind === "heal") {
         const healed = computeHeal(spec.base ?? 0, spec.scale ?? 0, atk, current);
