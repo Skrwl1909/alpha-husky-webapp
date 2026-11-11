@@ -116,7 +116,7 @@ const approvedRecoverAuthorityBlobs=Object.freeze({
 // Gear V3.1: narrowly reviewed source blobs for this focused PR. No wildcard approval.
 const approvedGearV31Blobs=Object.freeze({
   ".github/workflows/tactical-gear-v31.yml": "15571fc76bac72fb2771b14a93969ba11f5df3e5",
-  ".github/workflows/tactical-purpose-return.yml": "277a338dbc82ec6212f5d00a43d0bd883e5c2433",
+  ".github/workflows/tactical-purpose-return.yml": "4de15ba9ba3767475bca365c88e769a7d2f8d7f1",
   "tactical-ops-src/combat/battle.ts": "4a907b65beb6f4495a8cf93cb24e662269fd4cbf",
   "tactical-ops-src/combat/combatProfileV3.ts": "5cd344871e359c47ff36d8ef705a1da4e28e23f0",
   "tactical-ops-src/combat/gearImpactV31.ts": "70240860d651771971498e42d0d9188f79355cbe",
