@@ -85,12 +85,20 @@ try{
    }
    assert.equal(await page.getByLabel('Confirmed mission earnings',{exact:true}).count(),recorded?1:0);
    if(scenario==='missing'){
+    assert.equal(await panel.locator('.t-fr-payout-grid').count(),0,'no visual payout without amounts');
     assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['—','—','+1']);
     assert.equal(await page.getByLabel('EXP amount unavailable',{exact:true}).count(),1);
    }
-   if(scenario==='zero')assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['+0','+0','+0']);
+   if(scenario==='zero'){
+    assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['+0','+0','+0']);
+    assert.equal(await panel.locator('.t-fr-payout-grid').count(),0,'tactical-only cannot show reward cards');
+   }
    if(scenario==='zero')assert.match(await panel.getByLabel('Character payout').innerText(),/TACTICAL RESULT.*No EXP or Bones/s);
-   if(!recorded)assert.equal(await panel.getByLabel('Character payout').count(),0);
+   if(!recorded){
+    assert.equal(await panel.getByLabel('Character payout').count(),0);
+    assert.equal(await panel.locator('.t-fr-payout-grid').count(),0,'unrecorded run cannot show reward cards');
+    assert.equal(await panel.locator('.t-fr-pressure-change').count(),0,'unrecorded run cannot imply world impact');
+   }
    if(scenario==='rank4')assert.match(await page.locator('.t-fr-rank').innerText(),/RANK 3 → 4/);
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
    if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/New option unlocked/i);
@@ -172,11 +180,17 @@ try{
     if(scenario==='payout-pending'){
      assert.equal(await payout.count(),0);
      assert.equal(await upgrade.count(),0);
+     assert.equal(await page.locator('.t-fr-payout-grid').count(),0,'unconfirmed payouts never receive reward units');
      assert.deepEqual(await page.evaluate(()=>fixture.forgeRequests),[]);
     }else{
-     assert.match(await payout.innerText(),/CONFIRMED PAYOUT.*\+8 EXP · \+16 Bones/s);
+     assert.match(await payout.innerText(),/CONFIRMED PAYOUT[\s\S]*\+8[\s\S]*EXP[\s\S]*\+16[\s\S]*Bones/);
+     assert.equal(await payout.locator('.t-fr-reward-unit').count(),2,'two receipt-confirmed reward units');
+     assert.equal(await payout.locator('[data-reward=exp]').count(),1);
+     assert.equal(await payout.locator('[data-reward=bones]').count(),1);
+     assert.equal(await page.locator('.t-fr-triumph-emblem').count(),1,'victory crest present');
      if(scenario==='payout-missing'||scenario==='payout-ready'){
       await upgrade.getByText('Target Gear · ★3',{exact:true}).waitFor();
+      assert.equal(await upgrade.getAttribute('data-materials'),scenario==='payout-ready'?'ready':'needed','host-derived material readiness');
       assert.match(await upgrade.innerText(),/Bones 24 \/ 24/);
       if(scenario==='payout-missing'){
        assert.match(await upgrade.innerText(),/Scrap 4 \/ 8.*Missing 4 · Salvage eligible gear in Inventory/s);
