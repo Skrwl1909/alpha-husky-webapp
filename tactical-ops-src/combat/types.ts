@@ -82,6 +82,8 @@ export interface SkillDef {
 }
 
 export interface UnitDef {
+  /** Frozen server-only gear consequence; no client recomputation. */
+  gearImpactV31?: { offense: number; guard: number };
   /** Presentation only; frozen when the accepted run is instantiated. */
   combatMastery?: { progress: number; stage: number; selected: "A" | "B" | null };
   recoverRange?: number;
@@ -101,6 +103,10 @@ export interface UnitDef {
 }
 
 export interface CombatUnit {
+  gearImpactV31?: { offense: number; guard: number };
+  /** Integer micro-points, persisted with the battlefield for deterministic resume. */
+  gearOffenseCarryV31?: number;
+  gearGuardCarryV31?: number;
   /** Authored mastery identity from the accepted run, not the live account. */
   combatMastery?: { progress: number; stage: number; selected: "A" | "B" | null };
   /** Immutable server-validated run loadout; never read from localStorage. */
