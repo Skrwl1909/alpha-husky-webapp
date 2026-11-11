@@ -7,7 +7,7 @@ on:
       - 'tools/tactical_recover_engine_v1.ts'
       - '.github/workflows/tactical-gear-v31.yml'
 permissions:
-  contents: read
+  contents: write
 jobs:
   gear-v31:
     runs-on: ubuntu-24.04
@@ -31,6 +31,16 @@ jobs:
         run: |
           npm run build:tactical-ops
           node --check js/tactical_ops.js
+      - name: Commit deterministic compiled WebApp assets to same-repository PR
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/tactical_ops.js js/boot_loaders.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(tactical): compile gear impact V3.1 frontend'
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
