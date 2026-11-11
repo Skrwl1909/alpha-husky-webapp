@@ -1,0 +1,85 @@
+/* Alpha Husky · Victory Art Kit V1
+ * Presentation-only layers over the reviewed Victory Experience V2.
+ * Source art: images/tactical_ops/presentation/*.png
+ * This stylesheet must remain scoped to ordinary Field Ops victories.
+ */
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results):not([data-reach-reward="true"]) .t-fr-triumph::before {
+  background:
+    radial-gradient(ellipse 48% 65% at 75% 63%, rgba(9,22,30,.48), transparent 84%),
+    url("/images/tactical_ops/presentation/victory_triumph_overlay.png") center 48% / 100% 100% no-repeat;
+  opacity:.44;
+  transform-origin:50% 50%;
+}
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-triumph .t-title {
+  position:relative;
+  z-index:1;
+  text-shadow:0 2px 8px #010a11,0 0 22px rgba(89,173,184,.30);
+}
+/* Both reward plates use exactly the same visual geometry; real values remain DOM text. */
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-reward-unit {
+  min-height:92px;
+  padding:14px 17px 15px 19px;
+  border:0;
+  border-radius:0;
+  box-shadow:none;
+  background:transparent url("/images/tactical_ops/presentation/reward_exp_plate.png") center / 100% 100% no-repeat;
+}
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-reward-unit[data-reward="bones"] {
+  border:0;
+  background:transparent url("/images/tactical_ops/presentation/reward_bones_plate.png") center / 100% 100% no-repeat;
+}
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-reward-unit > svg {
+  width:22px;
+  height:22px;
+  filter:drop-shadow(0 1px 2px #000b);
+}
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-reward-unit strong {
+  color:#f4fbfc;
+  text-shadow:0 1px 3px #030a10;
+}
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-forge-symbol {
+  width:66px;
+  height:66px;
+  flex:0 0 66px;
+  border:0;
+  background:transparent url("/images/tactical_ops/presentation/forge_item_frame.png") center / contain no-repeat;
+  box-shadow:none;
+}
+#tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-forge-symbol svg {
+  width:24px;
+  height:24px;
+  color:#e7d9b7;
+  filter:drop-shadow(0 1px 3px #000d);
+}
+@media (max-width:350px) {
+  #tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-reward-unit {
+    min-height:78px;
+    gap:6px;
+    padding:12px 10px 13px 13px;
+  }
+  #tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-reward-unit > svg {
+    width:18px;
+    height:18px;
+  }
+  #tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-forge-symbol {
+    width:58px;
+    height:58px;
+    flex-basis:58px;
+  }
+}
+@media (prefers-reduced-motion:no-preference) {
+  #tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-triumph::before {
+    animation:ah-victory-art-resolve .95s cubic-bezier(.22,.75,.24,1) both;
+  }
+}
+@keyframes ah-victory-art-resolve {
+  from {opacity:0; transform:scale(1.025)}
+  to {opacity:.44; transform:scale(1)}
+}
+@media (prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-field-results.is-victory:not(.t-special-field-results) .t-fr-triumph::before {
+    animation:none;
+    transform:none;
+    opacity:.44;
+  }
+}
