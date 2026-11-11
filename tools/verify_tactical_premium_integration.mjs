@@ -119,7 +119,7 @@ const approvedVictoryV2Blobs=Object.freeze({
  'tactical-ops-src/ui/FieldOpResults.tsx':'bedcf3dc1adb30907e562d1c26cde66c5e5082cf',
  'tactical-ops-src/ui/fieldOpResults.css':'ca853364819c0b163762654d401f64ea1c3135d7',
  'tactical-ops-src/version.ts':'5b20d07e3d8dc5d7ed1727dcb2fbe1c9ad3675b9',
- 'tools/verify_field_op_results_premium.mjs':'e7dd0155fb453782bf30ae0d1b4612f3b9956ac2',
+ 'tools/verify_field_op_results_premium.mjs':'36b68832b6c3264d8d328ae1687eeb69cc80d029',
 });
 const victoryV2BaseBlobs=Object.freeze({
  'tactical-ops-src/ui/FieldOpResults.tsx':'9c8a76f1a4ab2476bea36fe71dd2ed12c1c895ac',
