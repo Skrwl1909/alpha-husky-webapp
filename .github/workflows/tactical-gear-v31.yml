@@ -37,3 +37,11 @@ jobs:
           name: tactical-gear-v31-built-worker
           path: artifacts/recover-authority-v1/tactical_recover_engine_v1.cjs
           if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-gear-v31-built-webapp
+          path: |
+            js/tactical_ops.js
+            js/boot_loaders.js
+          if-no-files-found: warn
