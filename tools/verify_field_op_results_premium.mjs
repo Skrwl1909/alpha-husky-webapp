@@ -123,6 +123,12 @@ try{
     assert(await b.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'clipped action text');
    }
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal page overflow');
+   assert(await panel.evaluate(e=>{
+    const hero=e.querySelector('.t-outcome-hero');
+    if(!hero)return true; // Reach Rend uses an existing distinct reward hero.
+    const bounds=e.getBoundingClientRect(),art=hero.getBoundingClientRect();
+    return art.left>=bounds.left-2 && art.right<=bounds.right+2;
+   }),'victory and failure hero must fit within mobile Results gutters');
    assert(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'horizontal panel overflow');
    assert.deepEqual(await panel.locator('h2,p,dt,dd,strong').evaluateAll(es=>es.filter(e=>e.getClientRects().length&&e.scrollWidth>e.clientWidth+1).map(e=>e.textContent)),[],'clipped text');
    assert.equal(await panel.locator('.t-result-actions').evaluate(e=>getComputedStyle(e).position),'static','fixed/sticky actions returned');
