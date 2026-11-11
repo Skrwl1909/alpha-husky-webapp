@@ -117,8 +117,8 @@ const approvedRecoverAuthorityBlobs=Object.freeze({
 const victoryV2Base='83139a060bf1db35719020d4ce5fc533e3e856a7';
 const approvedVictoryV2Blobs=Object.freeze({
  'tactical-ops-src/ui/FieldOpResults.tsx':'bedcf3dc1adb30907e562d1c26cde66c5e5082cf',
- 'tactical-ops-src/ui/fieldOpResults.css':'7442ea4a63243baa6fae81eb738eed9d86c8bd38',
- 'tactical-ops-src/version.ts':'001e53b74c52ffb9290a685d73fbbc0f8e08b371',
+ 'tactical-ops-src/ui/fieldOpResults.css':'ca853364819c0b163762654d401f64ea1c3135d7',
+ 'tactical-ops-src/version.ts':'5b20d07e3d8dc5d7ed1727dcb2fbe1c9ad3675b9',
  'tools/verify_field_op_results_premium.mjs':'e7dd0155fb453782bf30ae0d1b4612f3b9956ac2',
 });
 const victoryV2BaseBlobs=Object.freeze({
