@@ -282,9 +282,9 @@
 
 
 /* Victory Experience V2: ordinary Field Ops only; restrained motion and receipt-owned data. */
-#tacticalOpsRoot .t-field-results:not(.t-special-field-results):not([data-reach-reward=true]){padding-inline:14px}
+#tacticalOpsRoot .t-field-results:not(.t-special-field-results):not([data-reach-reward=true]){padding-inline:18px}
 #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-triumph{
-  min-height:138px;margin-inline:-14px;padding:12px 14px 10px;border-bottom-color:#80b9c082;
+  min-height:138px;margin-inline:-18px;padding:12px 18px 10px;border-bottom-color:#80b9c082;
 }
 #tacticalOpsRoot .t-field-results .t-fr-triumph::before{
   content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
