@@ -197,14 +197,14 @@ try{
      if(scenario==='payout-missing'||scenario==='payout-ready'){
       await upgrade.getByText('Target Gear · ★3',{exact:true}).waitFor();
       assert.equal(await upgrade.getAttribute('data-materials'),scenario==='payout-ready'?'ready':'needed','host-derived material readiness');
-      assert.match(await upgrade.innerText(),/Bones 24 \/ 24/);
+      assert.match(await upgrade.innerText(),/Bones\s+24 \/ 24/);
       if(scenario==='payout-missing'){
-       assert.match(await upgrade.innerText(),/Scrap 4 \/ 8.*Missing 4 · Salvage eligible gear in Inventory/s);
+       assert.match(await upgrade.innerText(),/Scrap\s+4 \/ 8[\s\S]*Missing 4 · Salvage eligible gear in Inventory/);
        await upgrade.getByRole('button',{name:'View upgrade in Forge'}).click();
        await page.locator('.ah-stage-name').getByText('Target Gear',{exact:true}).waitFor();
        assert.equal(await page.locator('#tacticalOpsRoot').getAttribute('data-open'),'0');
       }else{
-       assert.match(await upgrade.innerText(),/Scrap 8 \/ 8/);
+       assert.match(await upgrade.innerText(),/Scrap\s+8 \/ 8/);
        assert.doesNotMatch(await upgrade.innerText(),/Missing/);
        await page.locator('[data-next-decision=primary]').click();
        assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
