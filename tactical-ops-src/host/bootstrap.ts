@@ -414,7 +414,7 @@ export async function open(missionId?: string): Promise<void> {
     useBattleStore.getState().openOperationBrief(missionId);
   }
   const el = ensureRoot();
-  const { FieldRecord: fieldRecord, Forge: forge } = window as Window & {
+  const { FieldRecord: fieldRecord, Forge: forge, HomeNav: homeNav, Inventory: inventory } = window as Window & {
     FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
     Inventory?: { open?: () => Promise<unknown> };
     HomeNav?: { openInventory?: () => unknown };
@@ -422,10 +422,10 @@ export async function open(missionId?: string): Promise<void> {
   };
   setHost({
     requestClose: closeView,
-    openInventory: typeof window.HomeNav?.openInventory === "function" || typeof window.Inventory?.open === "function" ? () => {
+    openInventory: typeof homeNav?.openInventory === "function" || typeof inventory?.open === "function" ? () => {
       closeView();
-      if (typeof window.HomeNav?.openInventory === "function") void window.HomeNav.openInventory();
-      else void window.Inventory?.open?.();
+      if (typeof homeNav?.openInventory === "function") void homeNav.openInventory();
+      else void inventory?.open?.();
     } : undefined,
     openFieldRecord: fieldRecord?.openSelf ? () => {
       closeView();
