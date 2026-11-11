@@ -122,7 +122,7 @@ export function applySkill(
         events.push({ type: "damage", unitId: current.id, amount: dmg, text: `-${dmg}`, kind: "dmg",
           ...(offense.bonus > 0 && caster.defId === "alpha" ? {buildEvidence: `ALPHA equipment impact dealt +${offense.bonus} damage.`} :
             guard.saved > 0 && current.defId === "alpha" ? {buildEvidence: `ALPHA equipment impact prevented ${guard.saved} damage.`} :
-            current.team === "ally" && withoutGuard > dmg ? { buildEvidence: `${current.name}: defenses prevented ${withoutGuard - dmg} damage${withoutGuard >= current.hp && hp > 0 ? "; survived the blow" : ""}.` } : {}) });
+            current.team === "ally" && withoutGuard > dmg ? { buildEvidence: `${current.name}: GUARD prevented ${withoutGuard - dmg} damage${withoutGuard >= current.hp && hp > 0 ? "; survived the blow" : ""}.` } : {}) });
         if (defeated) events.push({ type: "defeat", unitId: current.id, text: "DOWN", kind: "info" });
       } else if (spec.kind === "heal") {
         const healed = computeHeal(spec.base ?? 0, spec.scale ?? 0, atk, current);
