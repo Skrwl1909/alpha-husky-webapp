@@ -186,7 +186,7 @@ for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienc
 }
 for(const [path,expected] of Object.entries(approvedRewardExperienceBlobs)){
  assert.equal(git('rev-parse',`${recoverAuthorityBase}:${path}`).trim(),expected,'unreviewed merged Reward Experience blob: '+path);
- const liveExpected=approvedVictoryArtKitV1Blobs[path] ?? approvedVictoryV2Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? expected;
+ const liveExpected=approvedGearV31Blobs[path] ?? approvedVictoryArtKitV1Blobs[path] ?? approvedVictoryV2Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? expected;
  assert.equal(sourceBlob(readFileSync(path)),liveExpected,'unreviewed Reward Experience source: '+path);
  // An unapproved edit must never match the exact reviewed Git blob.
  assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed provenance mutation */'),liveExpected,
