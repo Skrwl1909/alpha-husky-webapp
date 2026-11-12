@@ -46,10 +46,10 @@ const approvedIdentityV2Blobs=Object.freeze({
 // War Table Visual Identity V2: exact new authored sources; historical Identity V2 pins remain frozen.
 const approvedWarTableV2Blobs=Object.freeze({
   "tactical-ops-src/ui/App.tsx": "7fd6036dcacc1f5254f0b8e7ee006315d8c163b3",
-  "tactical-ops-src/ui/commandDeck.css": "ab42b297ed9c7bd23828bf17060f3cc1a2ff7480",
+  "tactical-ops-src/ui/commandDeck.css": "eb54bda248de3bf83e6be31a5828d70a865ea8ee",
   "tactical-ops-src/ui/operationArtwork.ts": "9d4b682fc9b5030d74e5b676f04eccb18ce3b970",
   "tactical-ops-src/version.ts": "471f1b7eedad889f4cb1719db405b30e0920da5c",
-  "tools/verify_wartable_visual_v2.mjs": "dc51886df7fd9d9db5384b4739525bf43c6eec1b",
+  "tools/verify_wartable_visual_v2.mjs": "c08b22662a8186546c9e3632095515453fd00d98",
   ".github/workflows/war-table-visual-v2.yml": "b5d2135c487d65b8ac57a1307165c27692e4c347"
 });
 for(const [path,sha] of Object.entries(approvedWarTableV2Blobs)) {

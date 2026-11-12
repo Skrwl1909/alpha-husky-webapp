@@ -60,6 +60,8 @@ try {
   await page.locator("[data-primary-purpose] .t-wt-scene").waitFor();
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+" Command horizontal overflow");
   const banner=page.locator("[data-primary-purpose] .t-wt-scene");
+  await banner.evaluate(img=>img.decode());
+  assert(await banner.evaluate(img=>img.naturalWidth>0),"Featured artwork must decode before screenshot");
   assert((await banner.getAttribute("src")).endsWith("alpha_wartable_fracture_front_v1.webp"),"featured Field Op environment");
   assert.equal(await page.locator("[data-primary-purpose] .t-wt-mission-emblem").count(),1);
   const bannerBox=await page.locator(".t-wt-next-op").boundingBox();
