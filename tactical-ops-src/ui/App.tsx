@@ -1234,6 +1234,7 @@ function Results() {
   const failureReason = useBattleStore((s) => s.battle.failureReason);
   const results = useBattleStore((s) => s.battle.results);
   const fieldResult = useBattleStore((s) => s.fieldResult);
+  const fieldMilestone = useBattleStore((s) => s.fieldMilestone);
   const campaignResult = useBattleStore((s) => s.campaignResult);
   const chapterResult = useBattleStore((s) => s.chapterResult);
   const chapterMode = useBattleStore((s) => s.chapterMode);
