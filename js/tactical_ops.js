@@ -6884,6 +6884,27 @@ body.ah-perf-lite #tacticalOpsRoot .t-cosmetic-sweep {opacity:0;animation:none;}
  #tacticalOpsRoot .t-wt-mission-emblem,#tacticalOpsRoot .t-wt-scene{animation:none!important;transition:none!important;}
 }
 
+/* Compact Mission selector V2: never wrap individual title letters on narrow phones. */
+@media(max-width:620px){
+ #tacticalOpsRoot .t-command-deck-v3 .t-op-selector button {
+  grid-template-columns:18px minmax(0,1fr);grid-template-rows:auto auto;
+  gap:3px 5px;padding:6px 5px;
+ }
+ #tacticalOpsRoot .t-command-deck-v3 .t-op-selector button > span {
+  grid-column:1;grid-row:1;font-size:9px;align-self:center;
+ }
+ #tacticalOpsRoot .t-command-deck-v3 .t-op-selector button > .t-wt-mission-emblem {
+  grid-column:1;grid-row:2;width:18px;height:18px;
+ }
+ #tacticalOpsRoot .t-command-deck-v3 .t-op-selector button > strong {
+  grid-column:2;grid-row:1;font-size:clamp(9px,2.25vw,11px);
+  line-height:1.22;letter-spacing:0;overflow-wrap:normal;word-break:normal;hyphens:none;
+ }
+ #tacticalOpsRoot .t-command-deck-v3 .t-op-selector button > small {
+  grid-column:2;grid-row:2;font-size:9px;letter-spacing:0;overflow-wrap:normal;
+ }
+}
+
 /* Tactical Overhead Projection V1
    Global shared presentation for Legacy 8x5 and VNext 10x7.
    Three approved authored arena artworks are registered by mission family.
