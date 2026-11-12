@@ -1,4 +1,5 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
+import { parseFieldLegacyMilestone, type FieldLegacyMilestone } from "../data/fieldLegacy";
 import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import { parseSignalTrials, parseSignalTrialRun, parseSignalTrialResult, SIGNAL_TRIAL_RULESET, type SignalTrialProgress, type SignalTrialRun, type SignalTrialResult } from "../data/signalTrials";
@@ -595,7 +596,7 @@ export async function continueOperationMission(
   campaignReport?: CampaignReport,
   rulesetVersion?: string,
   chapterMode = false,
-): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
+): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
   const result = !chapterMode && isRecoverAuthorityRun(runId) ? {} : {
     completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true,
     routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}),
@@ -610,8 +611,10 @@ export async function continueOperationMission(
          victory:rawChapter.victory,stageRecorded:Number(rawChapter.stageRecorded),
          chapterComplete:rawChapter.chapterComplete,combatProof:"CLIENT_REPORT_ONLY"}:null;
   if(chapterMode && !chapterResult)throw new FoundationProgressionError("invalid_chapter_receipt");
+  const fieldResult=parseFieldResult(response.fieldResult);
+  const fieldMilestone=fieldResult ? parseFieldLegacyMilestone(response.rewardMilestone,fieldResult.runId,fieldResult.missionId,fieldResult.victory) : null;
   return { state: responseState(response), firstClear: response.firstClear === true,
-    fieldResult: parseFieldResult(response.fieldResult),
+    fieldResult, fieldMilestone,
     campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
 }
 

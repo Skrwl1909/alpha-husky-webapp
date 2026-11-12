@@ -406,3 +406,12 @@
   #tacticalOpsRoot .t-field-results .t-fr-impact,
   #tacticalOpsRoot .t-field-results .t-fr-forge{animation:none;transition:none}
 }
+
+/* Field Legacy, only shown from accepted backend settlement receipts. */
+#tacticalOpsRoot .t-field-results .t-fr-legacy{padding:12px;margin-top:12px;border:1px solid #bba47885;background:linear-gradient(140deg,#342e25,#172329);border-radius:3px}
+#tacticalOpsRoot .t-field-results .t-fr-legacy>.t-kicker{color:#dbc494}
+#tacticalOpsRoot .t-field-results .t-fr-legacy>strong{display:block;margin-top:4px;font:800 clamp(16px,4.5vw,21px)/1.18 var(--t-font-display);color:#f2dfb6}
+#tacticalOpsRoot .t-field-results .t-fr-legacy p{font-size:12px;color:#d6d3c9}
+#tacticalOpsRoot .t-field-results .t-fr-legacy small{display:block;margin-top:5px;font-size:10px;color:#b9bdba}
+#tacticalOpsRoot .t-field-results .t-fr-legacy-history{padding:9px 11px;background:transparent;border-color:#78909855}
+#tacticalOpsRoot .t-field-results .t-fr-legacy-history>strong{font-size:13px;color:#cbd9dd}

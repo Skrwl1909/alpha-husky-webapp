@@ -1263,6 +1263,7 @@ function Results() {
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
+  const recordedFieldMilestone = recordedFieldResult && fieldMilestone?.runId === recordedFieldResult.runId ? fieldMilestone : null;
   const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
   const campaignConfirmed = !chapterMode && campaignMission ? recordedCampaignResult : null;
   const recordedChapterResult = chapterMode ? matchingAfterActionReceipt(chapterResult, currentRunKey, selectedMissionId) : null;
@@ -1348,7 +1349,7 @@ function Results() {
   if (ordinaryFieldOp) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
     <FieldOpResults victory={fieldVictory} missionName={mission.name}
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
-      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      receipt={recordedFieldResult} milestone={recordedFieldMilestone} pending={progressionCommitPending} error={progressionError}
       failure={failure} consequence={s3Proof}
       nextObjective={decision?.detail}
       reachRendNext={reachRendNext}
@@ -1379,7 +1380,7 @@ function Results() {
   if (specialKind) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
     <SpecialFieldOpResults kind={specialKind} victory={fieldVictory} missionName={mission?.name || "FIELD OP"}
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
-      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      receipt={recordedFieldResult} milestone={recordedFieldMilestone} pending={progressionCommitPending} error={progressionError}
       failure={failure} nextObjective={decision?.detail}
       actions={recordedFieldResult ? decisionActions :
         <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
