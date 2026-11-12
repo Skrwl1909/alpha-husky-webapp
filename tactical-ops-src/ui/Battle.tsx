@@ -1,3 +1,4 @@
+import { CommanderPortrait } from "./PlayerIdentity";
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
@@ -306,6 +307,7 @@ function Token({
 function HudPortrait({ unit }: { unit: CombatUnit }) {
   const [failed, setFailed] = useState(false);
   const image = unit.portrait || unit.sprite;
+  if (unit.role==="alpha"||unit.defId==="alpha"||unit.id==="alpha") return <CommanderPortrait className="t-status-portrait" fallbackUrl={image} />;
   return <span className="t-status-portrait" aria-hidden="true">
     {!failed && image ? <img key={image} src={image} alt="" onError={() => setFailed(true)} /> : null}
     <PawPrint className="t-status-portrait-fallback" />

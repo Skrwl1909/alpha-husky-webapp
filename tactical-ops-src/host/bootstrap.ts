@@ -332,11 +332,16 @@ function ensureRoot(): HTMLElement {
   return el;
 }
 
+function onProfileUpdated(): void {
+  if (M.isOpen) useBattleStore.getState().refreshIdentity();
+}
+
 function hardClose(): void {
   document.getElementById(BROWSER_EXIT_ID)?.remove();
   M.isOpen = false;
   unbindKeys();
   unbindResize();
+  window.removeEventListener("ah:profile-updated", onProfileUpdated);
   unlockScroll();
   if (M.reactRoot) {
     M.reactRoot.unmount();
@@ -410,6 +415,7 @@ export function init(deps?: {
 
 export async function open(missionId?: string): Promise<void> {
   await progressionReady;
+  useBattleStore.getState().refreshIdentity();
   if (typeof missionId === "string" && missionId) {
     useBattleStore.getState().openOperationBrief(missionId);
   }
@@ -438,6 +444,7 @@ export async function open(missionId?: string): Promise<void> {
   lockScroll();
   bindKeys();
   bindResize();
+  window.addEventListener("ah:profile-updated", onProfileUpdated);
   applyHostGeometry();
   if (!M.reactRoot) M.reactRoot = createRoot(el);
   M.reactRoot.render(createElement(TacticalApp));

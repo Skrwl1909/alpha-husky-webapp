@@ -11026,7 +11026,9 @@ async function loadProfile() {
   const perfT0 = window.__ahPerf?.now?.() || Date.now();
   try {
     const requestPerfT0 = window.__ahPerf?.now?.() || Date.now();
+    const profileSessionAtRequest = window.__ahAlphaAccountSession || null;
     const out = await apiPost("/webapp/profile", {});
+    if ((window.__ahAlphaAccountSession || null) !== profileSessionAtRequest) return;
     window.__ahPerf?.boot?.("loadProfile.request", requestPerfT0);
     if (!out) return;
 
@@ -11094,6 +11096,7 @@ async function loadProfile() {
         characterPng: heroImg,
       };
       window.PROFILE = PROFILE;
+      window.__AH_PROFILE_SESSION_REF__ = profileSessionAtRequest;
       window.__PROFILE__ = sharedProfile;
       window.lastProfile = sharedProfile;
       window.profileState = sharedProfile;
@@ -11104,6 +11107,7 @@ async function loadProfile() {
     setHeroFrame(pickFrameUrl(p) || "", pickFrameKey(p) || "", PROFILE.skinKey || "");
     applyHeroAura(p?.weeklyAura || p?.activeAura || null);
     applyHeroSignal(PROFILE.howlSignal || null);
+    try { window.dispatchEvent(new Event("ah:profile-updated")); } catch (_) {}
 
     // ✅ Topbar może się przebudować – ok
     try { renderTopbar(); } catch (_) {}

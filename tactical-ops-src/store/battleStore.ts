@@ -745,8 +745,9 @@ export const useBattleStore = create<Store>((set, get) => {
     refreshIdentity: () => {
       const identity = identityCache(resolvePlayerIdentity());
       set({ identity });
+      const sessionAtRefresh = typeof window !== "undefined" ? (window as unknown as {__ahAlphaAccountSession?:unknown}).__ahAlphaAccountSession || null : null;
       void hydrateEquippedState().then((ok) => {
-        if (!ok) return;
+        if (!ok || (typeof window !== "undefined" && ((window as unknown as {__ahAlphaAccountSession?:unknown}).__ahAlphaAccountSession || null) !== sessionAtRefresh)) return;
         const next = identityCache(resolvePlayerIdentity());
         set({ identity: next });
       });

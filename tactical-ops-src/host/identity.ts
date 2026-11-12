@@ -10,12 +10,18 @@ export interface LoadoutItem {
   rarity: string;
 }
 
+export interface CosmeticFit { scale:number; offsetX:number; offsetY:number }
+export interface CosmeticPresentation {
+  skinUrl:string; frameKey:string; frameUrl:string; glowUrl:string; sweepUrl:string;
+  fit:CosmeticFit; confirmed:boolean;
+}
 export interface PlayerIdentity {
   unitName: string;
   nickname: string;
   skinKey: string;
   skinName: string;
   skinUrl: string;
+  cosmetic: CosmeticPresentation;
   portraitUrl: string;
   spriteUrl: string;
   attackSpriteUrl: string;
@@ -199,6 +205,47 @@ function readHeroSkin(): { url: string; key: string; name: string } {
   return { url, key: normKey(key), name };
 }
 
+/** Use only live, actually equipped hero layers; never gallery previews. */
+function readCosmetics(): CosmeticPresentation {
+  const empty: CosmeticPresentation = {skinUrl:"",frameKey:"",frameUrl:"",glowUrl:"",sweepUrl:"",
+    fit:{scale:1,offsetX:0,offsetY:0},confirmed:false};
+  const w=win(),doc=w?.document as Document|undefined;
+  if(!w||!doc) return empty;
+  const session=w.__ahAlphaAccountSession||null;
+  if(session && w.__AH_PROFILE_SESSION_REF__!==session) return empty;
+  const skin=doc.getElementById("player-skin") as (HTMLImageElement & {__ahVisualFit?:unknown})|null;
+  const base=doc.getElementById("player-frame") as HTMLImageElement|null;
+  const glow=doc.getElementById("player-frame-glow") as HTMLImageElement|null;
+  const sweep=doc.getElementById("player-frame-sweep") as HTMLImageElement|null;
+  const profile=readProfile();
+  const key=normKey(skin?.dataset?.skinKey||profile.skinKey||profile.skin_key);
+  const skinData=profile.skin && typeof profile.skin==="object"?profile.skin as AnyRec:{};
+  const raw=firstText(skin?.getAttribute("src"),skinData.img,typeof profile.skin==="string"?profile.skin:"");
+  const skinUrl=looksUrl(raw)?publicAssetUrl(raw):"";
+  const layer=(node:HTMLImageElement|null)=>{
+    const url=asText(node?.getAttribute("src"));
+    return node&&node.style.display!=="none"&&looksUrl(url)?publicAssetUrl(url):"";
+  };
+  const frameUrl=layer(base),frameKey=frameUrl?normKey(base?.dataset?.frameKey):"";
+  const fit=(v:unknown):CosmeticFit=>{
+    const o=v&&typeof v==="object"?v as AnyRec:{};
+    const n=(val:unknown,d:number)=>val==null||val===""||!Number.isFinite(Number(val))?d:Number(val);
+    return {scale:n(o.scale,1),offsetX:n(o.offsetX??o.x,0),offsetY:n(o.offsetY??o.y,0)};
+  };
+  const resolve=(v:unknown,k:string)=>{
+    const o=v&&typeof v==="object"?v as AnyRec:{};
+    const overrides=o.overrides&&typeof o.overrides==="object"?o.overrides as AnyRec:{};
+    return fit(overrides[k]||o.default);
+  };
+  const sf=skin?.__ahVisualFit&&typeof skin.__ahVisualFit==="object"?fit(skin.__ahVisualFit):resolve(w.__AH_SKIN_FIT__,key);
+  const ff=resolve(w.__AH_FRAME_FIT__||w.__AH_FRAME_SKIN_FIT__,frameKey);
+  const cf=resolve(w.__AH_SKIN_FRAME_COMBO_FIT__,key&&frameKey?key+"::"+frameKey:"");
+  const matching=(node:HTMLImageElement|null)=>frameKey&&normKey(node?.dataset?.frameKey)===frameKey;
+  return {skinUrl,frameKey,frameUrl,glowUrl:matching(glow)?layer(glow):"",sweepUrl:matching(sweep)?layer(sweep):"",
+    fit:{scale:sf.scale*ff.scale*cf.scale,offsetX:sf.offsetX+ff.offsetX+cf.offsetX,offsetY:sf.offsetY+ff.offsetY+cf.offsetY},
+    confirmed:!!skinUrl};
+}
+
 function readCharacterImage(): string {
   const w = win();
   if (!w) return "";
@@ -229,6 +276,8 @@ function makeIdentity(partial?: Partial<PlayerIdentity>): PlayerIdentity {
     skinKey: partial?.skinKey || "",
     skinName,
     skinUrl: partial?.skinUrl || "",
+    cosmetic: partial?.cosmetic || {skinUrl:"",frameKey:"",frameUrl:"",glowUrl:"",sweepUrl:"",
+      fit:{scale:1,offsetX:0,offsetY:0},confirmed:false},
     portraitUrl: partial?.portraitUrl || FALLBACK_PORTRAIT,
     spriteUrl: partial?.spriteUrl || FALLBACK_SPRITE,
     attackSpriteUrl: partial?.attackSpriteUrl || FALLBACK_ATTACK,
@@ -247,9 +296,11 @@ function makeIdentity(partial?: Partial<PlayerIdentity>): PlayerIdentity {
 export function resolvePlayerIdentity(): PlayerIdentity {
   const profile = readProfile();
   const equipped = readEquippedState();
-  const hero = readHeroSkin();
-  const liveComposite = readCharacterImage();
-  const nickname = firstText(profile.nickname, profile.name, profile.displayName);
+  const cosmetic=readCosmetics();
+  const stale=!!win()?.__ahAlphaAccountSession&&!cosmetic.confirmed;
+  const hero=stale?{url:"",key:"",name:""}:readHeroSkin();
+  const liveComposite = stale ? "" : readCharacterImage();
+  const nickname = stale ? "" : firstText(profile.nickname, profile.name, profile.displayName);
   const unitName = nickname ? nickname.toUpperCase() : "ALPHA";
 
   const weapon = slotFromState(equipped, "weapon") || slotFromState(profile, "weapon");
@@ -285,6 +336,7 @@ export function resolvePlayerIdentity(): PlayerIdentity {
     skinKey: hero.key,
     skinName: hero.name || (hero.key ? hero.key.replace(/_+/g, " ") : ""),
     skinUrl,
+    cosmetic,
     portraitUrl,
     spriteUrl: FALLBACK_SPRITE,
     attackSpriteUrl: FALLBACK_ATTACK,

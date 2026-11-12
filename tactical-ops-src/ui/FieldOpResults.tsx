@@ -6,7 +6,7 @@ import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
 import { veteranReceiptReason } from "../data/progressionOpportunity";
 import { recordedImpact } from "./afterActionImpact";
-import { UNIT_DEFS } from "../data/units";
+import { CommanderPortrait } from "./PlayerIdentity";
 import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 import { getHost, type ForgeUpgrade } from "../host/bridge";
 
@@ -89,7 +89,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
   const primaryAction = <div className="t-brief-actions t-result-actions">{actions}</div>;
   return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={milestone ? "confirmed" : undefined}>
     {reachReward ? <section className="t-fr-reach-reward" aria-label="Confirmed field contract">
-      <img className="t-fr-reward-portrait" src={UNIT_DEFS.alpha.portrait} alt="" />
+      <div className="t-fr-reward-commander" aria-label="Your equipped Alpha"><CommanderPortrait /></div>
       <div className="t-fr-reward-copy">
         <span className="t-kicker">VICTORY · ALPHA / A2</span>
         {rewardIcon ? <img className="t-fr-reward-icon" src={rewardIcon} alt="" /> : null}

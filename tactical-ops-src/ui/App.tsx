@@ -44,7 +44,7 @@ import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 import { relayPressureMission } from "../data/relayPressure";
 
 import { applyIdentityToAlpha } from "../host/identity";
-import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
+import { CommanderPortrait, PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -952,7 +952,7 @@ function Brief() {
           <div className="t-squad-preview t-squad-preview-v29" aria-label="Selected squad">
             {allies.map(def => (
               <div key={def.defId}>
-                <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" />
+                {def.defId === "alpha" ? <CommanderPortrait fallbackUrl={def.portrait} /> : <img src={def.portrait} alt="" />}
                 <span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span>
               </div>
             ))}
@@ -1002,7 +1002,7 @@ function Brief() {
                 {loadoutAllies.map(def => <button type="button" key={def.defId} aria-pressed={def.defId === unit.defId} onClick={() => setLoadoutUnit(def.defId)}>
                   <span className="t-loadout-portrait" aria-hidden="true">
                     {def.defId.startsWith("pet:") ? <PawPrint size={20} /> : null}
-                    <img src={def.portrait} alt="" onError={def.defId === "alpha" ? portraitFallback : event => { event.currentTarget.hidden = true; }} />
+                    {def.defId === "alpha" ? <CommanderPortrait fallbackUrl={def.portrait} /> : <img src={def.portrait} alt="" onError={event => { event.currentTarget.hidden = true; }} />}
                   </span>
                   <strong>{loadoutName(def)}</strong>
                   {mission && (def.defId === "ally-02" || def.defId === "ally-03") && sidegradesUnlocked && !resuming ? <small>Variants</small> : null}
@@ -1124,7 +1124,7 @@ function Brief() {
                 <PlayerIdentityCard />
                 {allies.map((def) => (
                   <div className="t-unit-row" key={def.defId}>
-                    <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
+                    {def.defId === "alpha" ? <CommanderPortrait fallbackUrl={def.portrait} /> : <img src={def.portrait} alt="" style={{ objectPosition: "50% 12%" }} />}
                     <div><div className="t-title" style={{ fontSize: "0.95rem" }}>{def.defId === "ally-02" ? "COLDNCURSED" : def.name}</div><div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def)}</div></div>
                   </div>
                 ))}
