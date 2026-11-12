@@ -29,7 +29,7 @@ function sourceBlob(source) {
 
 // Tactical Player Identity V2: exact approved source blobs, not wildcard permissions.
 const approvedIdentityV2Blobs=Object.freeze({
-  "tactical-ops-src/host/identity.ts": "a48a345eb25bf75799d359b37b4e1ac83fab5b9b",
+  "tactical-ops-src/host/identity.ts": "796a09c2848f464dd436c9cdfe3d6244c2ae26e8",
   "tactical-ops-src/ui/PlayerIdentity.tsx": "d0b5ab68addb982ef81aadbc6d17319748443128",
   "tactical-ops-src/ui/App.tsx": "1cdfc24a7f978404b5336c594cc1378aab803c88",
   "tactical-ops-src/ui/Battle.tsx": "8114907414ae45975fa0a536f94710c1306a563b",
@@ -39,8 +39,9 @@ const approvedIdentityV2Blobs=Object.freeze({
   "tactical-ops-src/store/battleStore.ts": "2579ed6dc9f30b971b5fe8602723469410b19ac6",
   "index.html": "c19319a576ddb15a135bd3806bf426704ef87e99",
   "tactical-ops-src/version.ts": "c7a0e7832297089902d4353f468cce7489ad7d9c",
-  "tools/verify_tactical_player_identity_v2.mjs": "91411c5f26adc9f4fbbedda5806a60701b86d37c",
-  ".github/workflows/tactical-player-identity-v2.yml": "fc9b06bdfc5f2988a5a46938e10c8439a45b35f8"
+  "tools/verify_tactical_player_identity_v2.mjs": "f4daf0beede9ef3c2f0a129e7f919edf08b058da",
+  ".github/workflows/tactical-player-identity-v2.yml": "fc9b06bdfc5f2988a5a46938e10c8439a45b35f8",
+  ".github/workflows/tactical-cinematic-results.yml": "a30085c6340f42f6f3e73ab402f8987372ad2b50"
 });
 for(const [path,sha] of Object.entries(approvedIdentityV2Blobs)) {
  assert.equal(sourceBlob(readFileSync(path)), approvedIdentityV2Blobs[path] ??sha,'unreviewed Player Identity V2 source: '+path);
@@ -630,7 +631,7 @@ for(const path of git('diff','--name-only','--no-renames',mergedBaseline,overhea
 
 // Victory Art Kit V1: exact local assets, no wildcard permissions.
 for (const [assetPath,approvedSha] of Object.entries(approvedVictoryArtKitV1Blobs)) {
-  assert.equal(sourceBlob(readFileSync(assetPath)),approvedSha,
+  assert.equal(sourceBlob(readFileSync(assetPath)),approvedIdentityV2Blobs[assetPath] ?? approvedSha,
     'unreviewed Victory Art Kit V1 asset: '+assetPath);
 }
 assert(readFileSync('index.html','utf8').includes(

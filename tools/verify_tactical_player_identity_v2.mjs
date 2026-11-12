@@ -59,6 +59,9 @@ try {
   assert.equal(c.skinUrl,"https://cdn.example.com/skin-v2.avif");
   assert.equal(c.frameUrl,"");
   elements["player-skin"]=node("","other_skin");
-  assert.equal(resolvePlayerIdentity().cosmetic.confirmed,false);
+  const missing=resolvePlayerIdentity();
+  assert.equal(missing.cosmetic.confirmed,false);
+  assert.equal(missing.cosmetic.frameUrl,"");
+  assert.equal(missing.cosmetic.glowUrl,"");
   console.log("PASS Tactical Player Identity V2: real resolver snapshots, frame effects, fits, unequip, account switch, custom extensions, missing assets");
 } finally {delete globalThis.window;rmSync(tmp,{recursive:true,force:true});}

@@ -98,12 +98,6 @@ function cloudinaryEquip(key: string): string {
   return `${CDN}/f_auto,q_auto/equip/${k}.png`;
 }
 
-function cloudinarySkin(key: string): string {
-  const k = normKey(key);
-  if (!k) return "";
-  return `${CDN}/f_auto,q_auto/skins/${k}.webp`;
-}
-
 function classifyWeapon(item: LoadoutItem | null): WeaponClass {
   const t = `${item?.key || ""} ${item?.name || ""}`.toLowerCase();
   if (/axe|cleaver|chop|hatchet/.test(t)) return "axe";
@@ -197,9 +191,6 @@ function readHeroSkin(): { url: string; key: string; name: string } {
       profile.characterPng,
       (profile.activeSkin as AnyRec)?.img,
     );
-  if (!url && key) {
-    url = `/assets/skins/${normKey(key)}.webp`;
-  }
   if (name.toLowerCase() === "alpha husky skin") name = "";
   if (!name && key) name = key.replace(/[_-]+/g, " ").replace(/\bskin\b/gi, "").trim();
   return { url, key: normKey(key), name };
@@ -220,13 +211,15 @@ function readCosmetics(): CosmeticPresentation {
   const profile=readProfile();
   const key=normKey(skin?.dataset?.skinKey||profile.skinKey||profile.skin_key);
   const skinData=profile.skin && typeof profile.skin==="object"?profile.skin as AnyRec:{};
-  const raw=firstText(skin?.getAttribute("src"),skinData.img,typeof profile.skin==="string"?profile.skin:"");
+  // Only the host's equipped hero image can confirm a layered cosmetic.
+  // Profile metadata alone may be stale while the DOM is being refreshed.
+  const raw=firstText(skin?.getAttribute("src"));
   const skinUrl=looksUrl(raw)?publicAssetUrl(raw):"";
   const layer=(node:HTMLImageElement|null)=>{
     const url=asText(node?.getAttribute("src"));
     return node&&node.style.display!=="none"&&looksUrl(url)?publicAssetUrl(url):"";
   };
-  const frameUrl=layer(base),frameKey=frameUrl?normKey(base?.dataset?.frameKey):"";
+  const frameUrl=skinUrl?layer(base):"",frameKey=frameUrl?normKey(base?.dataset?.frameKey):"";
   const fit=(v:unknown):CosmeticFit=>{
     const o=v&&typeof v==="object"?v as AnyRec:{};
     const n=(val:unknown,d:number)=>val==null||val===""||!Number.isFinite(Number(val))?d:Number(val);
@@ -297,7 +290,8 @@ export function resolvePlayerIdentity(): PlayerIdentity {
   const profile = readProfile();
   const equipped = readEquippedState();
   const cosmetic=readCosmetics();
-  const stale=!!win()?.__ahAlphaAccountSession&&!cosmetic.confirmed;
+  const w=win();
+  const stale=!!w?.__ahAlphaAccountSession && w.__AH_PROFILE_SESSION_REF__!==w.__ahAlphaAccountSession;
   const hero=stale?{url:"",key:"",name:""}:readHeroSkin();
   const liveComposite = stale ? "" : readCharacterImage();
   const nickname = stale ? "" : firstText(profile.nickname, profile.name, profile.displayName);
@@ -306,11 +300,8 @@ export function resolvePlayerIdentity(): PlayerIdentity {
   const weapon = slotFromState(equipped, "weapon") || slotFromState(profile, "weapon");
   const armor = slotFromState(equipped, "armor") || slotFromState(profile, "armor");
 
-  const skinUrl = looksUrl(hero.url)
-    ? publicAssetUrl(hero.url)
-    : hero.key
-      ? cloudinarySkin(hero.key)
-      : "";
+  // Never construct a guessed Cloudinary extension from a cosmetic key.
+  const skinUrl = looksUrl(hero.url) ? publicAssetUrl(hero.url) : "";
   const portraitFromSkin = looksUrl(skinUrl) ? skinUrl : "";
   const portraitFromLive = looksUrl(liveComposite) ? liveComposite : "";
 
