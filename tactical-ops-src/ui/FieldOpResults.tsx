@@ -99,7 +99,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
   // Read-only presentation priority. No estimated thresholds or local-outcome rewards.
   const masteryMilestone = receipt?.masteryChanges?.find(change => change.veteran?.unlocked || change.stage > change.beforeStage);
   const rankAdvance = receipt && receipt.rankAfter > receipt.rankBefore;
-  const milestone = Boolean(award?.reward || receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone);
+  const hasProgressionMilestone = Boolean(award?.reward || receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone);
   const careerAdvance = receipt?.veteranCareer && receipt.veteranCareer.after > receipt.veteranCareer.before;
   const masteryGain = receipt?.masteryChanges?.some(change => change.gained > 0);
   const missionImpact = receipt ? recordedImpact(receipt, consequence) : null;
@@ -115,7 +115,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
   const majorUnlock = award?.reward === "field-tested" ? `FIELD HONOR · ${FIELD_HONOR}`
     : receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone ? achievement : null;
   const primaryAction = <div className="t-brief-actions t-result-actions">{actions}</div>;
-  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={milestone ? "confirmed" : undefined}>
+  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={hasProgressionMilestone ? "confirmed" : undefined}>
     {reachReward ? <section className="t-fr-reach-reward" aria-label="Confirmed field contract">
       <div className="t-fr-reward-commander" aria-label="Your equipped Alpha"><CommanderPortrait /></div>
       <div className="t-fr-reward-copy">
@@ -187,7 +187,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         <div className="t-fr-spotlight">
           <span className="t-fr-insignia" aria-hidden="true">{receipt.rankAfter}</span>
           <div className="t-fr-spotlight-copy">
-            <h3>{milestone ? "MILESTONE CONFIRMED" : "RECORDED THIS RUN"}</h3>
+            <h3>{hasProgressionMilestone ? "MILESTONE CONFIRMED" : "RECORDED THIS RUN"}</h3>
             <strong className="t-fr-achievement">{achievement}</strong>
             <div className="t-fr-rank"><span>COMMANDER</span><strong>RANK {receipt.rankBefore !== receipt.rankAfter ? `${receipt.rankBefore} → ` : ""}{receipt.rankAfter}</strong>
               <small>{receipt.progressBefore} → {receipt.progressAfter} total points · rank shown by this receipt</small></div>
