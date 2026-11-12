@@ -10,12 +10,18 @@ export interface LoadoutItem {
   rarity: string;
 }
 
+export interface CosmeticFit { scale:number; offsetX:number; offsetY:number }
+export interface CosmeticPresentation {
+  skinUrl:string; frameKey:string; frameUrl:string; glowUrl:string; sweepUrl:string;
+  fit:CosmeticFit; confirmed:boolean;
+}
 export interface PlayerIdentity {
   unitName: string;
   nickname: string;
   skinKey: string;
   skinName: string;
   skinUrl: string;
+  cosmetic: CosmeticPresentation;
   portraitUrl: string;
   spriteUrl: string;
   attackSpriteUrl: string;
@@ -90,12 +96,6 @@ function cloudinaryEquip(key: string): string {
   const k = normKey(key);
   if (!k) return "";
   return `${CDN}/f_auto,q_auto/equip/${k}.png`;
-}
-
-function cloudinarySkin(key: string): string {
-  const k = normKey(key);
-  if (!k) return "";
-  return `${CDN}/f_auto,q_auto/skins/${k}.webp`;
 }
 
 function classifyWeapon(item: LoadoutItem | null): WeaponClass {
@@ -191,12 +191,52 @@ function readHeroSkin(): { url: string; key: string; name: string } {
       profile.characterPng,
       (profile.activeSkin as AnyRec)?.img,
     );
-  if (!url && key) {
-    url = `/assets/skins/${normKey(key)}.webp`;
-  }
   if (name.toLowerCase() === "alpha husky skin") name = "";
   if (!name && key) name = key.replace(/[_-]+/g, " ").replace(/\bskin\b/gi, "").trim();
   return { url, key: normKey(key), name };
+}
+
+/** Use only live, actually equipped hero layers; never gallery previews. */
+function readCosmetics(): CosmeticPresentation {
+  const empty: CosmeticPresentation = {skinUrl:"",frameKey:"",frameUrl:"",glowUrl:"",sweepUrl:"",
+    fit:{scale:1,offsetX:0,offsetY:0},confirmed:false};
+  const w=win(),doc=w?.document as Document|undefined;
+  if(!w||!doc) return empty;
+  const session=w.__ahAlphaAccountSession||null;
+  if(session && w.__AH_PROFILE_SESSION_REF__!==session) return empty;
+  const skin=doc.getElementById("player-skin") as (HTMLImageElement & {__ahVisualFit?:unknown})|null;
+  const base=doc.getElementById("player-frame") as HTMLImageElement|null;
+  const glow=doc.getElementById("player-frame-glow") as HTMLImageElement|null;
+  const sweep=doc.getElementById("player-frame-sweep") as HTMLImageElement|null;
+  const profile=readProfile();
+  const key=normKey(skin?.dataset?.skinKey||profile.skinKey||profile.skin_key);
+  const skinData=profile.skin && typeof profile.skin==="object"?profile.skin as AnyRec:{};
+  // Only the host's equipped hero image can confirm a layered cosmetic.
+  // Profile metadata alone may be stale while the DOM is being refreshed.
+  const raw=firstText(skin?.getAttribute("src"));
+  const skinUrl=looksUrl(raw)?publicAssetUrl(raw):"";
+  const layer=(node:HTMLImageElement|null)=>{
+    const url=asText(node?.getAttribute("src"));
+    return node&&node.style.display!=="none"&&looksUrl(url)?publicAssetUrl(url):"";
+  };
+  const frameUrl=skinUrl?layer(base):"",frameKey=frameUrl?normKey(base?.dataset?.frameKey):"";
+  const fit=(v:unknown):CosmeticFit=>{
+    const o=v&&typeof v==="object"?v as AnyRec:{};
+    const n=(val:unknown,d:number)=>val==null||val===""||!Number.isFinite(Number(val))?d:Number(val);
+    return {scale:n(o.scale,1),offsetX:n(o.offsetX??o.x,0),offsetY:n(o.offsetY??o.y,0)};
+  };
+  const resolve=(v:unknown,k:string)=>{
+    const o=v&&typeof v==="object"?v as AnyRec:{};
+    const overrides=o.overrides&&typeof o.overrides==="object"?o.overrides as AnyRec:{};
+    return fit(overrides[k]||o.default);
+  };
+  const sf=skin?.__ahVisualFit&&typeof skin.__ahVisualFit==="object"?fit(skin.__ahVisualFit):resolve(w.__AH_SKIN_FIT__,key);
+  const ff=resolve(w.__AH_FRAME_FIT__||w.__AH_FRAME_SKIN_FIT__,frameKey);
+  const cf=resolve(w.__AH_SKIN_FRAME_COMBO_FIT__,key&&frameKey?key+"::"+frameKey:"");
+  const matching=(node:HTMLImageElement|null)=>frameKey&&normKey(node?.dataset?.frameKey)===frameKey;
+  return {skinUrl,frameKey,frameUrl,glowUrl:matching(glow)?layer(glow):"",sweepUrl:matching(sweep)?layer(sweep):"",
+    fit:{scale:sf.scale*ff.scale*cf.scale,offsetX:sf.offsetX+ff.offsetX+cf.offsetX,offsetY:sf.offsetY+ff.offsetY+cf.offsetY},
+    confirmed:!!skinUrl};
 }
 
 function readCharacterImage(): string {
@@ -229,6 +269,8 @@ function makeIdentity(partial?: Partial<PlayerIdentity>): PlayerIdentity {
     skinKey: partial?.skinKey || "",
     skinName,
     skinUrl: partial?.skinUrl || "",
+    cosmetic: partial?.cosmetic || {skinUrl:"",frameKey:"",frameUrl:"",glowUrl:"",sweepUrl:"",
+      fit:{scale:1,offsetX:0,offsetY:0},confirmed:false},
     portraitUrl: partial?.portraitUrl || FALLBACK_PORTRAIT,
     spriteUrl: partial?.spriteUrl || FALLBACK_SPRITE,
     attackSpriteUrl: partial?.attackSpriteUrl || FALLBACK_ATTACK,
@@ -247,19 +289,19 @@ function makeIdentity(partial?: Partial<PlayerIdentity>): PlayerIdentity {
 export function resolvePlayerIdentity(): PlayerIdentity {
   const profile = readProfile();
   const equipped = readEquippedState();
-  const hero = readHeroSkin();
-  const liveComposite = readCharacterImage();
-  const nickname = firstText(profile.nickname, profile.name, profile.displayName);
+  const cosmetic=readCosmetics();
+  const w=win();
+  const stale=!!w?.__ahAlphaAccountSession && w.__AH_PROFILE_SESSION_REF__!==w.__ahAlphaAccountSession;
+  const hero=stale?{url:"",key:"",name:""}:readHeroSkin();
+  const liveComposite = stale ? "" : readCharacterImage();
+  const nickname = stale ? "" : firstText(profile.nickname, profile.name, profile.displayName);
   const unitName = nickname ? nickname.toUpperCase() : "ALPHA";
 
   const weapon = slotFromState(equipped, "weapon") || slotFromState(profile, "weapon");
   const armor = slotFromState(equipped, "armor") || slotFromState(profile, "armor");
 
-  const skinUrl = looksUrl(hero.url)
-    ? publicAssetUrl(hero.url)
-    : hero.key
-      ? cloudinarySkin(hero.key)
-      : "";
+  // Never construct a guessed Cloudinary extension from a cosmetic key.
+  const skinUrl = looksUrl(hero.url) ? publicAssetUrl(hero.url) : "";
   const portraitFromSkin = looksUrl(skinUrl) ? skinUrl : "";
   const portraitFromLive = looksUrl(liveComposite) ? liveComposite : "";
 
@@ -285,6 +327,7 @@ export function resolvePlayerIdentity(): PlayerIdentity {
     skinKey: hero.key,
     skinName: hero.name || (hero.key ? hero.key.replace(/_+/g, " ") : ""),
     skinUrl,
+    cosmetic,
     portraitUrl,
     spriteUrl: FALLBACK_SPRITE,
     attackSpriteUrl: FALLBACK_ATTACK,
