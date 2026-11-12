@@ -49,7 +49,7 @@ const approvedWarTableV2Blobs=Object.freeze({
   "tactical-ops-src/ui/commandDeck.css": "ab42b297ed9c7bd23828bf17060f3cc1a2ff7480",
   "tactical-ops-src/ui/operationArtwork.ts": "9d4b682fc9b5030d74e5b676f04eccb18ce3b970",
   "tactical-ops-src/version.ts": "471f1b7eedad889f4cb1719db405b30e0920da5c",
-  "tools/verify_wartable_visual_v2.mjs": "98bc280c792c0f35b2d90ca3682a94d5d802590c",
+  "tools/verify_wartable_visual_v2.mjs": "cd2fae1d537b8916ab1a8b6fa59b27b0675979e0",
   ".github/workflows/war-table-visual-v2.yml": "b5d2135c487d65b8ac57a1307165c27692e4c347"
 });
 for(const [path,sha] of Object.entries(approvedWarTableV2Blobs)) {
@@ -72,7 +72,9 @@ const approvedWarTableAssetBlobs=Object.freeze({
   "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_hold_v1_256.webp": "89a4ce5767c10258f357616417de080c832a4a22",
   "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_survive_v1_256.webp": "9a8c941eefaeb051e178ba9dfacf9ce321cf3450",
   "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_intercept_v1_256.webp": "577aae06ded7771f9445e0d6fc9d306728f381a3",
-  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_boss_v1_256.webp": "429f1cb1b0aafa74de3ba1a5cee8f0887324856f"
+  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_boss_v1_256.webp": "429f1cb1b0aafa74de3ba1a5cee8f0887324856f",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/gitkeep": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+  "images/tactical_ops/presentation/command_deck/operations/gitkeep": "8b137891791fe96927ad78e64b0aad7bded08bdc"
 });
 for(const [path,sha] of Object.entries(approvedWarTableAssetBlobs)){
  const bytes=readFileSync(path);
