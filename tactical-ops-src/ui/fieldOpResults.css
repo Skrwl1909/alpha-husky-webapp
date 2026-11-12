@@ -352,6 +352,16 @@
   border:1px solid #ab9b7e88;background:linear-gradient(145deg,#493f31,#182830);color:#eddbad;
 }
 #tacticalOpsRoot .t-field-results .t-fr-forge-symbol svg{width:24px;height:24px;stroke-width:1.6}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol{position:relative;overflow:hidden;isolation:isolate}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol .t-fr-forge-item-art{
+  position:absolute;inset:2px;width:calc(100% - 4px);height:calc(100% - 4px);
+  object-fit:contain;display:block;filter:drop-shadow(0 1px 3px #0009)
+}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol .t-fr-forge-item-art[hidden]{display:none}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol[data-rarity=uncommon]{border-color:#8ab99a99}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol[data-rarity=rare]{border-color:#76a9dbaa}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol[data-rarity=epic]{border-color:#bb91ecaa}
+#tacticalOpsRoot .t-field-results .t-fr-forge-symbol[data-rarity=legendary]{border-color:#d4af6dbb}
 #tacticalOpsRoot .t-field-results .t-fr-forge-identity{display:flex;flex-direction:column;gap:4px;min-width:0}
 #tacticalOpsRoot .t-field-results .t-fr-forge-identity>strong{
   display:block;font:800 clamp(14px,4.4vw,18px)/1.2 var(--t-font-display);
