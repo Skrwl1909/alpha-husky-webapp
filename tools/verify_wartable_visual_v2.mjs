@@ -47,12 +47,10 @@ const server=await createServer({configFile:false,cacheDir:"node_modules/.vite-w
  plugins:[{name:"wartable-v2-fixture",configureServer(s){s.middlewares.use((req,res,next)=>{
   if(!req.url?.startsWith("/wartable-visual-fixture"))return next();
   res.setHeader("Content-Type","text/html");
-  res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial}</style><div id="tacticalOpsRoot" data-open="1"><div id="mount"></div></div><script type="module" src="/@wartable-v2"></script>');
+  res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial}#mount{width:100%;height:100%}</style><div id="tacticalOpsRoot" data-open="1"><div id="mount"></div></div><script type="module" src="/@wartable-v2"></script>');
  })},resolveId(id){if(id==="/@wartable-v2")return "\0wartable-v2"},load(id){if(id==="\0wartable-v2")return fixture}}]});
 await server.listen();
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:["--no-sandbox","--disable-dev-shm-usage"]});
-// The isolated fixture has no Telegram host geometry. Exercise the actual React
-// handlers via DOM events; separate existing browser suites verify touch hit targets.
 const out="artifacts/war-table-visual-v2";mkdirSync(out,{recursive:true});const cases=[];
 try {
  for(const width of [320,360,390,430]){
@@ -64,12 +62,15 @@ try {
   const banner=page.locator("[data-primary-purpose] .t-wt-scene");
   assert((await banner.getAttribute("src")).endsWith("alpha_wartable_fracture_front_v1.webp"),"featured Field Op environment");
   assert.equal(await page.locator("[data-primary-purpose] .t-wt-mission-emblem").count(),1);
-  await page.screenshot({path:out+"/"+width+"-command.png",fullPage:true});
-  await page.getByRole("button",{name:/02 MISSIONS/}).dispatchEvent("click");
+  const bannerBox=await page.locator(".t-wt-next-op").boundingBox();
+  assert(bannerBox && bannerBox.height>100 && bannerBox.y<844 && bannerBox.y+bannerBox.height>0,"Command card must occupy visible viewport");
+  const commandShot=await page.screenshot({path:out+"/"+width+"-command.png",fullPage:true});
+  assert(commandShot.length>12000,"Command screenshot unexpectedly blank");
+  await page.getByRole("button",{name:/02 MISSIONS/}).click();
   const selectors=page.locator(".t-op-selector button");
   assert.equal(await selectors.count(),3);
   for(const [index,kind] of [[0,"recover"],[1,"hold"],[2,"survive"]]){
-   await selectors.nth(index).dispatchEvent("click");
+   await selectors.nth(index).click();
    const article=page.locator(".t-cd-selected-operation .t-wt-mission-card");
    const scene=article.locator(".t-wt-scene");
    const emblem=article.locator(".t-wt-mission-type .t-wt-mission-emblem");
@@ -81,9 +82,10 @@ try {
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,width+" mission overflow "+kind);
    assert.equal(await article.locator(".t-wt-mission-cta button").isEnabled(),true,"confirmed Field Op CTA preserved");
   }
-  await selectors.first().dispatchEvent("click");
-  await page.screenshot({path:out+"/"+width+"-missions.png",fullPage:true});
-  await page.locator(".t-cd-selected-operation .t-wt-mission-cta button").dispatchEvent("click");
+  await selectors.first().click();
+  const missionShot=await page.screenshot({path:out+"/"+width+"-missions.png",fullPage:true});
+  assert(missionShot.length>12000,"Mission screenshot unexpectedly blank");
+  await page.locator(".t-cd-selected-operation .t-wt-mission-cta button").click();
   const brief=page.locator(".t-deploy-hero .t-wt-scene");await brief.waitFor();
   assert((await brief.getAttribute("src")).endsWith("alpha_wartable_fracture_front_v1.webp"),"mission brief shares environment");
   assert.equal(await page.locator(".t-deploy-hero .t-wt-brief-emblem .t-wt-mission-emblem").count(),1);
@@ -94,7 +96,7 @@ try {
  }
  const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,reducedMotion:"reduce"});
  await page.goto("http://127.0.0.1:"+server.httpServer.address().port+"/wartable-visual-fixture?mode=command&profile=fresh");
- await page.getByRole("button",{name:/02 MISSIONS/}).dispatchEvent("click");
+ await page.getByRole("button",{name:/02 MISSIONS/}).click();
  assert.match(await page.locator(".t-wt-mission-state").innerText(),/AVAILABLE/,"fresh rotation state not faked");
  assert.equal(await page.locator(".t-wt-mission-state").getAttribute("data-availability"),"available");
  await page.close();

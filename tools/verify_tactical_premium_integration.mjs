@@ -49,7 +49,7 @@ const approvedWarTableV2Blobs=Object.freeze({
   "tactical-ops-src/ui/commandDeck.css": "ab42b297ed9c7bd23828bf17060f3cc1a2ff7480",
   "tactical-ops-src/ui/operationArtwork.ts": "9d4b682fc9b5030d74e5b676f04eccb18ce3b970",
   "tactical-ops-src/version.ts": "471f1b7eedad889f4cb1719db405b30e0920da5c",
-  "tools/verify_wartable_visual_v2.mjs": "cd2fae1d537b8916ab1a8b6fa59b27b0675979e0",
+  "tools/verify_wartable_visual_v2.mjs": "dc51886df7fd9d9db5384b4739525bf43c6eec1b",
   ".github/workflows/war-table-visual-v2.yml": "b5d2135c487d65b8ac57a1307165c27692e4c347"
 });
 for(const [path,sha] of Object.entries(approvedWarTableV2Blobs)) {
