@@ -9,4 +9,4 @@ Frontend-only presentation change in the confirmed Victory Results screen.
 - **QA:** production Results Chromium fixture exercises valid/invalid icon, rarity, material-ready/missing, confirmed payout and Forge deep-link. The historical integrity verifier pins the six authored blobs.
 - **Build:** `tactical-ops-src/version.ts` activates canonical PR bundle-sync to regenerate `js/tactical_ops.js` and `js/boot_loaders.js`.
 
-Final-head gate (after main sync): require the generated bundle committed and a green CI run on the final head. This PR is independent of VPS Gear Impact V3.1 acceptance.
+Bundle sync verified at v3.6.59; final-head gate: require the generated bundle committed and a green CI run on the final head. This PR is independent of VPS Gear Impact V3.1 acceptance.
