@@ -31,7 +31,12 @@ function NextForgeUpgrade() {
     <span className="t-kicker">NEXT FORGE UPGRADE</span>
     {forge && upgrade && typeof upgrade === "object" ? <>
       <div className="t-fr-forge-head">
-        <span className="t-fr-forge-symbol" aria-hidden="true"><Hammer /></span>
+        <span className="t-fr-forge-symbol" data-rarity={upgrade.rarity || "common"} aria-hidden="true">
+          <Hammer />
+          {upgrade.imageUrl ? <img key={upgrade.key + ":" + upgrade.imageUrl} className="t-fr-forge-item-art"
+            src={upgrade.imageUrl} alt="" loading="lazy" decoding="async"
+            onError={event => { event.currentTarget.hidden = true; }} /> : null}
+        </span>
         <div className="t-fr-forge-identity">
           <strong>{upgrade.name} · ★{upgrade.stars}</strong>
           <span className="t-fr-forge-readiness">{materialsKnown ? (materialsReady ? "MATERIALS READY" : "MATERIALS NEEDED") : "CHECK MATERIALS IN FORGE"}</span>
