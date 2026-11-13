@@ -69,12 +69,24 @@ const approvedForgeFieldTestV1Blobs=Object.freeze({
   "index.html": "0df23e7c67087ce40b58d5105dc0d07a0388069f",
   "tools/verify_forge_field_test_v1.mjs": "30e0282c9e62750b812e9f0dc6730d10f1dc0444",
 });
+// #278 Reward Loop P2: approved merged delivery after #277.
+const approvedMaterialRouteV1Blobs=Object.freeze({
+  "tactical-ops-src/host/bootstrap.ts": "cf8a62411b284e2949b1d966d76be916f414c24d",
+  "tactical-ops-src/host/bridge.ts": "bc4eb09d3c1734545a4c63bc69d9d324830feaeb",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "7def2a86aa93c532a30961122af552903af36136",
+  "tactical-ops-src/version.ts": "0c9ecbed60cbdd4ad113748bea38961cfa044474",
+  "js/boot_loaders.js": "aba13c7924f9d169728517eeec9170cb2baaa0d6",
+  "js/tactical_ops.js": "3ec759b6d194bdd14360951d1901e65c11c66693",
+  "tools/verify_reward_loop_p2_material_route.mjs": "852b6830c24c9637b97db489248a40306369247f",
+  "index.html": "b5ebc0e9624a9a5cc75b331b6c40be039d9f17c4",
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
   ...approvedFoundationBridgeV1Blobs,
   ...approvedRealPlayerStatsDeliveryBlobs,
   ...approvedForgeFieldTestV1Blobs,
+  ...approvedMaterialRouteV1Blobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
