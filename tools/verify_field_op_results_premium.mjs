@@ -30,7 +30,9 @@ if(scenario.startsWith('payout-')){
  if(scenario==='payout-pending')Object.assign(patch,{fieldResult:null,progressionCommitPending:true});
  const balances={bones:24,scrap:4,rune_dust:1};
  const first={key:'first',name:'First Gear',slot:'armor',stars:1,maxStars:5,canUpgrade:false,costNext:{bones:24,scrap:8,rune_dust:3}};
- const target={key:'target',name:'Target Gear',slot:'weapon',stars:2,maxStars:5,canUpgrade:scenario==='payout-ready',costNext:{bones:24,scrap:8,rune_dust:0}};
+ // Thumbnail fixtures deliberately cover both a valid image and a broken image without depending on Cloudinary uptime.
+ const target={key:'target',name:'Target Gear',slot:'weapon',stars:2,maxStars:5,canUpgrade:scenario==='payout-ready',costNext:{bones:24,scrap:8,rune_dust:0},
+  rarity:'epic',icon:scenario==='payout-ready'?'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%2399b%22/%3E%3C/svg%3E':'data:image/png;base64,broken'};
  if(target.canUpgrade)balances.scrap=8;
  if(scenario==='payout-incomplete')delete balances.scrap;
  window.fixture.forgeRequests=[];
@@ -197,6 +199,17 @@ try{
      if(scenario==='payout-missing'||scenario==='payout-ready'){
       await upgrade.getByText('Target Gear · ★3',{exact:true}).waitFor();
       assert.equal(await upgrade.getAttribute('data-materials'),scenario==='payout-ready'?'ready':'needed','host-derived material readiness');
+      const art=upgrade.locator('.t-fr-forge-item-art');
+      assert.equal(await art.count(),1,'Forge-selected gear art exposed to results');
+      assert.equal(await upgrade.locator('.t-fr-forge-symbol').getAttribute('data-rarity'),'epic','rarity border matches selected item');
+      if(scenario==='payout-ready'){
+       assert.match(await art.getAttribute('src'),/^data:image\/svg\+xml,/,'existing Forge item icon reused');
+       await art.evaluate(img=>img.decode());
+       assert.equal(await art.getAttribute('hidden'),null,'valid artwork visible');
+      }else{
+       await art.waitFor({state:'hidden'}); // invalid image falls back to the always-present hammer
+       assert.equal(await upgrade.locator('.t-fr-forge-symbol svg').count(),1,'missing art retains hammer fallback');
+      }
       assert.match(await upgrade.innerText(),/Bones\s+24 \/ 24/);
       if(scenario==='payout-missing'){
        assert.match(await upgrade.innerText(),/Scrap\s+4 \/ 8[\s\S]*Missing 4 · Salvage eligible gear in Inventory/);

@@ -7,6 +7,8 @@ export interface TacticalCombatProfileV3 {
   mode: "battle-v1";
   alpha: { hp:number; atk:number; def:number; spd:number };
   pet: ({id:string;name:string;img:string;hp:number;atk:number;def:number;spd:number}) | null;
+  /** Optional to preserve all already-accepted legacy V3 run snapshots. */
+  gearImpactV31?: { offense: number; guard: number };
 }
 const keys=["hp","atk","def","spd"] as const;
 function object(x:unknown):Record<string,unknown> {if(!x||typeof x!=="object"||Array.isArray(x))throw Error("invalid_combat_profile_v3");return x as Record<string,unknown>}
@@ -14,9 +16,14 @@ function exact(o:Record<string,unknown>,ks:string[]):void {if(Object.keys(o).len
 function bounded(x:unknown,min:number,max:number):number {if(typeof x!=="number"||!Number.isInteger(x)||x<min||x>max)throw Error("invalid_combat_profile_v3");return x}
 function stats(x:Record<string,unknown>,base:[number,number,number,number],bonus:[number,number,number,number]):{hp:number;atk:number;def:number;spd:number} {const s={} as {hp:number;atk:number;def:number;spd:number};keys.forEach((k,i)=>{s[k]=bounded(x[k],base[i],base[i]+bonus[i])});return s}
 export function parseCombatProfileV3(raw:unknown):TacticalCombatProfileV3|null {
- if(raw===undefined)return null;const v=object(raw);exact(v,["version","mode","alpha","pet"]);if(v.version!==3||v.mode!=="battle-v1")throw Error("invalid_combat_profile_v3");const a=object(v.alpha);exact(a,[...keys]);const alpha=stats(a,[120,28,12,14],[18,11,9,2]);let pet:TacticalCombatProfileV3["pet"]=null;
+ if(raw===undefined)return null;const v=object(raw);exact(v, Object.prototype.hasOwnProperty.call(v,"gearImpactV31") ? ["version","mode","alpha","pet","gearImpactV31"] : ["version","mode","alpha","pet"]);if(v.version!==3||v.mode!=="battle-v1")throw Error("invalid_combat_profile_v3");const a=object(v.alpha);exact(a,[...keys]);const alpha=stats(a,[120,28,12,14],[18,11,9,2]);let pet:TacticalCombatProfileV3["pet"]=null;
  if(v.pet!==null){const p=object(v.pet);exact(p,["id","name","img",...keys]);for(const k of ["id","name","img"]){if(typeof p[k]!=="string"||!(p[k] as string).length||(p[k] as string).length>(k==="img"?2048:128))throw Error("invalid_combat_profile_v3")};if(!(p.img as string).startsWith("https://"))throw Error("invalid_combat_profile_v3");pet={id:p.id as string,name:p.name as string,img:p.img as string,...stats(p,[78,18,6,13],[13,7,5,2])}}
- return {version:3,mode:"battle-v1",alpha,pet};
+ let gearImpactV31:TacticalCombatProfileV3["gearImpactV31"];
+ if(Object.prototype.hasOwnProperty.call(v,"gearImpactV31")){
+   const impact=object(v.gearImpactV31);exact(impact,["offense","guard"]);
+   gearImpactV31={offense:bounded(impact.offense,0,20000),guard:bounded(impact.guard,0,40000)};
+ }
+ return {version:3,mode:"battle-v1",alpha,pet,...(gearImpactV31?{gearImpactV31}:{})};
 }
 /** Changes only deployed Alpha/equipped-pet UnitDefs. Enemies and allies untouched. */
 export function applyRunCombatProfile(spawns:SpawnSpec[],v3:TacticalCombatProfileV3|null,v2:TacticalCombatProfileV2|null|undefined):SpawnSpec[] {
@@ -24,9 +31,22 @@ export function applyRunCombatProfile(spawns:SpawnSpec[],v3:TacticalCombatProfil
  if(!v2||v2.pet?.id!==v3.pet?.id||(v2.pet===null)!==(v3.pet===null))throw Error("combat_profile_version_mismatch");
  let alphaCount=0,petCount=0;
  const result=spawns.map(s=>{
-   if(s.defId==="alpha"){alphaCount++;return {...s,unitDef:{...(s.unitDef||UNIT_DEFS.alpha),...v3.alpha}};}
+   if(s.defId==="alpha"){alphaCount++;return {...s,unitDef:{...(s.unitDef||UNIT_DEFS.alpha),...v3.alpha,...(v3.gearImpactV31?{gearImpactV31:v3.gearImpactV31}:{})}};}
    if(s.defId.startsWith("pet:")||s.id.startsWith("pet:")){petCount++;if(!v3.pet||s.id!==`pet:${v3.pet.id}`||!s.unitDef)throw Error("combat_pet_mismatch");const {hp,atk,def:armor,spd}=v3.pet;return {...s,unitDef:{...s.unitDef,hp,atk,def:armor,spd}};}
    return s;
  });
  if(alphaCount!==1||petCount>1||(petCount>0&&!v3.pet))throw Error("combat_squad_mismatch");return result;
+}
+
+/** Apply only the server-frozen Foundation projection bound to its accepted run.
+ * Historical snapshots without V3 retain their original authored unit stats.
+ */
+export function applyFoundationCombatProfile(
+ spawns:SpawnSpec[],
+ run:{activeRunId:string|null;foundationRunRules?:{runId:string;rulesContract:{combatProfileVersion:number}};
+  activeCombatProfileV2?:TacticalCombatProfileV2|null;activeCombatProfileV3?:TacticalCombatProfileV3|null}
+):SpawnSpec[] {
+ const accepted=!!run.activeRunId&&run.foundationRunRules?.runId===run.activeRunId
+  &&run.foundationRunRules.rulesContract.combatProfileVersion===3;
+ return applyRunCombatProfile(spawns,accepted ? run.activeCombatProfileV3||null : null,run.activeCombatProfileV2);
 }

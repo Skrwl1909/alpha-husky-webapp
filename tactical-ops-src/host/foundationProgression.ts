@@ -1,4 +1,5 @@
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
+import { parseFieldLegacyMilestone, type FieldLegacyMilestone } from "../data/fieldLegacy";
 import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
 import { parseSignalTrials, parseSignalTrialRun, parseSignalTrialResult, SIGNAL_TRIAL_RULESET, type SignalTrialProgress, type SignalTrialRun, type SignalTrialResult } from "../data/signalTrials";
@@ -27,6 +28,8 @@ export type FoundationStage =
 export interface FoundationProgressionState {
   activeTacticalProfile?: TacticalProfile;
   activeCombatProfileV2?: TacticalCombatProfileV2 | null;
+  /** Optional immutable V3 Foundation projection from the accepting server. */
+  activeCombatProfileV3?: TacticalCombatProfileV3 | null;
   playerIdentity?: Record<string, unknown>;
   packMastery?: PackMastery;
   playerGrowth?: GrowthProgression;
@@ -355,6 +358,15 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   state.playerIdentity = value.playerIdentity && typeof value.playerIdentity === "object" ? value.playerIdentity as Record<string, unknown> : undefined;
   state.activeTacticalProfile = parseTacticalProfile(value.activeTacticalProfile);
   if (Object.prototype.hasOwnProperty.call(value, "activeCombatProfileV2")) state.activeCombatProfileV2 = parseCombatProfileV2(value.activeCombatProfileV2);
+  if (Object.prototype.hasOwnProperty.call(value, "activeCombatProfileV3")) {
+    // Frozen Foundation V3 may be absent on existing servers and legacy runs.
+    // If supplied, reject missing/mismatched binding instead of guessing client stats.
+    if (!state.activeRunId || state.foundationRunRules?.runId !== state.activeRunId || !state.activeCombatProfileV2) return null;
+    let frozenV3: TacticalCombatProfileV3 | null;
+    try { frozenV3 = parseCombatProfileV3(value.activeCombatProfileV3); } catch { return null; }
+    if (!frozenV3 || frozenV3.pet?.id !== state.activeCombatProfileV2.pet?.id) return null;
+    state.activeCombatProfileV3 = frozenV3;
+  }
   state.equippedPet = parseTacticalPet(value.equippedPet);
   if (operations) state.operations = operations;
     if (value.campaignIntel && typeof value.campaignIntel === "object") {
@@ -595,7 +607,7 @@ export async function continueOperationMission(
   campaignReport?: CampaignReport,
   rulesetVersion?: string,
   chapterMode = false,
-): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
+): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
   const result = !chapterMode && isRecoverAuthorityRun(runId) ? {} : {
     completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true,
     routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}),
@@ -610,8 +622,10 @@ export async function continueOperationMission(
          victory:rawChapter.victory,stageRecorded:Number(rawChapter.stageRecorded),
          chapterComplete:rawChapter.chapterComplete,combatProof:"CLIENT_REPORT_ONLY"}:null;
   if(chapterMode && !chapterResult)throw new FoundationProgressionError("invalid_chapter_receipt");
+  const fieldResult=parseFieldResult(response.fieldResult);
+  const fieldMilestone=fieldResult ? parseFieldLegacyMilestone(response.rewardMilestone,fieldResult.runId,fieldResult.missionId,fieldResult.victory) : null;
   return { state: responseState(response), firstClear: response.firstClear === true,
-    fieldResult: parseFieldResult(response.fieldResult),
+    fieldResult, fieldMilestone,
     campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
 }
 
