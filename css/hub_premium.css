@@ -1797,3 +1797,44 @@ html.ah-perf-lite #hubBack.ah-hub-network-v2 .ahn-footer-core,html.ah-perf-lite 
     will-change: transform;
   }
 }
+
+/* Hub V2 concentric core: both pieces of machinery share the SVG link origin.
+   The small graphic used to sit 30–40px above the rotating ring because it
+   participated in a vertical flex stack with the labels. Keep those controls
+   below the art without moving the entire core or changing its click target. */
+#hubBack.ah-hub-network-v2 .ahn-core {
+  --ahn-core-art-size:clamp(82px,25vw,104px);
+  --ahn-core-art-radius:clamp(41px,12.5vw,52px);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-portrait {
+  position:absolute;top:50%;left:50%;z-index:1;
+  width:var(--ahn-core-art-size);height:var(--ahn-core-art-size);
+  transform:translate(-50%,-50%);
+  flex:none;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-title,
+#hubBack.ah-hub-network-v2 .ahn-core-subtitle {
+  position:absolute;left:0;width:100%;z-index:2;
+  text-align:center;pointer-events:none;
+}
+#hubBack.ah-hub-network-v2 .ahn-core-title {
+  top:calc(50% + var(--ahn-core-art-radius) + 6px);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-subtitle {
+  top:calc(50% + var(--ahn-core-art-radius) + 27px);
+}
+#hubBack.ah-hub-network-v2 .ahn-core-scan {
+  position:absolute;left:50%;top:calc(50% + var(--ahn-core-art-radius) + 42px);
+  transform:translateX(-50%);z-index:2;
+  margin:0;
+}
+/* The original tap-glitch replaces transform with translateX and would briefly
+   knock the now-centered artwork out of alignment. Keep its anchor intact. */
+#hubBack.ah-hub-network-v2 .ahn-core.ahn-tapped .ahn-core-portrait {
+  animation:ahnCoreTapCentered .12s steps(2,end) 1;
+}
+@keyframes ahnCoreTapCentered {
+  0%,100%{transform:translate(-50%,-50%);filter:none}
+  33%{transform:translate(calc(-50% + 1px),-50%);filter:drop-shadow(1px 0 0 rgba(33,236,255,.58))}
+  66%{transform:translate(calc(-50% - 1px),-50%);filter:drop-shadow(-1px 0 0 rgba(255,100,111,.2))}
+}

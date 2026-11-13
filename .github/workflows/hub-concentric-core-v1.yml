@@ -1,0 +1,19 @@
+name: Hub Concentric Core V1
+
+on:
+  pull_request:
+    paths:
+      - 'css/hub_premium.css'
+      - 'index.html'
+      - 'tools/verify_hub_concentric_core_v1.mjs'
+      - '.github/workflows/hub-concentric-core-v1.yml'
+
+jobs:
+  hub-concentric-core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_hub_concentric_core_v1.mjs
