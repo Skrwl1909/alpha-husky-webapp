@@ -212,7 +212,8 @@ try{
       }
       assert.match(await upgrade.innerText(),/Bones\s+24 \/ 24/);
       if(scenario==='payout-missing'){
-       assert.match(await upgrade.innerText(),/Scrap\s+4 \/ 8[\s\S]*Missing 4 · Salvage eligible gear in Inventory/);
+       assert.match(await upgrade.innerText(),/Scrap\s+4 \/ 8[\s\S]*Missing 4/);
+        assert.equal(await upgrade.getByRole("button",{name:/salvage/i}).count(),0);
        await upgrade.getByRole('button',{name:'View upgrade in Forge'}).click();
        await page.locator('.ah-stage-name').getByText('Target Gear',{exact:true}).waitFor();
        assert.equal(await page.locator('#tacticalOpsRoot').getAttribute('data-open'),'0');

@@ -62,6 +62,7 @@ export interface FoundationProgressionState {
 
 export interface FieldOpsProgression {
   fieldContracts?: FieldContracts;
+  firstUpgradeSupplyMissionId?: "field-relay-recovery";
   veteranOpportunity?: VeteranOpportunity;
   interceptRevisionAvailable?: 2;
   veteranProgressionAvailable?: boolean;
@@ -118,6 +119,9 @@ function parseFieldResult(raw: unknown): FieldResult | null {
     contractAward: value.victory && !value.legacyReport && !value.masteryChallenge && !value.veteranChallenge
       ? parseContractAward(value.contractAward, value.missionId) : undefined,
     rewardAmountsAvailable: Number.isInteger(value.xpGranted) && Number.isInteger(value.bonesGranted),
+    firstUpgradeScrapGranted: value.victory && value.missionId === "field-relay-recovery" &&
+      isRecoverAuthorityRun(value.runId) && !value.veteranChallenge && !value.masteryChallenge &&
+      value.firstUpgradeScrapGranted === 8 ? 8 : undefined,
     xpGranted: Number.isInteger(value.xpGranted) ? Number(value.xpGranted) : 0,
     bonesGranted: Number.isInteger(value.bonesGranted) ? Number(value.bonesGranted) : 0,
   };
@@ -282,6 +286,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     const parsed = parseOperations({ field: { ...field, status: "active", missions: {} } });
     if (!parsed) return null;
     state.fieldOps = { records, activeMissionRun: parsed.field.activeMissionRun, lastCompletedMissionRunId: parsed.field.lastCompletedMissionRunId };
+    if (field.firstUpgradeSupplyMissionId === "field-relay-recovery") state.fieldOps.firstUpgradeSupplyMissionId = field.firstUpgradeSupplyMissionId;
     if (field.interceptRevisionAvailable === 2) state.fieldOps.interceptRevisionAvailable = 2;
     if (field.veteranProgressionAvailable === true) {
       const veteran = parseVeteran(field.veteranCareer);

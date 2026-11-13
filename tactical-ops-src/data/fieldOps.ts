@@ -98,6 +98,7 @@ export interface FieldResult {
   rewardAmountsAvailable?: boolean;
   xpGranted: number;
   bonesGranted: number;
+  firstUpgradeScrapGranted?: 8;
 }
 
 export const DEPLOYMENT_APPROACHES: Record<DeploymentApproach, { name: string; copy: string; cells: Cell[] }> = {

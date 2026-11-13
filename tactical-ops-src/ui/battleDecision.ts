@@ -5,7 +5,7 @@ import { DEAD_RELAY, getMissionDef, g2HoldRevisionForRequest, missionBattleRules
 import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 import { isRecoverAuthorityRun, type CampaignResult, type ChapterResult, type FoundationProgressionState } from "../host/foundationProgression";
 import { missionGoal } from "./missionPurpose";
-import { commandPurpose, fieldResultNext, reachRendLoadoutMission, type PurposeAction } from "./returnPurpose";
+import { commandPurpose, firstUpgradeSupplyGoal, fieldResultNext, reachRendLoadoutMission, type PurposeAction } from "./returnPurpose";
 
 type Receipt = FieldResult | CampaignResult | ChapterResult;
 export type BattleDecision = {
@@ -34,6 +34,11 @@ export function battleDecision(p: FoundationProgressionState | null, receipt: Re
     if (!command?.resume || command.missionId !== saved?.missionId) return fallback;
     return { action: command, label: getMissionDef(command.missionId)?.activity === "FIELD_OP" && !command.chapter ? "RESUME FIELD OP" : "RESUME ACCEPTED RUN",
       detail: isRecoverAuthorityRun(saved.runId) ? "Resume from your last confirmed action." : "Resume from round 1 with your locked squad and mission setup." };
+  }
+
+  const supply = firstUpgradeSupplyGoal(field);
+  if (supply && command?.missionId === supply.missionId && command.title === supply.title) {
+    return { action: supply, label: "NEXT: RELAY RECOVERY", detail: supply.reason };
   }
 
   const chapter = "chapterId" in receipt;
