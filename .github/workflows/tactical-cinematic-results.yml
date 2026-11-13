@@ -51,7 +51,20 @@ jobs:
                 redundant=b'<p>Courier result awaits server confirmation.</p>'
                 assert expected.count(redundant)==1,p.name
                 expected=expected.replace(redundant,b'',1)
-              assert expected==(after/p.name).read_bytes(),p.name
+              # Only the exact approved fallback Commander portrait DOM is different in V2.
+              # Restore that *single* presentation fragment before comparing all legacy content.
+              old_portrait=(b'<div class="t-id-card" aria-label="Player identity">'
+                b'<img alt="" src="/images/tactical_ops/alpha-portrait.jpg"><div>')
+              new_portrait=(b'<div class="t-id-card" aria-label="Player identity">'
+                b'<span class="t-cosmetic-portrait " data-cosmetic-confirmed="no" aria-hidden="true" '
+                b'style="--t-skin-scale: 1; --t-skin-x: 0px; --t-skin-y: 0px;">'
+                b'<span class="t-cosmetic-viewport"><img class="t-cosmetic-skin" alt="" '
+                b'draggable="false" src="/images/tactical_ops/alpha-portrait.jpg"></span></span>'
+                b'<div class="t-id-copy">')
+              actual=(after/p.name).read_bytes()
+              assert expected.count(old_portrait)==1,p.name
+              assert actual.count(new_portrait)==1,p.name
+              assert expected==actual.replace(new_portrait,old_portrait,1),p.name
           for name in ('lockdown','lockdown-pending','extraction','extraction-pending'):
             assert (after/f'legacy-{name}.html').exists(),name
           sizes={}

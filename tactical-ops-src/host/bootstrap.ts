@@ -2,7 +2,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
 import { openPurposeBrief, TacticalApp } from "../ui/App";
 import { TACTICAL_CSS } from "../styles";
-import { setHost } from "./bridge";
+import { setHost, type HostBridge } from "./bridge";
 import { snapshotState, useBattleStore } from "../store/battleStore";
 import * as Combat from "../combat";
 import { resolveTacticalLayout } from "../layout";
@@ -332,11 +332,16 @@ function ensureRoot(): HTMLElement {
   return el;
 }
 
+function onProfileUpdated(): void {
+  if (M.isOpen) useBattleStore.getState().refreshIdentity();
+}
+
 function hardClose(): void {
   document.getElementById(BROWSER_EXIT_ID)?.remove();
   M.isOpen = false;
   unbindKeys();
   unbindResize();
+  window.removeEventListener("ah:profile-updated", onProfileUpdated);
   unlockScroll();
   if (M.reactRoot) {
     M.reactRoot.unmount();
@@ -410,18 +415,27 @@ export function init(deps?: {
 
 export async function open(missionId?: string): Promise<void> {
   await progressionReady;
+  useBattleStore.getState().refreshIdentity();
   if (typeof missionId === "string" && missionId) {
     useBattleStore.getState().openOperationBrief(missionId);
   }
   const el = ensureRoot();
-  const fieldRecord = (window as Window & {
+  const { FieldRecord: fieldRecord, Forge: forge } = window as Window & {
     FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
-  }).FieldRecord;
+    Forge?: HostBridge["forge"];
+  };
   setHost({
     requestClose: closeView,
     openFieldRecord: fieldRecord?.openSelf ? () => {
       closeView();
       void fieldRecord.openSelf?.({ focusService: true });
+    } : undefined,
+    forge: typeof forge?.nextUpgrade === "function" && typeof forge.openUpgrade === "function" ? {
+      nextUpgrade: () => forge.nextUpgrade(),
+      openUpgrade: (key) => {
+        closeView();
+        forge.openUpgrade(key);
+      },
     } : undefined,
     dbg: M.dbg,
   });
@@ -430,6 +444,7 @@ export async function open(missionId?: string): Promise<void> {
   lockScroll();
   bindKeys();
   bindResize();
+  window.addEventListener("ah:profile-updated", onProfileUpdated);
   applyHostGeometry();
   if (!M.reactRoot) M.reactRoot = createRoot(el);
   M.reactRoot.render(createElement(TacticalApp));

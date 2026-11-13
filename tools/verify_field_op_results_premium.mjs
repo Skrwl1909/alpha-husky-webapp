@@ -25,6 +25,23 @@ if(['failure','pending','error','stale','missing','zero','rank4','veteran'].incl
 if(!['pending','error','stale'].includes(scenario))patch.fieldResult=r;
 if(scenario==='stale-mission')patch.fieldResult={...r,missionId:'field-relay-hold'};
 if(scenario==='unrecorded')patch.fieldResult=null;
+if(scenario.startsWith('payout-')){
+ Object.assign(r,{xpGranted:8,bonesGranted:16,rewardAmountsAvailable:true});
+ if(scenario==='payout-pending')Object.assign(patch,{fieldResult:null,progressionCommitPending:true});
+ const balances={bones:24,scrap:4,rune_dust:1};
+ const first={key:'first',name:'First Gear',slot:'armor',stars:1,maxStars:5,canUpgrade:false,costNext:{bones:24,scrap:8,rune_dust:3}};
+ // Thumbnail fixtures deliberately cover both a valid image and a broken image without depending on Cloudinary uptime.
+ const target={key:'target',name:'Target Gear',slot:'weapon',stars:2,maxStars:5,canUpgrade:scenario==='payout-ready',costNext:{bones:24,scrap:8,rune_dust:0},
+  rarity:'epic',icon:scenario==='payout-ready'?'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%2399b%22/%3E%3C/svg%3E':'data:image/png;base64,broken'};
+ if(target.canUpgrade)balances.scrap=8;
+ if(scenario==='payout-incomplete')delete balances.scrap;
+ window.fixture.forgeRequests=[];
+ window.Forge.init({apiPost:async(path,payload)=>{
+   window.fixture.forgeRequests.push({path,buildingId:payload.buildingId});
+   if(scenario==='payout-offline')throw Error('offline');
+   return {ok:true,data:{equipped:[first,target],balances}};
+ }});
+}
 if(scenario==='mastery'){r.masteryChanges=[{unitId:'ally-02',kind:'clear',gained:3,beforeStage:1,stage:2,progress:3,newOptions:[]}];}
 if(scenario==='veteran-mastery'){r.masteryChanges=[{unitId:'ally-02',kind:'clear',gained:0,beforeStage:3,stage:4,progress:8,newOptions:[],veteran:{before:11,after:12,unlocked:true,reason:'unlocked'}}];}
 if(scenario==='campaign'){patch.selectedMissionId='dead-relay-courier';patch.fieldResult=null;}
@@ -41,7 +58,8 @@ if(phase==='before')entry=entry.replaceAll('/tactical-ops-src/','/artifacts/base
 if(production)entry='const store=window.__tactical;window.TacticalOps.init({onboarding:"off"});await window.TacticalOps.open();'+scope.entry.slice(scope.entry.indexOf('const params')).replace(/createRoot\(document.getElementById\('mount'\)\).render\(React.createElement\(TacticalApp\)\);/,'')+extra;
 const server=await createServer({configFile:false,cacheDir:`node_modules/.vite-fr-${phase}`,optimizeDeps:{include:['react','react-dom/client','react/jsx-dev-runtime','lucide-react','zustand']},server:{host:'127.0.0.1',port:0,watch:{ignored:['**/artifacts/**']}},plugins:[{name:'results-fixture',configureServer(s){s.middlewares.use((req,res,next)=>{
  if(req.url==='/results-bundle.js'){res.setHeader('Content-Type','application/javascript; charset=utf-8');res.end(readFileSync(phase==='before'?'artifacts/baseline/tactical_ops.js':'js/tactical_ops.js'));return;}
- if(!req.url?.startsWith('/results-fixture'))return next();res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html>'+(production?'<script src="/results-bundle.js"></script>':'')+'<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14}#evidence-label{position:fixed;top:0;left:0;z-index:99999;background:#000;color:#ddd;font:8px monospace;pointer-events:none}#tacticalOpsRoot{--ah-chrome-top:32px;--ah-safe-bottom:24px;--ah-safe-left:6px;--ah-safe-right:6px}</style><div id="evidence-label">SYNTHETIC QA · NO LIVE PLAYER</div><div id="tacticalOpsRoot" data-open="1"><div id="mount" style="height:100%"></div></div><script type="module" src="/@results"></script>');
+ if(req.url==='/results-forge.js'){res.setHeader('Content-Type','application/javascript; charset=utf-8');res.end(readFileSync('js/forge.js'));return;}
+ if(!req.url?.startsWith('/results-fixture'))return next();res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html>'+(production?'<script src="/results-forge.js"></script><script src="/results-bundle.js"></script>':'')+'<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14}#evidence-label{position:fixed;top:0;left:0;z-index:99999;background:#000;color:#ddd;font:8px monospace;pointer-events:none}#tacticalOpsRoot{--ah-chrome-top:32px;--ah-safe-bottom:24px;--ah-safe-left:6px;--ah-safe-right:6px}</style><div id="evidence-label">SYNTHETIC QA · NO LIVE PLAYER</div><div id="tacticalOpsRoot" data-open="1"><div id="mount" style="height:100%"></div></div><script type="module" src="/@results"></script>');
  });},resolveId(id){if(id==='/@results')return '\0results';},load(id){if(id==='\0results')return entry;}}]});
 await server.listen();
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox','--disable-dev-shm-usage','--use-gl=angle','--use-angle=swiftshader','--disable-gpu']});
@@ -69,10 +87,20 @@ try{
    }
    assert.equal(await page.getByLabel('Confirmed mission earnings',{exact:true}).count(),recorded?1:0);
    if(scenario==='missing'){
+    assert.equal(await panel.locator('.t-fr-payout-grid').count(),0,'no visual payout without amounts');
     assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['—','—','+1']);
     assert.equal(await page.getByLabel('EXP amount unavailable',{exact:true}).count(),1);
    }
-   if(scenario==='zero')assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['+0','+0','+0']);
+   if(scenario==='zero'){
+    assert.deepEqual(await page.locator('.t-fr-rewards dd').allTextContents(),['+0','+0','+0']);
+    assert.equal(await panel.locator('.t-fr-payout-grid').count(),0,'tactical-only cannot show reward cards');
+   }
+   if(scenario==='zero')assert.match(await panel.getByLabel('Character payout').innerText(),/TACTICAL RESULT.*No EXP or Bones/s);
+   if(!recorded){
+    assert.equal(await panel.getByLabel('Character payout').count(),0);
+    assert.equal(await panel.locator('.t-fr-payout-grid').count(),0,'unrecorded run cannot show reward cards');
+    assert.equal(await panel.locator('.t-fr-pressure-change').count(),0,'unrecorded run cannot imply world impact');
+   }
    if(scenario==='rank4')assert.match(await page.locator('.t-fr-rank').innerText(),/RANK 3 → 4/);
    if(scenario==='veteran')assert.match(await page.locator('[data-veteran-career-delta]').innerText(),/7 → 8/);
    if(scenario==='veteran-mastery')assert.match(await page.locator('.t-fr-earned').innerText(),/New option unlocked/i);
@@ -97,6 +125,12 @@ try{
     assert(await b.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'clipped action text');
    }
    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'horizontal page overflow');
+   assert(await panel.evaluate(e=>{
+    const hero=e.querySelector('.t-outcome-hero');
+    if(!hero)return true; // Reach Rend uses an existing distinct reward hero.
+    const bounds=e.getBoundingClientRect(),art=hero.getBoundingClientRect();
+    return art.left>=bounds.left-2 && art.right<=bounds.right+2;
+   }),'victory and failure hero must fit within mobile Results gutters');
    assert(await panel.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'horizontal panel overflow');
    assert.deepEqual(await panel.locator('h2,p,dt,dd,strong').evaluateAll(es=>es.filter(e=>e.getClientRects().length&&e.scrollWidth>e.clientWidth+1).map(e=>e.textContent)),[],'clipped text');
    assert.equal(await panel.locator('.t-result-actions').evaluate(e=>getComputedStyle(e).position),'static','fixed/sticky actions returned');
@@ -147,6 +181,56 @@ try{
    await page.evaluate(()=>TacticalOps.open());assert.equal(await page.locator('#tacticalOpsRoot').getAttribute('data-open'),'1');
    assert.equal(await page.locator('#tacticalOpsStyles').count(),1);
    cases.push({scenario:'production-close-reopen-scroll-style-lifecycle'});
+   for(const scenario of ['payout-missing','payout-ready','payout-incomplete','payout-offline','payout-pending']){
+    await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=${scenario}`);
+    await page.locator('.t-field-results').waitFor();
+    const payout=page.getByLabel('Character payout',{exact:true}),upgrade=page.getByLabel('Next Forge upgrade',{exact:true});
+    if(scenario==='payout-pending'){
+     assert.equal(await payout.count(),0);
+     assert.equal(await upgrade.count(),0);
+     assert.equal(await page.locator('.t-fr-payout-grid').count(),0,'unconfirmed payouts never receive reward units');
+     assert.deepEqual(await page.evaluate(()=>fixture.forgeRequests),[]);
+    }else{
+     assert.match(await payout.innerText(),/CONFIRMED PAYOUT[\s\S]*\+8[\s\S]*EXP[\s\S]*\+16[\s\S]*Bones/);
+     assert.equal(await payout.locator('.t-fr-reward-unit').count(),2,'two receipt-confirmed reward units');
+     assert.equal(await payout.locator('[data-reward=exp]').count(),1);
+     assert.equal(await payout.locator('[data-reward=bones]').count(),1);
+     assert.equal(await page.locator('.t-fr-triumph-emblem').count(),1,'victory crest present');
+     if(scenario==='payout-missing'||scenario==='payout-ready'){
+      await upgrade.getByText('Target Gear · ★3',{exact:true}).waitFor();
+      assert.equal(await upgrade.getAttribute('data-materials'),scenario==='payout-ready'?'ready':'needed','host-derived material readiness');
+      const art=upgrade.locator('.t-fr-forge-item-art');
+      assert.equal(await art.count(),1,'Forge-selected gear art exposed to results');
+      assert.equal(await upgrade.locator('.t-fr-forge-symbol').getAttribute('data-rarity'),'epic','rarity border matches selected item');
+      if(scenario==='payout-ready'){
+       assert.match(await art.getAttribute('src'),/^data:image\/svg\+xml,/,'existing Forge item icon reused');
+       await art.evaluate(img=>img.decode());
+       assert.equal(await art.getAttribute('hidden'),null,'valid artwork visible');
+      }else{
+       await art.waitFor({state:'hidden'}); // invalid image falls back to the always-present hammer
+       assert.equal(await upgrade.locator('.t-fr-forge-symbol svg').count(),1,'missing art retains hammer fallback');
+      }
+      assert.match(await upgrade.innerText(),/Bones\s+24 \/ 24/);
+      if(scenario==='payout-missing'){
+       assert.match(await upgrade.innerText(),/Scrap\s+4 \/ 8[\s\S]*Missing 4 · Salvage eligible gear in Inventory/);
+       await upgrade.getByRole('button',{name:'View upgrade in Forge'}).click();
+       await page.locator('.ah-stage-name').getByText('Target Gear',{exact:true}).waitFor();
+       assert.equal(await page.locator('#tacticalOpsRoot').getAttribute('data-open'),'0');
+      }else{
+       assert.match(await upgrade.innerText(),/Scrap\s+8 \/ 8/);
+       assert.doesNotMatch(await upgrade.innerText(),/Missing/);
+       await page.locator('[data-next-decision=primary]').click();
+       assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
+      }
+     }else{
+      await upgrade.getByText(scenario==='payout-offline'?/Forge details are unavailable/:/No equipped upgrade could be confirmed/).waitFor();
+      assert.equal(await upgrade.getByRole('button').count(),0);
+     }
+     const request={path:'/webapp/forge/state',buildingId:'forgotten_tokens_vault_forge'};
+     assert.deepEqual(await page.evaluate(()=>fixture.forgeRequests),scenario==='payout-missing'?[request,request]:[request]);
+    }
+    cases.push({scenario});
+   }
   }
  }
  for(const scenario of ['campaign','chapter','lockdown','lockdown-pending','extraction','extraction-pending']){

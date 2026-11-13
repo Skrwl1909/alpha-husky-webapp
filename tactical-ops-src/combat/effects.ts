@@ -2,8 +2,12 @@ import type { CombatUnit, StatusEffect, StatusType } from "./types";
 
 let statusSeq = 1;
 
-export function resetStatusSeq(): void {
-  statusSeq = 1;
+export function resetStatusSeq(next = 1): void {
+  statusSeq = next;
+}
+
+export function getStatusSequence(): number {
+  return statusSeq;
 }
 
 export function hasStatus(unit: CombatUnit, type: StatusType): StatusEffect | undefined {

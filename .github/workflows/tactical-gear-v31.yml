@@ -1,0 +1,57 @@
+name: Tactical Gear Impact V3.1 — integration evidence
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'tools/verify_tactical_gear_v31.mjs'
+      - 'tools/tactical_recover_engine_v1.ts'
+      - '.github/workflows/tactical-gear-v31.yml'
+permissions:
+  contents: write
+jobs:
+  gear-v31:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - name: Gear V3.1 mechanics and old V3
+        run: |
+          node tools/verify_tactical_gear_v31.mjs
+          node tools/verify_tactical_ops_pr1b.mjs
+          node tools/verify_tactical_recover_authority_client.mjs
+      - name: Build authoritative RECOVER worker
+        run: |
+          node tools/build_tactical_recover_engine_v1.mjs
+          sha256sum artifacts/recover-authority-v1/tactical_recover_engine_v1.cjs
+      - name: Compile production frontend bundle
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+      - name: Commit deterministic compiled WebApp assets to same-repository PR
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add js/tactical_ops.js js/boot_loaders.js
+          if ! git diff --cached --quiet; then
+            git commit -m 'build(tactical): compile gear impact V3.1 frontend'
+            git push origin "HEAD:${{ github.head_ref }}"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-gear-v31-built-worker
+          path: artifacts/recover-authority-v1/tactical_recover_engine_v1.cjs
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-gear-v31-built-webapp
+          path: |
+            js/tactical_ops.js
+            js/boot_loaders.js
+          if-no-files-found: warn

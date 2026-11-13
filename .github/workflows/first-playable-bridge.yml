@@ -1,0 +1,26 @@
+name: First Playable Bridge
+on:
+  pull_request:
+    paths:
+      - 'js/missions.js'
+      - 'js/onboarding.js'
+      - 'js/story_delivery.js'
+      - 'js/cta.js'
+      - 'tools/verify_first_playable_bridge_v1.mjs'
+      - '.github/workflows/first-playable-bridge.yml'
+  workflow_dispatch:
+
+jobs:
+  bridge-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node tools/verify_first_playable_bridge_v1.mjs
+      - run: |
+          node --check js/missions.js
+          node --check js/onboarding.js
+          node --check js/story_delivery.js
+          node --check js/cta.js

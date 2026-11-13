@@ -79,6 +79,7 @@ function spawnUnit(
     portrait: def.portrait,
     skillIds: [...def.skillIds],
     combatMastery: def.combatMastery ? { ...def.combatMastery } : undefined,
+    ...(def.gearImpactV31 ? {gearImpactV31: {...def.gearImpactV31}, gearOffenseCarryV31: 0, gearGuardCarryV31: 0} : {}),
   };
   if (def.defId === "alpha" && identity) {
     const stamped = applyIdentityToAlpha(base, identity);

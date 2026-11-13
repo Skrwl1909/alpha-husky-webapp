@@ -33,6 +33,11 @@ jobs:
           node tools/verify_tactical_g1_transactions.mjs
           node tools/verify_tactical_ops_vnext_contract.mjs
           node tools/verify_tactical_vnext_run_contract_wire.mjs
+          node tools/verify_tactical_recover_authority_client.mjs
+      - name: Verify new RECOVER worker (legacy pinned worker remains on VPS)
+        run: |
+          node tools/build_tactical_recover_engine_v1.mjs
+          echo "13568770cba259bcee808d03794e0e260a8d8c82ba5e87d630bd82100aaf78a0  artifacts/recover-authority-v1/tactical_recover_engine_v1.cjs" | sha256sum --check
       - name: Next decision at 320, 390, 430 and desktop
         run: NEXT_DECISION_ONLY=1 node tools/verify_tactical_purpose_return_browser.mjs
         env:

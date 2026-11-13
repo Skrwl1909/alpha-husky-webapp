@@ -1,18 +1,85 @@
 import { contractName, FIELD_HONOR, REACH_REND_TRADEOFF } from "../data/fieldContracts";
-import type { ReactNode } from "react";
-import { Check, Shield, AlertTriangle } from "lucide-react";
+import type { FieldLegacyMilestone } from "../data/fieldLegacy";
+import { useEffect, useState, type ReactNode } from "react";
+import { Check, Shield, AlertTriangle, ShieldCheck, Zap, Bone, Hammer, ArrowRight } from "lucide-react";
 import type { FieldResult } from "../data/fieldOps";
 import { fieldResultPurpose } from "./returnPurpose";
 import { masteryDef } from "../data/packMastery";
 import { veteranReceiptReason } from "../data/progressionOpportunity";
 import { recordedImpact } from "./afterActionImpact";
-import { UNIT_DEFS } from "../data/units";
+import { CommanderPortrait } from "./PlayerIdentity";
 import { tacticalActionImageForSkill } from "./tacticalActionIcons";
+import { getHost, type ForgeUpgrade } from "../host/bridge";
+
+function LegacyRewardReveal({milestone}:{milestone:FieldLegacyMilestone|null}) {
+  if (!milestone || milestone.status==="UNAVAILABLE") return null;
+  if (milestone.kind==="FIRST_RECOVERY_SUPPLY") return milestone.status==="AWARDED"
+    ? <section className="t-fr-consequence t-fr-legacy" data-legacy="first-awarded" aria-label="Confirmed First Recovery Supply">
+        <span className="t-kicker">FIELD LEGACY · FIRST RECOVERY</span>
+        <strong>+12 SCRAP EARNED</strong>
+        <p>First Recovery Supply saved. Open Forge to use your new materials.</p>
+      </section>
+    : <section className="t-fr-consequence t-fr-legacy t-fr-legacy-history" data-legacy="first-previously-awarded" aria-label="First Recovery Supply previously awarded">
+        <span className="t-kicker">FIELD LEGACY</span>
+        <strong>First Recovery Supply already claimed</strong>
+        <p>Your one-time Scrap was awarded earlier. No extra Scrap this battle.</p>
+      </section>;
+  const {record,status}=milestone;
+  return <section className="t-fr-consequence t-fr-legacy" data-legacy={status==="AWARDED"?"veteran-awarded":status==="IMPROVED"?"veteran-improved":"veteran-record"} aria-label="Confirmed Veteran Service Distinction">
+    <span className="t-kicker">FIELD LEGACY · VETERAN SERVICE</span>
+    <strong>{status==="AWARDED"?"WEEKLY DISTINCTION EARNED":status==="IMPROVED"?"PERSONAL BEST IMPROVED":"WEEKLY DISTINCTION RECORDED"}</strong>
+    <p>{record.utcWeek} · {record.squadStanding}/3 standing · {record.bestRounds} rounds</p>
+    <small>{status==="ALREADY_AWARDED"?"Existing weekly best preserved. No new award.":"Server-confirmed service record. No EXP or currency awarded."}</small>
+  </section>;
+}
+
+function NextForgeUpgrade() {
+  const forge = getHost().forge;
+  const [upgrade, setUpgrade] = useState<ForgeUpgrade | null | "unavailable" | "loading">("loading");
+  useEffect(() => {
+    if (!forge) return;
+    let current = true;
+    forge.nextUpgrade().then(
+      result => { if (current) setUpgrade(result); },
+      () => { if (current) setUpgrade("unavailable"); },
+    );
+    return () => { current = false; };
+  }, [forge]);
+
+  const rows = upgrade && typeof upgrade === "object" ? upgrade.rows : [];
+  const materialsKnown = rows.length > 0;
+  const materialsReady = materialsKnown && rows.every(row => row.missing <= 0);
+  return <section className="t-fr-consequence t-fr-forge" aria-label="Next Forge upgrade"
+    data-materials={materialsKnown ? (materialsReady ? "ready" : "needed") : "unknown"}>
+    <span className="t-kicker">NEXT FORGE UPGRADE</span>
+    {forge && upgrade && typeof upgrade === "object" ? <>
+      <div className="t-fr-forge-head">
+        <span className="t-fr-forge-symbol" data-rarity={upgrade.rarity || "common"} aria-hidden="true">
+          <Hammer />
+          {upgrade.imageUrl ? <img key={upgrade.key + ":" + upgrade.imageUrl} className="t-fr-forge-item-art"
+            src={upgrade.imageUrl} alt="" loading="lazy" decoding="async"
+            onError={event => { event.currentTarget.hidden = true; }} /> : null}
+        </span>
+        <div className="t-fr-forge-identity">
+          <strong>{upgrade.name} · ★{upgrade.stars}</strong>
+          <span className="t-fr-forge-readiness">{materialsKnown ? (materialsReady ? "MATERIALS READY" : "MATERIALS NEEDED") : "CHECK MATERIALS IN FORGE"}</span>
+        </div>
+      </div>
+      <ul>{upgrade.rows.map(row => <li key={row.label} data-ready={row.missing <= 0 ? "yes" : "no"}>
+        <span>{row.label} <b>{row.have.toLocaleString()} / {row.need.toLocaleString()}</b></span>
+        {row.missing > 0 ? <small>Missing {row.missing.toLocaleString()} · {row.source}</small> : null}
+      </li>)}</ul>
+      <button type="button" className="t-btn" onClick={() => forge.openUpgrade(upgrade.key)}>View upgrade in Forge</button>
+    </> : <p role="status">{!forge || upgrade === "unavailable" ? "Forge details are unavailable. You can still choose your next operation."
+      : upgrade === null ? "No equipped upgrade could be confirmed."
+      : "Checking equipped gear and materials…"}</p>}
+  </section>;
+}
 
 /** Presentation only. Receipt ownership is checked by Results before passing it here. */
-export function FieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
+export function FieldOpResults({ victory, missionName, plate, receipt, milestone, pending, error, failure,
   consequence, nextObjective, reachRendNext, actions, children }: {
-  victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
+  victory: boolean; missionName: string; plate: string; receipt: FieldResult | null; milestone: FieldLegacyMilestone | null;
   pending: boolean; error: string | null; failure: string;
   consequence: { label: string; detail: string } | null;
   nextObjective?: string;
@@ -24,12 +91,15 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
   const rewardIcon = reachReward ? tacticalActionImageForSkill("alpha-reach-rend") : null;
   const state = receipt ? "confirmed" : pending ? "pending" : error ? "failed" : "unrecorded";
   const meaning = receipt ? fieldResultPurpose(receipt) : null;
-  const amountsAvailable = receipt && receipt.rewardAmountsAvailable !== false &&
-    Number.isInteger(receipt.xpGranted) && Number.isInteger(receipt.bonesGranted);
+  const tacticalOnly = receipt?.rewardAmountsAvailable !== false && receipt?.xpGranted === 0 && receipt.bonesGranted === 0;
+  const amountsAvailable = receipt && (receipt.victory || tacticalOnly) && receipt.rewardAmountsAvailable !== false &&
+    Number.isSafeInteger(receipt.xpGranted) && receipt.xpGranted >= 0 &&
+    Number.isSafeInteger(receipt.bonesGranted) && receipt.bonesGranted >= 0;
+  const payout = receipt?.victory && amountsAvailable && !tacticalOnly ? receipt : null;
   // Read-only presentation priority. No estimated thresholds or local-outcome rewards.
   const masteryMilestone = receipt?.masteryChanges?.find(change => change.veteran?.unlocked || change.stage > change.beforeStage);
   const rankAdvance = receipt && receipt.rankAfter > receipt.rankBefore;
-  const milestone = Boolean(award?.reward || receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone);
+  const hasProgressionMilestone = Boolean(award?.reward || receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone);
   const careerAdvance = receipt?.veteranCareer && receipt.veteranCareer.after > receipt.veteranCareer.before;
   const masteryGain = receipt?.masteryChanges?.some(change => change.gained > 0);
   const missionImpact = receipt ? recordedImpact(receipt, consequence) : null;
@@ -45,9 +115,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
   const majorUnlock = award?.reward === "field-tested" ? `FIELD HONOR · ${FIELD_HONOR}`
     : receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone ? achievement : null;
   const primaryAction = <div className="t-brief-actions t-result-actions">{actions}</div>;
-  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={milestone ? "confirmed" : undefined}>
+  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={hasProgressionMilestone ? "confirmed" : undefined}>
     {reachReward ? <section className="t-fr-reach-reward" aria-label="Confirmed field contract">
-      <img className="t-fr-reward-portrait" src={UNIT_DEFS.alpha.portrait} alt="" />
+      <div className="t-fr-reward-commander" aria-label="Your equipped Alpha"><CommanderPortrait /></div>
       <div className="t-fr-reward-copy">
         <span className="t-kicker">VICTORY · ALPHA / A2</span>
         {rewardIcon ? <img className="t-fr-reward-icon" src={rewardIcon} alt="" /> : null}
@@ -59,8 +129,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         {primaryAction}
         <small>{missionName} · {contractName(award.id)} completed · {award.count}/3</small>
       </div>
-    </section> : <header className="t-outcome-hero">
+    </section> : <header className={`t-outcome-hero${victory ? " t-fr-triumph" : ""}`}>
       <img className="t-results-plate" src={plate} alt="" aria-hidden="true" />
+      {victory ? <span className="t-fr-triumph-emblem" aria-hidden="true"><ShieldCheck /></span> : null}
       <div className="t-kicker">{missionName}</div>
       <h2 className="t-title">{victory ? "VICTORY" : "DEFEAT"}</h2>
       {!victory ? <p className="t-fr-outcome">{failure}</p> : null}
@@ -71,6 +142,22 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <p>{receipt ? "Receipt-confirmed progress below." : pending ? "Waiting for confirmation. Earnings are not confirmed yet." : "Earnings are not confirmed. Retry saving this result."}</p></div>
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
+    {receipt ? <section className="t-fr-consequence" aria-label="Character payout">
+      <span className="t-kicker">{payout ? "CONFIRMED PAYOUT" : tacticalOnly ? "TACTICAL RESULT" : "CHARACTER PAYOUT"}</span>
+      {payout ? <div className="t-fr-payout-grid" aria-label="Receipt-confirmed rewards">
+        <div className="t-fr-reward-unit" data-reward="exp">
+          <Zap aria-hidden="true" />
+          <span><strong>+{payout.xpGranted.toLocaleString()}</strong><small>EXP</small></span>
+        </div>
+        <div className="t-fr-reward-unit" data-reward="bones">
+          <Bone aria-hidden="true" />
+          <span><strong>+{payout.bonesGranted.toLocaleString()}</strong><small>Bones</small></span>
+        </div>
+      </div>
+        : <p>{tacticalOnly
+          ? "No EXP or Bones awarded for this result." : "Character payout amounts are unavailable."}</p>}
+    </section> : null}
+    {receipt?.victory ? <LegacyRewardReveal milestone={milestone} /> : null}
     {award && !reachReward ? <section className="t-fr-consequence t-field-contract" aria-label="Confirmed field contract">
       <div className="t-kicker">{contractName(award.id)} completed · {award.count}/3</div>
       <strong className={majorUnlock ? "t-fr-major-unlock" : undefined}>{award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
@@ -79,8 +166,19 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
     {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
       <span className="t-fr-impact-overline">WHAT CHANGED</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
+      {receipt.victory && impact.kind === "world" && receipt.regionalApplied &&
+        Number.isInteger(receipt.pressureBefore) && Number.isInteger(receipt.pressureAfter) &&
+        receipt.pressureBefore >= 0 && receipt.pressureAfter >= 0 &&
+        receipt.pressureBefore !== receipt.pressureAfter ?
+        <div className="t-fr-pressure-change" data-confirmed-pressure="true"
+          aria-label={`Confirmed pressure ${receipt.pressureBefore} to ${receipt.pressureAfter}`}>
+          <span>PRESSURE <strong>{receipt.pressureBefore}</strong></span>
+          <ArrowRight aria-hidden="true" />
+          <span>PRESSURE <strong>{receipt.pressureAfter}</strong></span>
+        </div> : null}
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}
+    {payout && !pending ? <NextForgeUpgrade key={payout.runId} /> : null}
     {receipt && !reachReward ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{nextObjective ? <p>{nextObjective}</p> : null}</div> : null}
     {!reachReward ? primaryAction : null}
     {receipt ? <details className="t-fr-ledger">
@@ -89,7 +187,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
         <div className="t-fr-spotlight">
           <span className="t-fr-insignia" aria-hidden="true">{receipt.rankAfter}</span>
           <div className="t-fr-spotlight-copy">
-            <h3>{milestone ? "MILESTONE CONFIRMED" : "RECORDED THIS RUN"}</h3>
+            <h3>{hasProgressionMilestone ? "MILESTONE CONFIRMED" : "RECORDED THIS RUN"}</h3>
             <strong className="t-fr-achievement">{achievement}</strong>
             <div className="t-fr-rank"><span>COMMANDER</span><strong>RANK {receipt.rankBefore !== receipt.rankAfter ? `${receipt.rankBefore} → ` : ""}{receipt.rankAfter}</strong>
               <small>{receipt.progressBefore} → {receipt.progressAfter} total points · rank shown by this receipt</small></div>
@@ -122,9 +220,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, pending, 
  * The local victory is never confused with server-recorded permanent access.
  * Existing detailed evidence and gameplay actions are passed through unchanged.
  */
-export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pending, error, failure,
+export function SpecialFieldOpResults({ victory, missionName, plate, receipt, milestone, pending, error, failure,
   kind, nextObjective, actions, children }: {
-  victory: boolean; missionName: string; plate: string; receipt: FieldResult | null;
+  victory: boolean; missionName: string; plate: string; receipt: FieldResult | null; milestone: FieldLegacyMilestone | null;
   pending: boolean; error: string | null; failure: string;
   kind: "lockdown" | "extraction"; nextObjective?: string; actions: ReactNode; children: ReactNode;
 }) {
@@ -158,6 +256,7 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, pe
           lockdown ? `Optional practice accepted${plan ? ` · ${plan} plan` : ""}. No new currency or progression rewards.` :
           "Optional Veteran practice accepted. No currency, Commander, Veteran or Pack Mastery progress."}</p>
       </section>
+      {receipt.victory ? <LegacyRewardReveal milestone={milestone} /> : null}
       <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{nextObjective ? <p>{nextObjective}</p> : null}</div>
     </> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>

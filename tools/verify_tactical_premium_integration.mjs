@@ -27,6 +27,108 @@ function sourceBlob(source) {
  return execFileSync('git',['hash-object','--stdin'],{input:source,encoding:'utf8'}).trim();
 }
 
+// Forge Item Preview V1 (PR #282): six exact reviewed authored blobs.
+// Historical pins above/below remain intact; this layer accepts no future arbitrary source.
+const approvedForgePreviewBlobs=Object.freeze({
+  "js/forge.js": "60573b1839ac9924b602373eb62da4c14f7aff04",
+  "tactical-ops-src/host/bridge.ts": "23dabb3cebedf72d045388f24dfdfb5a94e9b159",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "18292cf657fd094d4fde7ccd29f4ca42fb2c8504",
+  "tactical-ops-src/ui/fieldOpResults.css": "bb682aa122cd9cbd59d37af63e96b4a88b2110af",
+  "tactical-ops-src/version.ts": "3b3833059e764617d20c0f04a10b8764c52eff1c",
+  "tools/verify_field_op_results_premium.mjs": "fdabfd097f9dbe406c82a52002032304196fc7ff",
+});
+// PR #283 Field Legacy Reward Reveal: independently reviewed exact source blobs.
+// Preserve earlier PR approvals; newer authored sources supersede them only at HEAD.
+const approvedFieldLegacyV1Blobs=Object.freeze({
+  "tactical-ops-src/data/fieldLegacy.ts": "a2a3cd25b8df5c5dc4938476bb6aabcfcf02a3b7",
+  "tactical-ops-src/host/foundationProgression.ts": "b851c3cf089062f8c4fd3d46909e54760730a266",
+  "tactical-ops-src/store/battleStore.ts": "af467b68677f9d55d1345887b1c0edc051adacdf",
+  "tactical-ops-src/ui/App.tsx": "a46a8781bd4c7660cc0b05b5f33fc622aeaed691",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "8556e8a66a2911f2b07a49bbd11939ce8016e6fd",
+  "tactical-ops-src/ui/fieldOpResults.css": "1c2242a4579a9b4f8f35485b42618338da2d45e2",
+  "tactical-ops-src/version.ts": "adad270d7bd82e5af1a1f7677e691d5d8725bbc0",
+});
+// Foundation Character Bridge V1 (#271): exact reviewed additions on top of
+// Field Legacy #283 and Gear Impact #279. Historical pins above remain intact.
+const approvedFoundationBridgeV1Blobs=Object.freeze({
+  "tactical-ops-src/combat/combatProfileV3.ts": "19abaf438e8b1fed04058648f69929ab288ad1a8",
+  "tactical-ops-src/host/foundationProgression.ts": "a46fbfe6c6220dcd7373b75bfafaf287c7c5989a",
+  "tactical-ops-src/store/battleStore.ts": "6616b1ff185f395041f3cb4d357239e3a0c17c27",
+  "tools/verify_tactical_foundation_character_bridge.mjs": "9a474c9c6e49e647b7f9c6e2036fdcf4315f0812",
+});
+const approvedCurrentBlobs=Object.freeze({
+  ...approvedForgePreviewBlobs,
+  ...approvedFieldLegacyV1Blobs,
+  ...approvedFoundationBridgeV1Blobs,
+});
+for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
+ const source=readFileSync(path,'utf8');
+ const current=approvedCurrentBlobs[path] ?? expected;
+ assert.equal(sourceBlob(source),current,'unreviewed Field Legacy V1 source: '+path);
+ assert.notEqual(sourceBlob(source+'\n/* unreviewed Field Legacy mutation */'),current,
+  'Field Legacy V1 negative integrity guard: '+path);
+}
+for(const [path,sha] of Object.entries(approvedCurrentBlobs)){
+ const content=readFileSync(path,'utf8');
+ assert.equal(sourceBlob(content),sha,'unreviewed Forge Item Preview source: '+path);
+ assert.notEqual(sourceBlob(content+'\n/* unreviewed Forge mutation */'),sha,'Forge preview negative integrity guard: '+path);
+}
+
+// Tactical Player Identity V2: exact approved source blobs, not wildcard permissions.
+const approvedIdentityV2Blobs=Object.freeze({
+  "tactical-ops-src/host/identity.ts": "796a09c2848f464dd436c9cdfe3d6244c2ae26e8",
+  "tactical-ops-src/ui/PlayerIdentity.tsx": "d0b5ab68addb982ef81aadbc6d17319748443128",
+  "tactical-ops-src/ui/App.tsx": "1cdfc24a7f978404b5336c594cc1378aab803c88",
+  "tactical-ops-src/ui/Battle.tsx": "8114907414ae45975fa0a536f94710c1306a563b",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "088e4386839a45a65daa0aec55fe14579adcfb46",
+  "tactical-ops-src/tactical.css": "2583b76c6ab93569edc39ec6d0dc832782c408c3",
+  "tactical-ops-src/host/bootstrap.ts": "450551d5ba53d852afe3f0b691ee66e2354643e2",
+  "tactical-ops-src/store/battleStore.ts": "2579ed6dc9f30b971b5fe8602723469410b19ac6",
+  "index.html": "c19319a576ddb15a135bd3806bf426704ef87e99",
+  "tactical-ops-src/version.ts": "c7a0e7832297089902d4353f468cce7489ad7d9c",
+  "tools/verify_tactical_player_identity_v2.mjs": "f4daf0beede9ef3c2f0a129e7f919edf08b058da",
+  ".github/workflows/tactical-player-identity-v2.yml": "fc9b06bdfc5f2988a5a46938e10c8439a45b35f8",
+  ".github/workflows/tactical-cinematic-results.yml": "a30085c6340f42f6f3e73ab402f8987372ad2b50"
+});
+// War Table Visual Identity V2: exact new authored sources; historical Identity V2 pins remain frozen.
+const approvedWarTableV2Blobs=Object.freeze({
+  "tactical-ops-src/ui/App.tsx": "7fd6036dcacc1f5254f0b8e7ee006315d8c163b3",
+  "tactical-ops-src/ui/commandDeck.css": "eb54bda248de3bf83e6be31a5828d70a865ea8ee",
+  "tactical-ops-src/ui/operationArtwork.ts": "9d4b682fc9b5030d74e5b676f04eccb18ce3b970",
+  "tactical-ops-src/version.ts": "471f1b7eedad889f4cb1719db405b30e0920da5c",
+  "tools/verify_wartable_visual_v2.mjs": "c08b22662a8186546c9e3632095515453fd00d98",
+  ".github/workflows/war-table-visual-v2.yml": "b5d2135c487d65b8ac57a1307165c27692e4c347"
+});
+for(const [path,sha] of Object.entries(approvedWarTableV2Blobs)) {
+ const source=readFileSync(path,"utf8");
+ assert.equal(sourceBlob(source),approvedCurrentBlobs[path] ?? sha,"unreviewed War Table Visual V2 source: "+path);
+ assert.notEqual(sourceBlob(source+"\\n/* unreviewed War Table mutation */"),sha,
+  "War Table Visual V2 negative integrity guard: "+path);
+}
+for(const [path,sha] of Object.entries(approvedIdentityV2Blobs)) {
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??sha,'unreviewed Player Identity V2 source: '+path);
+ assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed Identity V2 mutation */'),sha,'Identity V2 negative integrity guard: '+path);
+}
+// Eight individually reviewed WebP blobs were committed to main before this PR.
+// They must still match their exact approved Git object bytes; no directory wildcard.
+const approvedWarTableAssetBlobs=Object.freeze({
+  "images/tactical_ops/presentation/command_deck/operations/alpha_wartable_broken_signal_v1.webp": "3a7d093e769a217a902d2e7df6f7db03c63f0dd5",
+  "images/tactical_ops/presentation/command_deck/operations/alpha_wartable_dead_relay_v1.webp": "e02988bf605b8ca1843967b06b0ae9924c5b2cfe",
+  "images/tactical_ops/presentation/command_deck/operations/alpha_wartable_fracture_front_v1.webp": "a7db00d189f7572543e3ab6d53817d832668630f",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_recover_v1_256.webp": "71a51e1f6a3623fee60cce0000941b0f48204c62",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_hold_v1_256.webp": "89a4ce5767c10258f357616417de080c832a4a22",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_survive_v1_256.webp": "9a8c941eefaeb051e178ba9dfacf9ce321cf3450",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_intercept_v1_256.webp": "577aae06ded7771f9445e0d6fc9d306728f381a3",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_boss_v1_256.webp": "429f1cb1b0aafa74de3ba1a5cee8f0887324856f",
+  "images/tactical_ops/presentation/command_deck/mission_emblems/gitkeep": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+  "images/tactical_ops/presentation/command_deck/operations/gitkeep": "8b137891791fe96927ad78e64b0aad7bded08bdc"
+});
+for(const [path,sha] of Object.entries(approvedWarTableAssetBlobs)){
+ const bytes=readFileSync(path);
+ assert.equal(sourceBlob(bytes),sha,"unreviewed War Table asset: "+path);
+ assert.notEqual(sourceBlob(Buffer.concat([bytes,Buffer.from("unreviewed asset mutation")])),sha,
+  "War Table asset negative integrity guard: "+path);
+}
 // PR #268: preserve historical approvals against reviewed main
 // and pin new changes separately.
 const nextDecisionBase='b32f4594d43cf6ceec105e8371ba29627645716a';
@@ -67,18 +169,155 @@ const approvedSignalTrialsBlobs=Object.freeze({
  'tools/verify_tactical_depth01_combat.mjs':'8d033e062766d08cf73befdc23b8f723d5307a81',
  'tools/verify_tactical_depth02_browser.mjs':'f01a7c16490876f078d79ed9fdb2f58e5eadb507',
 });
+
+// PR #272 was merged on main before #273 forked. These are the six exact
+// First Playable Bridge paths; none is a new permission for PR #273.
+const firstPlayableBridgeMerge='feff1a21f563db532b8c313c88ba502d587a187c';
+const approvedFirstPlayableBridgeBlobs=Object.freeze({
+ '.github/workflows/first-playable-bridge.yml':'3d36c4426e7f267766670c28581dd9e856cf69ff',
+ 'js/cta.js':'22a529ab26125db3e1fc324c93cb41d5cda742f9',
+ 'js/missions.js':'32c9a3d9ed2bbeb9774e74adbfae2d6fc18e5d8d',
+ 'js/onboarding.js':'025dfb58574d93935b1f11c3e8724b6d5ff5b57c',
+ 'js/story_delivery.js':'c0875e83dd101b806156fb3261e8433e3ebc379c',
+ 'tools/verify_first_playable_bridge_v1.mjs':'ac833abdd0193274897dc6319e409f0a1ba27104',
+});
+// PR #273 advances only the following authored sources. Compiled output is
+// still constrained by the existing version/cache and integration checks.
+const rewardExperienceBase=firstPlayableBridgeMerge;
+const approvedRewardExperienceBlobs=Object.freeze({
+ 'index.html':'d938f772dcc10e5673f477ce8271ac764328f2e8',
+ 'js/forge.js':'d2ad8bf83b645f9fb7d76641df7a127985308490',
+ 'tactical-ops-src/host/bootstrap.ts':'01d3fd08fb568a84936f807506767cb85bed1c6c',
+ 'tactical-ops-src/host/bridge.ts':'6ef5d76c3467f8bd6b66494f2cb93d65194054f2',
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'9c8a76f1a4ab2476bea36fe71dd2ed12c1c895ac',
+ 'tactical-ops-src/ui/fieldOpResults.css':'bff06b494b0820b5ae325487ccd0cd222ec6d7f0',
+ 'tactical-ops-src/version.ts':'c28cc421f3bbff792c7544a3500cba15de191800',
+ 'tools/verify_field_op_results_premium.mjs':'40457102f6a0fbf8172337f8dd83e4f05ce0ed54',
+});
+// PR #274 pins its exact source delta over merged Reward Experience. The
+// historical release pins still apply at their respective merge commits.
+const recoverAuthorityBase='982cb2e93306fc85e22fc2af196e9ef1325dc3c9';
+const signalTrialsMerge='a4e37998a5756dddad16e2cb97104a5263551601';
+const approvedRecoverAuthorityBlobs=Object.freeze({
+ '.github/workflows/tactical-purpose-return.yml':'71e073ad33b959994c92d3bcb020243c73c92c10',
+ 'package.json':'4cdafac1b9dc056df35a197086d258c50cdb6042',
+ 'tactical-ops-src/combat/effects.ts':'457df1933dfdbfe8e060d0db0019285a31e01afd',
+ 'tactical-ops-src/combat/recoverAuthority.ts':'4aef5670c1e25d869e2d71cea9ef06667938eaf1',
+ 'tactical-ops-src/host/foundationProgression.ts':'d42b87ae3d841dc52c36171835076d044f689108',
+ 'tactical-ops-src/store/battleStore.ts':'f6b0297d9b4f763556043135ded93d05568018e6',
+ 'tactical-ops-src/ui/App.tsx':'bec81cbdaef5748c4ff7464495291955fc14b709',
+ 'tactical-ops-src/ui/battleDecision.ts':'8d343ee9d05263587d0782258c1c7ea7e594a02c',
+ 'tactical-ops-src/ui/missionPurpose.ts':'1ba4253c1b410a1aa9800499284767432e950d5d',
+ 'tactical-ops-src/ui/returnPurpose.ts':'9bd52fb0610b869df6ec5741ec4fee5802e99006',
+ 'tactical-ops-src/ui/tacticalCampaignOrders.ts':'b6b048aca64e04f4d1f2cca802ee62d30a795437',
+ 'tactical-ops-src/version.ts':'4ebfa89fa01d23d46d60c770d94a640cdb783513',
+ 'tools/build_tactical_recover_engine_v1.mjs':'84de109532c99882b161c56de4e4cbfb1bec054f',
+ 'tools/tactical_recover_engine_v1.ts':'95741ee60d802f81c37a47b14a16e6c648023327',
+ 'tools/verify_tactical_recover_authority_client.mjs':'34855860e01aa12e171e881aef9b0beb02611f75',
+});
+// Gear V3.1: narrowly reviewed source blobs for this focused PR. No wildcard approval.
+const approvedGearV31Blobs=Object.freeze({
+  ".github/workflows/tactical-gear-v31.yml": "15571fc76bac72fb2771b14a93969ba11f5df3e5",
+  ".github/workflows/tactical-purpose-return.yml": "4de15ba9ba3767475bca365c88e769a7d2f8d7f1",
+  "tactical-ops-src/combat/battle.ts": "4a907b65beb6f4495a8cf93cb24e662269fd4cbf",
+  "tactical-ops-src/combat/combatProfileV3.ts": "5cd344871e359c47ff36d8ef705a1da4e28e23f0",
+  "tactical-ops-src/combat/gearImpactV31.ts": "70240860d651771971498e42d0d9188f79355cbe",
+  "tactical-ops-src/combat/skills.ts": "f0d6792e7d585317aa1c15eae2029e9271f5a823",
+  "tactical-ops-src/combat/types.ts": "bed007a67c533497127d8b87b8181a399ebff642",
+  "tactical-ops-src/version.ts": "242266640d31bfac70afe8fcd036f7f7123082c0",
+  "tools/verify_tactical_gear_v31.mjs": "c326575679f69a6a063ecc827de94cbd72bde16a"
+});
+for(const [p,sha] of Object.entries(approvedGearV31Blobs)){
+ assert.equal(sourceBlob(readFileSync(p)), approvedCurrentBlobs[p] ?? approvedWarTableV2Blobs[p] ?? approvedIdentityV2Blobs[p] ??sha,'unreviewed Gear V3.1 source: '+p);
+ assert.notEqual(sourceBlob(readFileSync(p,'utf8')+'\n/* unreviewed gear mutation */'),sha,'Gear V3.1 negative integrity guard: '+p);
+}
+// V2 authoring is pinned separately from all historical merge approvals.
+const victoryV2Base='83139a060bf1db35719020d4ce5fc533e3e856a7';
+const approvedVictoryV2Blobs=Object.freeze({
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'bedcf3dc1adb30907e562d1c26cde66c5e5082cf',
+ 'tactical-ops-src/ui/fieldOpResults.css':'ca853364819c0b163762654d401f64ea1c3135d7',
+ 'tactical-ops-src/version.ts':'5b20d07e3d8dc5d7ed1727dcb2fbe1c9ad3675b9',
+ 'tools/verify_field_op_results_premium.mjs':'bf58113fb167cb82cb2f7e219bfed308dcee77e3',
+});
+const approvedVictoryArtKitV1Blobs=Object.freeze({
+  "index.html": "f6a6680f08dfb3716c595cf4438b9ee9ef884bce",
+  "css/tactical_victory_art_v1.css": "24a2d8b88cb7d3ccdf69566ffd0c8a9e3c31a116",
+  "images/tactical_ops/presentation/victory_triumph_overlay.png": "854d671a4ef93a459b3cf79fd087c82db6792487",
+  "images/tactical_ops/presentation/reward_exp_plate.png": "5755164c00b8eb2903e76aa276842b33045f837a",
+  "images/tactical_ops/presentation/reward_bones_plate.png": "8535b18b75d4a54aeb98450f2ddee8c3b48dd522",
+  "images/tactical_ops/presentation/forge_item_frame.png": "27f4a86b367ce12c276ccc57b5c22a6072ff97aa"
+});
+const victoryV2BaseBlobs=Object.freeze({
+ 'tactical-ops-src/ui/FieldOpResults.tsx':'9c8a76f1a4ab2476bea36fe71dd2ed12c1c895ac',
+ 'tactical-ops-src/ui/fieldOpResults.css':'bff06b494b0820b5ae325487ccd0cd222ec6d7f0',
+ 'tactical-ops-src/version.ts':'4ebfa89fa01d23d46d60c770d94a640cdb783513',
+ 'tools/verify_field_op_results_premium.mjs':'40457102f6a0fbf8172337f8dd83e4f05ce0ed54',
+});
+git('merge-base','--is-ancestor',victoryV2Base,'HEAD');
+for(const [path,expected] of Object.entries(victoryV2BaseBlobs))
+ assert.equal(git('rev-parse',`${victoryV2Base}:${path}`).trim(),expected,'unreviewed V2 base: '+path);
+for(const [path,expected] of Object.entries(approvedVictoryV2Blobs)){
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? expected,'unreviewed Victory V2 source: '+path);
+ assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed V2 mutation */'),expected,
+  'Victory V2 negative guard: '+path);
+}
+for(const changedPath of git('diff','--name-only','--no-renames',victoryV2Base,'HEAD','--',
+ '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
+ assert(Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+  changedPath==='tools/verify_tactical_premium_integration.mjs','unreviewed Victory V2 path: '+changedPath);
+}
+git('merge-base','--is-ancestor',recoverAuthorityBase,'HEAD');
+for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,'HEAD','--',
+ '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
+ assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+  changedPath==='tools/verify_tactical_premium_integration.mjs',
+  'unreviewed RECOVER Authority path: '+changedPath);
+}
+for(const [path,expected] of Object.entries(approvedRecoverAuthorityBlobs))
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? approvedVictoryV2Blobs[path] ?? expected,'unreviewed RECOVER Authority source: '+path);
+git('merge-base','--is-ancestor',firstPlayableBridgeMerge,'HEAD');
+for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
+ assert.equal(git('rev-parse',`${firstPlayableBridgeMerge}:${path}`).trim(),expected,'unreviewed merged First Playable Bridge blob: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??expected,'unreviewed First Playable Bridge source: '+path);
+}
+for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,'HEAD','--',
+ '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
+ assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+  changedPath==='tools/verify_tactical_premium_integration.mjs',
+  'unreviewed Reward Experience path: '+changedPath);
+}
+for(const [path,expected] of Object.entries(approvedRewardExperienceBlobs)){
+ assert.equal(git('rev-parse',`${recoverAuthorityBase}:${path}`).trim(),expected,'unreviewed merged Reward Experience blob: '+path);
+ const liveExpected=approvedCurrentBlobs[path] ?? approvedGearV31Blobs[path] ?? approvedVictoryArtKitV1Blobs[path] ?? approvedVictoryV2Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? expected;
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??liveExpected,'unreviewed Reward Experience source: '+path);
+ // An unapproved edit must never match the exact reviewed Git blob.
+ assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed provenance mutation */'),liveExpected,
+  'Reward Experience negative integrity guard: '+path);
+}
 const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`);
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||generated.has(changedPath)||
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
-for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs))
- assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Browser Public Entry main blob: '+path);
-for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs))
- assert.equal(sourceBlob(readFileSync(path)),sha,'unreviewed Signal Trials blob: '+path);
+for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs)){
+ // #273 changes only index.html's loader revision; its old main blob is
+ // still frozen at the exact First Playable Bridge merge baseline.
+ if(path==='index.html'){
+  assert.equal(git('rev-parse',`${rewardExperienceBase}:${path}`).trim(),sha,
+   'unreviewed Browser Public Entry historical index blob');
+  assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedVictoryArtKitV1Blobs[path],
+   'unreviewed Victory Art Kit index blob');
+ }else{
+  assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??sha,'unreviewed Browser Public Entry main blob: '+path);
+ }
+}
+for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs)){
+ assert.equal(git('rev-parse',`${signalTrialsMerge}:${path}`).trim(),sha,'unreviewed merged Signal Trials blob: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? sha,'unreviewed Signal Trials source: '+path);
+}
 for(const [path,sha] of Object.entries(nextDecisionApproved))
  assert.equal(sourceBlob(git('show',`182778165eab8ddde44cb3bfe4fe5d25d44145ee:${path}`)),sha,'unreviewed merged Next Decision blob: '+path);
 const approvedHoundBlobs=Object.freeze({
@@ -289,7 +528,7 @@ for(const [path,expected] of Object.entries(actorFacingBlobs)){
  assert.equal(git('rev-parse',`${actorFacingMerge}:${path}`).trim(),expected,'unreviewed actor presentation: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',alignmentMerge,actorFacingHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(actorFacingBlobs,path),'unreviewed runtime mutation after visual alignment: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(actorFacingBlobs,path),'unreviewed runtime mutation after visual alignment: '+path);
 }
 // The old approved phases above stay exact. Pin this pass separately against
 // its actual main base, including the small cosmetic cleanup in the store.
@@ -314,7 +553,7 @@ for(const [path,expected] of Object.entries(combatExperienceBlobs)){
  assert.equal(git('rev-parse',`${combatExperienceMerge}:${path}`).trim(),expected,'unreviewed combat presentation: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',combatExperienceBase,combatExperienceMerge,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(combatExperienceBlobs,path),'unreviewed runtime mutation after combat experience base: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(combatExperienceBlobs,path),'unreviewed runtime mutation after combat experience base: '+path);
 }
 const courierTraceLeaves=new Set([app,'tactical-ops-src/ui/s3AfterAction.ts']);
 const courierTraceHead='53dcf529ba3a7a3c0299bbf97a4fa903e36a8768';
@@ -322,7 +561,7 @@ const finalPlayerBase='a19311fdcb91c69c66779f6f9e50536e17ad4fb5';
 git('merge-base','--is-ancestor',courierTraceHead,finalPlayerBase);
 git('merge-base','--is-ancestor',finalPlayerBase,'HEAD');
 for(const path of git('diff','--name-only','--no-renames',courierTraceBase,courierTraceHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||courierTraceLeaves.has(path),'unreviewed runtime mutation in Courier Trace: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||courierTraceLeaves.has(path),'unreviewed runtime mutation in Courier Trace: '+path);
 }
 // #255 was merged independently of Courier Trace. Verify it separately so it
 // does not expand either pass's allowed paths.
@@ -352,12 +591,12 @@ for(const [path,expected] of Object.entries(finalPlayerBlobs)){
  if(!Object.hasOwn(loadoutBlobs,path)) assert.equal(git('rev-parse',`${loadoutHead}:${path}`).trim(),expected,'unreviewed post-V1 change: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutBase,loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(loadoutBlobs,path)||path===cooldownRules,'unreviewed runtime mutation in Loadout V1: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(loadoutBlobs,path)||path===cooldownRules,'unreviewed runtime mutation in Loadout V1: '+path);
 }
 assert.equal(git('show',`${loadoutHead}:${cooldownRules}`).replace('unit: Pick<CombatUnit, "team">','unit: CombatUnit'),
  git('show',`${loadoutBase}:${cooldownRules}`),'Loadout may only narrow the cooldown helper input type');
 for(const path of git('diff','--name-only','--no-renames',finalPlayerBase,loadoutBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(finalPlayerBlobs,path),'unreviewed runtime mutation in V1 player presentation: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(finalPlayerBlobs,path),'unreviewed runtime mutation in V1 player presentation: '+path);
 }
 const fieldContractBlobs=Object.freeze({
  'tactical-ops-src/data/fieldContracts.ts':'542ac9214f879dcda09d9261e3c1ae352452c2f7',
@@ -451,10 +690,10 @@ git('merge-base','--is-ancestor','0cb25488080cd16494d57ceb231fa9a4495e15f7','HEA
 git('merge-base','--is-ancestor','e1a11d12a4cbc3bc4d1ade3fd277a92f7ca368d3','HEAD');
 for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(git('rev-parse',`d4da1a3f7ecc894e6295bd2b7ccd0f3d31107979:${path}`).trim(),expected,'unreviewed merged browser baseline: '+path);
- assert.equal(sourceBlob(readFileSync(path)),approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path)||Object.hasOwn(approvedVictoryV2Blobs,path)||Object.hasOwn(approvedVictoryArtKitV1Blobs,path)||(Object.hasOwn(approvedGearV31Blobs,path)||Object.hasOwn(approvedCurrentBlobs,path)),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
   assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
@@ -471,6 +710,16 @@ const rcContractPaths=new Set([
 for(const path of git('diff','--name-only','--no-renames',mergedBaseline,overheadMerge,'--','index.html','js','tactical-ops-src').trim().split('\n').filter(Boolean)){
  assert(rcContractPaths.has(path),`unreviewed production change since merged baseline: ${path}`);
 }
+
+// Victory Art Kit V1: exact local assets, no wildcard permissions.
+for (const [assetPath,approvedSha] of Object.entries(approvedVictoryArtKitV1Blobs)) {
+  assert.equal(sourceBlob(readFileSync(assetPath)),approvedWarTableV2Blobs[assetPath] ?? approvedIdentityV2Blobs[assetPath] ?? approvedSha,
+    'unreviewed Victory Art Kit V1 asset: '+assetPath);
+}
+assert(readFileSync('index.html','utf8').includes(
+  '<link rel="stylesheet" href="/css/tactical_victory_art_v1.css?v=v1-20261111">'),
+  'Victory Art Kit stylesheet must be loaded');
+
 const version=readFileSync('tactical-ops-src/version.ts','utf8');
 const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');
 assert(bundle.includes(version.match(/VERSION = "([^"]+)"/)[1]));

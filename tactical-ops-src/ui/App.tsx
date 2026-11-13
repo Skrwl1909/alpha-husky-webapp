@@ -9,7 +9,7 @@ import { savedMasteryProof } from "./s3PowerProof";
 import { buildFit, fieldcraftResults } from "./fieldcraft";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { g2HoldRevisionForRequest, missionForContext, surviveRevisionForRequest } from "../data/operations";
-import type { FoundationProgressionState } from "../host/foundationProgression";
+import { isRecoverAuthorityRun, type FoundationProgressionState } from "../host/foundationProgression";
 import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
@@ -44,7 +44,8 @@ import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 import { relayPressureMission } from "../data/relayPressure";
 
 import { applyIdentityToAlpha } from "../host/identity";
-import { PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
+import { CommanderPortrait, PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
+import { operationArtwork, type ArtMission } from "./operationArtwork";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -71,6 +72,19 @@ function missionPresentation(mission: NonNullable<ReturnType<typeof getMissionDe
   if (mission.objectiveType === "HOLD") return { art: PRESENTATION.reinforcementWarning, tone: "hold", label: "HOLD THE LINE" };
   if (mission.objectiveType === "SURVIVE") return { art: PRESENTATION.battlefield, tone: "survive", label: "ENDURE" };
   return { art: PRESENTATION.operationPlate, tone: "assault", label: "ASSAULT" };
+}
+
+/** Existing operation art is the safe fallback if a shipped WebP cannot load. */
+function OperationScene({ mission, fallback, eager = false }: { mission: ArtMission; fallback: string; eager?: boolean }) {
+  const src = operationArtwork(mission).scene;
+  return <img className="t-wt-scene" src={src} alt="" aria-hidden="true"
+    loading={eager ? "eager" : "lazy"} decoding="async"
+    onError={event => { event.currentTarget.onerror = null; event.currentTarget.src = fallback; }} />;
+}
+function MissionEmblem({ mission }: { mission: ArtMission }) {
+  const src = operationArtwork(mission).insignia;
+  return src ? <img className="t-wt-mission-emblem" src={src} alt="" aria-hidden="true" loading="lazy" decoding="async"
+    onError={event => { event.currentTarget.hidden = true; }} /> : null;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -312,6 +326,7 @@ function WarTable() {
             <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 02</span><h2 className="t-title">THE DEAD RELAY</h2></div>
             <strong>{deadRelay.status === "cleared" ? "CAMPAIGN SECURED" : deadRelay.missions["dead-relay-courier"] === "locked" ? "LOCKED" : "IN PROGRESS"}</strong>
           </div>
+          <div className="t-wt-campaign-environment" aria-hidden="true"><OperationScene mission={getMissionDef("dead-relay-courier")!} fallback={PRESENTATION.operationPlate}/></div>
           <p>Intercept the courier. Hold the relay. Defeat its Guardian.</p>
           {deadRelay.status !== "cleared" && deadRelayNextMissionId ? (
             <div className="t-wt-campaign-actions">
@@ -330,7 +345,7 @@ function WarTable() {
               const status = deadRelay.missions[id] || "locked";
               const active = deadRelay.activeMissionRun?.missionId === id;
               return <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={id}>
-                <span className="t-kicker">MISSION {String(index + 1).padStart(2, "0")} · {mission.objectiveType}</span>
+                <span className="t-kicker t-wt-story-type"><MissionEmblem mission={mission} /> MISSION {String(index + 1).padStart(2, "0")} · {mission.objectiveType}</span>
                 <strong>{mission.name}</strong>
                 <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
                 <button type="button" className="t-btn" disabled={loading || status === "locked"}
@@ -380,8 +395,8 @@ function WarTable() {
             ? currentFieldWindow(recommendedMission.missionId, field?.board, field?.region, Date.now(), primaryPurpose.tier, !primaryPurpose.chapter && progression?.vnextStartAvailable === true) : null;
           return <section className={`t-panel t-wt-feature t-wt-next-op t-command-mission-feature t-command-order t-mission-tone-${visual.tone}`} aria-label="Recommended next operation" data-primary-purpose="true" data-purpose-mission={recommendedMission.missionId}>
             <div className="t-wt-feature-art">
-              <img src={visual.art} alt="" />
-              <span className="t-wt-art-label">{visual.label}</span>
+              <OperationScene mission={recommendedMission} fallback={visual.art} eager />
+              <span className="t-wt-art-label"><MissionEmblem mission={recommendedMission} />{visual.label}</span>
             </div>
             <div className="t-wt-feature-copy">
               <div className="t-kicker t-cd-operation-label">{primaryPurpose.resume ? "ACCEPTED OPERATION" : "NEXT OPERATION"}</div>
@@ -392,7 +407,8 @@ function WarTable() {
                 <p>{contract ? (contracts?.sidegrade ? "Complete the remaining contract to earn Field Tested honor."
                   : contracts?.completed.length === 1 ? "Complete this contract to unlock Reach Rend."
                   : "Complete two Field Contracts to unlock Reach Rend.")
-                  : primaryPurpose.resume ? "Resume with the accepted squad from round 1." : primaryPurpose.reason}</p>
+                  : primaryPurpose.resume ? isRecoverAuthorityRun(recommendedAccepted?.runId)
+                    ? "Resume from your last confirmed action." : "Resume with the accepted squad from round 1." : primaryPurpose.reason}</p>
               </div>
               {window ? <p className="t-brief-purpose-meta" data-g4-command-window="true">{window.text}</p> : null}
             </div>
@@ -433,7 +449,7 @@ function WarTable() {
         {purposeRoute.alternatives.length ? <details className="t-purpose-alternatives" aria-label="Optional alternatives">
           <summary>Other operations</summary>
           {purposeRoute.alternatives.map(action => <article key={action.missionId} data-purpose-mission={action.missionId}>
-            <span className="t-kicker">{action.title}</span><h3>{getMissionDef(action.missionId)?.name}</h3><p>{action.reason}</p>
+            <span className="t-kicker t-wt-story-type">{getMissionDef(action.missionId) ? <MissionEmblem mission={getMissionDef(action.missionId)!} /> : null}{action.title}</span><h3>{getMissionDef(action.missionId)?.name}</h3><p>{action.reason}</p>
             <button type="button" className="t-btn" disabled={loading} onClick={() => openPurpose(action)}>{action.tier === "advanced" ? "REVIEW ADVANCED" : "VIEW BRIEF"}</button>
           </article>)}
         </details> : null}
@@ -521,7 +537,7 @@ function WarTable() {
               <button key={mission.missionId} type="button" aria-pressed={(selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0]) === mission.missionId}
                 className={(selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0]) === mission.missionId ? "is-selected" : ""}
                 onClick={() => setSelectedFieldOp(mission.missionId)}>
-                <span>{String(index + 1).padStart(2, "0")}</span><strong>{mission.name}</strong>
+                <span>{String(index + 1).padStart(2, "0")}</span><MissionEmblem mission={mission} /><strong>{mission.name}</strong>
                 <small>{securedMissionIds.has(mission.missionId) ? "SECURED" : "FIRST CLEAR"}</small>
               </button>
             ))}
@@ -538,8 +554,8 @@ function WarTable() {
               return (
                 <article className={`t-wt-mission-card t-panel t-mission-tone-${visual.tone} ${securedToday ? "is-cleared" : "is-active"}`} key={mission.missionId}>
                   <div className="t-wt-mission-art">
-                    <img src={visual.art} alt="" aria-hidden="true" />
-                    <span className="t-wt-mission-type">{visual.label}</span>
+                    <OperationScene mission={contextualMission} fallback={visual.art} />
+                    <span className="t-wt-mission-type"><MissionEmblem mission={contextualMission} />{visual.label}</span>
                   </div>
                   <div className="t-wt-mission-body">
                     <div className="t-wt-mission-head">
@@ -547,7 +563,7 @@ function WarTable() {
                         <h3>{mission.name}</h3>
                         <p>{objectiveHeadline(contextualMission)}</p>
                       </div>
-                      <div className="t-wt-mission-state">{securedToday ? "SECURED TODAY" : "AVAILABLE"}</div>
+                      <div className="t-wt-mission-state" data-availability={securedToday ? "secured" : "available"}>{securedToday ? "SECURED TODAY" : "AVAILABLE"}</div>
                     </div>
                     <div className="t-player-mission-counter">OPERATION {activeMissionIds.indexOf(mission.missionId) + 1} / {activeMissionIds.length} · {visual.label} · {securedToday ? "CLEARED" : "UNCLEARED"}</div>
                     {tacticalWindow ? <p className="t-brief-purpose-meta" data-g4-mission-window="true">{tacticalWindow.text}</p> : null}
@@ -614,7 +630,7 @@ function WarTable() {
               const isPlayable = mission.executable && (status === "available" || status === "cleared");
               return (
                 <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={missionId}>
-                  <span className="t-kicker">MISSION {String(index + 1).padStart(2, "0")}</span>
+                  <span className="t-kicker t-wt-story-type"><MissionEmblem mission={mission} /> MISSION {String(index + 1).padStart(2, "0")}</span>
                   <strong>{mission.name}</strong>
                   <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
                   <button type="button" className="t-btn" disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
@@ -869,7 +885,8 @@ function Brief() {
       <Background dim={0.58} />
       <div ref={briefPane} className={`t-brief t-deployment t-deployment-v29 t-command-art-shell t-premium-ux${briefTab === "loadout" ? " t-loadout-active" : ""}`}>
         <header className={`t-deploy-hero t-deploy-hero-v29 t-command-brief-hero t-mission-tone-${missionVisual.tone}`}>
-          <img src={missionVisual.art} alt="" aria-hidden="true" />
+          {mission ? <OperationScene mission={mission} fallback={missionVisual.art} eager /> : <img src={missionVisual.art} alt="" aria-hidden="true" />}
+          <span className="t-wt-brief-emblem" aria-hidden="true">{mission ? <MissionEmblem mission={mission} /> : null}</span>
           <div className="t-deploy-hero-copy">
             <div className="t-kicker">{selectedTrialLevel!==null ? `SIGNAL TRIAL ${selectedTrialLevel}/6` : fieldOp ? "FIELD OPS" : "TACTICAL OPS"} / MISSION BRIEF</div>
             <h1 className="t-title">{title}</h1>
@@ -951,7 +968,7 @@ function Brief() {
           <div className="t-squad-preview t-squad-preview-v29" aria-label="Selected squad">
             {allies.map(def => (
               <div key={def.defId}>
-                <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" />
+                {def.defId === "alpha" ? <CommanderPortrait fallbackUrl={def.portrait} /> : <img src={def.portrait} alt="" />}
                 <span>{def.defId === "ally-02" ? "CNC" : def.role === "companion" ? "PET" : def.name}</span>
               </div>
             ))}
@@ -1001,7 +1018,7 @@ function Brief() {
                 {loadoutAllies.map(def => <button type="button" key={def.defId} aria-pressed={def.defId === unit.defId} onClick={() => setLoadoutUnit(def.defId)}>
                   <span className="t-loadout-portrait" aria-hidden="true">
                     {def.defId.startsWith("pet:") ? <PawPrint size={20} /> : null}
-                    <img src={def.portrait} alt="" onError={def.defId === "alpha" ? portraitFallback : event => { event.currentTarget.hidden = true; }} />
+                    {def.defId === "alpha" ? <CommanderPortrait fallbackUrl={def.portrait} /> : <img src={def.portrait} alt="" onError={event => { event.currentTarget.hidden = true; }} />}
                   </span>
                   <strong>{loadoutName(def)}</strong>
                   {mission && (def.defId === "ally-02" || def.defId === "ally-03") && sidegradesUnlocked && !resuming ? <small>Variants</small> : null}
@@ -1123,7 +1140,7 @@ function Brief() {
                 <PlayerIdentityCard />
                 {allies.map((def) => (
                   <div className="t-unit-row" key={def.defId}>
-                    <img src={def.portrait} onError={def.defId === "alpha" ? portraitFallback : undefined} alt="" style={def.defId === "alpha" ? undefined : { objectPosition: "50% 12%" }} />
+                    {def.defId === "alpha" ? <CommanderPortrait fallbackUrl={def.portrait} /> : <img src={def.portrait} alt="" style={{ objectPosition: "50% 12%" }} />}
                     <div><div className="t-title" style={{ fontSize: "0.95rem" }}>{def.defId === "ally-02" ? "COLDNCURSED" : def.name}</div><div style={{ color: "var(--t-muted)", fontSize: "0.8rem" }}>{briefSubtitle(def)}</div></div>
                   </div>
                 ))}
@@ -1217,6 +1234,7 @@ function Results() {
   const failureReason = useBattleStore((s) => s.battle.failureReason);
   const results = useBattleStore((s) => s.battle.results);
   const fieldResult = useBattleStore((s) => s.fieldResult);
+  const fieldMilestone = useBattleStore((s) => s.fieldMilestone);
   const campaignResult = useBattleStore((s) => s.campaignResult);
   const chapterResult = useBattleStore((s) => s.chapterResult);
   const chapterMode = useBattleStore((s) => s.chapterMode);
@@ -1246,6 +1264,7 @@ function Results() {
   const fieldOp = mission?.activity === "FIELD_OP";
   const campaignMission = mission?.operationId === DEAD_RELAY.operationId;
   const recordedFieldResult = matchingAfterActionReceipt(fieldResult, currentRunKey, selectedMissionId);
+  const recordedFieldMilestone = recordedFieldResult && fieldMilestone?.runId === recordedFieldResult.runId ? fieldMilestone : null;
   const recordedCampaignResult = matchingAfterActionReceipt(campaignResult, currentRunKey, selectedMissionId);
   const campaignConfirmed = !chapterMode && campaignMission ? recordedCampaignResult : null;
   const recordedChapterResult = chapterMode ? matchingAfterActionReceipt(chapterResult, currentRunKey, selectedMissionId) : null;
@@ -1331,7 +1350,7 @@ function Results() {
   if (ordinaryFieldOp) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
     <FieldOpResults victory={fieldVictory} missionName={mission.name}
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
-      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      receipt={recordedFieldResult} milestone={recordedFieldMilestone} pending={progressionCommitPending} error={progressionError}
       failure={failure} consequence={s3Proof}
       nextObjective={decision?.detail}
       reachRendNext={reachRendNext}
@@ -1362,7 +1381,7 @@ function Results() {
   if (specialKind) return <div className="t-fill"><Background dim={0.6} /><div className="t-overlay t-results-overlay">
     <SpecialFieldOpResults kind={specialKind} victory={fieldVictory} missionName={mission?.name || "FIELD OP"}
       plate={fieldVictory ? PRESENTATION.resultsPlate : PRESENTATION.operationPlate}
-      receipt={recordedFieldResult} pending={progressionCommitPending} error={progressionError}
+      receipt={recordedFieldResult} milestone={recordedFieldMilestone} pending={progressionCommitPending} error={progressionError}
       failure={failure} nextObjective={decision?.detail}
       actions={recordedFieldResult ? decisionActions :
         <button type="button" className="t-btn t-btn-primary" disabled={progressionCommitPending}
