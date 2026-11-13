@@ -37,7 +37,25 @@ const approvedForgePreviewBlobs=Object.freeze({
   "tactical-ops-src/version.ts": "3b3833059e764617d20c0f04a10b8764c52eff1c",
   "tools/verify_field_op_results_premium.mjs": "fdabfd097f9dbe406c82a52002032304196fc7ff",
 });
-for(const [path,sha] of Object.entries(approvedForgePreviewBlobs)){
+// PR #283 Field Legacy Reward Reveal: independently reviewed exact source blobs.
+// Preserve earlier PR approvals; newer authored sources supersede them only at HEAD.
+const approvedFieldLegacyV1Blobs=Object.freeze({
+  "tactical-ops-src/data/fieldLegacy.ts": "a2a3cd25b8df5c5dc4938476bb6aabcfcf02a3b7",
+  "tactical-ops-src/host/foundationProgression.ts": "b851c3cf089062f8c4fd3d46909e54760730a266",
+  "tactical-ops-src/store/battleStore.ts": "af467b68677f9d55d1345887b1c0edc051adacdf",
+  "tactical-ops-src/ui/App.tsx": "a46a8781bd4c7660cc0b05b5f33fc622aeaed691",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "8556e8a66a2911f2b07a49bbd11939ce8016e6fd",
+  "tactical-ops-src/ui/fieldOpResults.css": "1c2242a4579a9b4f8f35485b42618338da2d45e2",
+  "tactical-ops-src/version.ts": "adad270d7bd82e5af1a1f7677e691d5d8725bbc0",
+});
+const approvedCurrentBlobs=Object.freeze({...approvedForgePreviewBlobs,...approvedFieldLegacyV1Blobs});
+for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
+ const source=readFileSync(path,'utf8');
+ assert.equal(sourceBlob(source),expected,'unreviewed Field Legacy V1 source: '+path);
+ assert.notEqual(sourceBlob(source+'\n/* unreviewed Field Legacy mutation */'),expected,
+  'Field Legacy V1 negative integrity guard: '+path);
+}
+for(const [path,sha] of Object.entries(approvedCurrentBlobs)){
  const content=readFileSync(path,'utf8');
  assert.equal(sourceBlob(content),sha,'unreviewed Forge Item Preview source: '+path);
  assert.notEqual(sourceBlob(content+'\n/* unreviewed Forge mutation */'),sha,'Forge preview negative integrity guard: '+path);
@@ -70,12 +88,12 @@ const approvedWarTableV2Blobs=Object.freeze({
 });
 for(const [path,sha] of Object.entries(approvedWarTableV2Blobs)) {
  const source=readFileSync(path,"utf8");
- assert.equal(sourceBlob(source),approvedForgePreviewBlobs[path] ?? sha,"unreviewed War Table Visual V2 source: "+path);
+ assert.equal(sourceBlob(source),approvedCurrentBlobs[path] ?? sha,"unreviewed War Table Visual V2 source: "+path);
  assert.notEqual(sourceBlob(source+"\\n/* unreviewed War Table mutation */"),sha,
   "War Table Visual V2 negative integrity guard: "+path);
 }
 for(const [path,sha] of Object.entries(approvedIdentityV2Blobs)) {
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??sha,'unreviewed Player Identity V2 source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??sha,'unreviewed Player Identity V2 source: '+path);
  assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed Identity V2 mutation */'),sha,'Identity V2 negative integrity guard: '+path);
 }
 // Eight individually reviewed WebP blobs were committed to main before this PR.
@@ -197,7 +215,7 @@ const approvedGearV31Blobs=Object.freeze({
   "tools/verify_tactical_gear_v31.mjs": "c326575679f69a6a063ecc827de94cbd72bde16a"
 });
 for(const [p,sha] of Object.entries(approvedGearV31Blobs)){
- assert.equal(sourceBlob(readFileSync(p)), approvedForgePreviewBlobs[p] ?? approvedWarTableV2Blobs[p] ?? approvedIdentityV2Blobs[p] ??sha,'unreviewed Gear V3.1 source: '+p);
+ assert.equal(sourceBlob(readFileSync(p)), approvedCurrentBlobs[p] ?? approvedWarTableV2Blobs[p] ?? approvedIdentityV2Blobs[p] ??sha,'unreviewed Gear V3.1 source: '+p);
  assert.notEqual(sourceBlob(readFileSync(p,'utf8')+'\n/* unreviewed gear mutation */'),sha,'Gear V3.1 negative integrity guard: '+p);
 }
 // V2 authoring is pinned separately from all historical merge approvals.
@@ -226,39 +244,39 @@ git('merge-base','--is-ancestor',victoryV2Base,'HEAD');
 for(const [path,expected] of Object.entries(victoryV2BaseBlobs))
  assert.equal(git('rev-parse',`${victoryV2Base}:${path}`).trim(),expected,'unreviewed V2 base: '+path);
 for(const [path,expected] of Object.entries(approvedVictoryV2Blobs)){
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? expected,'unreviewed Victory V2 source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? expected,'unreviewed Victory V2 source: '+path);
  assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed V2 mutation */'),expected,
   'Victory V2 negative guard: '+path);
 }
 for(const changedPath of git('diff','--name-only','--no-renames',victoryV2Base,'HEAD','--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedForgePreviewBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs','unreviewed Victory V2 path: '+changedPath);
 }
 git('merge-base','--is-ancestor',recoverAuthorityBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,'HEAD','--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedForgePreviewBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed RECOVER Authority path: '+changedPath);
 }
 for(const [path,expected] of Object.entries(approvedRecoverAuthorityBlobs))
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? approvedVictoryV2Blobs[path] ?? expected,'unreviewed RECOVER Authority source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? approvedVictoryV2Blobs[path] ?? expected,'unreviewed RECOVER Authority source: '+path);
 git('merge-base','--is-ancestor',firstPlayableBridgeMerge,'HEAD');
 for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
  assert.equal(git('rev-parse',`${firstPlayableBridgeMerge}:${path}`).trim(),expected,'unreviewed merged First Playable Bridge blob: '+path);
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??expected,'unreviewed First Playable Bridge source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??expected,'unreviewed First Playable Bridge source: '+path);
 }
 for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,'HEAD','--',
  '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedForgePreviewBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Reward Experience path: '+changedPath);
 }
 for(const [path,expected] of Object.entries(approvedRewardExperienceBlobs)){
  assert.equal(git('rev-parse',`${recoverAuthorityBase}:${path}`).trim(),expected,'unreviewed merged Reward Experience blob: '+path);
- const liveExpected=approvedForgePreviewBlobs[path] ?? approvedGearV31Blobs[path] ?? approvedVictoryArtKitV1Blobs[path] ?? approvedVictoryV2Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? expected;
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??liveExpected,'unreviewed Reward Experience source: '+path);
+ const liveExpected=approvedCurrentBlobs[path] ?? approvedGearV31Blobs[path] ?? approvedVictoryArtKitV1Blobs[path] ?? approvedVictoryV2Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? expected;
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??liveExpected,'unreviewed Reward Experience source: '+path);
  // An unapproved edit must never match the exact reviewed Git blob.
  assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed provenance mutation */'),liveExpected,
   'Reward Experience negative integrity guard: '+path);
@@ -267,7 +285,7 @@ const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`)
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedForgePreviewBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
@@ -277,15 +295,15 @@ for(const [path,sha] of Object.entries(approvedBrowserEntryMainBlobs)){
  if(path==='index.html'){
   assert.equal(git('rev-parse',`${rewardExperienceBase}:${path}`).trim(),sha,
    'unreviewed Browser Public Entry historical index blob');
-  assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedVictoryArtKitV1Blobs[path],
+  assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedVictoryArtKitV1Blobs[path],
    'unreviewed Victory Art Kit index blob');
  }else{
-  assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??sha,'unreviewed Browser Public Entry main blob: '+path);
+  assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??sha,'unreviewed Browser Public Entry main blob: '+path);
  }
 }
 for(const [path,sha] of Object.entries(approvedSignalTrialsBlobs)){
  assert.equal(git('rev-parse',`${signalTrialsMerge}:${path}`).trim(),sha,'unreviewed merged Signal Trials blob: '+path);
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? sha,'unreviewed Signal Trials source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedGearV31Blobs[path] ?? approvedRecoverAuthorityBlobs[path] ?? sha,'unreviewed Signal Trials source: '+path);
 }
 for(const [path,sha] of Object.entries(nextDecisionApproved))
  assert.equal(sourceBlob(git('show',`182778165eab8ddde44cb3bfe4fe5d25d44145ee:${path}`)),sha,'unreviewed merged Next Decision blob: '+path);
@@ -659,10 +677,10 @@ git('merge-base','--is-ancestor','0cb25488080cd16494d57ceb231fa9a4495e15f7','HEA
 git('merge-base','--is-ancestor','e1a11d12a4cbc3bc4d1ade3fd277a92f7ca368d3','HEAD');
 for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(git('rev-parse',`d4da1a3f7ecc894e6295bd2b7ccd0f3d31107979:${path}`).trim(),expected,'unreviewed merged browser baseline: '+path);
- assert.equal(sourceBlob(readFileSync(path)), approvedForgePreviewBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
+ assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
 }
 for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
- assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path)||Object.hasOwn(approvedVictoryV2Blobs,path)||Object.hasOwn(approvedVictoryArtKitV1Blobs,path)||(Object.hasOwn(approvedGearV31Blobs,path)||Object.hasOwn(approvedForgePreviewBlobs,path)),'unreviewed runtime mutation in Field Contracts V1: '+path);
+ assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path)||Object.hasOwn(approvedVictoryV2Blobs,path)||Object.hasOwn(approvedVictoryArtKitV1Blobs,path)||(Object.hasOwn(approvedGearV31Blobs,path)||Object.hasOwn(approvedCurrentBlobs,path)),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
   assert.equal(sourceBlob(nextDecisionHistoricSource(path)),serviceRecordBlobs[path] ?? surviveTensionBlobs[path] ?? rewardCommandBlobs[path] ?? reachRendUxBlobs[path] ?? browserExitApproved[path],'unreviewed Browser Guest exit or release source: '+path);
