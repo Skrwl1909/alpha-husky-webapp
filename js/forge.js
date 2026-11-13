@@ -769,8 +769,97 @@
       .ah-btn:disabled{ opacity:.45; cursor:default; }
       .ah-btnrow{ display:flex; gap:8px; flex-wrap:wrap; }
       .ah-forge-field-test{border-color:rgba(142,240,176,.38);background:linear-gradient(130deg,rgba(21,52,42,.9),rgba(11,19,25,.95))}
-      .ah-forge-field-deltas{margin:9px 0;padding-left:17px;font-size:12px;line-height:1.5;color:var(--ah-text)}
-      .ah-forge-field-test .ah-btn{width:100%;margin-top:10px;min-height:48px;white-space:normal}
+      .ah-forge-field-test{
+        position:relative;isolation:isolate;overflow:hidden;
+        padding:14px 12px 12px;
+        border-color:rgba(224,177,90,.68);
+        background:radial-gradient(ellipse at 15% 0%,rgba(224,177,90,.19),transparent 55%),
+          linear-gradient(145deg,#232015,#101921 72%,#0c1317);
+        box-shadow:inset 0 1px 0 rgba(255,228,160,.17),0 8px 24px rgba(0,0,0,.25);
+      }
+      .ah-forge-field-test::before{
+        content:"";position:absolute;inset:0;z-index:0;pointer-events:none;
+        background:linear-gradient(115deg,transparent 20%,rgba(255,233,175,.2) 49%,transparent 77%);
+        opacity:0;
+      }
+      .ah-forge-field-test > *{position:relative;z-index:1}
+      .ah-forge-impact-top{
+        display:flex;align-items:center;justify-content:space-between;gap:8px;
+        padding-bottom:10px;border-bottom:1px solid rgba(224,177,90,.18);
+      }
+      .ah-forge-impact-title{
+        display:flex;align-items:center;gap:8px;min-width:0;
+        color:#fff1d2;font-family:var(--ah-display);font-size:14px;font-weight:700;
+        letter-spacing:.035em;
+      }
+      .ah-forge-impact-seal{
+        display:grid;place-items:center;flex:0 0 24px;height:24px;
+        border:1px solid rgba(255,215,137,.58);border-radius:50%;
+        background:rgba(224,177,90,.14);color:#ffe1a1;font:700 14px/1 var(--ah-font);
+      }
+      .ah-forge-impact-verified{
+        color:#a9edc2;font-size:9px;font-weight:700;letter-spacing:.1em;
+        text-transform:uppercase;white-space:nowrap;
+      }
+      .ah-forge-impact-hero{
+        display:flex;align-items:center;gap:12px;min-width:0;
+        padding:12px 0 9px;
+      }
+      .ah-forge-impact-art{
+        position:relative;display:grid;place-items:center;flex:0 0 84px;
+        width:84px;height:84px;border:1px solid rgba(224,177,90,.36);
+        border-radius:14px;background:radial-gradient(circle,rgba(224,177,90,.23),rgba(12,16,21,.83) 72%);
+      }
+      .ah-forge-impact-art::before{
+        content:"";position:absolute;inset:9px;pointer-events:none;border-radius:50%;
+        border:1px solid rgba(255,207,109,.26);
+      }
+      .ah-forge-impact-icon{position:relative;display:grid;place-items:center;width:68px;height:68px;overflow:hidden}
+      .ah-forge-impact-icon img{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain}
+      .ah-forge-impact-copy{min-width:0;flex:1}
+      .ah-forge-impact-copy .ah-kicker{font-size:9px;margin:0 0 3px}
+      .ah-forge-impact-name{
+        margin:0;color:#fff3dd;font:700 clamp(15px,4.3vw,19px)/1.2 var(--ah-display);
+        overflow-wrap:anywhere;
+      }
+      .ah-forge-impact-stars{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:9px}
+      .ah-forge-impact-stars .from{color:#a99c81;font-size:15px;font-weight:700}
+      .ah-forge-impact-stars .arrow{color:#c1ae8b;font-size:13px}
+      .ah-forge-impact-stars .to{
+        display:inline-flex;align-items:center;padding:3px 9px;
+        border:1px solid rgba(255,211,117,.5);border-radius:7px;
+        background:rgba(224,177,90,.17);color:#ffdc91;
+        font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;
+        box-shadow:inset 0 1px 0 rgba(255,240,200,.12);
+      }
+      .ah-forge-impact-stats{
+        display:grid;gap:5px;padding:9px 0;
+        border-top:1px solid rgba(224,177,90,.18);
+        border-bottom:1px solid rgba(224,177,90,.18);
+      }
+      .ah-forge-impact-stat{
+        display:flex;justify-content:space-between;align-items:center;
+        gap:8px;min-width:0;font-size:12px;
+      }
+      .ah-forge-impact-stat .label{color:#d6c7aa;min-width:0;overflow-wrap:anywhere}
+      .ah-forge-impact-stat .values{
+        display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end;
+        font-weight:700;font-variant-numeric:tabular-nums;
+      }
+      .ah-forge-impact-stat .old{color:#a9a39a}
+      .ah-forge-impact-stat .new{color:#f5e9d3}
+      .ah-forge-impact-stat .gain{color:#a8edc1}
+      .ah-forge-impact-stat .loss{color:#ffb0ae}
+      .ah-forge-impact-note{margin:8px 0 0;color:var(--ah-dim);font-size:11px;line-height:1.4}
+      .ah-forge-field-test .ah-btn{width:100%;margin-top:12px;min-height:48px;white-space:normal}
+      .ah-forge-field-test.is-revealing{animation:ah-forge-impact-arrive .42s ease-out both}
+      .ah-forge-field-test.is-revealing::before{animation:ah-forge-impact-flash .75s ease-out both}
+      .ah-forge-field-test.is-revealing .ah-forge-impact-icon{animation:ah-forge-impact-item .65s cubic-bezier(.2,.9,.2,1) both}
+      .ah-forge-field-test.is-revealing .ah-forge-impact-stars .to{animation:ah-forge-impact-star .55s .18s cubic-bezier(.2,.9,.2,1) both}
+      @keyframes ah-forge-impact-arrive{from{opacity:.45;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes ah-forge-impact-flash{0%{opacity:0;transform:translateX(-70%)}38%{opacity:1}100%{opacity:0;transform:translateX(70%)}}
+      @keyframes ah-forge-impact-item{0%{opacity:.6;transform:scale(.85)}65%{opacity:1;transform:scale(1.07)}100%{transform:scale(1)}}
+      @keyframes ah-forge-impact-star{0%{opacity:.5;transform:scale(.8)}65%{opacity:1;transform:scale(1.12)}100%{transform:scale(1)}}
       .ah-note, .ah-panel{
         padding:12px;
         border:1px solid rgba(196,154,84,.18);
@@ -866,9 +955,13 @@
         .ah-forge-survivor{ display:none; }
         .ah-stage{ grid-template-columns:38% minmax(0,1fr); gap:8px; padding:8px; }
         .ah-gear-tile{ flex-basis:64px; width:64px; }
+        .ah-forge-impact-art{flex-basis:66px;width:66px;height:66px}
+        .ah-forge-impact-icon{width:54px;height:54px}
+        .ah-forge-impact-hero{gap:9px}
+        .ah-forge-impact-verified{font-size:8px;letter-spacing:.03em}
       }
       @media (prefers-reduced-motion: reduce){
-        .ah-forge *{ transition:none !important; animation:none !important; }
+        .ah-forge *, .ah-forge *::before, .ah-forge *::after{ transition:none !important; animation:none !important; }
       }
     `;
       (document.body || document.head).appendChild(s);
@@ -1013,6 +1106,7 @@
   let _lastCraft = { slot: null, made: [], spent: null, echo: null };
   let _selectedUpgradeKey = null;
   let _lastForgeProof = null; // Only after accepted upgrade and fresh Forge state.
+  let _forgeRevealQueued = false; // One visual impact per confirmed upgrade; not on redraw/reopen.
   let _useIceCrystal = false;
 
   function getCfg() {
@@ -1152,18 +1246,43 @@
     }
   }
 
-  function renderForgeFieldTest(body, proof) {
+  function renderForgeFieldTest(body, proof, revealOnce = false) {
     if (!proof) return;
-    const section = el("section", "ah-note ah-forge-field-test");
-    section.setAttribute("aria-label", "Confirmed Forge upgrade and next field test");
-    const lines = proof.changes.length
-      ? proof.changes.map(change => `<li>${esc(statLabel(change.key))}: <b>${esc(formatStatValue(change.before))} → ${esc(formatStatValue(change.after))}</b></li>`).join("")
-      : "";
-    section.innerHTML = `<div class="ah-kicker">FORGED · NEXT FIELD TEST</div>
-      <div class="ah-section-title">${esc(proof.name)} · ★${proof.beforeStars} → ★${proof.afterStars}</div>
-      ${lines ? `<ul class="ah-forge-field-deltas">${lines}</ul>`
-        : '<p class="ah-section-copy">Upgrade level confirmed. No numeric item-stat change was exposed for comparison.</p>'}
-      <p class="ah-section-copy">Item stats are not a damage forecast. Deploy to see the accepted combat build in action.</p>`;
+    const section = el("section", `ah-note ah-forge-field-test${revealOnce ? " is-revealing" : ""}`);
+    section.setAttribute("role", revealOnce ? "status" : "region");
+    section.setAttribute("aria-label", "Forge upgrade complete, next field test available");
+    const changes = proof.changes.map(change => {
+      const gain = change.after - change.before;
+      const sign = gain > 0 ? "+" : "";
+      return `<div class="ah-forge-impact-stat">
+        <span class="label">${esc(statLabel(change.key))}</span>
+        <span class="values"><span class="old">${esc(fmtNum(change.before))}</span>
+          <span aria-hidden="true">→</span><span class="new">${esc(fmtNum(change.after))}</span>
+          <span class="${gain > 0 ? "gain" : "loss"}">(${sign}${esc(fmtNum(gain))})</span></span>
+      </div>`;
+    }).join("");
+    section.innerHTML = `<div class="ah-forge-impact-top">
+        <div class="ah-forge-impact-title"><span class="ah-forge-impact-seal" aria-hidden="true">✦</span>UPGRADE COMPLETE</div>
+        <span class="ah-forge-impact-verified">✓ VERIFIED</span>
+      </div>
+      <div class="ah-forge-impact-hero">
+        <div class="ah-forge-impact-art" aria-hidden="true"><div class="ah-forge-impact-icon"></div></div>
+        <div class="ah-forge-impact-copy">
+          <div class="ah-kicker">FORGED EQUIPMENT</div>
+          <h3 class="ah-forge-impact-name">${esc(proof.name)}</h3>
+          <div class="ah-forge-impact-stars" aria-label="Upgraded from ${proof.beforeStars} to ${proof.afterStars} stars">
+            <span class="from">★${proof.beforeStars}</span><span class="arrow" aria-hidden="true">→</span>
+            <strong class="to">★${proof.afterStars}</strong>
+          </div>
+        </div>
+      </div>
+      <div class="ah-forge-impact-stats">
+        <div class="ah-kicker">${changes ? "CONFIRMED ITEM STAT CHANGES" : "UPGRADE LEVEL CONFIRMED"}</div>
+        ${changes || '<p class="ah-forge-impact-note">No numeric item-stat change was exposed by the refreshed Forge state.</p>'}
+      </div>
+      <p class="ah-forge-impact-note">Item values are confirmed, not a damage forecast. Start a new battle to see your updated combat profile.</p>`;
+    const updatedItem = _state?.equipped?.find(item => item.slot === proof.slot);
+    mountItemIcon(section.querySelector(".ah-forge-impact-icon"), updatedItem, "26px");
     const action = el("button", "ah-btn primary", "FIELD TEST IN TACTICAL OPS");
     action.type = "button";
     action.addEventListener("click", () => void openFieldTest());
@@ -1194,6 +1313,7 @@
       const crystalMeta = (it.upgradePreview && it.upgradePreview.iceCrystal) || {};
       const shouldUseIceCrystal = !!(_useIceCrystal && crystalMeta && crystalMeta.canUse);
       _lastForgeProof = null;
+      _forgeRevealQueued = false;
       _busy = true;
       draw();
       let accepted = false;
@@ -1213,7 +1333,12 @@
           await loadState();
           const updated = _state?.equipped?.find(item => item.slot === it.slot);
           _lastForgeProof = confirmedForgeDelta(it, updated);
-          toast(_lastForgeProof ? "Upgrade recorded. Test your build in Tactical Ops." : "Upgrade accepted. Check refreshed gear in Forge.");
+          _forgeRevealQueued = !!_lastForgeProof;
+          if (_lastForgeProof) {
+            try { (_tg || window.Telegram?.WebApp)?.HapticFeedback?.notificationOccurred("success"); } catch (_) {}
+          } else {
+            toast("Upgrade accepted. Check refreshed gear in Forge.");
+          }
         } catch (_) {
           toast("Upgrade accepted, but refreshed stats are unavailable. Reopen Forge to check your gear.");
         }
@@ -1281,7 +1406,15 @@
     row.appendChild(nextBtn);
     selector.appendChild(row);
     body.appendChild(selector);
-    renderForgeFieldTest(body, _lastForgeProof);
+    const revealOnce = _forgeRevealQueued && !!_lastForgeProof;
+    renderForgeFieldTest(body, _lastForgeProof, revealOnce);
+    _forgeRevealQueued = false;
+    if (revealOnce) requestAnimationFrame(() => {
+      const card = body.querySelector(".ah-forge-field-test");
+      if (card?.isConnected && _root?.contains(card)) {
+        try { card.scrollIntoView({ block: "start", behavior: "auto" }); } catch (_) {}
+      }
+    });
 
     requestAnimationFrame(() => {
       const selTile = scroller.querySelector(".ah-gear-tile.selected");
@@ -1805,6 +1938,7 @@
     _busy = false;
     _tab = "upgrade";
     _lastForgeProof = null;
+    _forgeRevealQueued = false;
     restoreMobileShellAfterForgeExit("forge-teardown");
   }
 
@@ -1908,6 +2042,7 @@
       buildingId: ctx && ctx.buildingId ? ctx.buildingId : null,
       name: (ctx && ctx.name) || "Forgotten Tokens’ Vault",
     };
+    _forgeRevealQueued = false;
 
     if (_root && _root.isConnected) {
       closeViaNav("forge-reopen");
