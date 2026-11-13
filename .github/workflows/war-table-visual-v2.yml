@@ -1,0 +1,39 @@
+name: War Table Visual Identity V2
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/**"
+      - "images/tactical_ops/presentation/command_deck/**"
+      - "tools/verify_wartable_visual_v2.mjs"
+      - ".github/workflows/war-table-visual-v2.yml"
+permissions:
+  contents: read
+jobs:
+  war-table-art:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install --no-audit --no-fund --package-lock=false
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Source asset truth and rendered mobile operation cards
+        run: node tools/verify_wartable_visual_v2.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Exact historical provenance and production bundle
+        run: |
+          node tools/verify_tactical_premium_integration.mjs
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: war-table-visual-v2-mobile-evidence
+          path: artifacts/war-table-visual-v2
+          if-no-files-found: warn

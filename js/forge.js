@@ -1716,7 +1716,13 @@
       if (!rows.length || rows.some(({ have }) => !validAmount(have))) continue;
       const missingCount = rows.filter(row => row.missing > 0).length;
       if (item.canUpgrade !== (missingCount === 0) || missingCount >= fewestMissing) continue;
-      best = { key: item.key, name: item.name, stars: item.stars + 1, rows };
+      // Presentation-only: reuse Forge's existing item art; fall back to canonical EQ Cloudinary IDs.
+      // Item keys must be single safe public IDs, never user-controlled URL/path fragments.
+      const publicKey = /^[a-z0-9_-]+$/i.test(String(item.key)) ? String(item.key).toLowerCase() : "";
+      const imageUrl = typeof item.icon === "string" && item.icon.trim()
+        ? item.icon.trim()
+        : publicKey ? `https://res.cloudinary.com/dnjwvxinh/image/upload/f_auto,q_auto/equip/${publicKey}.png` : "";
+      best = { key: item.key, name: item.name, stars: item.stars + 1, rows, imageUrl, rarity: rarityKey(item.rarity) };
       fewestMissing = missingCount;
     }
     return best;

@@ -1,0 +1,22 @@
+name: Tactical Player Identity V2
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'index.html'
+      - 'tools/verify_tactical_player_identity_v2.mjs'
+      - '.github/workflows/tactical-player-identity-v2.yml'
+jobs:
+  cosmetic-identity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: node tools/verify_tactical_player_identity_v2.mjs
+      - run: npm run build:tactical-ops
+      - run: node --check js/tactical_ops.js
+      - run: git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
