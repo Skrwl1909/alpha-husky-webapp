@@ -72,6 +72,7 @@ const approvedMaterialRouteV1Blobs=Object.freeze({
   "js/boot_loaders.js": "aba13c7924f9d169728517eeec9170cb2baaa0d6",
   "index.html": "7c5a80d4a6894afb4099ea4069d8d88d436dbf88",
   "js/tactical_ops.js": "3ec759b6d194bdd14360951d1901e65c11c66693",
+  "tools/verify_reward_loop_p2_material_route.mjs": "852b6830c24c9637b97db489248a40306369247f",
 });
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
