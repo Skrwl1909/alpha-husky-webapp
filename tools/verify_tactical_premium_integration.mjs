@@ -108,6 +108,14 @@ const approvedTacticalPowerV1Blobs=Object.freeze({
   "tools/verify_tactical_confirmed_power_v1.mjs": "3497c11581acff0ad4ed5dd546507283c1879f49",
   ".github/workflows/tactical-confirmed-power-v1.yml": "f11a13dcb30dc915e2ff76705f979ad98ba7ac74"
 });
+// Forge Upgrade Impact V1: one-shot confirmation after accepted server upgrade and fresh Forge state.
+// No gameplay/reward/economy authority granted to the client; historical pins remain intact.
+const approvedForgeUpgradeImpactV1Blobs=Object.freeze({
+  "js/forge.js": "189b182a483b25a369eb132d3d364c0761357248",
+  "index.html": "b1c8669b88231d1b8eeeea9da5ddfc0b0d4c3997",
+  "tools/verify_forge_upgrade_impact_v1.mjs": "e4afd243fdc596ed08e8807f2f38accdd994169e",
+  ".github/workflows/forge-upgrade-impact-v1.yml": "04bb3b95813c215e8cd468cef56a12bcce78b1fd"
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -117,6 +125,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedMaterialRouteV1Blobs,
   ...approvedFirstUpgradeSupplyBlobs,
   ...approvedTacticalPowerV1Blobs,
+  ...approvedForgeUpgradeImpactV1Blobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');

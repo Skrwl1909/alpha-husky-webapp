@@ -1,0 +1,22 @@
+name: Forge Upgrade Impact V1
+
+on:
+  pull_request:
+    paths:
+      - 'js/forge.js'
+      - 'index.html'
+      - 'tools/verify_forge_upgrade_impact_v1.mjs'
+      - 'tools/verify_forge_field_test_v1.mjs'
+      - '.github/workflows/forge-upgrade-impact-v1.yml'
+
+jobs:
+  forge-upgrade-impact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check js/forge.js
+      - run: node tools/verify_forge_field_test_v1.mjs
+      - run: node tools/verify_forge_upgrade_impact_v1.mjs
