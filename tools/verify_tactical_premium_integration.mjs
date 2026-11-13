@@ -67,6 +67,7 @@ const approvedRealPlayerStatsDeliveryBlobs=Object.freeze({
 const approvedForgeFieldTestV1Blobs=Object.freeze({
   "js/forge.js": "e8528a4110b204fb1f1cbbad54d05ecbd7ad7963",
   "index.html": "0df23e7c67087ce40b58d5105dc0d07a0388069f",
+  "tools/verify_forge_field_test_v1.mjs": "30e0282c9e62750b812e9f0dc6730d10f1dc0444",
 });
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
