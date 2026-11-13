@@ -48,11 +48,24 @@ const approvedFieldLegacyV1Blobs=Object.freeze({
   "tactical-ops-src/ui/fieldOpResults.css": "1c2242a4579a9b4f8f35485b42618338da2d45e2",
   "tactical-ops-src/version.ts": "adad270d7bd82e5af1a1f7677e691d5d8725bbc0",
 });
-const approvedCurrentBlobs=Object.freeze({...approvedForgePreviewBlobs,...approvedFieldLegacyV1Blobs});
+// Foundation Character Bridge V1 (#271): exact reviewed additions on top of
+// Field Legacy #283 and Gear Impact #279. Historical pins above remain intact.
+const approvedFoundationBridgeV1Blobs=Object.freeze({
+  "tactical-ops-src/combat/combatProfileV3.ts": "19abaf438e8b1fed04058648f69929ab288ad1a8",
+  "tactical-ops-src/host/foundationProgression.ts": "a46fbfe6c6220dcd7373b75bfafaf287c7c5989a",
+  "tactical-ops-src/store/battleStore.ts": "6616b1ff185f395041f3cb4d357239e3a0c17c27",
+  "tools/verify_tactical_foundation_character_bridge.mjs": "9a474c9c6e49e647b7f9c6e2036fdcf4315f0812",
+});
+const approvedCurrentBlobs=Object.freeze({
+  ...approvedForgePreviewBlobs,
+  ...approvedFieldLegacyV1Blobs,
+  ...approvedFoundationBridgeV1Blobs,
+});
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
- assert.equal(sourceBlob(source),expected,'unreviewed Field Legacy V1 source: '+path);
- assert.notEqual(sourceBlob(source+'\n/* unreviewed Field Legacy mutation */'),expected,
+ const current=approvedCurrentBlobs[path] ?? expected;
+ assert.equal(sourceBlob(source),current,'unreviewed Field Legacy V1 source: '+path);
+ assert.notEqual(sourceBlob(source+'\n/* unreviewed Field Legacy mutation */'),current,
   'Field Legacy V1 negative integrity guard: '+path);
 }
 for(const [path,sha] of Object.entries(approvedCurrentBlobs)){

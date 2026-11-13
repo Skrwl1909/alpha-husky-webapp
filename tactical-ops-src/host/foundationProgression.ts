@@ -28,6 +28,8 @@ export type FoundationStage =
 export interface FoundationProgressionState {
   activeTacticalProfile?: TacticalProfile;
   activeCombatProfileV2?: TacticalCombatProfileV2 | null;
+  /** Optional immutable V3 Foundation projection from the accepting server. */
+  activeCombatProfileV3?: TacticalCombatProfileV3 | null;
   playerIdentity?: Record<string, unknown>;
   packMastery?: PackMastery;
   playerGrowth?: GrowthProgression;
@@ -356,6 +358,15 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   state.playerIdentity = value.playerIdentity && typeof value.playerIdentity === "object" ? value.playerIdentity as Record<string, unknown> : undefined;
   state.activeTacticalProfile = parseTacticalProfile(value.activeTacticalProfile);
   if (Object.prototype.hasOwnProperty.call(value, "activeCombatProfileV2")) state.activeCombatProfileV2 = parseCombatProfileV2(value.activeCombatProfileV2);
+  if (Object.prototype.hasOwnProperty.call(value, "activeCombatProfileV3")) {
+    // Frozen Foundation V3 may be absent on existing servers and legacy runs.
+    // If supplied, reject missing/mismatched binding instead of guessing client stats.
+    if (!state.activeRunId || state.foundationRunRules?.runId !== state.activeRunId || !state.activeCombatProfileV2) return null;
+    let frozenV3: TacticalCombatProfileV3 | null;
+    try { frozenV3 = parseCombatProfileV3(value.activeCombatProfileV3); } catch { return null; }
+    if (!frozenV3 || frozenV3.pet?.id !== state.activeCombatProfileV2.pet?.id) return null;
+    state.activeCombatProfileV3 = frozenV3;
+  }
   state.equippedPet = parseTacticalPet(value.equippedPet);
   if (operations) state.operations = operations;
     if (value.campaignIntel && typeof value.campaignIntel === "object") {
