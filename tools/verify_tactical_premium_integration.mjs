@@ -95,6 +95,19 @@ const approvedFirstUpgradeSupplyBlobs=Object.freeze({
   "tools/verify_field_op_results_premium.mjs": "b76fd002ff736192791a2539b73f89e57ddb67b0",
   "index.html": "cb692b6d5f5d92902d68f52a6439f8bbe3ef3cbe"
 });
+// Tactical Power V1: accepted-run V3 presentation only. Historical approvals stay immutable.
+const approvedTacticalPowerV1Blobs=Object.freeze({
+  "tactical-ops-src/ui/App.tsx": "bec086c9f85b117bd2c7d5a8cd83b7521f923f88",
+  "tactical-ops-src/ui/Battle.tsx": "7d61d2a1b517a0decd1a3a93be92b0fc6f5f350a",
+  "tactical-ops-src/ui/runCombatPower.ts": "dc70622457e6ea6f946d81959e397193e8997c14",
+  "tactical-ops-src/tactical.css": "e934c4f3db1e3bbd422957ce9831a9d884fccc9a",
+  "tactical-ops-src/version.ts": "df7f1581f569cf500aee61ca69bfc75220ba6ab6",
+  "js/boot_loaders.js": "212c2f726c2ac7485d777e4b203bc55f29910168",
+  "js/tactical_ops.js": "5287952fdb81f69e5ef713899e98d0f870b0a31c",
+  "index.html": "38596b3fc0ea55393511c261d6b07612a0a44fdc",
+  "tools/verify_tactical_confirmed_power_v1.mjs": "3497c11581acff0ad4ed5dd546507283c1879f49",
+  ".github/workflows/tactical-confirmed-power-v1.yml": "f11a13dcb30dc915e2ff76705f979ad98ba7ac74"
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -103,6 +116,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedForgeFieldTestV1Blobs,
   ...approvedMaterialRouteV1Blobs,
   ...approvedFirstUpgradeSupplyBlobs,
+  ...approvedTacticalPowerV1Blobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');

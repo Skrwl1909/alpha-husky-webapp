@@ -26,6 +26,7 @@ import type { CombatUnit, StatusType } from "../combat/types";
 import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types";
 import { missionLiveProgress, objectiveDirective, recoverGuidance } from "./missionPurpose";
 import { fieldWindow } from "../data/livingBattlefield";
+import { confirmedRunCombatPower } from "./runCombatPower";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
@@ -321,25 +322,32 @@ function StatusStrip() {
   const displayHp = useBattleStore((s) => s.displayHp);
   const identity = useBattleStore((s) => s.identity);
   const equippedPet = useBattleStore((s) => s.progression?.equippedPet);
+  const progression = useBattleStore((s) => s.progression);
+  const currentRunKey = useBattleStore((s) => s.currentRunKey);
   const [expanded, setExpanded] = useState(false);
   const unit = units.find((u) => u.id === activeId) || units.find((u) => u.team === "ally" && !u.defeated);
   const inspected = units.find(u => u.id === inspectId);
   if (!unit) return null;
   const hp = displayHp[unit.id] ?? unit.hp;
   const isAlpha = unit.role === "alpha" || unit.defId === "alpha" || unit.id === "alpha";
+  const power = confirmedRunCombatPower(progression, currentRunKey);
+  const acceptedStats = isAlpha ? power?.profile.alpha :
+    power?.petDeployed && power.profile.pet && unit.id === `pet:${power.profile.pet.id}` ? power.profile.pet : null;
   const level = isAlpha ? readHostLevel() : null;
   const kit = isAlpha ? [level != null ? `Lv ${level}` : null, identity.skinName || identity.armorLabel || identity.weaponLabel].filter(Boolean).join(" · ") : "";
   const atk = effectiveAtk(unit);
   const defn = effectiveDef(unit);
   const primaryStatus = unit.statuses.find(status => !isBuff(status.type)) ?? unit.statuses[0];
   const statusNames = unit.statuses.map(status => STATUS_SHORT[status.type]).join(", ");
-  const detail = `${inspected && inspected.id !== unit.id ? `${inspected.name} ${displayHp[inspected.id] ?? inspected.hp}/${inspected.maxHp} HP · ` : ""}${statusNames ? `${statusNames} · ` : ""}ATK ${atk} · DEF ${defn} · SPD ${effectiveSpd(unit)} · MOV ${unit.move}${kit ? ` · ${kit}` : ""}`;
+  const acceptedText = acceptedStats ? `SERVER-LOCKED V3 · MAX HP ${acceptedStats.hp} · ATK ${acceptedStats.atk} · DEF ${acceptedStats.def} · SPD ${acceptedStats.spd} · ` : "";
+  const detail = `${acceptedText}${inspected && inspected.id !== unit.id ? `${inspected.name} ${displayHp[inspected.id] ?? inspected.hp}/${inspected.maxHp} HP · ` : ""}${statusNames ? `${statusNames} · ` : ""}LIVE ATK ${atk} · DEF ${defn} · SPD ${effectiveSpd(unit)} · MOV ${unit.move}${kit ? ` · ${kit}` : ""}`;
   return (
-    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Acting unit: ${unit.name}, ${hp} of ${unit.maxHp} HP. ${expanded ? detail + ". Tap to close details" : `${statusNames ? statusNames + ". " : ""}Toggle combat details`}`}>
+    <button type="button" className={`t-status t-hud-card ${expanded ? "is-expanded" : ""} ${unit.team}${isAlpha ? " is-alpha" : ""}`} onClick={() => setExpanded((value) => !value)} aria-expanded={expanded} aria-label={`Acting unit: ${unit.name}, ${hp} of ${unit.maxHp} HP. ${expanded ? detail + ". Tap to close details" : `${acceptedStats ? "Server-confirmed V3 power. " : ""}${statusNames ? statusNames + ". " : ""}Toggle combat details`}`}>
       <HudPortrait key={unit.id} unit={unit} />
       <div className="t-status-main">
         <div className="t-status-head">
           <div className="t-status-name">{unit.name}</div>
+          {acceptedStats ? <span className="t-run-power-chip" title="Server-frozen Combat Profile V3 for this accepted run">V3</span> : null}
           {primaryStatus ? <span className={`t-chip t-status-effect ${isBuff(primaryStatus.type) ? "buff" : "debuff"}`}>{STATUS_SHORT[primaryStatus.type]}</span> : null}
           {isAlpha && equippedPet ? <span className="t-status-pet" title={equippedPet.name}><PawPrint className="t-ico" aria-hidden="true" /></span> : null}
         </div>

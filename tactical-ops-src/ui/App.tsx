@@ -46,6 +46,7 @@ import { relayPressureMission } from "../data/relayPressure";
 import { applyIdentityToAlpha } from "../host/identity";
 import { CommanderPortrait, PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
 import { operationArtwork, type ArtMission } from "./operationArtwork";
+import { confirmedRunCombatPower } from "./runCombatPower";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -770,6 +771,7 @@ function Brief() {
   const briefPane = useRef<HTMLDivElement>(null);
   useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
   const resuming = selectedTrialLevel!==null ? trialRun?.level===selectedTrialLevel : savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
+  const acceptedPower = resuming ? confirmedRunCombatPower(progression, trialRun?.runId || savedRun?.runId) : null;
   const fieldContext = resuming && savedRun?.fieldContext ? savedRun.fieldContext : selectedVeteranChallenge ? {reportVersion:6,veteranChallenge:"pack-extraction-v1" as const,pressure:2,directiveTier:"advanced" as const,directiveSet:"pursuit" as const} : selectedMasteryChallenge ? { pressure:2, reportVersion:field?.lockdownPlansAvailable ? 5 : 4, ...(field?.lockdownPlansAvailable ? {lockdownPlan:selectedLockdownPlan} : {}), directiveTier:'advanced' as const, directiveSet:'pursuit' as const, masteryChallenge:selectedMasteryChallenge } : { pressure: field?.region?.pressure ?? 2, reportVersion: field?.board?.reportVersion || 2, directiveTier: selectedDirectiveTier, directiveSet: field?.board?.directiveSet };
   const previewRevision = resuming ? savedRun?.rulesContract?.missionRevision : !chapterMode && !savedRun && progression?.vnextStartAvailable && baseMission
     ? surviveRevisionForRequest(baseMission.missionId, TACTICAL_VNEXT_RULESET, field?.board) : undefined;
@@ -973,6 +975,22 @@ function Brief() {
               </div>
             ))}
           </div>
+
+          {acceptedPower ? <section className="t-run-power" aria-label="Server-confirmed combat power" data-power-source="accepted-v3">
+            <div className="t-run-power-head">
+              <strong>ACCEPTED COMBAT POWER</strong>
+              <span>V3 · LOCKED FOR THIS RUN</span>
+            </div>
+            <p>These are your server-frozen starting stats. Gear changes apply to a new battle, not this saved run.</p>
+            <div className="t-run-power-unit">
+              <strong>ALPHA</strong>
+              <dl>{(["hp", "atk", "def", "spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{acceptedPower.profile.alpha[stat]}</dd></div>)}</dl>
+            </div>
+            {acceptedPower.petDeployed && acceptedPower.profile.pet ? <div className="t-run-power-unit">
+              <strong>PET · {acceptedPower.profile.pet.name}</strong>
+              <dl>{(["hp", "atk", "def", "spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{acceptedPower.profile.pet![stat]}</dd></div>)}</dl>
+            </div> : null}
+          </section> : null}
 
           {twoSlots ? (
             <div className="t-deploy-squad-picker">
