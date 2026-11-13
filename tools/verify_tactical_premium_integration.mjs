@@ -56,10 +56,18 @@ const approvedFoundationBridgeV1Blobs=Object.freeze({
   "tactical-ops-src/store/battleStore.ts": "6616b1ff185f395041f3cb4d357239e3a0c17c27",
   "tools/verify_tactical_foundation_character_bridge.mjs": "9a474c9c6e49e647b7f9c6e2036fdcf4315f0812",
 });
+// #284 Real Player Stats release delivery: reviewed cache-only change.
+// Historical Field Legacy / Foundation approvals above remain immutable.
+const approvedRealPlayerStatsDeliveryBlobs=Object.freeze({
+  "tactical-ops-src/version.ts": "f69c4af0dc7f77700344a5b6b9bee637ab1a17df",
+  "js/boot_loaders.js": "78d29da1d84acd78a7d79ab813b757936d836fa8",
+  "index.html": "5a02871874cd2ffa690cd6cd424f16ae2c9d25f2",
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
   ...approvedFoundationBridgeV1Blobs,
+  ...approvedRealPlayerStatsDeliveryBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
@@ -713,7 +721,7 @@ for(const path of git('diff','--name-only','--no-renames',mergedBaseline,overhea
 
 // Victory Art Kit V1: exact local assets, no wildcard permissions.
 for (const [assetPath,approvedSha] of Object.entries(approvedVictoryArtKitV1Blobs)) {
-  assert.equal(sourceBlob(readFileSync(assetPath)),approvedWarTableV2Blobs[assetPath] ?? approvedIdentityV2Blobs[assetPath] ?? approvedSha,
+  assert.equal(sourceBlob(readFileSync(assetPath)),approvedCurrentBlobs[assetPath] ?? approvedWarTableV2Blobs[assetPath] ?? approvedIdentityV2Blobs[assetPath] ?? approvedSha,
     'unreviewed Victory Art Kit V1 asset: '+assetPath);
 }
 assert(readFileSync('index.html','utf8').includes(
