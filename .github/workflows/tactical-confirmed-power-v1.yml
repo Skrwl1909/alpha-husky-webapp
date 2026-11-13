@@ -1,0 +1,24 @@
+name: Tactical Power V1 — accepted Combat Profile
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'tools/verify_tactical_confirmed_power_v1.mjs'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - 'index.html'
+      - '.github/workflows/tactical-confirmed-power-v1.yml'
+jobs:
+  accepted-combat-profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund --package-lock=false
+      - run: node tools/verify_tactical_confirmed_power_v1.mjs
+      - run: npm run build:tactical-ops
+      - run: node --check js/tactical_ops.js
+      - run: git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js

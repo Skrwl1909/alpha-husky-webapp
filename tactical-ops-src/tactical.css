@@ -5471,3 +5471,50 @@ body.ah-perf-lite #tacticalOpsRoot .t-cosmetic-sweep {opacity:0;animation:none;}
   #tacticalOpsRoot .t-squad-preview {gap:.4rem;}
   #tacticalOpsRoot .t-squad-preview .t-cosmetic-portrait {width:60px;height:52px;}
 }
+
+/* Tactical Power V1: receipt-independent, server-frozen run stats. No new HUD row. */
+#tacticalOpsRoot .t-run-power {
+  margin:.65rem 0 .25rem;padding:.7rem .75rem;
+  border:1px solid #68c6e65b;border-radius:7px;
+  background:linear-gradient(145deg,#102c3bea,#091923ed);
+  box-shadow:inset 0 1px #dcf7ff10;
+}
+#tacticalOpsRoot .t-run-power-head {
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
+  gap:.25rem .65rem;color:#e6f9ff;
+  font-family:var(--t-font-display);font-size:.68rem;letter-spacing:.09em;
+}
+#tacticalOpsRoot .t-run-power-head > span {
+  color:#91dbe9;font-size:.57rem;white-space:nowrap;
+}
+#tacticalOpsRoot .t-run-power > p {
+  color:#adceda;font-size:.66rem;line-height:1.4;margin:.4rem 0 .6rem;
+}
+#tacticalOpsRoot .t-run-power-unit + .t-run-power-unit {margin-top:.55rem;}
+#tacticalOpsRoot .t-run-power-unit > strong {
+  display:block;color:#d7f4fb;font-size:.63rem;letter-spacing:.08em;margin-bottom:.32rem;
+}
+#tacticalOpsRoot .t-run-power-unit dl {
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:0;
+}
+#tacticalOpsRoot .t-run-power-unit dl > div {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-width:0;min-height:45px;padding:.3rem .18rem;
+  border:1px solid #4fabc73b;border-radius:4px;background:#061822b9;
+}
+#tacticalOpsRoot .t-run-power-unit dt {
+  color:#94b9c8;font-size:.55rem;letter-spacing:.08em;
+}
+#tacticalOpsRoot .t-run-power-unit dd {
+  margin:.1rem 0 0;color:#eafaff;font-size:.91rem;font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+#tacticalOpsRoot .t-battle-hud-rail .t-run-power-chip {
+  color:#8ae1ee;border:1px solid #64bcd15e;border-radius:3px;
+  padding:0 3px;font:700 8px/12px var(--t-font-display);
+  letter-spacing:.04em;white-space:nowrap;flex-shrink:0;
+}
+@media(max-width:360px) {
+  #tacticalOpsRoot .t-run-power {padding:.6rem .55rem;}
+  #tacticalOpsRoot .t-run-power-unit dl {gap:4px;}
+}
