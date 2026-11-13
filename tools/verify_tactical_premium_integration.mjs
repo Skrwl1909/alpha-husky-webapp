@@ -116,6 +116,14 @@ const approvedForgeUpgradeImpactV1Blobs=Object.freeze({
   "tools/verify_forge_upgrade_impact_v1.mjs": "e4afd243fdc596ed08e8807f2f38accdd994169e",
   ".github/workflows/forge-upgrade-impact-v1.yml": "04bb3b95813c215e8cd468cef56a12bcce78b1fd"
 });
+// Hub concentric core: scoped visual alignment of the stationary artwork to
+// the existing rotating mechanical ring. No navigation or game-state changes.
+const approvedHubConcentricCoreV1Blobs=Object.freeze({
+  "css/hub_premium.css": "ff7a951a01fd69ae4e149025f16834e8923ffb7a",
+  "index.html": "6f1cf6ae8fc8c6f7d9317a9183198983e26ffe8c",
+  "tools/verify_hub_concentric_core_v1.mjs": "1d9c29c6a5f79ac813f2a3d0db85ce61d984bef9",
+  ".github/workflows/hub-concentric-core-v1.yml": "207eb6e3c0a40f371d099133062115a54ea40a42"
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -126,6 +134,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedFirstUpgradeSupplyBlobs,
   ...approvedTacticalPowerV1Blobs,
   ...approvedForgeUpgradeImpactV1Blobs,
+  ...approvedHubConcentricCoreV1Blobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
