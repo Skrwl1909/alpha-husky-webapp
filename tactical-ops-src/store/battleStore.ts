@@ -1004,7 +1004,8 @@ export const useBattleStore = create<Store>((set, get) => {
       if (current.progression?.signalTrials?.activeRun) {set({progressionError:"Finish the accepted Signal Trial first."});return;}
       const mission = getMissionDef(missionId);
       if (masteryChallenge && (missionId !== "field-relay-hold" || current.progression?.fieldOps?.masteryPath?.unlockedChallenge !== masteryChallenge)) return;
-      if (mission?.activity === "FIELD_OP" && !masteryChallenge && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && !(current.selectedVeteranChallenge && missionId==="field-relay-recovery" && (current.progression?.fieldOps?.commander?.rank||0)>=4) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
+      const firstUpgradeSupply = current.progression?.fieldOps?.firstUpgradeSupplyMissionId === missionId;
+      if (mission?.activity === "FIELD_OP" && !masteryChallenge && !firstUpgradeSupply && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && !(current.selectedVeteranChallenge && missionId==="field-relay-recovery" && (current.progression?.fieldOps?.commander?.rank||0)>=4) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
         set({ screen: "war-table", progressionError: "That Field Op is no longer active. Choose one of the current three missions.", selectedMissionId: null });
         return;
       }

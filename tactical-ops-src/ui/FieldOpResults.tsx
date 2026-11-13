@@ -49,8 +49,6 @@ function NextForgeUpgrade() {
   const rows = upgrade && typeof upgrade === "object" ? upgrade.rows : [];
   const materialsKnown = rows.length > 0;
   const materialsReady = materialsKnown && rows.every(row => row.missing <= 0);
-  const missingSalvageMaterial = rows.some(row => row.missing > 0 && (row.label === "Scrap" || row.label === "Rune Dust"));
-  const inventory = getHost().openInventory;
   return <section className="t-fr-consequence t-fr-forge" aria-label="Next Forge upgrade"
     data-materials={materialsKnown ? (materialsReady ? "ready" : "needed") : "unknown"}>
     <span className="t-kicker">NEXT FORGE UPGRADE</span>
@@ -69,10 +67,8 @@ function NextForgeUpgrade() {
       </div>
       <ul>{upgrade.rows.map(row => <li key={row.label} data-ready={row.missing <= 0 ? "yes" : "no"}>
         <span>{row.label} <b>{row.have.toLocaleString()} / {row.need.toLocaleString()}</b></span>
-        {row.missing > 0 ? <small>Missing {row.missing.toLocaleString()} · {row.source}</small> : null}
+        {row.missing > 0 ? <small>Missing {row.missing.toLocaleString()}</small> : null}
       </li>)}</ul>
-      {missingSalvageMaterial ? <p className="t-fr-material-route" data-next-resource="salvage">NEXT RESOURCE GOAL · Check salvage yields in Inventory for missing Scrap or Rune Dust. An eligible item is required; the yield is not guaranteed.</p> : null}
-      {missingSalvageMaterial && inventory ? <button type="button" className="t-btn" data-next-resource-action="inventory" onClick={inventory}>CHECK SALVAGE IN INVENTORY</button> : null}
       <button type="button" className="t-btn" onClick={() => forge.openUpgrade(upgrade.key)}>{materialsReady ? "UPGRADE IN FORGE" : "VIEW UPGRADE IN FORGE"}</button>
     </> : <p role="status">{!forge || upgrade === "unavailable" ? "Forge details are unavailable. You can still choose your next operation."
       : upgrade === null ? "No equipped upgrade could be confirmed."
@@ -162,6 +158,11 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
           ? "No EXP or Bones awarded for this result." : "Character payout amounts are unavailable."}</p>}
     </section> : null}
     {receipt?.victory ? <LegacyRewardReveal milestone={milestone} /> : null}
+    {receipt?.firstUpgradeScrapGranted === 8 ? <section className="t-fr-consequence" aria-label="Confirmed First Upgrade Supply">
+      <span className="t-kicker">FIRST UPGRADE SUPPLY</span>
+      <strong>+8 SCRAP</strong>
+      <p>Use your Scrap in Forge to upgrade Rustfang Fangs.</p>
+    </section> : null}
     {award && !reachReward ? <section className="t-fr-consequence t-field-contract" aria-label="Confirmed field contract">
       <div className="t-kicker">{contractName(award.id)} completed · {award.count}/3</div>
       <strong className={majorUnlock ? "t-fr-major-unlock" : undefined}>{award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>

@@ -3,17 +3,18 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const results = readFileSync("tactical-ops-src/ui/FieldOpResults.tsx","utf8");
+const decision = readFileSync("tactical-ops-src/ui/battleDecision.ts", "utf8");
+const purpose = readFileSync("tactical-ops-src/ui/returnPurpose.ts", "utf8");
 const bootstrap = readFileSync("tactical-ops-src/host/bootstrap.ts","utf8");
 const bridge = readFileSync("tactical-ops-src/host/bridge.ts","utf8");
 const forge = readFileSync("js/forge.js","utf8");
 
 assert.match(results,/receipt\?\.victory/);
 assert.match(results,/payout && !pending \? <NextForgeUpgrade/);
-assert.match(results,/row\.missing > 0 && \(row\.label === "Scrap" \|\| row\.label === "Rune Dust"\)/);
-assert.match(results,/missingSalvageMaterial && inventory \?/);
-assert.match(results,/data-next-resource-action="inventory"/);
-assert.match(results,/NEXT RESOURCE GOAL/);
-assert.match(results,/yield is not guaranteed/i);
+assert.doesNotMatch(results,/CHECK SALVAGE IN INVENTORY|row\.source/);
+assert.match(results,/receipt\?\.firstUpgradeScrapGranted === 8/);
+assert.match(decision,/NEXT: RELAY RECOVERY/);
+assert.match(purpose,/firstUpgradeSupplyMissionId !== "field-relay-recovery"/);
 assert.match(results,/UPGRADE IN FORGE/);
 assert.match(results,/VIEW UPGRADE IN FORGE/);
 assert.match(results,/forge\.nextUpgrade\(\)/);

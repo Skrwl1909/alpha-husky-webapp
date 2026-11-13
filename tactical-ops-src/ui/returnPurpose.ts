@@ -35,10 +35,20 @@ export function reachRendLoadoutMission(p: FoundationProgressionState | null, re
     || regular.find(id => id !== result.missionId) || regular[0];
 }
 
+export function firstUpgradeSupplyGoal(field?: FieldOpsProgression): PurposeAction | null {
+  if (field?.firstUpgradeSupplyMissionId !== "field-relay-recovery" ||
+      field.board?.reportVersion !== 3 || field.board.nextRotationAt * 1000 <= Date.now()) return null;
+  return {
+    missionId: field.firstUpgradeSupplyMissionId, title: "FIRST UPGRADE SUPPLY",
+    reason: "Win Standard Relay Recovery for a one-time supply of 8 Scrap for Rustfang Fangs.",
+    tier: "standard", resume: false,
+  };
+}
+
 export function fieldResultNext(p: FoundationProgressionState | null): PurposeAction | null {
   const field = p?.fieldOps;
   const regular = commandPurpose(p).primary;
-  if (regular?.resume) return regular;
+  if (regular?.resume || regular?.missionId === field?.firstUpgradeSupplyMissionId) return regular;
   const contract = p?.vnextStartAvailable ? nextFieldContract(field) : null;
   if (contract) return contract;
   return regular;
@@ -58,6 +68,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
     const id = chapterNextMission(p.tacticalChapter);
     if (id) primary = { ...action(id, saved ? 'FINISH YOUR ACCEPTED CHAPTER RUN' : 'CONTINUE GHOST SIGNAL', 'Complete the next chapter objective. Chapter progress and Intel advance only on an accepted server result.', saved?.fieldContext?.directiveTier || 'standard', Boolean(saved)), chapter: true };
   }
+  if (!primary && !p.signalTrials?.activeRun) primary = firstUpgradeSupplyGoal(f);
   if (!primary) for (const op of [BROKEN_SIGNAL, DEAD_RELAY]) {
     if (op === DEAD_RELAY) {
       primary = p.vnextStartAvailable ? nextFieldContract(f) : null;

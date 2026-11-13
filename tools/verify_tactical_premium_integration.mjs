@@ -80,6 +80,21 @@ const approvedMaterialRouteV1Blobs=Object.freeze({
   "tools/verify_reward_loop_p2_material_route.mjs": "852b6830c24c9637b97db489248a40306369247f",
   "index.html": "b5ebc0e9624a9a5cc75b331b6c40be039d9f17c4",
 });
+// First Upgrade Supply release.
+const approvedFirstUpgradeSupplyBlobs=Object.freeze({
+  "tactical-ops-src/host/foundationProgression.ts": "feea1bc059cb3f9dc2a1623d60a14299e5e3b8c9",
+  "tactical-ops-src/data/fieldOps.ts": "1cd39e6334876425bfdf94ca6cb663ee766869ef",
+  "tactical-ops-src/ui/returnPurpose.ts": "1e14c7fad29a3d0a63c39a36145f423b4ee61d73",
+  "tactical-ops-src/ui/battleDecision.ts": "b6fd94046ada1f234125ce401be003123289ae2b",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "8a314914a49ee19290268254534ee3486929004d",
+  "tactical-ops-src/store/battleStore.ts": "e1cbc1f790a7f821e128500505fbece7e1c0d6e4",
+  "tactical-ops-src/version.ts": "cba92e7acf2c84fdff6e29b1826763430221e4ee",
+  "js/boot_loaders.js": "fe40f4dcf438e7533feae9d6ef81cefff6f1e8a3",
+  "js/tactical_ops.js": "a037c65e04b22aa0411c7d78bca51fdfebb92102",
+  "tools/verify_reward_loop_p2_material_route.mjs": "ab07e5e27bfca41b9763bc97318d31dc1a0b51ef",
+  "tools/verify_field_op_results_premium.mjs": "b76fd002ff736192791a2539b73f89e57ddb67b0",
+  "index.html": "cb692b6d5f5d92902d68f52a6439f8bbe3ef3cbe"
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -87,6 +102,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedRealPlayerStatsDeliveryBlobs,
   ...approvedForgeFieldTestV1Blobs,
   ...approvedMaterialRouteV1Blobs,
+  ...approvedFirstUpgradeSupplyBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
