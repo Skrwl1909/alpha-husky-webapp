@@ -42,6 +42,7 @@ import { SkillbookPanel } from "./Skillbook";
 import { activeProtocolSlots, counterplayReadiness, equippedSignalCodex, SIGNAL_FAMILIES } from "../data/signalCodex";
 import { TACTICAL_VNEXT_RULESET } from "../combat/intentContract";
 import { relayPressureMission } from "../data/relayPressure";
+import { signalTrialRevision } from "../data/signalTrials";
 
 import { applyIdentityToAlpha } from "../host/identity";
 import { CommanderPortrait, PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
@@ -517,7 +518,7 @@ function WarTable() {
         {trials?.enabled ? <section className="t-panel t-wt-section" aria-label="Relay Pressure levels">
           <div className="t-wt-section-head"><div><span className="t-kicker">SIX TACTICAL TESTS</span><h2 className="t-title">SIGNAL TRIALS</h2></div><strong>{trials.highestCleared}/6</strong></div>
           <div className="t-brief-grid t-wt-canon-grid">{Array.from({length:6},(_,i)=>i+1).map(level=>{
-            const mission=relayPressureMission(level,1);
+            const mission=relayPressureMission(level,signalTrialRevision(level,trials));
             const unlocked=level<=trials.highestCleared+1 || trials.activeRun?.level===level;
             const accepted=trials.activeRun?.level===level;
             return <div className="t-panel t-brief-block" key={level}><span className="t-kicker">TRIAL {String(level).padStart(2,"0")}</span><strong>{mission.name}</strong><small>{level<=trials.highestCleared?"CLEARED":accepted?"ACCEPTED":unlocked?"AVAILABLE":"LOCKED"}</small><p>{mission.squadHint}</p><button className="t-btn" type="button" disabled={!unlocked||loading||Boolean(trials.activeRun&&!accepted)} onClick={()=>openTrialBrief(level)}>{accepted?"RESUME":level<=trials.highestCleared?"REPLAY":"VIEW BRIEF"}</button></div>;
@@ -764,7 +765,7 @@ function Brief() {
   const progression = useBattleStore((s) => s.progression);
   const campaignRun = progression?.operations?.[DEAD_RELAY.operationId]?.activeMissionRun;
   const hold = selectedMissionId === "dead-relay-hold" && !chapterMode ? holdBrief(progression) : null;
-  const baseMission = selectedTrialLevel!==null ? relayPressureMission(selectedTrialLevel,1) : getMissionDef(selectedMissionId);
+  const baseMission = selectedTrialLevel!==null ? relayPressureMission(selectedTrialLevel,signalTrialRevision(selectedTrialLevel,progression?.signalTrials)) : getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const trialRun = selectedTrialLevel!==null ? progression?.signalTrials?.activeRun : null;
   const savedRun = selectedTrialLevel!==null ? null : chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;

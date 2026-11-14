@@ -134,6 +134,19 @@ const approvedAlphaSoftCapV1Blobs=Object.freeze({
   "index.html": "490c5defb4092e4fbd93151f48de98d5e414443f", // unchanged main baseline
   "js/home_nav.js": "c2c6a9516c229af06ff3113b9b241c2440331f2b" // existing tactical_ops navigation case
 });
+// Veteran Relay Pressure: exact encounter, revision transport and release assets.
+const approvedVeteranRelayPressureBlobs=Object.freeze({
+  "tactical-ops-src/data/relayPressure.ts": "9731f06b18c8f1f68d7bee106b75de655626b23b",
+  "tactical-ops-src/data/signalTrials.ts": "5a4c20e40a243593776b8e33ec5c2b30c703ea67",
+  "tactical-ops-src/host/foundationProgression.ts": "5bb583c806511ae1c7810d3f7c19927555379e02",
+  "tactical-ops-src/store/battleStore.ts": "f7135aae2bb239dd8d3c076478e26562dcdcdb15",
+  "tactical-ops-src/ui/App.tsx": "1f8879364955fd61d11b8342d360b852fa465891",
+  "tactical-ops-src/ui/Battle.tsx": "e5554c8d133828798149b4eb4c8bb88b7faf6c91",
+  "tactical-ops-src/version.ts": "3d41014a33265af2db84c24144d60b738c61caa4",
+  "js/boot_loaders.js": "81702c36d5846994f67e2f60260d8fe29c74102d",
+  "js/tactical_ops.js": "65d85c1727e5d37c393ef1e40cd099070f4f36e6",
+  "index.html": "70b03bd17002b5899ce34eea8946fa3d1c7ccbd5"
+});
 // #291 Alpha progression ranges: exact approved parser, bundle and release cache.
 // The historical soft-cap pins above remain unchanged for prior revisions.
 const approvedCombatProgressionV1Blobs=Object.freeze({
@@ -142,6 +155,13 @@ const approvedCombatProgressionV1Blobs=Object.freeze({
   "js/boot_loaders.js": "5926f4f41740468ff4cdc09a93ed12db6fdb1016",
   "js/tactical_ops.js": "8f039c78cf7019aad472a81fdb936d4aea8ca8cc",
   "index.html": "254d63877bd445c87c4d0a11eafd1609c99fce09",
+});
+// Both changes shipped together. Historical PR pins above remain immutable.
+const approvedVeteranProgressionCombinedBlobs=Object.freeze({
+  "tactical-ops-src/version.ts": "f9e5633b2d4f3b7f0e84d67d6570ba0828ad7e90",
+  "js/boot_loaders.js": "57c8c69fbe6bfc1cff305716bafbfe75bd8ede43",
+  "js/tactical_ops.js": "2cb78c2e5ea79dcbacad4129f7d414ef6601abd6",
+  "index.html": "052e0f13609fbf0be51a08d979b68f5278bf6932",
 });
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
@@ -156,6 +176,8 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedHubConcentricCoreV1Blobs,
   ...approvedAlphaSoftCapV1Blobs,
   ...approvedCombatProgressionV1Blobs,
+  ...approvedVeteranRelayPressureBlobs,
+  ...approvedVeteranProgressionCombinedBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');

@@ -3,6 +3,7 @@ import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
 import { relayPressureMission } from "../data/relayPressure";
+import { signalTrialRevision } from "../data/signalTrials";
 import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
 import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -403,7 +404,8 @@ function ObjectiveChip() {
   const [expanded, setExpanded] = useState(false);
   const missionId = useBattleStore((s) => s.selectedMissionId);
   const trialLevel = useBattleStore((s) => s.selectedTrialLevel);
-  const mission = trialLevel!==null ? relayPressureMission(trialLevel,1) : getMissionDef(missionId);
+  const trials = useBattleStore((s) => s.progression?.signalTrials);
+  const mission = trialLevel!==null ? relayPressureMission(trialLevel,signalTrialRevision(trialLevel,trials)) : getMissionDef(missionId);
   const acceptedContext = useBattleStore((s) => s.currentFieldContext);
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
