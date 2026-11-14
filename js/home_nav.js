@@ -434,6 +434,7 @@
     switch (G) {
       case "map": openMap(); break;
       case "missions": openMissions(); break;
+      case "tactical_ops": void openTacticalOps(); break;
       case "quests": openQuests(); break;
       case "inventory": openInventory(); break;
       case "hub": openHub(); break;
