@@ -2,7 +2,7 @@ import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowt
 import { parseFieldLegacyMilestone, type FieldLegacyMilestone } from "../data/fieldLegacy";
 import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
-import { parseSignalTrials, parseSignalTrialRun, parseSignalTrialResult, SIGNAL_TRIAL_RULESET, type SignalTrialProgress, type SignalTrialRun, type SignalTrialResult } from "../data/signalTrials";
+import { parseSignalTrials, parseSignalTrialRun, parseSignalTrialResult, SIGNAL_TRIAL_RULESET, type SignalTrialProgress, type SignalTrialRevision, type SignalTrialRun, type SignalTrialResult } from "../data/signalTrials";
 import { parseVeteran } from "../data/veteran";
 import { parseVeteranOpportunity, type VeteranOpportunity } from "../data/progressionOpportunity";
 import { MASTERY_CHALLENGE, parseFirstLockdownClear, type MasteryPath } from "../data/fieldOps";
@@ -636,23 +636,23 @@ export async function continueOperationMission(
 
 /** Trial starts and settlements use separate endpoints; never route through Field Ops receipts. */
 export async function startSignalTrial(
-  requestId: string, expectedRevision: number, level: number, squadIds: string[],
+  requestId: string, expectedRevision: number, level: number, squadIds: string[], trialRevision: SignalTrialRevision = 1,
 ): Promise<{ state: FoundationProgressionState; run: SignalTrialRun; started: boolean }> {
   const response = await request("/webapp/tactical-foundation/trial/start", {
-    requestId, expectedRevision, level, trialRevision: 1, squadIds, rulesetVersion: SIGNAL_TRIAL_RULESET,
+    requestId, expectedRevision, level, trialRevision, squadIds, rulesetVersion: SIGNAL_TRIAL_RULESET,
   });
   const rawRun = response.run;
   const run = parseSignalTrialRun(rawRun);
   const raw = rawRun as Record<string, unknown> | null;
   const state = responseState(response);
-  if (!run || run.level !== level || run.squadIds.join(",") !== squadIds.join(",") ||
+  if (!run || run.level !== level || run.trialRevision !== trialRevision || run.squadIds.join(",") !== squadIds.join(",") ||
     run.rulesContract.missionId !== "field-relay-hold" ||
     state.signalTrials?.activeRun?.runId !== run.runId) throw new FoundationProgressionError("invalid_trial_start_response");
   return { state, run, started: raw?.started === true };
 }
 export async function continueSignalTrial(
   requestId: string, expectedRevision: number, runId: string,
-  trialReport: { trialLevel: number; trialRevision: 1; victory: boolean; objectiveComplete: boolean;
+  trialReport: { trialLevel: number; trialRevision: SignalTrialRevision; victory: boolean; objectiveComplete: boolean;
     turns: number; squadStanding: number; squadDeployed: number; failureReason?: "DEADLINE" },
 ): Promise<{ state: FoundationProgressionState; trialResult: SignalTrialResult }> {
   const response = await request("/webapp/tactical-foundation/trial/continue", {
