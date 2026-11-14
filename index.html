@@ -5615,11 +5615,23 @@ body.missions-open{
   .ah-navbtn:active{ transform: translateY(1px); }
 
   .ah-navbtn .ah-ico{
-    font-size: 18px;
-    line-height: 1;
-    color:#ebf3ff;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,.55));
+    display: block;
+    width: 25px;
+    height: 25px;
+    flex: 0 0 25px;
+    color: #bbd3e1;
+    background: currentColor;
+    -webkit-mask: var(--ah-nav-icon) center / contain no-repeat;
+    mask: var(--ah-nav-icon) center / contain no-repeat;
+    opacity: .92;
   }
+
+  /* Reuse Alpha Husky's original Hub V2 vector glyphs; no platform emoji. */
+  .ah-navbtn[data-go="map"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/war-map.svg'); }
+  .ah-navbtn[data-go="missions"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/tactical-ops.svg'); }
+  .ah-navbtn[data-go="tactical_ops"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/scan.svg'); }
+  .ah-navbtn[data-go="quests"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/story.svg'); }
+  .ah-navbtn[data-go="hub"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/home.svg'); }
 
   .ah-navbtn .ah-lbl{
     font-size: 10.5px;
@@ -5639,7 +5651,13 @@ body.missions-open{
     filter: brightness(1.08);
   }
 
-  /* Primary (Quests) */
+  .ah-navbtn.is-active .ah-ico,
+  .ah-navbtn.ah-primary .ah-ico{
+    color: #8ce7ff;
+    opacity: 1;
+  }
+
+  /* Primary destination: Tactical Ops (not an always-active selected state). */
   .ah-navbtn.ah-primary{
     transform: translateY(-6px);
     border-color: rgba(235,244,255,.24);
@@ -6704,24 +6722,24 @@ body.is-tg #quests-launcher{ display:none !important; } /* opcjonalnie */
     <!-- ✅ Bottom Nav -->
 <nav id="ahBottomNav" class="ah-bottomnav" aria-label="Primary">
   <button class="ah-navbtn" data-go="map" aria-label="Map" type="button">
-    <span class="ah-ico">🗺️</span><span class="ah-lbl">Map</span>
+    <span class="ah-ico" aria-hidden="true"></span><span class="ah-lbl">Map</span>
   </button>
 
   <button class="ah-navbtn" data-go="missions" aria-label="Missions" type="button">
-    <span class="ah-ico">⚔️</span><span class="ah-lbl">Missions</span>
+    <span class="ah-ico" aria-hidden="true"></span><span class="ah-lbl">Missions</span>
   </button>
 
-  <button class="ah-navbtn ah-primary" data-go="quests" aria-label="Quests" type="button">
-    <span class="ah-ico">📜</span><span class="ah-lbl">Quests</span>
+  <button class="ah-navbtn ah-primary" data-go="tactical_ops" aria-label="Tactical Ops" type="button">
+    <span class="ah-ico" aria-hidden="true"></span><span class="ah-lbl">Tactical</span>
+  </button>
+
+  <button class="ah-navbtn" data-go="quests" aria-label="Quests" type="button">
+    <span class="ah-ico" aria-hidden="true"></span><span class="ah-lbl">Quests</span>
     <span class="ah-badge" data-badge="quests" hidden></span>
   </button>
 
-  <button class="ah-navbtn" data-go="inventory" aria-label="Inventory" type="button">
-    <span class="ah-ico">🎒</span><span class="ah-lbl">Inventory</span>
-  </button>
-
   <button class="ah-navbtn" data-go="hub" aria-label="Hub" type="button">
-    <span class="ah-ico">☰</span><span class="ah-lbl">Hub</span>
+    <span class="ah-ico" aria-hidden="true"></span><span class="ah-lbl">Hub</span>
     <span class="ah-badge" data-badge="hub" hidden></span>
   </button>
 </nav>
@@ -8742,6 +8760,20 @@ function closeFaqModal(){
           // bottom nav
           map:       ()=>document.querySelector('.btn.map')?.click(),
           missions:  ()=>window.Missions?.open?.() || document.querySelector('.btn.mission')?.click(),
+          tactical_ops: async ()=>{
+            try {
+              if (typeof window.ensureTacticalOpsLoaded === 'function') {
+                await window.ensureTacticalOpsLoaded(apiPost, _tg, _dbg);
+              }
+              if (typeof window.TacticalOps?.open !== 'function') {
+                throw new Error('Tactical Ops unavailable');
+              }
+              await window.TacticalOps.open();
+            } catch (error) {
+              console.warn('[HomeNav] Tactical Ops entry failed', error);
+              try { _tg?.showAlert?.('Tactical Ops is still loading. Try again in a moment.'); } catch (_) {}
+            }
+          },
           quests:    ()=>document.getElementById('quests-launcher')?.click(),
           inventory: ()=>window.Inventory?.open?.() || document.querySelector('.btn.inventory')?.click(),
           hub:       ()=>show(hubBack),
