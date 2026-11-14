@@ -144,7 +144,7 @@ const approvedVeteranRelayPressureBlobs=Object.freeze({
   "tactical-ops-src/ui/Battle.tsx": "e5554c8d133828798149b4eb4c8bb88b7faf6c91",
   "tactical-ops-src/version.ts": "3d41014a33265af2db84c24144d60b738c61caa4",
   "js/boot_loaders.js": "81702c36d5846994f67e2f60260d8fe29c74102d",
-  "js/tactical_ops.js": "4616045d859b9f3dfb1dc5efb74a0371d3838e26",
+  "js/tactical_ops.js": "65d85c1727e5d37c393ef1e40cd099070f4f36e6",
   "index.html": "70b03bd17002b5899ce34eea8946fa3d1c7ccbd5"
 });
 const approvedCurrentBlobs=Object.freeze({
