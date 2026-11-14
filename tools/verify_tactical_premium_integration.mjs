@@ -124,6 +124,16 @@ const approvedHubConcentricCoreV1Blobs=Object.freeze({
   "tools/verify_hub_concentric_core_v1.mjs": "1d9c29c6a5f79ac813f2a3d0db85ce61d984bef9",
   ".github/workflows/hub-concentric-core-v1.yml": "207eb6e3c0a40f371d099133062115a54ea40a42"
 });
+// Alpha soft-cap V1: newly reviewed parser, compiled client and Telegram cache key.
+// Preserve historical approvals and require exact current blobs.
+const approvedAlphaSoftCapV1Blobs=Object.freeze({
+  "tactical-ops-src/combat/combatProfileV3.ts": "31f0235672f6399d88491b340dd4480a1027425d",
+  "tactical-ops-src/version.ts": "62cf3c6138ee2dbe4082c0c57153eb802e9585b4",
+  "js/boot_loaders.js": "681a9a6678828461350cfeacf067c4381a7ccb8d",
+  "js/tactical_ops.js": "832b6aa6a6333065bd8e69604b074ef343fb29cb",
+  "index.html": "490c5defb4092e4fbd93151f48de98d5e414443f", // unchanged main baseline
+  "js/home_nav.js": "c2c6a9516c229af06ff3113b9b241c2440331f2b" // existing tactical_ops navigation case
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -135,6 +145,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedTacticalPowerV1Blobs,
   ...approvedForgeUpgradeImpactV1Blobs,
   ...approvedHubConcentricCoreV1Blobs,
+  ...approvedAlphaSoftCapV1Blobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
