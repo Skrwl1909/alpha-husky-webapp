@@ -163,6 +163,16 @@ const approvedVeteranProgressionCombinedBlobs=Object.freeze({
   "js/tactical_ops.js": "2cb78c2e5ea79dcbacad4129f7d414ef6601abd6",
   "index.html": "052e0f13609fbf0be51a08d979b68f5278bf6932",
 });
+// Defeated-unit interaction fix: preserve the fading sprite while removing its
+// invisible hitbox. Pin only the reviewed source, shipped runtime and regression.
+const approvedDefeatedTileHitboxBlobs=Object.freeze({
+  "tactical-ops-src/ui/Battle.tsx": "c1cad1daa986aa501a63fc4b392435ab3679f670",
+  "tactical-ops-src/version.ts": "36771448252ee296f48d068f6b98a15be7dcef53",
+  "js/boot_loaders.js": "ddcb7fb5355b7a5d8ecc89fbc9d059b5d480c07c",
+  "js/tactical_ops.js": "7d830ed7e5cc4c5d8e2612883c5d3ef392285c4c",
+  "index.html": "5101ba7e7b0d99d659110bdf34fc193f9b0b2816",
+  "tools/verify_tactical_defeated_tile_hitbox.mjs": "bc2cf45bb968257a4e867e7dd342a5c904a84a48",
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -178,6 +188,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedCombatProgressionV1Blobs,
   ...approvedVeteranRelayPressureBlobs,
   ...approvedVeteranProgressionCombinedBlobs,
+  ...approvedDefeatedTileHitboxBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
@@ -844,4 +855,5 @@ assert(bundle.includes(version.match(/VERSION = "([^"]+)"/)[1]));
 assert(loader.includes(version.match(/CACHE_KEY = "([^"]+)"/)[1]));
 for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','New option unlocked'])assert(bundle.toLowerCase().includes(feature.toLowerCase()),`missing compiled feature: ${feature}`);
 assert(readFileSync('js/pet_quick_actions.js','utf8').includes('body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions'));
+execFileSync(process.execPath,['--test','tools/verify_tactical_defeated_tile_hitbox.mjs'],{stdio:'inherit'});
 console.log(`PASS integration provenance: ${preserved} unchanged source/test files, exact App union, no unrelated runtime changes, both feature sets and coherent version/cache in production`);
