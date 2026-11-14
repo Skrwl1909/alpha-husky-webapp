@@ -134,6 +134,19 @@ const approvedAlphaSoftCapV1Blobs=Object.freeze({
   "index.html": "490c5defb4092e4fbd93151f48de98d5e414443f", // unchanged main baseline
   "js/home_nav.js": "c2c6a9516c229af06ff3113b9b241c2440331f2b" // existing tactical_ops navigation case
 });
+// Veteran Relay Pressure: exact encounter, revision transport and release assets.
+const approvedVeteranRelayPressureBlobs=Object.freeze({
+  "tactical-ops-src/data/relayPressure.ts": "9731f06b18c8f1f68d7bee106b75de655626b23b",
+  "tactical-ops-src/data/signalTrials.ts": "5a4c20e40a243593776b8e33ec5c2b30c703ea67",
+  "tactical-ops-src/host/foundationProgression.ts": "5bb583c806511ae1c7810d3f7c19927555379e02",
+  "tactical-ops-src/store/battleStore.ts": "f7135aae2bb239dd8d3c076478e26562dcdcdb15",
+  "tactical-ops-src/ui/App.tsx": "1f8879364955fd61d11b8342d360b852fa465891",
+  "tactical-ops-src/ui/Battle.tsx": "e5554c8d133828798149b4eb4c8bb88b7faf6c91",
+  "tactical-ops-src/version.ts": "3d41014a33265af2db84c24144d60b738c61caa4",
+  "js/boot_loaders.js": "81702c36d5846994f67e2f60260d8fe29c74102d",
+  "js/tactical_ops.js": "65d85c1727e5d37c393ef1e40cd099070f4f36e6",
+  "index.html": "70b03bd17002b5899ce34eea8946fa3d1c7ccbd5"
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -146,6 +159,7 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedForgeUpgradeImpactV1Blobs,
   ...approvedHubConcentricCoreV1Blobs,
   ...approvedAlphaSoftCapV1Blobs,
+  ...approvedVeteranRelayPressureBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');

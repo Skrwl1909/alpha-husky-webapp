@@ -54,7 +54,7 @@ import {
 import { g2HoldRevisionForRequest, surviveRevisionForRequest, missionForContext, missionBattleRules, applyChapterIntelToRules, missionSpawnsForSquad, type MissionDef, type CampaignContext, DEAD_RELAY, COMMANDER_REINFORCEMENT, getMissionDef, recoverSpawnsForSquad, commanderSpawnsForSquad, type MissionStatus } from "../data/operations";
 import type { SpawnSpec } from "../data/units";
 import { relayPressureMission } from "../data/relayPressure";
-import { SIGNAL_TRIAL_RULESET, type SignalTrialResult } from "../data/signalTrials";
+import { SIGNAL_TRIAL_RULESET, signalTrialRevision, type SignalTrialResult } from "../data/signalTrials";
 import { applyFoundationCombatProfile, applyRunCombatProfile } from "../combat/combatProfileV3";
 import { TACTICAL_VNEXT_ENABLED, TACTICAL_VNEXT_RULESET, selectAcceptedIntentRules, type IntentPlan } from "../combat/intentContract";
 import { selectAcceptedBattleRules } from "../combat/types";
@@ -892,8 +892,10 @@ export const useBattleStore = create<Store>((set, get) => {
       const s = get();
       if (s.selectedTrialLevel === null || s.screen !== "results" || s.progressionCommitPending || !s.currentRunKey || !s.progression || !s.battle.results) return;
       if (s.trialResult?.runId === s.currentRunKey) return;
+      const activeTrial = s.progression.signalTrials?.activeRun;
+      if (activeTrial?.runId !== s.currentRunKey || activeTrial.level !== s.selectedTrialLevel) return;
       const result = s.battle.results;
-      const report = { trialLevel:s.selectedTrialLevel,trialRevision:1 as const,victory:s.battle.outcome==="victory",objectiveComplete:s.battle.outcome==="victory",turns:result.turns,squadStanding:result.squadStanding,squadDeployed:result.squadDeployed,...(s.battle.failureReason==="DEADLINE"?{failureReason:"DEADLINE" as const}:{}) };
+      const report = { trialLevel:activeTrial.level,trialRevision:activeTrial.trialRevision,victory:s.battle.outcome==="victory",objectiveComplete:s.battle.outcome==="victory",turns:result.turns,squadStanding:result.squadStanding,squadDeployed:result.squadDeployed,...(s.battle.failureReason==="DEADLINE"?{failureReason:"DEADLINE" as const}:{}) };
       const requestId=s.continueRequestId || createFoundationRequestId("trial-continue");
       set({progressionCommitPending:true,progressionError:null,continueRequestId:requestId});
       try {
@@ -1060,10 +1062,10 @@ export const useBattleStore = create<Store>((set, get) => {
         set({busy:true,ticker:"Preparing Signal Trial…",progressionError:null});
         void (async()=>{
           try {
-            const started=await startSignalTrial(createFoundationRequestId("trial-start"),persisted.progression!.revision,level,persisted.selectedSquadIds);
+            const started=await startSignalTrial(createFoundationRequestId("trial-start"),persisted.progression!.revision,level,persisted.selectedSquadIds,signalTrialRevision(level,trial));
             if(g!==runGen)return;
             applyCanonicalProgression(started.state);
-            const mission=relayPressureMission(level,1);
+            const mission=relayPressureMission(started.run.level,started.run.trialRevision);
             const pet=started.run.combatProfileV2?.pet;
             const squad=missionSpawnsForSquad(mission,started.run.squadIds,pet ? {id:pet.id,name:pet.name,img:pet.img}:started.state.equippedPet,"standard");
             if(!squad)throw new FoundationProgressionError("invalid_trial_squad");

@@ -31,6 +31,12 @@ const levels: readonly TrialLevel[] = [
   { threat: "crosslink", deadline: 6, patrol: [{ c: 4, r: 1 }, { c: 6, r: 2 }, { c: 4, r: 3 }], reserve: { c: 5, r: 4 }, arrival: 2, route: [north, south, { c: 5, r: 2 }, center] },
 ];
 
+const veteranLevels: Readonly<Partial<Record<number, TrialLevel>>> = {
+  4: { threat: "contest", deadline: 6, patrol: [{ c: 4, r: 1 }, { c: 6, r: 2 }, { c: 5, r: 3 }], reserve: { c: 3, r: 3 }, arrival: 4 },
+  5: { threat: "flank", deadline: 7, patrol: [{ c: 5, r: 1 }, { c: 5, r: 2 }, { c: 5, r: 3 }], reserve: { c: 2, r: 4 }, arrival: 3, flank },
+  6: { threat: "crosslink", deadline: 9, patrol: [{ c: 4, r: 1 }, { c: 7, r: 3 }, { c: 5, r: 3 }], reserve: { c: 5, r: 3 }, arrival: 4, route: [north, east, south, center] },
+};
+
 const threatName: Record<Threat, string> = {
   contest: "RELAY CONTEST",
   flank: "FLANK PRESSURE",
@@ -42,8 +48,10 @@ const reserveId = "field-reinforcement";
 /** Encounter definitions for the engine review. A server-accepted trial contract must
  * select this revision before the activity can be exposed on the War Table. */
 export function relayPressureMission(level: number, revision: number): MissionDef {
-  const config = Number.isInteger(level) ? levels[level - 1] : undefined;
-  if (!config || revision !== RELAY_PRESSURE_REVISION) throw new Error("unsupported_relay_pressure_level");
+  const veteran = veteranLevels[level];
+  const config = revision === 3 && level === 5 && veteran ? { ...veteran, arrival: 4 }
+    : revision === 2 ? veteran : revision === RELAY_PRESSURE_REVISION ? levels[level - 1] : undefined;
+  if (!Number.isInteger(level) || !config) throw new Error("unsupported_relay_pressure_level");
   const base = getMissionDef("field-relay-hold")!;
   const terminal = config.route?.[0] ?? center;
   const spawns: SpawnSpec[] = config.patrol.map((tile, index) => ({
