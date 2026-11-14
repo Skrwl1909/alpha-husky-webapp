@@ -147,6 +147,22 @@ const approvedVeteranRelayPressureBlobs=Object.freeze({
   "js/tactical_ops.js": "65d85c1727e5d37c393ef1e40cd099070f4f36e6",
   "index.html": "70b03bd17002b5899ce34eea8946fa3d1c7ccbd5"
 });
+// #291 Alpha progression ranges: exact approved parser, bundle and release cache.
+// The historical soft-cap pins above remain unchanged for prior revisions.
+const approvedCombatProgressionV1Blobs=Object.freeze({
+  "tactical-ops-src/combat/combatProfileV3.ts": "aa2b8488fe0e0c282222cbd14b0a4c2f692a0987",
+  "tactical-ops-src/version.ts": "44dc97dc5969b880bd34b17f6f4a8618de19aa08",
+  "js/boot_loaders.js": "5926f4f41740468ff4cdc09a93ed12db6fdb1016",
+  "js/tactical_ops.js": "8f039c78cf7019aad472a81fdb936d4aea8ca8cc",
+  "index.html": "254d63877bd445c87c4d0a11eafd1609c99fce09",
+});
+// Both changes shipped together. Historical PR pins above remain immutable.
+const approvedVeteranProgressionCombinedBlobs=Object.freeze({
+  "tactical-ops-src/version.ts": "f9e5633b2d4f3b7f0e84d67d6570ba0828ad7e90",
+  "js/boot_loaders.js": "57c8c69fbe6bfc1cff305716bafbfe75bd8ede43",
+  "js/tactical_ops.js": "2cb78c2e5ea79dcbacad4129f7d414ef6601abd6",
+  "index.html": "052e0f13609fbf0be51a08d979b68f5278bf6932",
+});
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -159,7 +175,9 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedForgeUpgradeImpactV1Blobs,
   ...approvedHubConcentricCoreV1Blobs,
   ...approvedAlphaSoftCapV1Blobs,
+  ...approvedCombatProgressionV1Blobs,
   ...approvedVeteranRelayPressureBlobs,
+  ...approvedVeteranProgressionCombinedBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
