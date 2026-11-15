@@ -666,6 +666,16 @@ let preserved=0;
 for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=approvedG3Sources.has(path) ? git('show',`${reviewedMain}:${path}`) : approvedG2Sources.has(path) ? git('show',`${g2Baseline}:${path}`) : readFileSync(path,'utf8');
+ if(path==='tools/verify_tactical_g1_browser.mjs'){
+  // M1 updates only this fixture's truthful cost/proof assertions. Keep both
+  // historical phases pinned and require the exact reviewed new test blob.
+  const historicSha = head===heads[0]
+   ? '06659241dbcac1dea536f546d54fe51eac019c14'
+   : 'd46a9c8b59958af921303269b2776cc44ffc9e5d';
+  assert.equal(git('rev-parse',`${head}:${path}`).trim(),historicSha,'unreviewed historical G1 browser');
+  assert.equal(sourceBlob(source),approvedMasteryEffectBlobs[path],'unreviewed current M1 G1 browser');
+  preserved++;continue;
+ }
  if(path==='tactical-ops-src/styles.ts'){
   source=normalizeHoundStyles(source);
   // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
