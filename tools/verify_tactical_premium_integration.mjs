@@ -73,6 +73,17 @@ const approvedEnemyMotionV1Blobs = Object.freeze({
  'tools/verify_tactical_enemy_combat_motion_v1.mjs': 'b5cfffa2bd1803338577236d98d538894d45484a',
  'tools/verify_tactical_hound_directional.mjs': '8340b41b16560f20fb54634b9bd6ec10766c123e',
 });
+// Skill & Mastery Motion V1: event-confirmed cast origin and post-contact
+// growth cues. The previous motion/authority approvals remain intact.
+const approvedSkillMasteryMotionV1Blobs = Object.freeze({
+ 'index.html': '753cec55e369f40539c0ffa0e8a234356f992876',
+ 'js/boot_loaders.js': '98f02ac53aa5ee8e7a0f13facaf5a0c6e141a9e2',
+ 'js/tactical_ops.js': '04aca6dd28817db0826102ba95c292af5327dea6',
+ 'tactical-ops-src/ui/Battle.tsx': '89f6dbf9df62639618dfb2c896ea8e956e51533c',
+ 'tactical-ops-src/ui/combatCohesion.css': '8133e189cdf04d022e7c6f73cf9f863caabc0f18',
+ 'tactical-ops-src/version.ts': '7f3e294ffea9695fce86ae77ae06744644de4f49',
+ 'tools/verify_tactical_skill_mastery_motion_v1.mjs': '9ace068ba4f86ed9f3792dcdcee1ee881ef974d0',
+});
 // Enemy Combat Identity Art Kit V1: exact binary asset approvals. New poses are
 // additive and do not replace any of the original four-direction hound sprites.
 const approvedEnemyPoseAssets = Object.freeze({
@@ -88,7 +99,7 @@ for (const [path, expected] of Object.entries(approvedEnemyPoseAssets)) {
 for (const [path, expected] of Object.entries(lastHowlBlobs)) {
  assert.equal(git('rev-parse', `${lastHowlV1Release}:${path}`).trim(), expected, 'unreviewed V1 source: ' + path);
 }
-for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs, ...approvedEnemyMotionV1Blobs })) {
+for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs, ...approvedEnemyMotionV1Blobs, ...approvedSkillMasteryMotionV1Blobs })) {
  if (retiredV1WorkerSources.has(path)) {
   assert(!existsSync(path), 'V1 worker must be built from the V1 release: ' + path);
   continue;
@@ -96,13 +107,14 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  // New reviewed blobs pin Git bytes exactly; the historical V1 pins retain
  // their original LF-normalization policy (notably tactical.css is CRLF).
  const rawSource = readLocalFile(path, 'utf8');
- const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
+ const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) || Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
 }
 for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path) ||
   Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path) ||
   Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
+  Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) ||
   Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
@@ -300,6 +312,7 @@ const approvedCurrentBlobs=Object.freeze({
   // substituted by readFileSync() and must retain their original approvals.
   ...Object.fromEntries(Object.entries(approvedCombatMotionBlobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
   ...Object.fromEntries(Object.entries(approvedEnemyMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
+  ...Object.fromEntries(Object.entries(approvedSkillMasteryMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
