@@ -660,6 +660,10 @@ export function BattleScreen() {
   );
   const training = onboardingEnabled && !mission && !lastHowl;
   const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: training ? onboardingStageId : null });
+  // One visual wind-up per confirmed caster, even when a support skill
+  // produces several recipient FX. Never invent a cast from selected skills.
+  const castFx = presentation.primaryFx.filter((effect, index, effects) =>
+    !!effect.actorId && !!effect.from && effects.findIndex(other => other.actorId === effect.actorId) === index);
   const threats = presentation.threats;
   const actor = presentation.actor;
   const { trace, clearTrace } = useMoveTrace(actor, battle.unitTurn);
@@ -842,6 +846,14 @@ export function BattleScreen() {
               {["melee","heavy"].includes(enemyScene.style)&&actor?<img className={`t-motion-actor t-motion-${roleClass(actor) || "hound"}${pose ? ` t-enemy-attack-pose t-enemy-attack-${actor.archetype?.toLowerCase()}` : ""}${pose && facing === "left" ? " is-mirrored" : ""}`} src={pose || houndView(actor,facing) || actor.attackSprite || actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.classList.remove("t-enemy-attack-pose","t-enemy-attack-skirmisher","t-enemy-attack-bulwark","is-mirrored");e.currentTarget.src=houndView(actor,facing)||actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
             </div>;
           })()}
+          {castFx.map(effect => {
+            const caster = units.find(unit => unit.id === effect.actorId);
+            if (!caster || !effect.from) return null;
+            const origin = fieldPercent(effect.from.c, effect.from.r);
+            return <div key={`cast-${effect.id}`} className={`t-skill-cast fx-affinity-${affinityFor(caster)}`}
+              style={{ left: `${origin.x}%`, top: `${origin.y}%`, "--cast-ms": `${effect.durationMs}ms` } as CSSProperties}
+              aria-hidden="true"><i className="t-skill-cast-core"/><i className="t-skill-cast-ring"/></div>;
+          })}
           {presentation.primaryFx.map(effect=>{
             const performer=effect.actorId ? units.find(u=>u.id===effect.actorId) : null;
             const receiver=effect.terminal || units.find(u=>u.id===effect.targetId);
@@ -877,6 +889,14 @@ export function BattleScreen() {
             return <div key={combatMoment.id} className={`t-master-fx fx-affinity-${combatMoment.affinity} fx-tier-${combatMoment.tier} fx-mode-${combatMoment.mode}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} aria-hidden="true">
               <i className="t-master-fx-ring" /><i className="t-master-fx-core" />
             </div>;
+          })()}
+          {combatMoment && combatMoment.tier !== "base" && (() => {
+            // A confirmed mastery/rank consequence appears *after* contact.
+            const target = units.find(unit => unit.id === combatMoment.targetId);
+            if (!target) return null;
+            const pos = fieldPercent(target.c, target.r);
+            return <div key={`mastery-${combatMoment.id}`} className={`t-skill-mastery-impact fx-affinity-${combatMoment.affinity} fx-tier-${combatMoment.tier} fx-mode-${combatMoment.mode}`}
+              style={{left:`${pos.x}%`,top:`${pos.y}%`}} aria-hidden="true"><i/><i/></div>;
           })()}
           {consequences.map(item=>{
             const u=units.find(u=>u.id===item.unitId);
