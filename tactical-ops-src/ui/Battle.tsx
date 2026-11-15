@@ -287,10 +287,12 @@ function Token({
         </div>
       )}
     </div>
-      <button
+      {/* Defeated units still render briefly for the death fade, but must not
+          leave an invisible hitbox over a newly reachable movement cell. */}
+      {!unit.defeated && unit.hp > 0 ? <button
         type="button"
         className={`t-hit t-unit-hit${targeting && validTarget ? " is-legal-target" : ""}`}
-        disabled={busy || unit.defeated}
+        disabled={busy}
         data-unit-id={unit.id}
         style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(unit.r, GRID_COLS, GRID_ROWS) } as CSSProperties}
         aria-label={`${unit.name}. ${hp}/${unit.maxHp} HP${targeting && validTarget ? ". Legal target" : ""}`}
@@ -301,7 +303,7 @@ function Token({
           if (targeting && validTarget) selectTarget(unit.id);
           else inspectUnit(unit.id);
         }}
-      />
+      /> : null}
     </>
   );
 }
