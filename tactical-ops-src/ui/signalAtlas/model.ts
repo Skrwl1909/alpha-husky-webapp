@@ -1,4 +1,4 @@
-import { rankChanges } from "../../data/buildPreview";
+import { growthPreviewBase, rankChanges, savedGrowthHero } from "../../data/buildPreview";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, resolveGrowthSkill, type Discipline, type HeroGrowth, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
 import { SIGNAL_ATLAS_SECTOR_EMBLEMS } from "./signalAtlasAssets";
@@ -51,14 +51,34 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
   if (current >= rank) return { ...base, state:rank===2?"maxed":"recorded", reason:"Recorded in the server-owned Skillbook." };
   if (!hero || !info) return { ...base, state:"unavailable", reason:"Awaiting authenticated progression." };
   if (activeRun) return { ...base, state:"active-run", reason:"Complete the current mission before upgrading or resetting skills. The accepted run keeps its saved build." };
-  if (rank===2 && current<1) return { ...base, state:"needs-rank-one", reason:"Record Rank I of this skill first." };
-  if (hero.discipline && hero.discipline!==path) return { ...base, state:"different-discipline", reason:"Another discipline is saved. A one-time respec may change it." };
-  const changes = nextSkillChanges(skillId,rank,hero,path,baseSkill);
+  const differentPath = Boolean(hero.discipline && hero.discipline !== path);
+  const changes = differentPath ? [] : nextSkillChanges(skillId,rank,hero,path,baseSkill);
+  if (rank===2 && current<1) return { ...base, changes, state:"needs-rank-one", reason:"Record Rank I of this skill first." };
+  if (differentPath) return { ...base, state:"different-discipline", reason:"Another discipline is saved. A one-time respec may change it." };
   if (!changes.length) return { ...base, changes, state:"no-effect", reason:skillId==="u03-mend"
     ? "MEND is already at its minimum cooldown in this build. This rank adds no combat effect and cannot cost a point."
     : "This rank adds no combat effect to the current build. No point can be spent." };
   if (points<1) return { ...base, changes, state:"no-points", reason:"Earn a first-clear point before purchasing." };
   return { ...base, changes, state:"available", reason:"Eligible for a server-recorded purchase of 1 point." };
+}
+
+/** The first currently actionable Atlas upgrade, using the same eligibility as its inspector. */
+export function availableAtlasUpgrade(state: FoundationProgressionState | null) {
+  const growth = state?.playerGrowth;
+  if (!state || !growth || growth.earnedPoints <= growth.spentPoints || hasActiveGrowthRun(state) ||
+      state.signalTrials?.activeRun || state.lastHowl?.status === "ACTIVE") return null;
+  for (const heroId of Object.keys(HERO_SKILLS) as HeroId[]) {
+    const hero = savedGrowthHero(growth, heroId);
+    if (!hero) continue;
+    for (const skillId of HERO_SKILLS[heroId]) {
+      const current = hero.ranks[skillId] ?? 0;
+      if (current >= 2) continue;
+      const node = getNodeView(heroId, skillId, current === 0 ? 1 : 2, hero,
+        hero.discipline ?? HERO_PATHS[heroId][0], growth.earnedPoints - growth.spentPoints, growthPreviewBase(skillId, state));
+      if (node.state === "available") return { heroId, skillId, rank: node.rank, change: node.changes[0] };
+    }
+  }
+  return null;
 }
 
 /** Layout-only positions. Can accommodate additional released sectors without CSS nth-child slots. */

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { LastHowlScore, LastHowlView } from "../combat/lastHowlAuthority";
 import { getHost } from "../host/bridge";
 import { useBattleStore } from "../store/battleStore";
+import { buildIdentity } from "./skillEffectView";
 
 function PersonalBest({ best }: { best: LastHowlScore | null }) {
   return <p>PERSONAL BEST {best ? `· ${best.completedWaves} WAVES · ${best.kills} KILLS` : "· —"}</p>;
@@ -41,8 +42,10 @@ export function LastHowlHud({ view }: { view: LastHowlView }) {
   }, [view.wave, eliteSignal]);
   const squad = battle.units.filter(u => u.team === "ally");
   const standing = squad.filter(u => !u.defeated).length;
+  const pet = squad.find(unit => unit.defId.startsWith("pet:") && (unit.recoverRange ?? 1) > 1);
   return <div className="t-hud-card t-last-howl-hud" data-wave={view.wave}>
     <div className="t-last-howl-stats"><b>WAVE {view.wave}</b><b>KILLS {view.kills}</b><span>SQUAD {standing}/{squad.length}</span></div>
+    {pet && view.wave === 1 ? <small>PET · {buildIdentity(pet, undefined, false)}</small> : null}
     <div className="t-last-howl-controls">
       <small>{eliteSignal ? "ELITE SIGNAL DETECTED" : `NEXT ELITE ${view.nextElite}`}</small>
       <button type="button" className="t-btn" onClick={leave}>EXIT</button>

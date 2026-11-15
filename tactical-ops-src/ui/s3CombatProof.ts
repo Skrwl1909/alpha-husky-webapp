@@ -1,9 +1,10 @@
 import type { BattleEvent, BattleState, CombatUnit } from "../combat/types";
 import type { MissionDef } from "../data/operations";
+import { canonicalGrowthSkillId } from "../data/playerGrowth";
 
 export type S3Action = "CNC_INTERRUPT" | "CNC_CONTROL" | "SHADOW_COVER" | "SHADOW_HOLD" | "PET_COURIER_SLOW" | "PET_SLOW";
 export interface S3Moment { kind: S3Action; unitTurn: number; detail: string }
-export interface S3CombatProof { fieldcraft?: readonly string[]; runId: string; missionId: string; moments: readonly S3Moment[] }
+export interface S3CombatProof { fieldcraft?: readonly string[]; buildMoment?: string; runId: string; missionId: string; moments: readonly S3Moment[] }
 export interface S3TrainingGoal { id: string; title: string; instruction: string; requirement: string }
 export interface S3TrainingResult { id: string; title: string; evidence: string }
 const MAX_MOMENTS = 24; // Bounded ephemeral journal, never a server reward ledger.
@@ -31,6 +32,18 @@ export function recordS3Skill(
     actor.defId === "ally-03" && contains(skillId, "u03-pack-warden");
   const alliedStatus = events.some(e => e.type === "status" && before.units.some(u => u.id === e.unitId && u.team === "ally"));
   let next = current;
+  const canonical = canonicalGrowthSkillId(skillId);
+  const rank = actor.growth?.ranks[canonical] ?? 0;
+  let buildMoment: string | undefined;
+  if (actor.defId === "alpha" && canonical === "alpha-strike" && rank > 0) {
+    buildMoment = events.find(event => event.type === "info" && event.buildEvidence?.includes("beyond the unranked range"))?.buildEvidence;
+  } else if (actor.defId === "ally-02" && canonical === "u02-suppress" && interrupted) {
+    buildMoment = "CNC PRESSURE canceled a locked enemy intent.";
+  } else if (actor.defId === "ally-03" && canonical === "u03-mend" && (rank || actor.growth?.discipline || skillId.includes(":mastery:"))) {
+    buildMoment = events.find(event => event.type === "status" && event.kind === "guard" && event.buildEvidence)?.buildEvidence
+      ?? events.find(event => event.type === "heal" && (event.amount ?? 0) > 0)?.buildEvidence;
+  }
+  if (buildMoment) next = { ...next, buildMoment };
   if (actor.defId === "ally-02" &&
     (contains(skillId, "u02-suppress") || contains(skillId, "u02-pressure-disruptor")) && appliedEnemyStatus) {
     next = add(next, { kind: "CNC_CONTROL", unitTurn: before.unitTurn, detail: "CNC applied a control status to an enemy." });
@@ -42,6 +55,10 @@ export function recordS3Skill(
     if (targetId === "courier" && before.objective?.type === "INTERCEPT") next = add(next, { kind: "PET_COURIER_SLOW", unitTurn: before.unitTurn, detail: "PET slowed the mission courier with HAMSTRING." });
   }
   return next;
+}
+
+export function observedBuildMoment(proof: S3CombatProof | null, runId: string | null, missionId: string | null) {
+  return proof?.runId === runId && proof.missionId === missionId ? proof.buildMoment : undefined;
 }
 
 /** A HOLD round counts only if control actually advanced while a SHADOW-sourced protection status covered the holder. */

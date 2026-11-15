@@ -4,9 +4,10 @@ import type { GrowthSnapshot } from "../data/playerGrowth";
 import { growthHero, resolveGrowthSkill } from "../data/playerGrowth";
 import { getSkill } from "../data/skills";
 import type { S3CombatProof } from "./s3CombatProof";
+import { buildIdentity } from "./skillEffectView";
 
 /** Read-only explanation of the equipped build, never a score or promised victory. */
-export function buildFit(mission: MissionDef | null | undefined, units: readonly UnitDef[], growth?: GrowthSnapshot | null): string[] {
+export function buildFit(mission: MissionDef | null | undefined, units: readonly UnitDef[], growth?: GrowthSnapshot | null, hasIntent = false): string[] {
   if (!mission) return [];
   const rows: string[] = [];
   for (const unit of units.filter(u => u.team === "ally")) {
@@ -16,11 +17,14 @@ export function buildFit(mission: MissionDef | null | undefined, units: readonly
       if (howl) rows.push(`ALPHA: HOWL radius ${howl.radius}; ${howl.effects.some(e => e.status === "GUARD") ? "GUARD covers nearby holders" : "buff a spread-out squad; no added GUARD"}.`);
     } else if (unit.defId === "ally-02") {
       const thrust = skills.find(s => s.name === "THRUST"), pressure = skills.find(s => s.name === "PRESSURE");
-      if (thrust && pressure) rows.push(`CNC: THRUST range ${thrust.maxRange}; PRESSURE range ${pressure.maxRange}, cooldown ${pressure.cooldownMax}. ${mission.objectiveType === "INTERCEPT" ? "Reach the courier before the exit." : "Time control before the enemy strike."} ${growthHero(growth,unit.defId)?.discipline === "disruptor" ? "Can cancel a real interruptible locked intent." : "No locked-intent cancellation without the DISRUPTOR doctrine."}`);
+      const interruption = !hasIntent ? "Locked-intent interruption is unavailable in this mission."
+        : growthHero(growth, unit.defId)?.discipline === "disruptor" ? "Can cancel an interruptible locked intent."
+        : "Locked-intent cancellation requires DISRUPTOR.";
+      if (thrust && pressure) rows.push(`CNC: THRUST range ${thrust.maxRange}; PRESSURE range ${pressure.maxRange}, cooldown ${pressure.cooldownMax}. ${mission.objectiveType === "INTERCEPT" ? "Reach the courier before the exit." : "Time control before the enemy strike."} ${interruption}`);
     } else if (unit.defId === "ally-03") {
       const mend = skills.find(s => s.name === "MEND"), pack = skills.find(s => s.name === "PACK SUPPORT");
       if (mend && pack) rows.push(`SHADOW: MEND ${mend.targetType === "ALLY_AOE" ? `radius ${mend.radius}` : `range ${mend.maxRange}`}, cooldown ${mend.cooldownMax}; PACK radius ${pack.radius}. ${mission.objectiveType === "HOLD" ? "Cover the holder before an announced hit." : "Recover lost HP between threats."}`);
-    } else if (unit.defId.startsWith("pet:")) rows.push(`PET: move ${unit.move}; RECOVER from ${unit.recoverRange || 1} cells. ${mission.objectiveType === "INTERCEPT" ? "HAMSTRING the courier; trade reach against PATHFINDER mobility." : "Use relay reach only during an open signal window."}`);
+    } else if (unit.defId.startsWith("pet:")) rows.push(`PET: ${buildIdentity(unit, undefined, mission.objectiveType === "RECOVER")}.`);
   }
   const preferred = mission.objectiveType === "INTERCEPT" ? ["CNC:","PET:"] : mission.objectiveType === "RECOVER" ? ["PET:","SHADOW:"] : ["SHADOW:","ALPHA:"];
   return rows.sort((a,b) => { const score = (s: string) => { const i=preferred.findIndex(prefix=>s.startsWith(prefix));return i<0?2:i; };return score(a)-score(b); });

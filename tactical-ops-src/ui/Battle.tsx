@@ -29,6 +29,8 @@ import { GRID_COLS, GRID_ROWS, BATTLEFIELD_VNEXT_PREVIEW } from "../combat/types
 import { missionLiveProgress, objectiveDirective, recoverGuidance } from "./missionPurpose";
 import { fieldWindow } from "../data/livingBattlefield";
 import { confirmedRunCombatPower } from "./runCombatPower";
+import { skillEffectView } from "./skillEffectView";
+import { supportCooldownExtra } from "../combat/missionRules";
 
 const PRESENTATION = {
   battlefield: "/images/tactical_ops/presentation/tactical_ops_battlefield_backdrop.png",
@@ -545,6 +547,9 @@ function SkillHud({ actionStates, usedSkillId }: { actionStates: ReturnType<type
         const caption = reason === "CANCEL" ? "AIMING" : reason;
         const tier = sk && actor ? combatTier(actor, sk.id) : "base";
         const rankLabel = sk && actor ? skillRankLabel(actor, sk.id) : null;
+        const effect = sk && actor ? skillEffectView(sk, actor.growth,
+          sk.cooldownMax + supportCooldownExtra(battle.directive, actor, sk)) : null;
+        const effectText = effect ? [`R${effect.rank}`, effect.discipline?.toUpperCase(), effect.geometry, ...effect.effects].filter(Boolean).join(" · ") : "";
         return (
           <button
             key={i}
@@ -552,7 +557,8 @@ function SkillHud({ actionStates, usedSkillId }: { actionStates: ReturnType<type
             className={`t-act t-growth-${tier} ${on ? "on" : ""} ${cooling ? "cooling" : ""} ${presentation ? `kind-${presentation.archetype} fx-${presentation.effectClass}` : ""}`}
             disabled={!allyTurn || !sk || !!cooling}
             aria-pressed={!!on}
-            aria-label={sk ? `${sk.slot} ${sk.name}. ${rankLabel ? rankLabel + ". " : ""}${reason === "CANCEL" ? "Targeting. Tap again to cancel" : reason}. ${sk.desc}` : `Empty slot A${i + 1}`}
+            aria-label={sk ? `${sk.slot} ${sk.name}. ${rankLabel ? rankLabel + ". " : ""}${reason === "CANCEL" ? "Targeting. Tap again to cancel" : reason}. ${effectText}` : `Empty slot A${i + 1}`}
+            title={effectText || undefined}
             onClick={() => {
               if (!sk) return;
               unlockAudio();
@@ -670,6 +676,9 @@ export function BattleScreen() {
   const moveFrom = trace && fieldPercent(trace.from.c, trace.from.r);
   const moveTo = trace && fieldPercent(trace.to.c, trace.to.r);
   const activeSkill = actionSkillId ? getSkill(actionSkillId) : null;
+  const aimedSkill = actor && actionSkillId ? availableSkills(battle, actor).find(skill => skill.id === actionSkillId) : null;
+  const aimedEffect = actor && aimedSkill ? skillEffectView(aimedSkill, actor.growth,
+    aimedSkill.cooldownMax + supportCooldownExtra(battle.directive, actor, aimedSkill)) : null;
   const focusPresentation = activeSkill ? getActionPresentation(activeSkill) : null;
   const impactSkill = lastActionSkillId ? getSkill(lastActionSkillId) : null;
   const impactPresentation = impactSkill ? getActionPresentation(impactSkill) : null;
@@ -704,6 +713,7 @@ export function BattleScreen() {
           <div className="t-vignette" />
           <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
             <p><strong>{presentation.title}</strong><span>{presentation.detail}</span></p>
+            {presentation.targeting && aimedEffect ? <small>{[aimedEffect.geometry, ...aimedEffect.effects].join(" · ")}</small> : null}
             {presentation.mode === "REACT" && presentation.result ? <small className="t-command-confirmation">{presentation.result}</small> : null}
           </div>
           <div className="t-grid" aria-hidden="true">

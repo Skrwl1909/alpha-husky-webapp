@@ -68,6 +68,14 @@ async function load(runtime,width,growth=1){
  page.on('pageerror',error=>errors.push(String(error)));
  await page.goto(base+'/official-atlas?'+new URLSearchParams({runtime,growth}));
  await page.getByRole('navigation',{name:'Tactical command sections'}).waitFor();
+ if (!process.env.ATLAS_DEFAULT_ACTIONS_ONLY) {
+  const target = page.getByRole('region', { name: 'Next target' });
+  await target.getByRole('button', { name: 'INSPECT UPGRADE' }).click();
+  const inspection = page.getByRole('region', { name: 'Skill node inspection' });
+  await inspection.getByText('CURRENT · R0', { exact: true }).waitFor();
+  await inspection.getByText('NEXT · R1', { exact: true }).waitFor();
+  await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
+ }
  await page.getByRole('button',{name:'03 SQUAD',exact:true}).click();
  await page.locator('.tsa-root').waitFor();
 }

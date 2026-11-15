@@ -164,7 +164,9 @@ export function MasteryFeedback({ changes, victory }: { changes?: MasteryChange[
       {change.beforeStage < 2 && change.stage >= 2 ? <div className="t-mastery-unlock"><strong>AWAKENED · {def.trained.name}</strong><p>{def.trained.copy}</p></div> : null}
       {change.newOptions.length ? <div className="t-mastery-unlock is-signature"><strong>SIGNATURE EVOLUTION · 8/8</strong><p>{def.options.A.name} / {def.options.B.name}</p><p>Specializations unlocked. Choose outside an active run.</p></div> : null}
       {change.veteran ? <p data-veteran-delta={change.unitId}>VETERAN {change.veteran.before} → {change.veteran.after}/12 · {change.veteran.unlocked ? "OPTION UNLOCKED" : change.veteran.reason.replaceAll("_"," ").toLowerCase()}</p> : null}
-      {!change.gained && change.progress < 8 ? <small>{victory ? "Award already earned. Try another mission or challenge." : "Clear a Field Op to progress."}</small> : null}
+      {!change.gained ? <small>{!victory ? "Defeat did not qualify for Mastery credit."
+        : change.progress >= 8 ? "Foundation Mastery is capped at 8/8."
+        : "This receipt records no qualifying Mastery credit."}</small> : null}
     </div>;
   })}</section>;
 }

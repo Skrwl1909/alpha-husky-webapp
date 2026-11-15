@@ -7,7 +7,9 @@ import { commandPurpose, fieldResultPurpose, nextFieldContract, type PurposeActi
 import { battleDecision, objectiveDefeat } from "./battleDecision";
 import { veteranOpportunityView } from "../data/progressionOpportunity";
 import { savedMasteryProof } from "./s3PowerProof";
-import { buildFit, fieldcraftResults } from "./fieldcraft";
+import { buildFit } from "./fieldcraft";
+import { buildIdentity } from "./skillEffectView";
+import { availableAtlasUpgrade, HERO_TITLES } from "./signalAtlas/model";
 import { LOCKDOWN_PLANS, DEPLOYMENT_APPROACHES, pressureLabel, pressureEffect, rotationTime, directiveSetLabel, fieldFailureCopy, type FieldResult } from "../data/fieldOps";
 import { g2HoldRevisionForRequest, missionForContext, surviveRevisionForRequest } from "../data/operations";
 import { isRecoverAuthorityRun, type FoundationProgressionState } from "../host/foundationProgression";
@@ -15,7 +17,7 @@ import { currentFieldWindow, fieldWindow } from "../data/livingBattlefield";
 import {chapterDisplay,DOCTRINES} from "../data/campaignChapter";
 import {tacticalCareerTruth} from "./tacticalCampaignOrders";
 import { confirmedConsequence, confirmedReturnAction, matchingAfterActionReceipt } from "./s3AfterAction";
-import { s3TrainingGoals, s3TrainingResults, s3RunMemory } from "./s3CombatProof";
+import { s3TrainingGoals, s3TrainingResults, observedBuildMoment } from "./s3CombatProof";
 import { deriveMissionPresentation, recordedResultMeaning } from "./missionPurpose";
 import { composeDirectives, supportCooldownExtra } from "../combat/missionRules";
 import { missionDirectives } from "../data/directives";
@@ -256,6 +258,7 @@ function holdBrief(progression: FoundationProgressionState | null) {
 function WarTable() {
   const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
   const [squadView, setSquadView] = useState<"skillbook" | "mastery">("skillbook");
+  const [atlasTarget, setAtlasTarget] = useState<ReturnType<typeof availableAtlasUpgrade>>(null);
   const atlasVisible = deckTab === "squad" && squadView === "skillbook";
   const [selectedFieldOp, setSelectedFieldOp] = useState<string | null>(null);
   const progression = useBattleStore((s) => s.progression);
@@ -274,6 +277,7 @@ function WarTable() {
   const nextContract = nextFieldContract(field);
   const purposeRoute = commandPurpose(progression);
   const primaryPurpose = purposeRoute.primary;
+  const nextUpgrade = primaryPurpose?.resume ? null : availableAtlasUpgrade(progression);
   const veteranView = veteranOpportunityView(field);
   const openPurpose = openPurposeBrief;
   const campaignCareer = tacticalCareerTruth(progression);
@@ -385,14 +389,23 @@ function WarTable() {
             ["archive", "04", "ARCHIVE"],
           ] as const).map(([id, index, label]) => (
             <button type="button" key={id} className={deckTab === id ? "is-current" : ""}
-              aria-pressed={deckTab === id} onClick={() => setDeckTab(id)}>
+              aria-pressed={deckTab === id} onClick={() => { setAtlasTarget(null); setDeckTab(id); }}>
               <span>{index}</span><strong>{label}</strong>
             </button>
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
         <LastHowlCard />
-        {recommendedMission && primaryPurpose ? (() => {
+        {nextUpgrade ? <section className="t-panel t-command-order" aria-label="Next target">
+          <div className="t-kicker">NEXT TARGET · SIGNAL ATLAS</div>
+          <h2>{HERO_TITLES[nextUpgrade.heroId]} · {getSkill(nextUpgrade.skillId).name} R{nextUpgrade.rank}</h2>
+          <p>{nextUpgrade.change} · 1 available skill point</p>
+          <button type="button" className="t-btn t-btn-primary" disabled={loading || chapterSaving} onClick={() => {
+            setAtlasTarget(nextUpgrade);
+            setSquadView("skillbook");
+            setDeckTab("squad");
+          }}>INSPECT UPGRADE</button>
+        </section> : recommendedMission && primaryPurpose ? (() => {
           const visual = missionPresentation(recommendedMission);
           const contract = !primaryPurpose.resume && primaryPurpose.title === nextContract?.title ? nextContract : null;
           const window = !primaryPurpose.resume && recommendedMission.activity === "FIELD_OP"
@@ -607,7 +620,9 @@ function WarTable() {
           <button type="button" aria-pressed={squadView === "skillbook"} className={squadView === "skillbook" ? "is-selected" : ""} onClick={() => setSquadView("skillbook")}>SIGNAL ATLAS</button>
           <button type="button" aria-pressed={squadView === "mastery"} className={squadView === "mastery" ? "is-selected" : ""} onClick={() => setSquadView("mastery")}>PACK MASTERY</button>
         </div>
-        {squadView === "skillbook" ? <SkillbookPanel onClose={() => setDeckTab("command")} /> : <PackMasteryPanel />}
+        {squadView === "mastery" ? <PackMasteryPanel /> : atlasTarget
+          ? <SkillbookPanel onClose={() => { setAtlasTarget(null); setDeckTab("command"); }} target={atlasTarget} />
+          : <SkillbookPanel onClose={() => setDeckTab("command")} />}
 
 
         </div> : null}
@@ -800,7 +815,9 @@ function Brief() {
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
-  const spawns = mission ? withTeammateSidegrades(withFieldRend(baseSpawns, fieldRend), { kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery }) : baseSpawns;
+  const acceptedBuild = selectedTrialLevel !== null ? trialRun : savedRun;
+  const briefMastery = resuming ? acceptedBuild?.packMastery ?? {} : packMastery;
+  const spawns = mission ? withTeammateSidegrades(withFieldRend(baseSpawns, fieldRend), { kodaSidegrade, shadowSidegrade, packMastery: briefMastery }) : baseSpawns;
   const conditions = mission ? missionDirectives(mission, fieldContext) : [];
   const loadoutDirective = briefTab === "loadout" ? composeDirectives(conditions) : null;
   const chapterIntel = useBattleStore((s)=>s.currentChapterIntel);
@@ -809,16 +826,17 @@ function Brief() {
   const objective = mission ? mission.briefCopy : onboardingEnabled ? encounter.objective : OPERATION.objective;
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
-  const previewGrowth = trialRun?.playerGrowth || (resuming ? savedRun?.playerGrowth : playerGrowth);
-  const frozenPet = resuming ? savedRun?.combatProfileV2?.pet : null;
+  const previewGrowth = resuming ? acceptedBuild?.playerGrowth : playerGrowth;
+  const frozenPet = resuming ? acceptedBuild?.combatProfileV2?.pet : null;
   const loadoutSpawns = briefTab === "loadout" && mission
     ? missionSpawnsForSquad(mission, selectedSquadIds, frozenPet || equippedPet, selectedApproach)
     : spawns;
   const loadoutAllies = briefTab !== "loadout" || !loadoutSpawns ? [] : loadoutSpawns === spawns ? allies
     : alliedBriefDefs(withTeammateSidegrades(withFieldRend(loadoutSpawns, fieldRend), {
-      kodaSidegrade, shadowSidegrade, packMastery: resuming ? savedRun?.packMastery || {} : packMastery,
+      kodaSidegrade, shadowSidegrade, packMastery: briefMastery,
     })).map(def => applyIdentityToAlpha(def, identity));
   const unit = loadoutAllies.find(def => def.defId === loadoutUnit) || loadoutAllies[0];
+  const loadoutBuild = unit ? buildIdentity(unit, growthHero(previewGrowth, unit.defId), mission?.objectiveType === "RECOVER") : "";
   const showFieldRend = unit?.defId === "alpha" && fieldLoadout &&
     (Boolean(contracts?.enabled && contracts.sidegrade) || fieldRend === "reach-rend");
   const equippedRend = resuming ? fieldRend ?? "rend" : canEquipFieldRend ? fieldRend : undefined;
@@ -827,8 +845,8 @@ function Brief() {
   const savedVariant = isCnc ? kodaSidegrade : shadowSidegrade;
   const saveVariant = isCnc ? selectKodaSidegrade : selectShadowSidegrade;
   const savingVariant = isCnc ? kodaSavePending : shadowSavePending;
-  const hasIntent = resuming ? savedRun?.rulesContract?.rulesetVersion === TACTICAL_VNEXT_RULESET
-    : chapterMode || Boolean(progression?.vnextStartAvailable);
+  const hasIntent = resuming ? acceptedBuild?.rulesContract?.rulesetVersion === TACTICAL_VNEXT_RULESET
+    : selectedTrialLevel !== null || chapterMode || Boolean(progression?.vnextStartAvailable);
   const knownLoadout = briefTab === "loadout" ? loadoutAllies.map(def => ({
     ...def, skillIds: def.skillIds.filter(id => Boolean(SKILLS[id])),
   })) : [];
@@ -872,7 +890,7 @@ function Brief() {
   const purpose = selectedTrialLevel!==null ? null : mission ? deriveMissionPresentation(mission, field, resuming ? savedRun : null, field?.lastResult, fieldContext) : null;
   const recoverBrief = mission?.objectiveType === "RECOVER";
   const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);
-  const buildNotes = mission ? buildFit(mission, allies, previewGrowth) : [];
+  const buildNotes = mission ? buildFit(mission, allies, previewGrowth, hasIntent) : [];
   const trainingSteps = !mission && onboardingEnabled ? encounter.steps : [];
   const rewardTruth = purpose?.rewardEligibility;
   const missionVisual = mission ? missionPresentation(mission) : { art: PRESENTATION.operationPlate, tone: "assault", label: "TACTICAL OPS" };
@@ -1028,7 +1046,7 @@ function Brief() {
           <button type="button" className="t-brief-optional-toggle" aria-expanded={showBriefMastery} onClick={() => setShowBriefMastery(value => !value)}>
             <strong>PACK MASTERY</strong><span>{showBriefMastery ? "HIDE DETAILS −" : "VIEW PROGRESSION +"}</span>
           </button>
-          {showBriefMastery ? <PackMasteryPanel snapshot={resuming ? savedRun?.packMastery : undefined} /> : null}
+          {showBriefMastery ? <PackMasteryPanel snapshot={resuming ? briefMastery ?? {} : undefined} /> : null}
         </div> : null}
         </div> : null}
         {briefTab === "loadout" ? <div className="t-command-pane t-deploy-command-pane" aria-label="Squad loadout">
@@ -1093,6 +1111,7 @@ function Brief() {
                   <p role="status">{savingVariant ? "Saving variant…" : savedVariant ? `Saved · ${LOADOUT_VARIANTS[variantOwner][savedVariant === "A" ? 0 : 1].name}` : "Base loadout equipped"}</p>
                 </>}
               </section> : null}
+              {loadoutBuild ? <p>{loadoutBuild}</p> : null}
               <div className={`t-loadout-slots${showFieldRend ? " t-loadout-slots-with-a2-picker" : ""}`} aria-label={`${loadoutName(unit)} equipped abilities`}>
                 {(["A1", "A2", "A3"] as const).map(slot => {
                   if (slot === "A2" && showFieldRend) return null;
@@ -1342,8 +1361,8 @@ function Results() {
   const acceptedS3Run = recordedFieldResult?.runId || recordedCampaignResult?.runId || null;
   const s3Goals = s3TrainingGoals(mission, selectedSquadIds, activeRulesetVersion === "tactical-intent-vnext.0");
   const s3Trials = s3TrainingResults(s3CombatProof, acceptedS3Run, Boolean(recordedFieldResult?.victory || recordedCampaignResult?.victory), s3Goals);
-  const s3Moment = s3RunMemory(s3CombatProof, acceptedS3Run);
-  const buildEvidence = fieldcraftResults(s3CombatProof,currentRunKey,selectedMissionId);
+  const buildEvidence = observedBuildMoment(s3CombatProof, currentRunKey, selectedMissionId);
+  const buildProof = buildEvidence ? <p><strong>YOUR BUILD MATTERED</strong> · {buildEvidence}</p> : null;
   if (!results) return null;
   if (selectedTrialLevel!==null) {
     const verified=trialResult?.runId===currentRunKey ? trialResult : null;
@@ -1386,11 +1405,10 @@ function Results() {
         {progression?.playerGrowth && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? <p>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not points earned this run. Open the War Table Skillbook to spend them.</p> : null}
       </details> : null}
       <details className="t-detail"><summary>Combat report · this device</summary>
-        {recordedFieldResult && s3Moment ? <p><b>TACTICAL MOMENT</b> · {s3Moment.detail}</p> : null}
+        {buildProof}
         <PlayerIdentityCard />
         <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
         <p>Challenge objective: {mission.challenge?.label || "No optional challenge"}</p>
-        <section aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. Not persisted progress or extra rewards.</small></section>
         {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
       </details>
     </FieldOpResults>
@@ -1418,10 +1436,7 @@ function Results() {
         <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div>
           <div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div>
           <div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
-        <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>
-          {buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}
-          <small>Engine-observed on this device only; not persisted progress or extra rewards.</small></section>
-        {acceptedS3Run && s3Moment ? <p>{s3Moment.detail} · Observed in this device session only.</p> : null}
+        {buildProof}
         {acceptedS3Run && s3Trials.length ? <section aria-label="Verified optional training">{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}</section> : null}
         {progression?.playerGrowth && recordedFieldResult && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ?
           <p className="t-special-balance">{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not a reward from this run.</p> : null}
@@ -1429,8 +1444,7 @@ function Results() {
     </SpecialFieldOpResults>
   </div></div>;
   const report = <>
-          <section className="t-panel" aria-label="Why your build mattered"><span className="t-kicker">WHY YOUR BUILD MATTERED</span>{buildEvidence.length ? buildEvidence.map(row => <p key={row}>{row}</p>) : <p>No build-specific effect observed in this encounter.</p>}<small>Engine-observed on this device in this run only. These events are not persisted progress or extra rewards.</small></section>
-          {acceptedS3Run && s3Moment ? <section className="t-panel" aria-label="This session combat evidence"><span className="t-kicker">THIS RUN · ENGINE-CONFIRMED MOMENT</span><strong>{s3Moment.detail}</strong><p>Observed in the current device session only. Not a persisted combat event log or extra reward.</p></section> : null}
+          {buildProof}
           {acceptedS3Run && s3Trials.length ? <section className="t-panel" aria-label="Verified optional training"><span className="t-kicker">OPTIONAL TRAINING · CONFIRMED THIS RUN</span>{s3Trials.map(trial => <div key={trial.id}><strong>{trial.title}</strong><p>{trial.evidence}</p></div>)}<small>Training evidence is session-only; no extra rewards are awarded.</small></section> : null}
           <PlayerIdentityCard />
           <dl className="t-stats">
