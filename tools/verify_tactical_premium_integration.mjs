@@ -345,6 +345,9 @@ const approvedCurrentBlobs=Object.freeze({
   ...Object.fromEntries(Object.entries(approvedCombatMotionBlobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
   ...Object.fromEntries(Object.entries(approvedEnemyMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
   ...Object.fromEntries(Object.entries(approvedSkillMasteryMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
+  // The reviewed #301 CI workflow is also a historical Player Identity V2 leaf.
+  // Override this single hash without changing older production approvals.
+  '.github/workflows/tactical-cinematic-results.yml': approvedMasteryEffectBlobs['.github/workflows/tactical-cinematic-results.yml'],
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
