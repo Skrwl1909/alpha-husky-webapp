@@ -2,6 +2,7 @@ import { CommanderPortrait } from "./PlayerIdentity";
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
+import { LastHowlHud } from "./LastHowl";
 import { relayPressureMission } from "../data/relayPressure";
 import { signalTrialRevision } from "../data/signalTrials";
 import { resolveCurrentEncounter } from "../data/onboarding";
@@ -588,6 +589,7 @@ function useMoveTrace(actor: CombatUnit | undefined, turn: number) {
 }
 
 export function BattleScreen() {
+  const lastHowl = useBattleStore(s => s.lastHowl);
   const battle = useBattleStore((s) => s.battle);
   const activeRulesetVersion = useBattleStore(s => s.activeRulesetVersion);
   const units = battle.units;
@@ -615,7 +617,8 @@ export function BattleScreen() {
   const cancel = useBattleStore((s) => s.cancel);
   const toggleMute = useBattleStore((s) => s.toggleMute);
   const objective = useBattleStore((s) => s.battle.objective);
-  const mission = getMissionDef(useBattleStore((s) => s.selectedMissionId));
+  const selectedMission = useBattleStore((s) => s.selectedMissionId);
+  const mission = getMissionDef(selectedMission);
   const onboardingEnabled = useBattleStore((s) => s.onboardingEnabled);
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const reinforcement = useBattleStore((s) => s.battle.reinforcement);
@@ -630,7 +633,8 @@ export function BattleScreen() {
     () => new Set(moveCellsNow().map((c) => cellKey(c.c, c.r))),
     [units, activeId, mode, busy, actionSkillId],
   );
-  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: onboardingEnabled && !mission ? onboardingStageId : null });
+  const training = onboardingEnabled && !mission && !lastHowl;
+  const presentation = deriveBattlePresentation({ battle, activeRulesetVersion, busy, threats: pendingThreats, combatMoment, combatFx, consequences, floats, banner, mission, onboardingStageId: training ? onboardingStageId : null });
   const threats = presentation.threats;
   const actor = presentation.actor;
   const { trace, clearTrace } = useMoveTrace(actor, battle.unitTurn);
@@ -646,14 +650,14 @@ export function BattleScreen() {
 
   return (
     <div
-      className={`t-battle${onboardingEnabled && !mission ? " is-foundation-training" : ""}${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
+      className={`t-battle${training ? " is-foundation-training" : ""}${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-projection="relay-overhead-v1"
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
     >
       <header className="t-top t-battle-hud-rail" aria-label="Battle status and mission">
         <StatusStrip />
-        <ObjectiveChip />
+        {lastHowl ? <LastHowlHud view={lastHowl} /> : <ObjectiveChip />}
       </header>
       <div className="t-field-wrap">
         <div
@@ -664,7 +668,9 @@ export function BattleScreen() {
             cancel();
           }}
         >
-          <img className="t-field-art" src={missionBattlefield(mission).art} alt="" />
+          {lastHowl
+            ? <img className="t-field-art" src={missionBattlefield(getMissionDef("field-relay-recovery")).art} alt="" />
+            : <img className="t-field-art" src={missionBattlefield(mission).art} alt="" />}
           <div className="t-field-grade" />
           <div className="t-vignette" />
           <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
@@ -679,6 +685,14 @@ export function BattleScreen() {
               return <i key={`g-${c}-${r}`} style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
             })}
           </div>
+          {lastHowl?.eliteEntries.map(({ c, r }) => {
+            const pos = fieldPercent(c, r);
+            return <span key={cellKey(c, r)} className="t-last-howl-entry" aria-hidden="true" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
+          })}
+          {lastHowl?.reserveEntry ? (() => {
+            const pos = fieldPercent(lastHowl.reserveEntry.c, lastHowl.reserveEntry.r);
+            return <span className="t-last-howl-entry is-reserve" aria-label="Hound reinforcement entry" style={{ left: `${pos.x}%`, top: `${pos.y}%` }} />;
+          })() : null}
           {moveFrom && moveTo && !presentation.targeting && !busy ? <svg className="t-move-trace" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" onAnimationEnd={clearTrace}>
             <line x1={moveFrom.x} y1={moveFrom.y} x2={moveTo.x} y2={moveTo.y} />
           </svg> : null}

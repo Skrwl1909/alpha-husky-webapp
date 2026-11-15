@@ -1,3 +1,4 @@
+import type { LastHowlSummary, LastHowlView } from "../combat/lastHowlAuthority";
 import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
 import { parseFieldLegacyMilestone, type FieldLegacyMilestone } from "../data/fieldLegacy";
 import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
@@ -35,6 +36,7 @@ export interface FoundationProgressionState {
   playerGrowth?: GrowthProgression;
   version: 1;
   vnextStartAvailable?: boolean;
+  lastHowl?: LastHowlSummary;
   /** New Dead Relay Hold revision requires server-issued capability. */
   deadRelayHoldRevisionAvailable?: 2;
   foundationStage: FoundationStage;
@@ -238,6 +240,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     packMastery: parsePackMastery(value.packMastery),
     version: 1,
     vnextStartAvailable: value.vnextStartAvailable === true,
+    ...((value.lastHowl as { version?: number } | undefined)?.version === 1 ? { lastHowl: value.lastHowl as LastHowlSummary } : {}),
     foundationStage: stage as FoundationStage,
     completed: value.completed === true || stage === "completed",
     revision,
@@ -509,6 +512,17 @@ function responseState(response: Record<string, unknown>): FoundationProgression
 
 export async function loadFoundationProgression(): Promise<FoundationProgressionState> {
   return responseState(await request("/webapp/tactical-foundation/state"));
+}
+
+export async function requestLastHowl(path: "state" | "start" | "command", body: Record<string, unknown>): Promise<LastHowlView> {
+  const response = await request("/webapp/tactical-foundation/last-howl/" + path, body);
+  const view = response.lastHowl as LastHowlView | undefined;
+  if (!view || view.mode !== "last_howl" || typeof view.runId !== "string" ||
+      (view.status === "ACTIVE" && (typeof view.token !== "string" || view.battle?.outcome !== "ongoing")) ||
+      !["ACTIVE", "ABANDONED", "DEFEATED"].includes(view.status) || !Array.isArray(view.battle?.units)) {
+    throw new FoundationProgressionError("invalid_last_howl_response");
+  }
+  return view;
 }
 
 export async function startFoundationRun(

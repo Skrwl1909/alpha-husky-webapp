@@ -12,6 +12,7 @@ export interface HostBridge {
   requestClose: () => void;
   openFieldRecord?: () => void;
   openInventory?: () => void;
+  openForge?: () => void;
   forge?: {
     nextUpgrade: () => Promise<ForgeUpgrade | null>;
     openUpgrade: (key: string) => void;

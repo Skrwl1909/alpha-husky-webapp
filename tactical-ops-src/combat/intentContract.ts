@@ -13,7 +13,7 @@ export function isSurviveMission(missionId: unknown): boolean {
 /** Experimental only in Battlefield Lab; legacy 8×5 and saved live runs keep previous behavior. */
 export let TACTICAL_VNEXT_ENABLED: boolean = BATTLEFIELD_VNEXT_PREVIEW;
 /** Re-evaluate scheduler selection at accepted-run boundaries, never during a battle. */
-export function selectAcceptedIntentRules(contract: RunRulesContract | null): void {
+export function selectAcceptedIntentRules(contract: Pick<RunRulesContract, "rulesetVersion"> | null): void {
   TACTICAL_VNEXT_ENABLED = contract?.rulesetVersion === TACTICAL_VNEXT_RULESET;
 }
 

@@ -1,7 +1,7 @@
 /** Pin source provenance and protect every production source/contract during integration. */
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {readFileSync,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {readFileSync as readLocalFile,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 const base='040831f33c34c1a1b02b282215097b0f8f4c0e1d';
@@ -9,6 +9,46 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops-src/version.ts']);
+// Preserve the historical assertions at the reviewed main commit. Verify exact
+// Last Howl leaves independently before using their historical source below.
+const lastHowlBase = '0378efb6817bd2b023d7d9b445197967d26a8668';
+const lastHowlBlobs = Object.freeze({
+ 'index.html': 'b993f459678bf92f6c48c7564babc16d79dbbb16',
+ 'js/boot_loaders.js': '990dbe309513f62a43bdef5e0812189de22e7d03',
+ 'js/tactical_ops.js': '5cb2d0140431ecab3c32ff990022cdfb3df313af',
+ 'tactical-ops-src/combat/battle.ts': '565c755a1b633a45c6467e7bd9ed087f8fc13ab4',
+ 'tactical-ops-src/combat/intentContract.ts': '97f3afc04170d4134b7fc47b9510da4a2331e47b',
+ 'tactical-ops-src/combat/lastHowlAuthority.ts': 'ebc8d7c3a50119f6395ab88e2e376343e4995131',
+ 'tactical-ops-src/combat/recoverAuthority.ts': 'c6793f4a21a4a7592ec00035d9debae0b07080f7',
+ 'tactical-ops-src/host/bootstrap.ts': 'f4ad315535814f1bbbfd81393f888a80a85d7ca5',
+ 'tactical-ops-src/host/bridge.ts': 'bd5345b87177af7320b540e2c39d083ac242141d',
+ 'tactical-ops-src/host/foundationProgression.ts': 'efd373fef4a362916d1e4c75d7c1db275947fe4d',
+ 'tactical-ops-src/store/battleStore.ts': '60c1cc70e3f73f922536cfdfbd925516c8f94d46',
+ 'tactical-ops-src/styles.ts': '0f8d81d41f854ce542b71ebdb387180a318476f0',
+ 'tactical-ops-src/ui/App.tsx': '191e4043199da75c1b7bb4e414337655b3c2ed8d',
+ 'tactical-ops-src/ui/Battle.tsx': '8edf6ec8cc68b0fc5ea9bbf1be01a6e61f2047bb',
+ 'tactical-ops-src/ui/LastHowl.tsx': '232a14edea17504cb73f9ad1a8da7b29f386f696',
+ 'tactical-ops-src/ui/lastHowl.css': '8e049944066c91e77c5644eeaaa2c5e38c61f2a5',
+ 'tactical-ops-src/version.ts': '5ea902fd0fb4a174f573a44877bee23c774fd6d8',
+ 'tools/verify_tactical_defeated_tile_hitbox.mjs': 'bc2cf45bb968257a4e867e7dd342a5c904a84a48',
+ 'tools/build_tactical_last_howl_engine_v1.mjs': '5b123122984f679558105025bf32effd6995773f',
+ 'tools/tactical_last_howl_engine_v1.ts': '189220902c80420e81858ab7d20b10e5ff7a6a55',
+ 'tools/verify_tactical_last_howl.mjs': '712d3f51471496d78cc7165e087184a5a5ddd052',
+ 'tools/verify_tactical_last_howl_browser.mjs': '95e6c61b5b6561da84ce0fe35bdf57709f957b37',
+});
+const provenanceVerifier = 'tools/verify_tactical_premium_integration.mjs';
+for (const [path, expected] of Object.entries(lastHowlBlobs)) {
+ const source = readLocalFile(path, 'utf8').replaceAll('\r\n', '\n');
+ assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
+}
+for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path), 'unreviewed Last Howl path: ' + path);
+}
+function readFileSync(path, encoding) {
+ if (!Object.hasOwn(lastHowlBlobs, path)) return readLocalFile(path, encoding);
+ const historical = git('show', `${lastHowlBase}:${path}`);
+ return encoding ? historical : Buffer.from(historical);
+}
 const extended='tools/verify_tactical_brief_closure_browser.mjs';
 const reviewedMain='50fb6a2e9de7f3c3a905dcb5427f4f97e9701a09';
 const g2Baseline='24ac8223966ea60552e4e655f9d9d2e252a71b71';
@@ -173,6 +213,13 @@ const approvedDefeatedTileHitboxBlobs=Object.freeze({
   "index.html": "5101ba7e7b0d99d659110bdf34fc193f9b0b2816",
   "tools/verify_tactical_defeated_tile_hitbox.mjs": "bc2cf45bb968257a4e867e7dd342a5c904a84a48",
 });
+// The #293 mainline fix landed after the Last Howl branch diverged. Verify its
+// approved source at the merged main commit, then pin the combined HEAD above.
+const defeatedTileMain = '4ca501bd0d191a9d8fec0632446a5e3b7a00e61c';
+for (const [path, expected] of Object.entries(approvedDefeatedTileHitboxBlobs)) {
+ assert.equal(sourceBlob(git('show', `${defeatedTileMain}:${path}`)), expected,
+  'unreviewed defeated-tile mainline source: ' + path);
+}
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -188,7 +235,6 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedCombatProgressionV1Blobs,
   ...approvedVeteranRelayPressureBlobs,
   ...approvedVeteranProgressionCombinedBlobs,
-  ...approvedDefeatedTileHitboxBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
@@ -390,13 +436,13 @@ for(const [path,expected] of Object.entries(approvedVictoryV2Blobs)){
  assert.notEqual(sourceBlob(readFileSync(path,'utf8')+'\n/* unreviewed V2 mutation */'),expected,
   'Victory V2 negative guard: '+path);
 }
-for(const changedPath of git('diff','--name-only','--no-renames',victoryV2Base,'HEAD','--',
+for(const changedPath of git('diff','--name-only','--no-renames',victoryV2Base,lastHowlBase,'--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
  assert(Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs','unreviewed Victory V2 path: '+changedPath);
 }
 git('merge-base','--is-ancestor',recoverAuthorityBase,'HEAD');
-for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,'HEAD','--',
+for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,lastHowlBase,'--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
  assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
@@ -409,7 +455,7 @@ for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
  assert.equal(git('rev-parse',`${firstPlayableBridgeMerge}:${path}`).trim(),expected,'unreviewed merged First Playable Bridge blob: '+path);
  assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??expected,'unreviewed First Playable Bridge source: '+path);
 }
-for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,'HEAD','--',
+for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,lastHowlBase,'--',
  '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
  assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
@@ -425,7 +471,7 @@ for(const [path,expected] of Object.entries(approvedRewardExperienceBlobs)){
 }
 const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`);
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
-for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,'HEAD','--',
+for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,lastHowlBase,'--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
  assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
@@ -821,7 +867,7 @@ for(const [path,expected] of Object.entries(reviewedBrowserMain)){
  assert.equal(git('rev-parse',`d4da1a3f7ecc894e6295bd2b7ccd0f3d31107979:${path}`).trim(),expected,'unreviewed merged browser baseline: '+path);
  assert.equal(sourceBlob(readFileSync(path)), approvedCurrentBlobs[path] ?? approvedWarTableV2Blobs[path] ?? approvedIdentityV2Blobs[path] ??approvedBrowserEntryMainBlobs[path] ?? expected,'unreviewed browser sync or FTUE source: '+path);
 }
-for(const path of git('diff','--name-only','--no-renames',loadoutHead,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
+for(const path of git('diff','--name-only','--no-renames',loadoutHead,lastHowlBase,'--','index.html','js','tactical-ops-src','images/tactical_ops').trim().split('\n').filter(Boolean)){
  assert(((Object.hasOwn(approvedWarTableV2Blobs,path)||Object.hasOwn(approvedWarTableAssetBlobs,path))||Object.hasOwn(approvedIdentityV2Blobs,path))||generated.has(path)||Object.hasOwn(nextDecisionApproved,path)||Object.hasOwn(approvedSignalTrialsBlobs,path)||Object.hasOwn(approvedBrowserEntryMainBlobs,path)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,path)||Object.hasOwn(approvedRewardExperienceBlobs,path)||Object.hasOwn(approvedRecoverAuthorityBlobs,path)||Object.hasOwn(fieldContractBlobs,path)||Object.hasOwn(browserExitApproved,path)||Object.hasOwn(surviveTensionBlobs,path)||Object.hasOwn(serviceRecordBlobs,path)||Object.hasOwn(reviewedBrowserMain,path)||Object.hasOwn(approvedVictoryV2Blobs,path)||Object.hasOwn(approvedVictoryArtKitV1Blobs,path)||(Object.hasOwn(approvedGearV31Blobs,path)||Object.hasOwn(approvedCurrentBlobs,path)),'unreviewed runtime mutation in Field Contracts V1: '+path);
  if(Object.hasOwn(browserExitApproved,path)){
   assert.equal(git('rev-parse',`f36f97231be5671a4045aaf60f8fd1e7d8b1329e:${path}`).trim(),browserExitApproved[path],'unreviewed merged Browser Guest exit source: '+path);
@@ -849,8 +895,8 @@ assert(readFileSync('index.html','utf8').includes(
   '<link rel="stylesheet" href="/css/tactical_victory_art_v1.css?v=v1-20261111">'),
   'Victory Art Kit stylesheet must be loaded');
 
-const version=readFileSync('tactical-ops-src/version.ts','utf8');
-const bundle=readFileSync('js/tactical_ops.js','utf8'),loader=readFileSync('js/boot_loaders.js','utf8');
+const version=readLocalFile('tactical-ops-src/version.ts','utf8');
+const bundle=readLocalFile('js/tactical_ops.js','utf8'),loader=readLocalFile('js/boot_loaders.js','utf8');
 assert(bundle.includes(version.match(/VERSION = "([^"]+)"/)[1]));
 assert(loader.includes(version.match(/CACHE_KEY = "([^"]+)"/)[1]));
 for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','New option unlocked'])assert(bundle.toLowerCase().includes(feature.toLowerCase()),`missing compiled feature: ${feature}`);

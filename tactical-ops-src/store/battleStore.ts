@@ -14,6 +14,7 @@ import { getSkill } from "../data/skills";
 import { sfx, setMuted as persistMute, isMuted } from "../audio";
 import { applyIdentityToAlpha, hydrateEquippedState, identityCache, resolvePlayerIdentity, type PlayerIdentity } from "../host/identity";
 import type { RecoverCommand, RecoverView } from "../combat/recoverAuthority";
+import { prepareLastHowlRoster, type LastHowlView } from "../combat/lastHowlAuthority";
 import type { FieldLegacyMilestone } from "../data/fieldLegacy";
 import {
   FoundationProgressionError,
@@ -23,6 +24,7 @@ import {
   createFoundationRequestId,
   loadFoundationProgression,
   loadRecoverBattle,
+  requestLastHowl,
   sendRecoverCommand,
   isRecoverAuthorityRun,
   startOperationMission,
@@ -98,6 +100,9 @@ interface UiBattle {
   onboardingCompleted: Partial<Record<OnboardingEncounterId, true>>;
   lastVictoryKey: string | null;
   currentRunKey: string | null;
+  lastHowl: LastHowlView | null;
+  openLastHowl: (action: "start" | "state", runId: string | null) => Promise<void>;
+  abandonLastHowl: () => Promise<void>;
   progression: FoundationProgressionState | null;
   progressionStatus: "idle" | "loading" | "ready" | "error";
   progressionError: string | null;
@@ -357,6 +362,62 @@ export const useBattleStore = create<Store>((set, get) => {
       ...applyIdentityToAlpha(unit, identity), weaponIcon: identity.weapon?.icon || "", identitySource: identity.source,
     } : unit),
   });
+
+  const acceptLastHowl = (view: LastHowlView) => {
+    const { identity, progression } = get();
+    const battle = recoverDisplay(view.battle, identity);
+    const { frames: _frames, ...savedView } = view;
+    if (view.status !== "ACTIVE") sfx(view.status === "DEFEATED" ? "lose" : "ui");
+    set({
+      lastHowl: savedView,
+      screen: view.status === "ACTIVE" ? "battle" : "results",
+      battle, queue: refreshQueue(battle), threats: view.threats,
+      activeRulesetVersion: TACTICAL_VNEXT_RULESET, busy: false, progressionError: null,
+      ticker: null, banner: null, attackingId: null, combatMoment: null, combatFx: [], enemyScene: null, displayHp: {},
+      ...(progression?.lastHowl ? { progression: { ...progression,
+        lastHowl: { runId: view.runId, status: view.status, best: view.best } } } : {}),
+    });
+  };
+
+  const submitLastHowl = async (command: RecoverCommand | { type: "abandon" }) => {
+    const { lastHowl: view, busy, screen, identity } = get();
+    if (screen !== "battle" || busy || view?.status !== "ACTIVE") return;
+    const g = ++runGen;
+    set({ busy: true, progressionError: null });
+    let accepted: LastHowlView;
+    try {
+      accepted = await requestLastHowl("command", { runId: view.runId, expectedRevision: view.revision, token: view.token, command });
+    } catch {
+      try {
+        accepted = await requestLastHowl("state", { runId: view.runId });
+      } catch {
+        if (g === runGen) {
+          get().backToHub();
+          set({ progressionError: "Connection interrupted. Resume Last Howl to reconnect." });
+        }
+        return;
+      }
+    }
+    if (g !== runGen) return;
+    // Use the existing effects for confirmed actions only. The current board
+    // is always replaced by the final authoritative view after these frames.
+    const reducedMotion = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+    for (const frame of reducedMotion ? [] : accepted.frames ?? []) {
+      const battle = recoverDisplay(frame.battle, identity);
+      const actor = activeUnit(get().battle);
+      set({ battle, queue: refreshQueue(battle), threats: frame.threats });
+      if (actor && frame.skillId) publishFx(spriteEvents(actor, frame.skillId, frame.events, impactSeq++, Boolean(frame.interrupted)), g);
+      await playEvents(frame.events, g);
+      if (g !== runGen) return;
+    }
+    acceptLastHowl(accepted);
+    if (accepted.revision === view.revision && accepted.status === "ACTIVE") {
+      set({ progressionError: "Action not confirmed. Check the board and try again." });
+    }
+  };
+
+  const submitAuthority = (command: RecoverCommand) => get().lastHowl
+    ? submitLastHowl(command) : submitRecover(command);
 
   const submitRecover = async (command: RecoverCommand) => {
     const current = get();
@@ -653,6 +714,29 @@ export const useBattleStore = create<Store>((set, get) => {
 
   return {
     screen: "hub",
+    lastHowl: null,
+    openLastHowl: async (action, runId) => {
+      if (get().busy || !get().progression?.lastHowl) return;
+      const g = ++runGen;
+      set({ busy: true, progressionError: null });
+      try {
+        const view = await requestLastHowl(action, action === "state" ? { runId } : { previousRunId: runId });
+        if (g !== runGen) return;
+        prepareLastHowlRoster(view.roster);
+        const rules = { rulesetVersion: TACTICAL_VNEXT_RULESET };
+        selectAcceptedBattleRules(rules);
+        selectAcceptedIntentRules(rules);
+        set({ currentRunKey: view.runId, selectedMissionId: null, chapterMode: false, selectedTrialLevel: null,
+          identity: identityCache(resolvePlayerIdentity()), floats: [], consequences: [], lastActionSkillId: null,
+          impactId: null, s3CombatProof: null, displayHp: {} });
+        acceptLastHowl(view);
+      } catch {
+        if (g !== runGen) return;
+        set({ busy: false, progressionError: "Last Howl could not connect. Refresh the War Table and try again." });
+        void get().loadFoundationProgression();
+      }
+    },
+    abandonLastHowl: () => submitLastHowl({ type: "abandon" }),
     activeRulesetVersion: null,
     battle: emptyBattle(),
     busy: false,
@@ -735,7 +819,7 @@ export const useBattleStore = create<Store>((set, get) => {
       try {
         const progression = await loadFoundationProgression();
         applyCanonicalProgression(progression);
-        if (progression.completed && progression.operations?.["broken-signal"]) set({ screen: "war-table" });
+        if (!get().lastHowl && progression.completed && progression.operations?.["broken-signal"]) set({ screen: "war-table" });
       } catch (error) {
         const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
@@ -1037,6 +1121,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({
         screen: get().foundationCompleted && get().progression?.operations?.["broken-signal"] ? "war-table" : "hub",
         battle: emptyBattle(),
+        lastHowl: null,
         briefEntry: null,
         activeRulesetVersion: null,
         chapterMode:false,currentChapterIntel:null,chapterResult:null,selectedTrialLevel:null,trialResult:null,
@@ -1261,7 +1346,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasMoved || actor.hasActed) return;
-      if (isRecoverAuthorityRun(get().currentRunKey)) { void submitRecover({ type: "move", c, r }); return; }
+      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "move", c, r }); return; }
       const res = tryMove(battle, c, r);
       if (!res.ok) return;
       sfx("move");
@@ -1286,7 +1371,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       sfx("select");
       if (!skillNeedsTargetPick(skill)) {
-        if (isRecoverAuthorityRun(get().currentRunKey)) { void submitRecover({ type: "skill", skillId }); return; }
+        if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId }); return; }
         const g = ++runGen;
         set({ busy: true, attackingId: actor.id, lastActionSkillId: skillId });
         const res = trySkill(battle, skillId);
@@ -1324,7 +1409,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy || battle.mode !== "targeting" || !battle.actionSkillId) return;
       const actor = activeUnit(battle);
       if (!actor || actor.hasActed) return;
-      if (isRecoverAuthorityRun(get().currentRunKey)) { void submitRecover({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
+      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
       const g = ++runGen;
       const selectedSkillId = battle.actionSkillId;
       set({ busy: true, attackingId: actor.id, lastActionSkillId: selectedSkillId });
@@ -1364,7 +1449,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy) return;
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
-      if (isRecoverAuthorityRun(get().currentRunKey)) { void submitRecover({ type: "recover" }); return; }
+      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "recover" }); return; }
       const res = tryRecover(battle);
       if (!res.ok) {
         set({ ticker: `${actor.name}  ·  move adjacent to the relay terminal` });
@@ -1423,7 +1508,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy) return;
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasActed) return;
-      if (isRecoverAuthorityRun(get().currentRunKey)) { void submitRecover({ type: "skip" }); return; }
+      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skip" }); return; }
       const g = ++runGen;
       const res = trySkip(battle);
       if (!res.ok) return;
