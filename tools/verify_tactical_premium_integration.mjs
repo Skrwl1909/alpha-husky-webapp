@@ -71,6 +71,7 @@ const approvedEnemyMotionV1Blobs = Object.freeze({
  'tactical-ops-src/ui/houndDirectional.ts': 'ecf5d808e29064d59e9ab84a00e48a2259873aae',
  'tactical-ops-src/version.ts': 'ab467190d3d303439b1061bff992428a2594fc29',
  'tools/verify_tactical_enemy_combat_motion_v1.mjs': 'b5cfffa2bd1803338577236d98d538894d45484a',
+ 'tools/verify_tactical_hound_directional.mjs': '8340b41b16560f20fb54634b9bd6ec10766c123e',
 });
 // Enemy Combat Identity Art Kit V1: exact binary asset approvals. New poses are
 // additive and do not replace any of the original four-direction hound sprites.
