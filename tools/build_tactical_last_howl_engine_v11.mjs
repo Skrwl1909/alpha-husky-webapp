@@ -9,13 +9,13 @@ await build({
   logLevel: "warn",
   build: {
     emptyOutDir: false,
-    outDir: resolve(process.argv[2] ?? resolve(root, "artifacts/last-howl-v1")),
+    outDir: resolve(process.argv[2] ?? resolve(root, "artifacts/last-howl-v11")),
     target: "node22",
     minify: true,
     lib: {
-      entry: resolve(root, "tools/tactical_last_howl_engine_v1.ts"),
+      entry: resolve(root, "tools/tactical_last_howl_engine_v11.ts"),
       formats: ["cjs"],
-      fileName: () => "tactical_last_howl_engine_v1.cjs",
+      fileName: () => "tactical_last_howl_engine_v11.cjs",
     },
   },
 });
