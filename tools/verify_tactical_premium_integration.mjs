@@ -1,7 +1,7 @@
 /** Pin source provenance and protect every production source/contract during integration. */
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
-import {readFileSync as readLocalFile,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
+import {existsSync,readFileSync as readLocalFile,writeFileSync,mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 const base='040831f33c34c1a1b02b282215097b0f8f4c0e1d';
@@ -37,12 +37,31 @@ const lastHowlBlobs = Object.freeze({
  'tools/verify_tactical_last_howl_browser.mjs': '95e6c61b5b6561da84ce0fe35bdf57709f957b37',
 });
 const provenanceVerifier = 'tools/verify_tactical_premium_integration.mjs';
+const lastHowlV1Release = '5e0f5218d44d1552e052dede538cf2a8a7916b60';
+const retiredV1WorkerSources = new Set([
+ 'tools/build_tactical_last_howl_engine_v1.mjs',
+ 'tools/tactical_last_howl_engine_v1.ts',
+]);
+const lastHowlPressureBlobs = Object.freeze({
+ 'tactical-ops-src/combat/lastHowlAuthority.ts': '8e9e3705ade61fbd844e54bac88b57d81bae3c17',
+ 'tools/verify_tactical_last_howl.mjs': '18ba5f4dfcc3d1d9d98b2888153c05752940439c',
+ 'tools/build_tactical_last_howl_engine_v11.mjs': '809c66d0dfa42595ca082be67da6f5a3c4be8bd9',
+ 'tools/tactical_last_howl_engine_v11.ts': '189220902c80420e81858ab7d20b10e5ff7a6a55',
+});
 for (const [path, expected] of Object.entries(lastHowlBlobs)) {
+ assert.equal(git('rev-parse', `${lastHowlV1Release}:${path}`).trim(), expected, 'unreviewed V1 source: ' + path);
+}
+for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs })) {
+ if (retiredV1WorkerSources.has(path)) {
+  assert(!existsSync(path), 'V1 worker must be built from the V1 release: ' + path);
+  continue;
+ }
  const source = readLocalFile(path, 'utf8').replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
 }
 for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path), 'unreviewed Last Howl path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path) ||
+  Object.hasOwn(lastHowlPressureBlobs, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
  if (!Object.hasOwn(lastHowlBlobs, path)) return readLocalFile(path, encoding);
