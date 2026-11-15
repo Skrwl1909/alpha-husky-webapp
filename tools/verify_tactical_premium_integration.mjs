@@ -48,20 +48,35 @@ const lastHowlPressureBlobs = Object.freeze({
  'tools/build_tactical_last_howl_engine_v11.mjs': '809c66d0dfa42595ca082be67da6f5a3c4be8bd9',
  'tools/tactical_last_howl_engine_v11.ts': '189220902c80420e81858ab7d20b10e5ff7a6a55',
 });
+// Combat Motion Foundation V1 (#296): exact reviewed render-only source and
+// cache delivery. Historical V1/V1.1 hashes above remain unchanged.
+const approvedCombatMotionBlobs = Object.freeze({
+ 'index.html': '9d8bacb8e6b2d937d20b1c51c2da055cca9846db',
+ 'js/boot_loaders.js': '5972da2cd5f120e5dd6e630f4d958737e922852b',
+ 'js/tactical_ops.js': 'baeaa3a38605c72a8f7a0f15dfa9ffa6fab39ffa',
+ 'tactical-ops-src/tactical.css': 'd9950b9e10a1cdaa8b82ec47ee53201caf5568cc',
+ 'tactical-ops-src/ui/Battle.tsx': '1b3a9b1afb5082db0b4ad06abddb041e3151ee5d',
+ 'tactical-ops-src/ui/combatCohesion.css': '298ea0d05788206f6bba74fc0f53258fefca9d4c',
+ 'tactical-ops-src/version.ts': 'c9b540bc8c3be27717f3f9f4a7851cd0180ef9a1',
+ 'tools/verify_tactical_combat_motion_v1.mjs': '3c215f35c85f3488569ea4dace12949e77efa624',
+});
 for (const [path, expected] of Object.entries(lastHowlBlobs)) {
  assert.equal(git('rev-parse', `${lastHowlV1Release}:${path}`).trim(), expected, 'unreviewed V1 source: ' + path);
 }
-for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs })) {
+for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs })) {
  if (retiredV1WorkerSources.has(path)) {
   assert(!existsSync(path), 'V1 worker must be built from the V1 release: ' + path);
   continue;
  }
- const source = readLocalFile(path, 'utf8').replaceAll('\r\n', '\n');
+ // New reviewed blobs pin Git bytes exactly; the historical V1 pins retain
+ // their original LF-normalization policy (notably tactical.css is CRLF).
+ const rawSource = readLocalFile(path, 'utf8');
+ const source = Object.hasOwn(approvedCombatMotionBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
 }
 for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path) ||
-  Object.hasOwn(lastHowlPressureBlobs, path), 'unreviewed Last Howl path: ' + path);
+  Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
  if (!Object.hasOwn(lastHowlBlobs, path)) return readLocalFile(path, encoding);
@@ -254,6 +269,9 @@ const approvedCurrentBlobs=Object.freeze({
   ...approvedCombatProgressionV1Blobs,
   ...approvedVeteranRelayPressureBlobs,
   ...approvedVeteranProgressionCombinedBlobs,
+  // Only live render-only leaves: historical Last Howl reads are intentionally
+  // substituted by readFileSync() and must retain their original approvals.
+  ...Object.fromEntries(Object.entries(approvedCombatMotionBlobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
