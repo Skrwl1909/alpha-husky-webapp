@@ -51,6 +51,19 @@ jobs:
                 redundant=b'<p>Courier result awaits server confirmation.</p>'
                 assert expected.count(redundant)==1,p.name
                 expected=expected.replace(redundant,b'',1)
+              # M1 removes the old generic no-evidence panel from legacy Results:
+              # a build proof appears only when an event is observed in this run.
+              # Permit precisely that deletion; retain byte-for-byte protection
+              # of all other legacy Results content.
+              old_no_evidence=(
+                b'<section class="t-panel" aria-label="Why your build mattered">'
+                b'<span class="t-kicker">WHY YOUR BUILD MATTERED</span>'
+                b'<p>No build-specific effect observed in this encounter.</p>'
+                b'<small>Engine-observed on this device in this run only. '
+                b'These events are not persisted progress or extra rewards.</small>'
+                b'</section>')
+              assert expected.count(old_no_evidence)==1,p.name
+              expected=expected.replace(old_no_evidence,b'',1)
               # Only the exact approved fallback Commander portrait DOM is different in V2.
               # Restore that *single* presentation fragment before comparing all legacy content.
               old_portrait=(b'<div class="t-id-card" aria-label="Player identity">'
@@ -62,6 +75,7 @@ jobs:
                 b'draggable="false" src="/images/tactical_ops/alpha-portrait.jpg"></span></span>'
                 b'<div class="t-id-copy">')
               actual=(after/p.name).read_bytes()
+              assert b'YOUR BUILD MATTERED' not in actual,p.name
               assert expected.count(old_portrait)==1,p.name
               assert actual.count(new_portrait)==1,p.name
               assert expected==actual.replace(new_portrait,old_portrait,1),p.name
