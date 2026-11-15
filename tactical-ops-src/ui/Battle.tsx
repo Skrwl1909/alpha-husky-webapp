@@ -666,7 +666,9 @@ export function BattleScreen() {
             cancel();
           }}
         >
-          <img className="t-field-art" src={missionBattlefield(lastHowl ? getMissionDef("field-relay-recovery") : mission).art} alt="" />
+          {lastHowl
+            ? <img className="t-field-art" src={missionBattlefield(getMissionDef("field-relay-recovery")).art} alt="" />
+            : <img className="t-field-art" src={missionBattlefield(mission).art} alt="" />}
           <div className="t-field-grade" />
           <div className="t-vignette" />
           <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">

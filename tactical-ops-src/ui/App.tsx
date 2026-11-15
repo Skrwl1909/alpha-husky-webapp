@@ -796,7 +796,7 @@ function Brief() {
   const selectFieldRend = useBattleStore(s => s.selectFieldRend);
   const veteranBrief = veteranOpportunityView(field, mission?.missionId, fieldContext, resuming);
   const deploymentWindow = fieldOp && mission ? resuming ? fieldWindow(mission, savedRun?.fieldContext) : currentFieldWindow(mission.missionId, field?.board, field?.region, Date.now(), selectedDirectiveTier, !chapterMode && !savedRun && progression?.vnextStartAvailable === true) : null;
-  const twoSlots = Boolean(mission && (fieldOp || campaignMission || selectedTrialLevel!==null || mission.objectiveType === "BOSS"));
+  const twoSlots = Boolean(mission && (fieldOp || campaignMission || mission.objectiveType === "BOSS" || selectedTrialLevel!==null));
   const baseSpawns = mission ? missionSpawnsForSquad(mission, selectedSquadIds, equippedPet, selectedApproach)
     || ((fieldOp || campaignMission) ? missionSpawnsForSquad(mission, ["alpha", "ally-02", "ally-03"], equippedPet)!
       : mission.objectiveType === "RECOVER" ? recoverSpawnsForSquad(["alpha", "ally-02"])! : BROKEN_SIGNAL_COMMANDER_SPAWNS.filter((spawn) => !["ally-02", "ally-03"].includes(spawn.defId))) : encounter.spawns;
