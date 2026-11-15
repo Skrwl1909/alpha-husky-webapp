@@ -61,7 +61,7 @@ function configure(run: Encounter) {
   };
 }
 
-function enemyActivation(battle: BattleState, cycle: ThreatCycle) {
+export function enemyActivation(battle: BattleState, cycle: ThreatCycle) {
   const actor = battle.activeId!;
   const skip = () => ({ ...trySkip(battle), cycle });
   if (cycle.interruptedEnemyIds?.includes(actor)) {
@@ -86,6 +86,22 @@ function enemyActivation(battle: BattleState, cycle: ThreatCycle) {
   return { ...applyAi(battle, action), cycle, skillId: skill?.type === "skill" ? skill.skillId : undefined };
 }
 
+export function legalAlliedAction(battle: BattleState, command: RecoverCommand) {
+  const actor = battle.units.find(unit => unit.id === battle.activeId);
+  if (battle.outcome !== "ongoing" || actor?.team !== "ally" || actor.defeated || actor.hasActed) return null;
+  if (command.type === "skill") {
+    if (!actor.skillIds.includes(command.skillId)) return null;
+    const skill = resolveGrowthSkill(getSkill(command.skillId), actor.growth);
+    if (skillNeedsTargetPick(skill)
+      ? !command.targetId || !validTargetIds(battle.units, actor, skill).includes(command.targetId)
+      : command.targetId !== undefined) return null;
+  }
+  const action = command.type === "move" ? tryMove(battle, command.c, command.r)
+    : command.type === "skill" ? trySkill(battle, command.skillId, command.targetId)
+    : command.type === "recover" ? tryRecover(battle) : trySkip(battle);
+  return action.ok ? { actor, ...action } : null;
+}
+
 export function stepRecover(run: Encounter, saved?: Snapshot, command?: RecoverCommand) {
   const { spawns, rules } = configure(run);
   const initial = saved ? null : startBattle(null, spawns, rules.objective, rules.reinforcement, null, rules.directive, run.playerGrowth);
@@ -105,21 +121,10 @@ export function stepRecover(run: Encounter, saved?: Snapshot, command?: RecoverC
   };
 
   if (command) {
-    const actor = battle.units.find(unit => unit.id === battle.activeId);
-    if (battle.outcome !== "ongoing" || actor?.team !== "ally" || actor.defeated || actor.hasActed) return null;
-    if (command.type === "skill") {
-      if (!actor.skillIds.includes(command.skillId)) return null;
-      const skill = resolveGrowthSkill(getSkill(command.skillId), actor.growth);
-      if (skillNeedsTargetPick(skill)
-        ? !command.targetId || !validTargetIds(battle.units, actor, skill).includes(command.targetId)
-        : command.targetId !== undefined) return null;
-    }
-    const action = command.type === "move" ? tryMove(battle, command.c, command.r)
-      : command.type === "skill" ? trySkill(battle, command.skillId, command.targetId)
-      : command.type === "recover" ? tryRecover(battle) : trySkip(battle);
-    if (!action.ok) return null;
+    const action = legalAlliedAction(battle, command);
+    if (!action) return null;
     const interrupt = command.type === "skill" && command.targetId
-      ? interruptLockedThreatAfterControl(cycle, battle, action.state, actor.id, command.targetId, command.skillId, action.events)
+      ? interruptLockedThreatAfterControl(cycle, battle, action.state, action.actor.id, command.targetId, command.skillId, action.events)
       : { cycle, interrupted: false };
     battle = action.state;
     // Movement keeps the current activation. Other actions advance the initiative queue.

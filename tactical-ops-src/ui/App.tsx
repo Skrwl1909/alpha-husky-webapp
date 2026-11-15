@@ -1,4 +1,5 @@
 import { getHost } from "../host/bridge";
+import { LastHowlCard, LastHowlResults } from "./LastHowl";
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { FIELD_HONOR, missionContract, REACH_REND_TRADEOFF, withFieldRend } from "../data/fieldContracts";
@@ -390,6 +391,7 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
+        <LastHowlCard />
         {recommendedMission && primaryPurpose ? (() => {
           const visual = missionPresentation(recommendedMission);
           const contract = !primaryPurpose.resume && primaryPurpose.title === nextContract?.title ? nextContract : null;
@@ -1568,6 +1570,7 @@ export function TacticalApp() {
   const receipt = firstSession()?.view().result;
 
   const screen = useBattleStore((s) => s.screen);
+  const lastHowl = useBattleStore((s) => s.lastHowl);
   const selectSkill = useBattleStore((s) => s.selectSkill);
   const skipTurn = useBattleStore((s) => s.skipTurn);
   const muted = useBattleStore((s) => s.muted);
@@ -1609,7 +1612,7 @@ export function TacticalApp() {
       {screen === "brief" ? <Brief /> : null}
       {screen === "battle" ? <BattleScreen /> : null}
       {screen === "sector" ? <Sector /> : null}
-      {screen === "results" ? <Results /> : null}
+      {screen === "results" ? lastHowl ? <LastHowlResults view={lastHowl} /> : <Results /> : null}
       {screen === "defeat" ? <Defeat /> : null}
       </>}
     </div>

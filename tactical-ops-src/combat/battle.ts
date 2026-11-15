@@ -339,6 +339,20 @@ export function startBattle(
   return advanceToNext(fresh);
 }
 
+/** Deploy into an existing encounter without rebuilding any surviving unit. */
+export function deployHostiles(state: BattleState, spawns: SpawnSpec[]): BattleState {
+  const units = state.units.filter(unit => unit.team === "ally" || !unit.defeated);
+  for (const spawn of spawns) {
+    const entry = previewPoint(spawn);
+    const cell = Array.from({ length: GRID_COLS * GRID_ROWS }, (_, i) => ({ c: i % GRID_COLS, r: Math.floor(i / GRID_COLS) }))
+      .filter(({ c, r }) => canOccupy(units, c, r))
+      .sort((a, b) => Math.abs(a.c - entry.c) + Math.abs(a.r - entry.r) - Math.abs(b.c - entry.c) - Math.abs(b.r - entry.r))[0];
+    if (!cell) throw Error("last_howl_entry_blocked");
+    units.push(spawnUnit(spawn.defId, spawn.id, cell.c, cell.r, null, spawn.unitDef));
+  }
+  return { ...state, units };
+}
+
 export function canRecover(state: BattleState): boolean {
   const actor = state.units.find((u) => u.id === state.activeId);
   const objective = state.objective;
