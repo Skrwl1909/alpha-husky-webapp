@@ -211,6 +211,33 @@
 #tacticalOpsRoot .t-hostile-scene img.t-motion-leader {width:16.5%;min-width:58px;max-width:160px;}
 #tacticalOpsRoot .t-token.travel-ghost .t-ring {opacity:.3;}
 
+/* Enemy Combat Motion V1: new key poses are only shown for confirmed attack
+   scenes. Wide pose crops need their own visual width, never wider hitboxes. */
+#tacticalOpsRoot .t-hostile-scene img.t-enemy-attack-pose {
+  object-fit:contain;
+  transform-origin:50% 88%;
+}
+#tacticalOpsRoot .t-hostile-scene img.t-enemy-attack-skirmisher {
+  width:clamp(106px,29%,280px);
+  max-width:280px;
+}
+#tacticalOpsRoot .t-hostile-scene img.t-enemy-attack-bulwark {
+  width:clamp(80px,21.5%,210px);
+  max-width:210px;
+}
+#tacticalOpsRoot .t-hostile-scene img.t-enemy-attack-pose.is-mirrored {
+  transform:translate(-50%,-88%) scaleX(-1);
+}
+/* The Marksman's shot remains in place while its confirmed ranged beam flies.
+   Increase image width to preserve roughly the idle actor's body height. */
+#tacticalOpsRoot .t-token img.t-enemy-ranged-pose {
+  width:146%;
+  max-width:none;
+  margin-left:-23%;
+  transform-origin:50% 88%;
+}
+#tacticalOpsRoot .t-token img.t-enemy-ranged-pose.is-mirrored {scale:-1 1;}
+
 @media(prefers-reduced-motion:reduce) {
   #tacticalOpsRoot .t-token.is-moving img.body,
   #tacticalOpsRoot .t-token.attacking img.body,

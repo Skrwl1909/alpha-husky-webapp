@@ -21,7 +21,7 @@ import { tacticalActionImageForSkill, tacticalActionImageForCommand } from "./ta
 import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { FALLBACK_SPRITE, OPERATION } from "../data/units";
-import { houndView } from "./houndDirectional";
+import { houndAttackPose, houndView } from "./houndDirectional";
 import type { PlayerIdentity } from "../host/identity";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
@@ -171,6 +171,8 @@ function Token({
   facingTarget,
   idleTarget,
   hitFrom,
+  attackPose,
+  attackPoseMirrored = false,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -187,6 +189,8 @@ function Token({
   facingTarget?: FacingCell;
   idleTarget?: FacingCell;
   hitFrom?: FacingCell;
+  attackPose?: string | null;
+  attackPoseMirrored?: boolean;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const hp = shownHp ?? unit.hp;
@@ -252,9 +256,10 @@ function Token({
   useLayoutEffect(() => {
     if (directional) setLastFacing(facing);
   }, [directional, facing]);
-  const src = !artFailed && directionalAlpha ? alphaView(facing)
+  const baseSrc = !artFailed && directionalAlpha ? alphaView(facing)
     : !artFailed && directionalHound ? houndView(unit, facing)!
     : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
+  const src = attackPose || baseSrc;
   const recoilX = hitFrom ? Math.sign(unit.c - hitFrom.c) * 7 : 0;
   const recoilY = hitFrom ? Math.sign(unit.r - hitFrom.r) * 5 : 0;
   return (
@@ -272,7 +277,13 @@ function Token({
       ) : null}
       {fieldLabel && !unit.defeated ? <span className={`t-enemy-archetype t-archetype-${fieldLabel.toLowerCase().replaceAll(" ", "-")}`}>{fieldLabel}</span> : null}
       {directionalAlpha && !artFailed ? <span className="t-alpha-ground-shadow" aria-hidden="true" /> : null}
-      <img className="body" src={src} alt="" draggable={false} onError={!artFailed && (directionalAlpha || directionalHound) ? () => setArtFailed(true) : undefined} />
+      <img className={`body${attackPose ? " t-enemy-ranged-pose" : ""}${attackPoseMirrored ? " is-mirrored" : ""}`} src={src} alt="" draggable={false} onError={e => {
+        if (attackPose) {
+          e.currentTarget.onerror = null;
+          e.currentTarget.classList.remove("t-enemy-ranged-pose", "is-mirrored");
+          e.currentTarget.src = baseSrc;
+        } else if (!artFailed && (directionalAlpha || directionalHound)) setArtFailed(true);
+      }} />
       {hp<=0 ? null : (
         <div className="t-plate">
           <div className="t-plate-name">
@@ -792,6 +803,10 @@ export function BattleScreen() {
                 (f.terminal || (f.targetId && f.targetId !== u.id))) : undefined;
               const facingTarget = enemyScene?.actorId === u.id ? enemyScene.to
                 : actionFx?.terminal ?? units.find(target => target.id === actionFx?.targetId);
+              const enemyFacing = enemyScene?.actorId === u.id
+                ? facingToward(enemyScene.from, enemyScene.to, "front") : "front";
+              const rangedPose = enemyScene?.actorId === u.id && enemyScene.style === "ranged"
+                ? houndAttackPose(u, enemyScene.style, enemyFacing) : null;
               const hitFx = impactId === u.id ? combatFx.find(fx => fx.targetId === u.id && fx.from) : undefined;
               const hitFrom = impactId === u.id ? hitFx?.from ?? (enemyScene?.to.c === u.c && enemyScene?.to.r === u.r ? enemyScene.from : undefined) : undefined;
               return (
@@ -806,6 +821,8 @@ export function BattleScreen() {
                   shownHp={displayHp[u.id]}
                   travelGhost={travelActors.has(u.id)}
                   hitFrom={hitFrom}
+                  attackPose={rangedPose}
+                  attackPoseMirrored={!!rangedPose && enemyFacing === "left"}
                   inspecting={u.id === inspectId}
                   signalCarrier={u.id === signalCarrierId}
                   interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
@@ -818,9 +835,11 @@ export function BattleScreen() {
           {enemyScene && (() => {
             const from=fieldPercent(enemyScene.from.c,enemyScene.from.r),to=fieldPercent(enemyScene.to.c,enemyScene.to.r);
             const actor=units.find(u=>u.id===enemyScene.actorId);
+            const facing=facingToward(enemyScene.from,enemyScene.to,"front");
+            const pose=actor ? houndAttackPose(actor,enemyScene.style,facing) : null;
             const style={"--enemy-x":from.x+"%","--enemy-y":from.y+"%","--enemy-target-x":to.x+"%","--enemy-target-y":to.y+"%","--enemy-duration":enemyScene.durationMs+"ms"} as CSSProperties;
             return <div className={`t-hostile-scene t-hostile-${enemyScene.style}`} key={enemyScene.id} style={style} aria-hidden="true">
-              {["melee","heavy"].includes(enemyScene.style)&&actor?<img className={`t-motion-actor t-motion-${roleClass(actor) || "hound"}`} src={houndView(actor,facingToward(enemyScene.from,enemyScene.to,"front"))||actor.attackSprite||actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
+              {["melee","heavy"].includes(enemyScene.style)&&actor?<img className={`t-motion-actor t-motion-${roleClass(actor) || "hound"}${pose ? ` t-enemy-attack-pose t-enemy-attack-${actor.archetype?.toLowerCase()}` : ""}${pose && facing === "left" ? " is-mirrored" : ""}`} src={pose || houndView(actor,facing) || actor.attackSprite || actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.classList.remove("t-enemy-attack-pose","t-enemy-attack-skirmisher","t-enemy-attack-bulwark","is-mirrored");e.currentTarget.src=houndView(actor,facing)||actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
             </div>;
           })()}
           {presentation.primaryFx.map(effect=>{

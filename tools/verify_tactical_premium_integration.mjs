@@ -60,6 +60,19 @@ const approvedCombatMotionBlobs = Object.freeze({
  'tactical-ops-src/version.ts': 'c9b540bc8c3be27717f3f9f4a7851cd0180ef9a1',
  'tools/verify_tactical_combat_motion_v1.mjs': '3c215f35c85f3488569ea4dace12949e77efa624',
 });
+// Enemy Combat Motion V1: approved presentation-only bindings for #297 poses.
+// Preserve historical combat-authority and reward pins without widening scope.
+const approvedEnemyMotionV1Blobs = Object.freeze({
+ 'index.html': '49fd863a599a75e821eec0feda0f70717ab354ae',
+ 'js/boot_loaders.js': 'e216560c5497dbebd216f9baac8fb4282f469f44',
+ 'js/tactical_ops.js': 'de33fb2d333309977c62bb2adf12890cae3aeb99',
+ 'tactical-ops-src/ui/Battle.tsx': '6f9cccd7f1c602f60a8aaec797002a9306ac0a7b',
+ 'tactical-ops-src/ui/combatCohesion.css': 'ba865b5625a6d5c6a8b0c80c08bc608036ff7022',
+ 'tactical-ops-src/ui/houndDirectional.ts': 'ecf5d808e29064d59e9ab84a00e48a2259873aae',
+ 'tactical-ops-src/version.ts': 'ab467190d3d303439b1061bff992428a2594fc29',
+ 'tools/verify_tactical_enemy_combat_motion_v1.mjs': 'b5cfffa2bd1803338577236d98d538894d45484a',
+ 'tools/verify_tactical_hound_directional.mjs': '8340b41b16560f20fb54634b9bd6ec10766c123e',
+});
 // Enemy Combat Identity Art Kit V1: exact binary asset approvals. New poses are
 // additive and do not replace any of the original four-direction hound sprites.
 const approvedEnemyPoseAssets = Object.freeze({
@@ -75,7 +88,7 @@ for (const [path, expected] of Object.entries(approvedEnemyPoseAssets)) {
 for (const [path, expected] of Object.entries(lastHowlBlobs)) {
  assert.equal(git('rev-parse', `${lastHowlV1Release}:${path}`).trim(), expected, 'unreviewed V1 source: ' + path);
 }
-for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs })) {
+for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs, ...approvedEnemyMotionV1Blobs })) {
  if (retiredV1WorkerSources.has(path)) {
   assert(!existsSync(path), 'V1 worker must be built from the V1 release: ' + path);
   continue;
@@ -83,12 +96,13 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  // New reviewed blobs pin Git bytes exactly; the historical V1 pins retain
  // their original LF-normalization policy (notably tactical.css is CRLF).
  const rawSource = readLocalFile(path, 'utf8');
- const source = Object.hasOwn(approvedCombatMotionBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
+ const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
 }
 for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path) ||
   Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path) ||
+  Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
   Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
@@ -285,6 +299,7 @@ const approvedCurrentBlobs=Object.freeze({
   // Only live render-only leaves: historical Last Howl reads are intentionally
   // substituted by readFileSync() and must retain their original approvals.
   ...Object.fromEntries(Object.entries(approvedCombatMotionBlobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
+  ...Object.fromEntries(Object.entries(approvedEnemyMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
@@ -552,7 +567,11 @@ const approvedHoundBlobs=Object.freeze({
  'tactical-ops-src/ui/houndDirectional.ts':'eb3bde279ebed29cfe5fbfd9094e888db96a0364',
 });
 function assertHoundBlob(path, source) {
- assert.equal(sourceBlob(source),approvedHoundBlobs[path],`unreviewed HOUND source: ${path}`);
+ // HOUND's reviewed historical merge stays pinned above; only the action-pose
+ // mapper is extended in Enemy Combat Motion V1.
+ const expected = path === 'tactical-ops-src/ui/houndDirectional.ts'
+  ? approvedEnemyMotionV1Blobs[path] : approvedHoundBlobs[path];
+ assert.equal(sourceBlob(source),expected,`unreviewed HOUND source: ${path}`);
 }
 for(const path of Object.keys(approvedHoundBlobs)){
  assert.equal(git('rev-parse',`${houndMerge}:${path}`).trim(),approvedHoundBlobs[path]);

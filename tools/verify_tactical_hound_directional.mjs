@@ -37,7 +37,11 @@ const battle=readFileSync(resolve(root,"tactical-ops-src/ui/Battle.tsx"),"utf8")
 const styles=readFileSync(resolve(root,"tactical-ops-src/styles.ts"),"utf8");
 assert.match(battle,/const directionalHound = !!houndView\(unit, "front"\)/);
 assert.match(battle,/houndView\(unit, facing\)/);
-assert.match(battle,/houndView\(actor,facingToward\(enemyScene\.from,enemyScene\.to,"front"\)\)/);
+// Motion V1 calculates the same confirmed attack facing once, then reuses it
+// for the authored action pose and the original directional fallback.
+assert.match(battle,/const facing=facingToward\(enemyScene\.from,enemyScene\.to,"front"\)/);
+assert.match(battle,/houndAttackPose\(actor,enemyScene\.style,facing\)/);
+assert.match(battle,/houndView\(actor,facing\)/);
 assert.match(battle,/houndView\(performer,facingToward\(effect\.from,receiver,"front"\)\)/);
 assert.match(styles,/HOUND_DIRECTIONAL_CSS/);
 const css=readFileSync(resolve(root,"tactical-ops-src/ui/houndDirectional.css"),"utf8");
