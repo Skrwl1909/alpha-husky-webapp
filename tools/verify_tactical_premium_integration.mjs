@@ -86,6 +86,8 @@ const approvedSkillMasteryMotionV1Blobs = Object.freeze({
 });
 const masteryEffectBase = 'bdc545d9fe140e7a79581452ad4309588af3e7b1';
 const approvedMasteryEffectBlobs = Object.freeze({
+ // PR #301 CI follow-up: precisely reviewed fixture and legacy contract checks.
+ '.github/workflows/tactical-cinematic-results.yml': '200decc48c1c7e794f44def110cecabf2c3622f6',
  'index.html': '21c752ecc6362185b41c7afb8471625c3f4b9f32',
  'js/boot_loaders.js': '20ac0088ac7840f3bd004bf489fedcca7b71341e',
  'js/tactical_ops.js': 'e57986c501d536f241f5d381c6853c4afbb34c48',
@@ -104,6 +106,7 @@ const approvedMasteryEffectBlobs = Object.freeze({
  'tools/verify_tactical_signal_atlas_default_browser.mjs': 'f9a4c97a85b2f6ebe325d34253f2d0bae5f8341e',
  'tools/verify_tactical_mission_clarity.mjs': '0140481466f7631c96b88891f175f830916873f9',
  'tools/verify_tactical_command_deck.mjs': 'd5fb05b1cde1d7064522bfe6b3a5d734d16c1ad5',
+ 'tools/verify_tactical_g1_browser.mjs': 'b525a21a33a615fe03a39a4d7e681182c16a8271',
 });
 for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
  assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);

@@ -35,7 +35,7 @@ try{
    assert(await page.getByText(/CURRENT · R/).isVisible(),'Current resolved effect is visible');
    assert(await page.getByText(/NEXT · R/).isVisible(),'Next resolved effect is visible');
    if(mode==='atlas')assert(await page.getByText('RADIUS 1 → 2',{exact:true}).isVisible());
-   else assert(await page.getByText(/≤50% HP before healing/).isVisible());
+   else assert(await page.locator('.tsa-inspector').getByText(/≤50% HP before healing/).first().isVisible());
   } else if(mode==='mastery'){
    await page.getByRole('button',{name:'SHADOW',exact:true}).click();assert(await page.getByLabel('Saved versus alternate Mastery').isVisible());
    assert(await page.getByText(/HEAL/).count()>0);
