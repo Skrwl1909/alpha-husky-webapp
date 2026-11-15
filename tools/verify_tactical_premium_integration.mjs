@@ -13,9 +13,9 @@ const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops
 // Last Howl leaves independently before using their historical source below.
 const lastHowlBase = '0378efb6817bd2b023d7d9b445197967d26a8668';
 const lastHowlBlobs = Object.freeze({
- 'index.html': '5c19435f175ed96e6af2878826f1cb4bb1e10c68',
- 'js/boot_loaders.js': 'f6fdae534060654e2a701d80161c01aca55d8668',
- 'js/tactical_ops.js': '731f8814804dcd4e429fab6c5d7f94a1c90075c8',
+ 'index.html': 'b993f459678bf92f6c48c7564babc16d79dbbb16',
+ 'js/boot_loaders.js': '990dbe309513f62a43bdef5e0812189de22e7d03',
+ 'js/tactical_ops.js': '5cb2d0140431ecab3c32ff990022cdfb3df313af',
  'tactical-ops-src/combat/battle.ts': '565c755a1b633a45c6467e7bd9ed087f8fc13ab4',
  'tactical-ops-src/combat/intentContract.ts': '97f3afc04170d4134b7fc47b9510da4a2331e47b',
  'tactical-ops-src/combat/lastHowlAuthority.ts': 'ebc8d7c3a50119f6395ab88e2e376343e4995131',
@@ -26,10 +26,11 @@ const lastHowlBlobs = Object.freeze({
  'tactical-ops-src/store/battleStore.ts': '60c1cc70e3f73f922536cfdfbd925516c8f94d46',
  'tactical-ops-src/styles.ts': '0f8d81d41f854ce542b71ebdb387180a318476f0',
  'tactical-ops-src/ui/App.tsx': '191e4043199da75c1b7bb4e414337655b3c2ed8d',
- 'tactical-ops-src/ui/Battle.tsx': '311c99bdb51601b901007d25ab4bdb1ec21871b2',
+ 'tactical-ops-src/ui/Battle.tsx': '8edf6ec8cc68b0fc5ea9bbf1be01a6e61f2047bb',
  'tactical-ops-src/ui/LastHowl.tsx': '232a14edea17504cb73f9ad1a8da7b29f386f696',
  'tactical-ops-src/ui/lastHowl.css': '8e049944066c91e77c5644eeaaa2c5e38c61f2a5',
- 'tactical-ops-src/version.ts': 'bdf40f0c239a258834bb91a2b613c02973bab235',
+ 'tactical-ops-src/version.ts': '5ea902fd0fb4a174f573a44877bee23c774fd6d8',
+ 'tools/verify_tactical_defeated_tile_hitbox.mjs': 'bc2cf45bb968257a4e867e7dd342a5c904a84a48',
  'tools/build_tactical_last_howl_engine_v1.mjs': '5b123122984f679558105025bf32effd6995773f',
  'tools/tactical_last_howl_engine_v1.ts': '189220902c80420e81858ab7d20b10e5ff7a6a55',
  'tools/verify_tactical_last_howl.mjs': '712d3f51471496d78cc7165e087184a5a5ddd052',
@@ -202,6 +203,23 @@ const approvedVeteranProgressionCombinedBlobs=Object.freeze({
   "js/tactical_ops.js": "2cb78c2e5ea79dcbacad4129f7d414ef6601abd6",
   "index.html": "052e0f13609fbf0be51a08d979b68f5278bf6932",
 });
+// Defeated-unit interaction fix: preserve the fading sprite while removing its
+// invisible hitbox. Pin only the reviewed source, shipped runtime and regression.
+const approvedDefeatedTileHitboxBlobs=Object.freeze({
+  "tactical-ops-src/ui/Battle.tsx": "c1cad1daa986aa501a63fc4b392435ab3679f670",
+  "tactical-ops-src/version.ts": "36771448252ee296f48d068f6b98a15be7dcef53",
+  "js/boot_loaders.js": "ddcb7fb5355b7a5d8ecc89fbc9d059b5d480c07c",
+  "js/tactical_ops.js": "7d830ed7e5cc4c5d8e2612883c5d3ef392285c4c",
+  "index.html": "5101ba7e7b0d99d659110bdf34fc193f9b0b2816",
+  "tools/verify_tactical_defeated_tile_hitbox.mjs": "bc2cf45bb968257a4e867e7dd342a5c904a84a48",
+});
+// The #293 mainline fix landed after the Last Howl branch diverged. Verify its
+// approved source at the merged main commit, then pin the combined HEAD above.
+const defeatedTileMain = '4ca501bd0d191a9d8fec0632446a5e3b7a00e61c';
+for (const [path, expected] of Object.entries(approvedDefeatedTileHitboxBlobs)) {
+ assert.equal(sourceBlob(git('show', `${defeatedTileMain}:${path}`)), expected,
+  'unreviewed defeated-tile mainline source: ' + path);
+}
 const approvedCurrentBlobs=Object.freeze({
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
@@ -883,4 +901,5 @@ assert(bundle.includes(version.match(/VERSION = "([^"]+)"/)[1]));
 assert(loader.includes(version.match(/CACHE_KEY = "([^"]+)"/)[1]));
 for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','New option unlocked'])assert(bundle.toLowerCase().includes(feature.toLowerCase()),`missing compiled feature: ${feature}`);
 assert(readFileSync('js/pet_quick_actions.js','utf8').includes('body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions'));
+execFileSync(process.execPath,['--test','tools/verify_tactical_defeated_tile_hitbox.mjs'],{stdio:'inherit'});
 console.log(`PASS integration provenance: ${preserved} unchanged source/test files, exact App union, no unrelated runtime changes, both feature sets and coherent version/cache in production`);
