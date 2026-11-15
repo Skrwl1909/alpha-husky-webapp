@@ -5038,15 +5038,17 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
   transform-origin:50% 82%;
 }
 @keyframes t-contact-recoil {
-  0%{transform:translateX(0) scale(1);filter:brightness(1);}
-  18%{transform:translateX(5px) rotate(3deg) scale(1.05);filter:brightness(1.8);}
-  52%{transform:translateX(-3px) rotate(-2deg) scale(.97);filter:brightness(1.25);}
-  100%{transform:translateX(0) rotate(0) scale(1);filter:brightness(1);}
+  0%{transform:translate(0,0) rotate(0) scale(1);filter:brightness(1);}
+  17%{transform:translate(var(--motion-recoil-x,5px),var(--motion-recoil-y,0px)) rotate(3deg) scale(1.045,.965);filter:brightness(1.65);}
+  46%{transform:translate(calc(var(--motion-recoil-x,5px) * -.32),calc(var(--motion-recoil-y,0px) * -.32)) rotate(-1.5deg) scale(.985,1.01);filter:brightness(1.20);}
+  78%{transform:translate(0,1px) rotate(0) scale(.998,1);filter:brightness(1.04);}
+  100%{transform:translate(0,0) rotate(0) scale(1);filter:brightness(1);}
 }
 @keyframes t-contact-collapse {
   0%{opacity:1;transform:translateY(0) rotate(0) scale(1);}
-  60%{opacity:.9;transform:translateY(8px) rotate(8deg) scale(.96);}
-  100%{opacity:.55;transform:translateY(15px) rotate(12deg) scale(.91);}
+  22%{opacity:1;transform:translate(3px,-2px) rotate(4deg) scale(1.035,.955);}
+  64%{opacity:.86;transform:translate(7px,9px) rotate(12deg) scale(1.07,.77);}
+  100%{opacity:.52;transform:translate(9px,15px) rotate(15deg) scale(1.09,.68);}
 }
 @media(prefers-reduced-motion:reduce) {
   #tacticalOpsRoot .t-token.hit-reacting img.body {animation:none!important;transform:none!important;}
@@ -5057,15 +5059,19 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 #tacticalOpsRoot .t-choreo-travel{position:absolute;inset:0;z-index:15;pointer-events:none;overflow:visible;--travel-ms:580ms;}
 #tacticalOpsRoot .t-choreo-travel .t-choreo-actor{
   position:absolute;left:var(--from-x);top:var(--from-y);width:clamp(42px,12%,110px);height:auto;
-  filter:drop-shadow(0 5px 10px #0009);transform:translate(-50%,-88%);
-  animation:t-choreo-dash var(--travel-ms) ease-in-out both;
+  filter:drop-shadow(0 5px 10px #0009);transform:translate(-50%,-88%);transform-origin:50% 88%;
+  animation:t-choreo-dash var(--travel-ms) linear both;
 }
 @keyframes t-choreo-dash{
-  0%{left:var(--from-x);top:var(--from-y);opacity:0;scale:.92;}
-  12%{opacity:.95;}
-  37%{left:var(--to-x);top:var(--to-y);opacity:1;scale:1.08;}
-  64%{left:var(--to-x);top:var(--to-y);opacity:.9;}
-  100%{left:var(--from-x);top:var(--from-y);opacity:0;scale:1;}
+  /* Accepted FX contact is at exactly 37% of its duration. */
+  0%{left:var(--from-x);top:var(--from-y);opacity:1;scale:1;rotate:0deg;}
+  14%{left:var(--from-x);top:calc(var(--from-y) + .55%);scale:1.06 .91;rotate:-3deg;}
+  21%{left:var(--from-x);top:var(--from-y);scale:.96 1.05;rotate:2deg;}
+  37%{left:var(--to-x);top:var(--to-y);scale:1.12 .96;rotate:5deg;}
+  49%{left:var(--to-x);top:var(--to-y);scale:1.04 1.01;rotate:1deg;}
+  61%{left:var(--to-x);top:var(--to-y);scale:1;rotate:0deg;}
+  94%{left:var(--from-x);top:var(--from-y);scale:.98;rotate:-1deg;}
+  100%{left:var(--from-x);top:var(--from-y);opacity:1;scale:1;rotate:0deg;}
 }
 #tacticalOpsRoot .t-choreo-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;}
 #tacticalOpsRoot .t-choreo-line line{stroke:#f5bf79;stroke-width:1.5;stroke-linecap:round;vector-effect:non-scaling-stroke;stroke-dasharray:8 100;animation:t-choreo-shot var(--travel-ms) ease-out both;filter:drop-shadow(0 0 4px #eab865);}
@@ -5075,16 +5081,36 @@ body:has(#tacticalOpsRoot[data-open="1"] .t-shell[data-screen="battle"]) #ahComm
 /* Choreography S4: one visible actor during confirmed travel. */
 #tacticalOpsRoot .t-token.travel-ghost img.body {visibility:hidden;}
 #tacticalOpsRoot .t-token.travel-ghost .t-ring {opacity:.5;}
-#tacticalOpsRoot .t-choreo-travel.melee .t-choreo-actor {animation-timing-function:cubic-bezier(.22,.72,.21,1);}
+#tacticalOpsRoot .t-choreo-travel.melee .t-choreo-actor {animation-timing-function:linear;}
 #tacticalOpsRoot .t-choreo-travel.ranged .t-choreo-line line {stroke-width:2;stroke-dasharray:12 100;}
 @media(prefers-reduced-motion:reduce){#tacticalOpsRoot .t-token.travel-ghost img.body {visibility:visible!important;}}
 
 /* S6: only confirmed hostile actions, pointer transparent; red danger tiles stay above. */
 #tacticalOpsRoot .t-hostile-scene{position:absolute;inset:0;z-index:15;pointer-events:none;overflow:visible;}
-#tacticalOpsRoot .t-hostile-scene img{position:absolute;left:var(--enemy-x);top:var(--enemy-y);width:clamp(42px,12%,104px);height:auto;transform:translate(-50%,-88%);animation:t-hostile-dash var(--enemy-duration) ease-in-out both;filter:drop-shadow(0 0 8px #eb715599);}
+#tacticalOpsRoot .t-hostile-scene img{position:absolute;left:var(--enemy-x);top:var(--enemy-y);width:clamp(42px,12%,104px);height:auto;transform:translate(-50%,-88%);transform-origin:50% 88%;animation:t-hostile-dash var(--enemy-duration) linear both;filter:drop-shadow(0 0 8px #eb715599);}
 #tacticalOpsRoot .t-hostile-heavy img{animation-name:t-hostile-heavy;}
-@keyframes t-hostile-dash{0%{left:var(--enemy-x);top:var(--enemy-y);opacity:0;scale:.85;}15%{opacity:1;}42%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1.06;}100%{left:var(--enemy-x);top:var(--enemy-y);opacity:0;}}
-@keyframes t-hostile-heavy{0%{left:var(--enemy-x);top:var(--enemy-y);opacity:0;scale:.85;}25%{opacity:1;scale:1.05;}49%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1.17;}100%{left:var(--enemy-x);top:var(--enemy-y);opacity:0;}}
+@keyframes t-hostile-dash{
+  /* EnemyScene reveals authoritative damage at 42%. */
+  0%{left:var(--enemy-x);top:var(--enemy-y);opacity:1;scale:1;rotate:0deg;}
+  17%{left:var(--enemy-x);top:calc(var(--enemy-y) + .5%);scale:1.07 .91;rotate:3deg;}
+  24%{left:var(--enemy-x);top:var(--enemy-y);scale:.97 1.06;rotate:-2deg;}
+  42%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1.10 .97;rotate:-5deg;}
+  54%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1.03;rotate:-1deg;}
+  66%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1;rotate:0deg;}
+  96%{left:var(--enemy-x);top:var(--enemy-y);scale:.98;}
+  100%{left:var(--enemy-x);top:var(--enemy-y);opacity:1;scale:1;rotate:0deg;}
+}
+@keyframes t-hostile-heavy{
+  /* Heavy attack uses the existing later 49% confirmed contact. */
+  0%{left:var(--enemy-x);top:var(--enemy-y);opacity:1;scale:1;rotate:0deg;}
+  22%{left:var(--enemy-x);top:calc(var(--enemy-y) + .7%);scale:1.11 .89;rotate:4deg;}
+  33%{left:var(--enemy-x);top:var(--enemy-y);scale:1.05 1.04;rotate:-3deg;}
+  49%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1.19 .94;rotate:-7deg;}
+  61%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1.07;rotate:-2deg;}
+  72%{left:var(--enemy-target-x);top:var(--enemy-target-y);scale:1;rotate:0deg;}
+  96%{left:var(--enemy-x);top:var(--enemy-y);scale:.98;}
+  100%{left:var(--enemy-x);top:var(--enemy-y);opacity:1;scale:1;rotate:0deg;}
+}
 #tacticalOpsRoot .t-hostile-scene svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;}
 #tacticalOpsRoot .t-hostile-scene line{stroke:#f7776c;stroke-width:2;vector-effect:non-scaling-stroke;stroke-dasharray:10 100;animation:t-hostile-beam var(--enemy-duration) ease-out both;filter:drop-shadow(0 0 4px #f4544b);}
 #tacticalOpsRoot .t-hostile-jam line{stroke:#d5a0ff;stroke-dasharray:3 8;}

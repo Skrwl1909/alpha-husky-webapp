@@ -23,7 +23,8 @@
    are the strongest transient signal, except persistent enemy-danger tiles. */
 #tacticalOpsRoot .t-choreo-travel .t-choreo-actor {
   filter: drop-shadow(0 7px 12px rgba(0,0,0,.66));
-  animation-timing-function: var(--t8-ease);
+  /* Exact 37% contact keyframe must not drift behind the HP reveal. */
+  animation-timing-function: linear;
 }
 #tacticalOpsRoot .t-hostile-scene img {
   filter: drop-shadow(0 7px 12px rgba(0,0,0,.66)) drop-shadow(0 0 7px rgba(235,112,91,.28));
@@ -157,4 +158,65 @@
 @media (prefers-reduced-motion:reduce) {
   #tacticalOpsRoot .t-move-trace {visibility:hidden}
   #tacticalOpsRoot .t-battle .t-objective-summary[data-objective-state] {animation:none}
+}
+
+/* Combat Motion Foundation V1. The grid remains engine-owned: only images
+   animate, and both attack overlays are pointer-transparent. */
+#tacticalOpsRoot .t-token.is-moving:not(.attacking):not(.hit-reacting):not(.defeated) img.body {
+  transform-origin:50% 92%;
+  animation:t-motion-footfall .28s cubic-bezier(.22,.68,.25,1) both;
+}
+#tacticalOpsRoot .t-token.is-moving.directional-alpha .t-alpha-ground-shadow {
+  animation:t-motion-ground .28s ease-out both;
+}
+@keyframes t-motion-footfall {
+  0%{transform:translateY(0) rotate(0) scale(1);}
+  22%{transform:translateY(2px) rotate(-2deg) scale(1.035,.945);}
+  53%{transform:translateY(-3px) rotate(1.5deg) scale(.99,1.045);}
+  79%{transform:translateY(1px) rotate(-.5deg) scale(1.02,.975);}
+  100%{transform:translateY(0) rotate(0) scale(1);}
+}
+@keyframes t-motion-ground {
+  0%,100%{opacity:.8;scale:1;}
+  48%{opacity:.55;scale:.83;}
+}
+
+/* In-place wind-up is reserved for ranged/support actions. A traveling
+   attacker is represented solely by its accepted-event motion overlay. */
+#tacticalOpsRoot .t-token.attacking:not(.travel-ghost):not(.hit-reacting):not(.defeated) img.body {
+  transform-origin:50% 88%;
+  animation:t-motion-in-place .42s cubic-bezier(.18,.72,.26,1) both;
+}
+@keyframes t-motion-in-place {
+  0%,100%{transform:translateY(0) rotate(0) scale(1);}
+  27%{transform:translateY(2px) rotate(-3deg) scale(1.045,.94);}
+  55%{transform:translateY(-3px) rotate(2deg) scale(.99,1.06);}
+  78%{transform:translateY(0) rotate(0) scale(1);}
+}
+
+/* Match overlay silhouettes to their stationary counterparts; the original
+   image is hidden during confirmed melee travel, not moved or duplicated. */
+#tacticalOpsRoot .t-choreo-travel .t-motion-actor,
+#tacticalOpsRoot .t-hostile-scene img.t-motion-actor {
+  transform-origin:50% 88%;
+  backface-visibility:hidden;
+  pointer-events:none;
+  will-change:left,top,scale,rotate;
+}
+#tacticalOpsRoot .t-choreo-travel img.t-motion-alpha,
+#tacticalOpsRoot .t-hostile-scene img.t-motion-alpha {width:15.2%;min-width:54px;max-width:148px;}
+#tacticalOpsRoot .t-choreo-travel img.t-motion-hound,
+#tacticalOpsRoot .t-hostile-scene img.t-motion-hound {width:14.5%;min-width:52px;max-width:140px;}
+#tacticalOpsRoot .t-choreo-travel img.t-motion-leader,
+#tacticalOpsRoot .t-hostile-scene img.t-motion-leader {width:16.5%;min-width:58px;max-width:160px;}
+#tacticalOpsRoot .t-token.travel-ghost .t-ring {opacity:.3;}
+
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-token.is-moving img.body,
+  #tacticalOpsRoot .t-token.attacking img.body,
+  #tacticalOpsRoot .t-token.is-moving .t-alpha-ground-shadow {
+    animation:none!important;transform:none!important;
+  }
+  #tacticalOpsRoot .t-choreo-travel .t-motion-actor,
+  #tacticalOpsRoot .t-hostile-scene img.t-motion-actor {will-change:auto;}
 }

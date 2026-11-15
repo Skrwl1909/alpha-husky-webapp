@@ -170,6 +170,7 @@ function Token({
   shownHp,
   facingTarget,
   idleTarget,
+  hitFrom,
 }: {
   unit: CombatUnit;
   selected: boolean;
@@ -185,6 +186,7 @@ function Token({
   shownHp?: number;
   facingTarget?: FacingCell;
   idleTarget?: FacingCell;
+  hitFrom?: FacingCell;
 }) {
   const pos = fieldPercent(unit.c, unit.r);
   const hp = shownHp ?? unit.hp;
@@ -195,6 +197,7 @@ function Token({
   const directionalAlpha = allowDirectional(unit, identity);
   const directionalHound = !!houndView(unit, "front");
   const [artFailed, setArtFailed] = useState(false);
+  const [moving, setMoving] = useState(false);
   const fieldLabel = interceptTarget ? "COURIER" : signalCarrier ? "TRACE TARGET" : unit.role === "leader" ? "COMMANDER" : unit.archetype;
   const className = [
     "t-token",
@@ -202,6 +205,7 @@ function Token({
     roleClass(unit),
     unit.id.startsWith("pet:") ? "pet-actor" : "",
     arriving ? "is-arriving" : "",
+    moving ? "is-moving" : "",
     directionalAlpha && !artFailed ? "directional-alpha" : "",
     directionalHound && !artFailed ? "directional-hound" : "",
     unit.defeated && hp<=0 ? "defeated" : "",
@@ -229,14 +233,18 @@ function Token({
     const previous = previousCell.current;
     const current = { c: unit.c, r: unit.r };
     previousCell.current = current;
-    if (!directional) {
-      setMoveFacing(undefined);
+    if (previous.c === current.c && previous.r === current.r) {
+      if (!directional) setMoveFacing(undefined);
       return;
     }
-    if (previous.c === current.c && previous.r === current.r) return;
-    setMoveFacing(facingToward(previous, current, "front"));
-    // Match the existing .t-token left/top travel transition.
-    const timer = window.setTimeout(() => setMoveFacing(undefined), 280);
+    // Only animate displacement already accepted by the engine. The token's
+    // legal tile and separate touch target remain owned by the battle state.
+    setMoving(true);
+    if (directional) setMoveFacing(facingToward(previous, current, "front"));
+    const timer = window.setTimeout(() => {
+      setMoving(false);
+      setMoveFacing(undefined);
+    }, 280);
     return () => window.clearTimeout(timer);
   }, [directional, unit.c, unit.r]);
   const lookAt = facingTarget ?? idleTarget;
@@ -247,11 +255,14 @@ function Token({
   const src = !artFailed && directionalAlpha ? alphaView(facing)
     : !artFailed && directionalHound ? houndView(unit, facing)!
     : attacking && unit.attackSprite ? unit.attackSprite : unit.sprite;
+  const recoilX = hitFrom ? Math.sign(unit.c - hitFrom.c) * 7 : 0;
+  const recoilY = hitFrom ? Math.sign(unit.r - hitFrom.r) * 5 : 0;
   return (
     <>
     <div
       className={className}
-      style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0) }}
+      style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0),
+        "--motion-recoil-x": `${recoilX}px`, "--motion-recoil-y": `${recoilY}px` } as CSSProperties}
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
       {targeting && validTarget && !unit.defeated ? (
@@ -603,6 +614,9 @@ export function BattleScreen() {
   const enemyScene = useBattleStore((s) => s.enemyScene);
   const displayHp = useBattleStore((s) => s.displayHp);
   const travelActors = new Set(combatFx.filter(fx=>combatFxTravelKind(fx.name)==="dash" && fx.actorId).map(fx=>fx.actorId));
+  // The hostile attack scene renders the moving actor. Hide its stationary
+  // sprite for that scene only; ranged attackers keep their board presence.
+  if (enemyScene && (enemyScene.style === "melee" || enemyScene.style === "heavy")) travelActors.add(enemyScene.actorId);
   const banner = useBattleStore((s) => s.banner);
   const floats = useBattleStore((s) => s.floats);
   const consequences = useBattleStore((s) => s.consequences);
@@ -778,6 +792,8 @@ export function BattleScreen() {
                 (f.terminal || (f.targetId && f.targetId !== u.id))) : undefined;
               const facingTarget = enemyScene?.actorId === u.id ? enemyScene.to
                 : actionFx?.terminal ?? units.find(target => target.id === actionFx?.targetId);
+              const hitFx = impactId === u.id ? combatFx.find(fx => fx.targetId === u.id && fx.from) : undefined;
+              const hitFrom = impactId === u.id ? hitFx?.from ?? (enemyScene?.to.c === u.c && enemyScene?.to.r === u.r ? enemyScene.from : undefined) : undefined;
               return (
                 <Token
                   key={u.id}
@@ -785,10 +801,11 @@ export function BattleScreen() {
                   selected={u.id === activeId}
                   validTarget={presentation.targetIds.includes(u.id)}
                   targeting={presentation.targeting}
-                  attacking={u.id === attackingId}
+                  attacking={u.id === attackingId || enemyScene?.actorId === u.id}
                   hitReacting={u.id === impactId && impactKey > 0}
                   shownHp={displayHp[u.id]}
                   travelGhost={travelActors.has(u.id)}
+                  hitFrom={hitFrom}
                   inspecting={u.id === inspectId}
                   signalCarrier={u.id === signalCarrierId}
                   interceptTarget={objective?.type === "INTERCEPT" && u.id === objective.targetId}
@@ -803,7 +820,7 @@ export function BattleScreen() {
             const actor=units.find(u=>u.id===enemyScene.actorId);
             const style={"--enemy-x":from.x+"%","--enemy-y":from.y+"%","--enemy-target-x":to.x+"%","--enemy-target-y":to.y+"%","--enemy-duration":enemyScene.durationMs+"ms"} as CSSProperties;
             return <div className={`t-hostile-scene t-hostile-${enemyScene.style}`} key={enemyScene.id} style={style} aria-hidden="true">
-              {["melee","heavy"].includes(enemyScene.style)&&actor?<img src={houndView(actor,facingToward(enemyScene.from,enemyScene.to,"front"))||actor.attackSprite||actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
+              {["melee","heavy"].includes(enemyScene.style)&&actor?<img className={`t-motion-actor t-motion-${roleClass(actor) || "hound"}`} src={houndView(actor,facingToward(enemyScene.from,enemyScene.to,"front"))||actor.attackSprite||actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src=actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
             </div>;
           })()}
           {presentation.primaryFx.map(effect=>{
@@ -817,7 +834,7 @@ export function BattleScreen() {
             return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
               style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
               {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:
-                <img className="t-choreo-actor" src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : houndView(performer,facingToward(effect.from,receiver,"front")) || performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)||houndView(performer,"front")){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
+                <img className={`t-choreo-actor t-motion-actor t-motion-${roleClass(performer) || "ally"}`} src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : houndView(performer,facingToward(effect.from,receiver,"front")) || performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)||houndView(performer,"front")){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
             </div>;
           })}
           {presentation.primaryFx.map(effect=>{
