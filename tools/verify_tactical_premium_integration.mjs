@@ -60,6 +60,18 @@ const approvedCombatMotionBlobs = Object.freeze({
  'tactical-ops-src/version.ts': 'c9b540bc8c3be27717f3f9f4a7851cd0180ef9a1',
  'tools/verify_tactical_combat_motion_v1.mjs': '3c215f35c85f3488569ea4dace12949e77efa624',
 });
+// Enemy Combat Identity Art Kit V1: exact binary asset approvals. New poses are
+// additive and do not replace any of the original four-direction hound sprites.
+const approvedEnemyPoseAssets = Object.freeze({
+ 'images/tactical_ops/hounds/motion/skirmisher_lunge.webp': 'ed5f71bc0ecaf70293347fda90707b27ef043e96',
+ 'images/tactical_ops/hounds/motion/bulwark_heavy_impact.webp': '3b54719371ce3689557227fe1dfa37ef0571de4e',
+ 'images/tactical_ops/hounds/motion/marksman_firing.webp': '6041353ed173b0aa41b9d1a20a90d21e88032cef',
+});
+for (const [path, expected] of Object.entries(approvedEnemyPoseAssets)) {
+ assert(existsSync(path), 'missing reviewed enemy pose asset: ' + path);
+ assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed enemy pose: ' + path);
+ assert.equal(git('hash-object', path).trim(), expected, 'unreviewed working enemy pose: ' + path);
+}
 for (const [path, expected] of Object.entries(lastHowlBlobs)) {
  assert.equal(git('rev-parse', `${lastHowlV1Release}:${path}`).trim(), expected, 'unreviewed V1 source: ' + path);
 }
@@ -76,7 +88,8 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
 }
 for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path) ||
-  Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path), 'unreviewed Last Howl path: ' + path);
+  Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path) ||
+  Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
  if (!Object.hasOwn(lastHowlBlobs, path)) return readLocalFile(path, encoding);
