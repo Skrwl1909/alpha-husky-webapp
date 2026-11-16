@@ -31,6 +31,9 @@ try {
   const target = { heroId: "ally-02", skillId: "u02-burst", rank: 1 };
   const html = renderToStaticMarkup(React.createElement(SignalAtlas, { onClose: () => {}, target }));
   assert.match(html, /class="tsa-identity"/);
+  assert.match(html, /class="tsa-forge-stage"/, "Approved visual direction needs a central operative blueprint");
+  assert.match(html, /tsa-identity-bezel/, "Use the existing forged relay core artwork");
+  assert.match(html, /tsa-blueprint-overline/);
   assert.match(html, /CNC combat identity/);
   const firstVisit = renderToStaticMarkup(React.createElement(SignalAtlas, { onClose: () => {} }));
   assert.match(firstVisit, /LIVE SKILL TREE/);
@@ -47,10 +50,13 @@ try {
   assert.equal(wide.effects.find(e => e.kind === "damage").multiplier, 1);
   assert.equal(wide.radius, 1);
   const source = readFileSync("tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx", "utf8");
-  for (const fragment of ["tsa-doctrine-card", "tsa-doctrine-choices", "tsa-doctrine-jump", "doctrineRef.current?.scrollIntoView", "DoctrineFootprint", "CURRENTLY SAVED", "SELECT DOCTRINE · FREE", "An accepted mission keeps its original variant", "Math.round(damage*100)"]) {
+  for (const fragment of ["is-doctrine-stage", "tsa-doctrine-back", "setDoctrineStage(true)", "tsa-doctrine-card", "tsa-doctrine-choices", "tsa-doctrine-jump", "doctrineRef.current?.scrollIntoView", "DoctrineFootprint", "CURRENTLY SAVED", "SELECT DOCTRINE · FREE", "An accepted mission keeps its original variant", "Math.round(damage*100)"]) {
     assert(source.includes(fragment), `Missing production doctrine UI: ${fragment}`);
   }
   const css = readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css", "utf8");
+  assert(css.includes("#tacticalOpsRoot .tsa-forge-stage"));
+  assert(css.includes("#tacticalOpsRoot .tsa-focus.is-doctrine-stage"));
+  assert(css.includes("@media (max-width:560px)"));
   assert(css.includes("@media (max-width:380px)"));
   assert(css.includes("@media (prefers-reduced-motion:reduce)"));
   assert(css.includes("@media (forced-colors:active)"));
