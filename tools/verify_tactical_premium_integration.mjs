@@ -163,7 +163,7 @@ const approvedSignalAtlasFidelityBlobs = Object.freeze({
  'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': 'c23f7a760eedcb4865bfc3763630424ff04f1137',
  'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'e2d688ce4372755e31b55b5c2dec1989435d5472',
  'tactical-ops-src/version.ts': '082d474f6d0c23997b517b61ad59e4f844e72f89',
- 'tools/verify_tactical_signal_atlas_p3_browser.mjs': 'fa59bafe15df737bf37ceb0f7ab8bf2256393160',
+ 'tools/verify_tactical_signal_atlas_p3_browser.mjs': '262b834ecc2e54e490fa78bf42a8f80b07deade2',
  'tools/verify_tactical_signal_atlas_premium.mjs': '6487f6b0466173a2252adf81a481a0df9f3e6e5c',
 });
 git('merge-base', '--is-ancestor', m2Base, 'HEAD');
