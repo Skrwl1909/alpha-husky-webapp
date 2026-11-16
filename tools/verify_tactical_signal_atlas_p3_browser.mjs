@@ -55,6 +55,11 @@ for (const width of [320,390,430]) {
  await load(width,'doctrine');
  await page.getByRole('button',{name:/^CNC/}).first().click();
  assert(await page.locator('.tsa-forge-stage').isVisible(),'Concept 02 operative blueprint visible');
+ const portrait=await page.locator('.tsa-forge-stage .tsa-identity-portrait').boundingBox();
+ assert(portrait&&portrait.width>=148&&portrait.height>=148,'Concept 02 keeps a readable central portrait at '+width+'px');
+ assert.equal(await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button').count(),2,'Both real specialization choices visible');
+ const skillNode=await page.locator('.tsa-node').first().boundingBox();
+ assert(skillNode&&skillNode.width>=60&&skillNode.height>=60,'Live rank nodes remain legible at '+width+'px');
  await layout();await shot(width+'-concept02-cnc-blueprint');
  const before=await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression));
  await page.getByRole('button',{name:/LUNGE FIELD DOCTRINE/}).first().click();
