@@ -29,6 +29,25 @@ const RESERVES = [
   {id:"future-d", title:"FUTURE 04",x:86,y:86},
 ];
 
+/** A schematic, not a second combat simulator. Geometry follows the resolved skill. */
+function DoctrineFootprint({ wide, centered, range }: { wide: boolean; centered: boolean; range: number }) {
+  return <div className={`tsa-footprint ${wide ? "is-wide" : "is-heavy"}`} aria-hidden="true">
+    {Array.from({ length: 25 }, (_, index) => {
+      const x = index % 5, y = Math.floor(index / 5);
+      const player = centered ? x === 2 && y === 2 : x === 0 && y === 2;
+      const aimX = centered ? 2 : wide ? 1 : Math.min(3, Math.max(1, range));
+      const aimY = 2;
+      const affected = wide && Math.max(Math.abs(x - aimX), Math.abs(y - aimY)) <= 1 && !player;
+      const target = !centered && x === aimX && y === aimY;
+      const enemy = target || wide && (centered ? (x === 3 && y === 1 || x === 1 && y === 3) : x === 2 && y === 1);
+      const route = !wide && y === 2 && x > 0 && x < aimX;
+      return <span key={index} className={`tsa-footprint-tile${affected ? " is-affected" : ""}${route ? " is-route" : ""}${player ? " is-player" : ""}${enemy ? " is-enemy" : ""}${target ? " is-target" : ""}`}>
+        {player ? "◆" : enemy ? "✕" : route ? "›" : ""}
+      </span>;
+    })}
+  </div>;
+}
+
 export function SignalAtlas({ onClose, target }: { onClose: () => void; target?: ReturnType<typeof availableAtlasUpgrade> }) {
   const progression = useBattleStore(s=>s.progression);
   const growth = progression?.playerGrowth;
@@ -163,6 +182,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
         <img src={UNIT_DEFS[id].portrait} onError={atlasPortraitFallback} alt=""/>
         <span><b>{HERO_TITLES[id]}</b><small>{HERO_SUBTITLES[id]}</small></span></button>)}
     </div>
+    <div className="tsa-signal-rule" aria-hidden="true"><span/>SIGNAL LINK STABLE<span/></div>
     {!growth?<p className="tsa-banner" role="status">Waiting for authenticated Skillbook progression. No skills can be purchased offline.</p>:null}
     {activeRun?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>ACTIVE RUN · COMPLETE CURRENT MISSION</strong><br/>Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged.</p>:null}
     <div className="tsa-nav" role="group" aria-label="Skillbook view">
@@ -193,7 +213,12 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
       <button type="button" className="tsa-future-toggle" disabled={unavailable} aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
       {showFuture?<p className="tsa-explain">This atlas can accept additional sectors without changing existing skill IDs. Grey markers are design space only—not earnable abilities, locked missions or promised rewards.</p>:null}
     </div>:<div className="tsa-focus">
-      <div className="tsa-focus-heading"><div><span className="tsa-eyebrow">{HERO_TITLES[heroId]} / {sector.title} SECTOR</span><h3>{sector.title} NETWORK</h3><small>{sector.description} · {sector.skillIds.length} skills / 3 per hero</small></div><button type="button" onClick={()=>setView("atlas")} disabled={unavailable}>← ATLAS</button></div>
+      <div className="tsa-focus-heading"><div><span className="tsa-eyebrow">{HERO_TITLES[heroId]} / {sector.title} SECTOR</span><h3>{sector.title} NETWORK</h3><small>{sector.description} · {sector.skillIds.length} real combat skills</small></div><button type="button" onClick={()=>setView("atlas")} disabled={unavailable}>← ATLAS</button></div>
+      <div className="tsa-identity" aria-label={`${HERO_TITLES[heroId]} combat identity`}>
+        <div className="tsa-identity-portrait"><img src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/></div>
+        <div className="tsa-identity-copy"><span className="tsa-eyebrow">OPERATIVE / SKILL PROFILE</span><strong>{HERO_TITLES[heroId]}</strong><span>{hero?.discipline ? `${hero.discipline.toUpperCase()} · RECORDED` : "CHOOSE A DISCIPLINE"}</span></div>
+        <div className="tsa-identity-progress"><strong>{sector.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}<small>/{sector.skillIds.length*2}</small></strong><span>RANKS SAVED</span></div>
+      </div>
       <div className="tsa-sector-switch" role="group" aria-label="Choose live sector">{sectors.map(s=><button type="button" key={s.id} aria-pressed={s.id===sector.id} disabled={unavailable} onClick={()=>openSector(s)}>{s.title}<small>{s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2} RECORDED</small></button>)}</div>
       <div className="tsa-disciplines" role="group" aria-label="Choose specialization preview">
         {HERO_PATHS[heroId].map(p=><button key={p} type="button" aria-pressed={chosenPath===p} disabled={unavailable}
@@ -226,7 +251,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
           </div>;
         })}
       </div>
-      <section ref={inspectorRef} className={`tsa-inspector ${node ? "has-selection" : ""}`} aria-label="Skill node inspection" aria-live="polite">
+      <section ref={inspectorRef} className={`tsa-inspector ${node ? "has-selection" : "is-prompt"}`} aria-label="Skill node inspection" aria-live="polite">
         {node ? <><span className="tsa-eyebrow">{getSkill(node.skillId).name} / {node.rank===0?"BASE":`RANK ${node.rank===1?"I":"II"}`}</span>
           <h3>{node.title}</h3><div className="tsa-saved-rank">SAVED RANK {purchased[node.skillId]||0} / 2 · {node.rank===0?"BASE ACTION":`INSPECTING RANK ${node.rank}`}</div><p>{node.reason}</p>
           {currentSkill ? <p><b>CURRENT · R{currentSkill.rank}</b>{currentSkill.discipline ? ` · ${currentSkill.discipline.toUpperCase()}` : ""}
@@ -237,30 +262,38 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
           {node.changes.length?<div className="tsa-deltas">{node.changes.map(c=><strong key={c}>{c}</strong>)}</div>:null}
           <div className="tsa-inspector-bottom"><span>{node.rank===0?"ALREADY OWNED":node.state==="recorded"||node.state==="maxed"?"SERVER RECORDED":node.changes.length?"COST: 1 SKILL POINT":""}</span>
           <button type="button" disabled={!canBuy} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("upgrade")}>{saving?"SAVING…":node.state==="active-run"?"COMPLETE CURRENT MISSION":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
-        </>:<><span className="tsa-eyebrow">SELECT A NODE</span><h3>BUILD YOUR COMBAT IDENTITY</h3><p>Tap a rank to inspect its real effect, prerequisite and server ownership before spending a point.</p></>}
+        </>:<><span className="tsa-eyebrow">◈ SELECT A SKILL NODE</span><p>Tap any rank to inspect its effect, requirements and saved progression.</p></>}
       </section>
       {showDoctrine && <section className="tsa-doctrine" aria-label="Lunge field doctrine">
-        <h3>Lunge field doctrine</h3>
-        <p>Requires Pursuer Lunge Rank I. Switching costs 0 skill points.</p>
+        <div className="tsa-doctrine-heading"><div><span className="tsa-eyebrow">PURSUIT / A2 LUNGE</span><h3>LUNGE FIELD DOCTRINE</h3><p>Two tactics. One saved choice. <strong>0 skill points</strong> to switch.</p></div><span className="tsa-doctrine-insignia" aria-hidden="true">⌁</span></div>
+        <p className="tsa-doctrine-requirement">{doctrineEligible ? "✓ PURSUER LUNGE RANK I UNLOCKED" : "◈ REQUIRES PURSUER LUNGE RANK I"} <span>· Applies to your next accepted run</span></p>
         {doctrineLocked && <p role="status">Finish the active run to switch.</p>}
+        <div className="tsa-doctrine-choices">
         {(["heavy", WIDE_LUNGE] as const).map(choice => {
           const selected = (hero.lungeDoctrine ?? "heavy") === choice;
           const previewHero = { ...hero, discipline: "pursuer" as const,
             ranks: { ...hero.ranks, "u02-burst": hero.ranks["u02-burst"] || 1 },
             lungeDoctrine: choice === WIDE_LUNGE ? WIDE_LUNGE : undefined };
           const skill = resolveGrowthSkill(growthPreviewBase("u02-burst", progression), previewHero);
-          const effect = skillEffectView(skill, previewHero);
           const damage = skill.effects.find(item => item.kind === "damage")?.multiplier;
-          return <div className="tsa-doctrine-option" key={choice}>
-            <button type="button" aria-pressed={selected} disabled={selected || !doctrineEligible || doctrineLocked || unavailable}
-              onClick={() => void commitDoctrine(choice)}>
-              {choice === "heavy" ? "Heavy Lunge" : "Wide Lunge"}{selected ? " · Selected" : ""}
+          const wide = choice === WIDE_LUNGE;
+          const centered = wide && skill.targetType === "ENEMY_AOE";
+          const locked = !doctrineEligible || doctrineLocked || unavailable;
+          const title = wide ? "Wide Lunge" : "Heavy Lunge";
+          return <div className={`tsa-doctrine-option ${wide ? "is-wide" : "is-heavy"} ${selected ? "is-selected" : ""}`} key={choice}>
+            <button type="button" className="tsa-doctrine-card" aria-label={`${title}${selected ? " · Selected" : ""}`} aria-pressed={selected}
+              disabled={selected || locked} onClick={() => void commitDoctrine(choice)}>
+              <span className="tsa-doctrine-card-top"><span className="tsa-doctrine-art"><img src={tacticalActionImageForSkill("u02-burst") || ""} onError={hideArt} alt=""/></span><span className="tsa-doctrine-card-title"><strong>{title.toUpperCase()}</strong><small>{wide ? centered ? "CLOSE-RANGE SWEEP" : "MULTI-TARGET STRIKE" : "PRECISION FINISHER"}</small></span><span className="tsa-doctrine-badge">{selected ? "✓ SELECTED" : locked ? "◇ LOCKED" : "＋ CHOOSE"}</span></span>
+              <span className="tsa-doctrine-specs"><span>{wide ? centered ? "AROUND CNC" : "ADJACENT AIM" : `RANGE ${skill.maxRange}`}</span><span>{typeof damage === "number" ? `${Math.round(damage*100)}%` : "—"} · {wide ? "AREA" : "SINGLE"}</span></span>
+              <DoctrineFootprint wide={wide} centered={centered} range={skill.maxRange}/>
+              <span className="tsa-doctrine-card-desc">{wide ? skill.desc : "Hit one priority enemy harder. Trade away the area coverage of Wide Lunge."}</span>
+              <span className="tsa-doctrine-card-footer">{selected ? "CURRENTLY SAVED" : !doctrineEligible ? "UNLOCK WITH PURSUER LUNGE RANK I" : doctrineLocked ? "COMPLETE CURRENT RUN TO SWITCH" : unavailable ? "WAITING FOR SERVER" : "SELECT DOCTRINE · FREE"}</span>
             </button>
-            <p>{effect.geometry} · {damage}× per target{effect.effects.length ? ` · ${effect.effects.join(" · ")}` : ""}</p>
-            <p>{choice === "heavy" ? "Use the stronger hit to finish a priority target." : skill.desc}</p>
           </div>;
         })}
-        {doctrineFeedback && <p role="status">{doctrineFeedback}</p>}
+        </div>
+        <p className="tsa-doctrine-truth">◈ The server records your choice. An accepted mission keeps its original variant, even after resuming.</p>
+        {doctrineFeedback && <p className="tsa-doctrine-receipt" role="status">{doctrineFeedback}</p>}
       </section>}
       <div className="tsa-secondary"><button type="button" disabled={!canRespec} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("respec")}>{hero?.respecUsed?"ONE-TIME RESET USED":"RESET THIS HERO · ONCE FREE"}</button><small>Pack Mastery remains separate.</small></div>
     </div>}
