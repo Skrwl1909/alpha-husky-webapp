@@ -113,6 +113,9 @@ try{
   assert.equal(await panel.count(),0,'older backend hides the doctrine');
   const refresh=()=>page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
   await page.evaluate(()=>fixture.doctrine(0));await refresh();
+  assert(await panel.isHidden(),'Doctrine choices are reserved for their dedicated stage');
+  await page.getByRole('button',{name:/LUNGE FIELD DOCTRINE/}).first().click();
+  await panel.waitFor({state:'visible'});
   const wide=panel.getByRole('button',{name:'Wide Lunge',exact:true});
   await wide.waitFor();
   assert(await wide.isDisabled(),'R0 cannot select');
