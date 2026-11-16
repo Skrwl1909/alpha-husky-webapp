@@ -128,13 +128,36 @@ const approvedM2Blobs = Object.freeze({
  'tools/verify_tactical_m2_wide_lunge.mjs': '1ce797384a6ba6d0f896e310fedccd3f9e8e5d4c',
  'tools/verify_tactical_signal_atlas_default_browser.mjs': '8cbe38cd4b5e080a6fe8b29eceafc896cdf01e92',
 });
+// Signal Atlas Premium V1 is a visual-only descendant of merged #302.
+// Keep all historical M2 approvals immutable; pin the seven current leaves
+// separately so CI can reject unrelated changes without freezing the UI.
+const signalAtlasPremiumBase = 'fec9422a265ac455a05b8318e426100c89f32097';
+const approvedSignalAtlasPremiumBlobs = Object.freeze({
+ 'js/boot_loaders.js': 'fcb1ec3009b9501f08496f7239b0c2b19527c36c',
+ 'js/tactical_ops.js': 'b6a5d6d03cbadd8b6943c926e14949bcb82cb1c7',
+ 'tactical-ops-src/styles.ts': 'aa3f6791a7a84cdb3ce3313d4113383474849dd6',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '607aa011d27398766618939fff59e6a5c7802fed',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'f60c9047cc03a3222e3900cc0ef80dffac3571b7',
+ 'tactical-ops-src/version.ts': 'a652b7adc7707af494e64d4e3ea3f7763ef5120d',
+ 'tools/verify_tactical_signal_atlas_premium.mjs': 'de669670c22d5161c017f0bd72832d4023fb89f8',
+});
 git('merge-base', '--is-ancestor', m2Base, 'HEAD');
+git('merge-base', '--is-ancestor', signalAtlasPremiumBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', m2Base).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path), 'unreviewed M2 path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path), 'unreviewed M2 descendant path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedM2Blobs)) {
- assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed M2 source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), expected, 'unreviewed working M2 source: ' + path);
+ const baseline = Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : 'HEAD';
+ assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical M2 source: ' + path);
+ const current = approvedSignalAtlasPremiumBlobs[path] ?? expected;
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), current, 'unreviewed working M2 descendant: ' + path);
+}
+for (const path of git('diff', '--name-only', '--no-renames', signalAtlasPremiumBase).trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
+}
+for (const [path, expected] of Object.entries(approvedSignalAtlasPremiumBlobs)) {
+ assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed Signal Atlas Premium source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), expected, 'unreviewed working Signal Atlas Premium source: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
  assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);
@@ -164,7 +187,8 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  }
  // New reviewed blobs pin Git bytes exactly; the historical V1 pins retain
  // their original LF-normalization policy (notably tactical.css is CRLF).
- const rawSource = Object.hasOwn(approvedM2Blobs, path) ? git('show', `${m2Base}:${path}`) : readLocalFile(path, 'utf8');
+ const rawSource = Object.hasOwn(approvedM2Blobs, path) ? git('show', `${m2Base}:${path}`) :
+  Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? git('show', `${signalAtlasPremiumBase}:${path}`) : readLocalFile(path, 'utf8');
  const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
   Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) || Object.hasOwn(approvedMasteryEffectBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
@@ -178,7 +202,8 @@ for (const path of git('diff','--name-only','--no-renames',lastHowlBase,m2Base).
   Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
- const baseline = Object.hasOwn(lastHowlBlobs, path) ? lastHowlBase : Object.hasOwn(approvedM2Blobs, path) ? m2Base : null;
+ const baseline = Object.hasOwn(lastHowlBlobs, path) ? lastHowlBase : Object.hasOwn(approvedM2Blobs, path) ? m2Base :
+  Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : null;
  if (!baseline) return readLocalFile(path, encoding);
  const historical = git('show', `${baseline}:${path}`);
  return encoding ? historical : Buffer.from(historical);

@@ -1,6 +1,7 @@
 /** Host injects one CSS string, including the Atlas module. No separate CSS file is loaded. */
 import BASE_CSS from "./tactical.css?raw";
 import SIGNAL_ATLAS_CSS from "./ui/signalAtlas/signalAtlas.css?raw";
+import SIGNAL_ATLAS_PREMIUM_CSS from "./ui/signalAtlas/signalAtlasPremium.css?raw";
 import COMBAT_COHESION_CSS from "./ui/combatCohesion.css?raw";
 import CAMPAIGN_ORDERS_CSS from "./ui/tacticalCampaignOrders.css?raw";
 import CHAPTER_CSS from "./ui/campaignChapter.css?raw";
@@ -11,4 +12,4 @@ import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";
 import OVERHEAD_PROJECTION_CSS from "./ui/overheadProjection.css?raw";
 import HOUND_DIRECTIONAL_CSS from "./ui/houndDirectional.css?raw";
 import LAST_HOWL_CSS from "./ui/lastHowl.css?raw";
-export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS + "\n" + COMMAND_DECK_CSS + "\n" + OVERHEAD_PROJECTION_CSS + "\n" + HOUND_DIRECTIONAL_CSS + "\n" + LAST_HOWL_CSS;
+export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + SIGNAL_ATLAS_PREMIUM_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS + "\n" + COMMAND_DECK_CSS + "\n" + OVERHEAD_PROJECTION_CSS + "\n" + HOUND_DIRECTIONAL_CSS + "\n" + LAST_HOWL_CSS;
