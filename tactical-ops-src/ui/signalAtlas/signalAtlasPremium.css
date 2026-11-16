@@ -281,7 +281,7 @@
 }
 #tacticalOpsRoot .tsa-forge-stage .tsa-identity-copy {
   display:flex;flex-direction:column;align-items:center;gap:4px;
-  margin-top:7px;max-width:100%;text-shadow:0 2px 8px #000;
+  margin-top:20px;max-width:100%;text-shadow:0 2px 8px #000;
 }
 #tacticalOpsRoot .tsa-forge-stage .tsa-identity-copy>strong {
   font-size:clamp(23px,4vw,33px);letter-spacing:.15em;color:#f4f7f3;
@@ -360,8 +360,9 @@
 #tacticalOpsRoot .tsa-lanes.is-compact .tsa-node-line {padding:6px 0 3px}
 #tacticalOpsRoot .tsa-lanes.is-compact .tsa-node-wrap>small {margin-top:9px}
 
-/* Concept 03 fidelity: doctrine becomes a distinct screen via the existing quick
-   jump, while normal inline cards remain available for legacy navigation/QA. */
+/* Concept 03 fidelity: doctrine choices stay server-owned and use a dedicated
+   stage reached through the live jump, without an inline duplicate. */
+#tacticalOpsRoot .tsa-focus:not(.is-doctrine-stage) > .tsa-doctrine {display:none}
 #tacticalOpsRoot .tsa-focus.is-doctrine-stage > :not(.tsa-doctrine) {display:none!important}
 #tacticalOpsRoot .tsa-focus.is-doctrine-stage {
   padding:14px clamp(8px,3vw,20px) 22px;min-height:440px;
@@ -385,7 +386,13 @@
 #tacticalOpsRoot .tsa-doctrine-option.is-wide .tsa-doctrine-card {
   background:radial-gradient(ellipse at 10% 19%,#1fa3b858,transparent 54%),linear-gradient(125deg,#123547,#051721 72%);
 }
-#tacticalOpsRoot .tsa-footprint {min-height:143px;grid-template-columns:repeat(5,25px);grid-auto-rows:25px}
+#tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-card-title>strong {color:#ffe1af;text-shadow:0 0 12px #daa75e4d}
+#tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-card-desc {color:#d6e4e4}
+#tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-specs>span {border-color:#ac8d60;color:#f4deb4}
+#tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-art {border-color:#d5ad69;box-shadow:0 0 0 3px #614a28,inset 0 0 15px #e7b46b45}
+#tacticalOpsRoot .tsa-doctrine-option.is-selected.is-wide .tsa-doctrine-card-title>strong {color:#baf4ff}
+#tacticalOpsRoot .tsa-doctrine-option.is-selected.is-wide .tsa-doctrine-specs>span {border-color:#64cfe0;color:#c6f5fa}
+#tacticalOpsRoot .tsa-footprint {min-height:158px;grid-template-columns:repeat(5,28px);grid-auto-rows:28px}
 #tacticalOpsRoot .tsa-doctrine-card-title>strong {font-size:clamp(19px,4.6vw,26px)}
 
 @media (max-width:560px) {
@@ -399,8 +406,8 @@
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:first-child {grid-column:1}
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:last-child {grid-column:2}
   #tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait {width:162px;height:162px}
-  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button {min-height:96px;gap:5px;padding:9px 5px}
-  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines img {width:36px;height:36px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button {min-height:104px;gap:5px;padding:9px 5px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines img {width:42px;height:42px}
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines b {font-size:12px}
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines span {font-size:9px}
   #tacticalOpsRoot .tsa-node {width:66px;height:66px}
@@ -415,6 +422,7 @@
   #tacticalOpsRoot .tsa-node img {width:31px;height:31px}
   #tacticalOpsRoot .tsa-connector {top:33px;left:calc(-50% + 32px);width:calc(100% - 64px)}
   #tacticalOpsRoot .tsa-node-status {font-size:8px}
+  #tacticalOpsRoot .tsa-footprint {grid-template-columns:repeat(5,26px);grid-auto-rows:26px}
 }
 @media (prefers-reduced-motion:reduce) {
   #tacticalOpsRoot .tsa-forge-stage,#tacticalOpsRoot .tsa-forge-stage * {transition:none!important;animation:none!important}
