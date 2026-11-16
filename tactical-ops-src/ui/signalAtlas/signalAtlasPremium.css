@@ -227,8 +227,7 @@
 #tacticalOpsRoot .tsa-blueprint-overline span:last-child {color:#eac58c;text-align:right}
 #tacticalOpsRoot .tsa-forge-stage {
   position:relative;isolation:isolate;overflow:hidden;min-width:0;
-  display:grid;grid-template-areas:"left core right";
-  grid-template-columns:minmax(0,1fr) minmax(184px,1.25fr) minmax(0,1fr);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(184px,1.25fr) minmax(0,1fr);
   align-items:center;gap:clamp(6px,1.8vw,16px);
   min-height:322px;padding:19px 12px 18px;margin-bottom:10px;
   border:1px solid #7c9a9d;
@@ -252,7 +251,7 @@
   pointer-events:none;
 }
 #tacticalOpsRoot .tsa-forge-stage .tsa-identity {
-  grid-area:core;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  grid-column:2;grid-row:1;position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:4px;min-width:0;min-height:286px;
   padding:10px 0;background:transparent;border:0;box-shadow:none;
   clip-path:none;text-align:center;
@@ -294,7 +293,11 @@
 }
 #tacticalOpsRoot .tsa-forge-stage .tsa-identity-progress strong {font-size:19px}
 #tacticalOpsRoot .tsa-forge-stage .tsa-identity-progress>span {font-size:9px}
-#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines {display:contents}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines {
+  grid-column:1/-1;grid-row:1;display:grid;align-items:center;z-index:1;
+  grid-template-columns:minmax(0,1fr) minmax(184px,1.25fr) minmax(0,1fr);
+  gap:clamp(6px,1.8vw,16px);
+}
 #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button {
   position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
   text-align:center;gap:7px;min-width:0;min-height:139px;padding:13px 7px;
@@ -302,8 +305,8 @@
   box-shadow:inset 0 0 0 1px #9fe1e313,0 4px 16px #0009;
   clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
 }
-#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:first-child {grid-area:left}
-#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:last-child {grid-area:right}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:first-child {grid-column:1}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:last-child {grid-column:3}
 #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button.is-chosen {
   border-color:#9ce8ed;background:radial-gradient(ellipse at top,#17637b99,#051926f0 80%);
   box-shadow:inset 0 0 0 1px #84e9f85e,0 0 18px #35c3e45b;
@@ -387,11 +390,14 @@
 
 @media (max-width:560px) {
   #tacticalOpsRoot .tsa-forge-stage {
-    grid-template-areas:"core core" "left right";grid-template-columns:repeat(2,minmax(0,1fr));
+    grid-template-columns:repeat(2,minmax(0,1fr));
     gap:8px;min-height:0;padding:13px 10px 14px;
   }
   #tacticalOpsRoot .tsa-forge-stage::before {inset:12px 3%;background:radial-gradient(circle at 50% 29%,transparent 0 78px,#65d9ed43 79px 80px,transparent 81px 107px,#6f9eab2c 108px 109px,transparent 110px)}
-  #tacticalOpsRoot .tsa-forge-stage .tsa-identity {min-height:253px;padding:9px 0}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-identity {grid-column:1/-1;grid-row:1;min-height:253px;padding:9px 0}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines {grid-column:1/-1;grid-row:2;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:first-child {grid-column:1}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:last-child {grid-column:2}
   #tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait {width:162px;height:162px}
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button {min-height:96px;gap:5px;padding:9px 5px}
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines img {width:36px;height:36px}
