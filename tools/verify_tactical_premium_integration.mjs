@@ -158,12 +158,12 @@ const approvedSignalAtlasEntryBlobs = Object.freeze({
 // canonical 3.6.76 production rebuild. Prior M2/Premium/Entry pins stay frozen.
 const signalAtlasFidelityBase = 'b30ad79db0ae30fd86cd6823078287150bba0246';
 const approvedSignalAtlasFidelityBlobs = Object.freeze({
- 'js/boot_loaders.js': '31b98be0a470ff143c3b9efe7e633392200ae011',
- 'js/tactical_ops.js': '0a164f9effe6e1ef8370d43a26e871043e20cfbe',
+ 'js/boot_loaders.js': 'c8fe99057bf8c93af2ac3e1f43067ec32835d305',
+ 'js/tactical_ops.js': '05c42733b46dd1b3fa5c50c2be565312437576c3',
  'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': 'c23f7a760eedcb4865bfc3763630424ff04f1137',
- 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'de62ce6bfe09a2997e1458e31013093ba13898b1',
- 'tactical-ops-src/version.ts': '4d64bc5546724e846ed2ea47cfb72d017cd9455f',
- 'tools/verify_tactical_signal_atlas_p3_browser.mjs': '01408608cec7b6877698c692467e310c5f84b1be',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'bb9909a0f37adcbf6ae413f55d875577445b03c1',
+ 'tactical-ops-src/version.ts': '15eda88276fa838fe4af824622a0668e5cc5e3cb',
+ 'tools/verify_tactical_signal_atlas_p3_browser.mjs': 'e4cf01b1a6bb43975bf323cbb42dba0055cb6931',
  'tools/verify_tactical_signal_atlas_default_browser.mjs': 'e2e96a699313205576adc424c6481a9da88c6fba',
  'tools/verify_tactical_signal_atlas_premium.mjs': '6487f6b0466173a2252adf81a481a0df9f3e6e5c',
 });
