@@ -71,6 +71,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const [doctrineFeedback,setDoctrineFeedback] = useState("");
   const [showFuture,setShowFuture] = useState(false);
   const [compactFocus,setCompactFocus] = useState(true);
+  const [doctrineStage,setDoctrineStage] = useState(false);
   const dialogRef=useRef<HTMLDivElement>(null);
   const inspectorRef=useRef<HTMLElement>(null);
   const doctrineRef=useRef<HTMLElement>(null);
@@ -86,6 +87,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const activeRun=hasActiveGrowthRun(progression);
   const doctrineLocked = activeRun || Boolean(progression?.signalTrials?.activeRun || progression?.lastHowl?.status === "ACTIVE");
   const showDoctrine = heroId === "ally-02" && sector.id === "pursuit" && progression?.lungeDoctrineAvailable && hero;
+  useEffect(()=>{if(doctrineStage && !showDoctrine)setDoctrineStage(false);},[doctrineStage,showDoctrine]);
   const doctrineEligible = canSelectLungeDoctrine(hero ?? undefined);
   const node=selection && sector.skillIds.includes(selection.skillId)
     ? getNodeView(heroId,selection.skillId,selection.rank,hero,chosenPath,points,growthPreviewBase(selection.skillId,progression),activeRun) : null;
@@ -125,11 +127,11 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   function changeHero(id:HeroId){
     if(unavailable)return;
     setHeroId(id);setSectorPage(0);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
-    setView("sector");setSelection(null);setFeedback(null);setConfirm(null);setDoctrineFeedback("");
+    setView("sector");setDoctrineStage(false);setSelection(null);setFeedback(null);setConfirm(null);setDoctrineFeedback("");
   }
   function openSector(s:AtlasSector){
     if(unavailable)return;
-    setSectorId(s.id);setView("sector");setSelection(null);setConfirm(null);setFeedback(null);
+    setSectorId(s.id);setView("sector");setDoctrineStage(false);setSelection(null);setConfirm(null);setFeedback(null);
   }
   async function commitUpgrade(){
     if(!node || !canBuy || !growth || !progression || !hero)return;
@@ -188,8 +190,8 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
     {!growth?<p className="tsa-banner" role="status">Waiting for authenticated Skillbook progression. No skills can be purchased offline.</p>:null}
     {activeRun?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>ACTIVE RUN · COMPLETE CURRENT MISSION</strong><br/>Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged.</p>:null}
     <div className="tsa-nav" role="group" aria-label="Skillbook view">
-      <button type="button" className={view==="atlas"?"is-current":""} aria-label="◈ ATLAS OVERVIEW" aria-pressed={view==="atlas"} onClick={()=>{setView("atlas");setConfirm(null);setFeedback(null);}} disabled={unavailable}>◈ NETWORK MAP</button>
-      <button type="button" className={view==="sector"?"is-current":""} aria-label="◇ SECTOR FOCUS" aria-pressed={view==="sector"} onClick={()=>setView("sector")} disabled={unavailable}>◇ SKILL TREE</button>
+      <button type="button" className={view==="atlas"?"is-current":""} aria-label="◈ ATLAS OVERVIEW" aria-pressed={view==="atlas"} onClick={()=>{setView("atlas");setDoctrineStage(false);setConfirm(null);setFeedback(null);}} disabled={unavailable}>◈ NETWORK MAP</button>
+      <button type="button" className={view==="sector"?"is-current":""} aria-label="◇ SECTOR FOCUS" aria-pressed={view==="sector"} onClick={()=>{setView("sector");setDoctrineStage(false);}} disabled={unavailable}>◇ SKILL TREE</button>
       <button type="button" onClick={onClose} disabled={unavailable} aria-label="Close Signal Atlas">✕ CLOSE</button>
     </div>
     {view==="atlas"?<div className="tsa-overview">
@@ -214,24 +216,30 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
       </div>
       <button type="button" className="tsa-future-toggle" disabled={unavailable} aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
       {showFuture?<p className="tsa-explain">This atlas can accept additional sectors without changing existing skill IDs. Grey markers are design space only—not earnable abilities, locked missions or promised rewards.</p>:null}
-    </div>:<div className="tsa-focus" aria-label="Live skill tree">
+    </div>:<div className={`tsa-focus ${doctrineStage ? "is-doctrine-stage" : ""}`} aria-label="Live skill tree">
       <div className="tsa-focus-heading"><div><span className="tsa-eyebrow">LIVE SKILL TREE / {HERO_TITLES[heroId]}</span><h3>{sector.title} NETWORK</h3><small>{sector.description} · {sector.skillIds.length} real combat skills</small></div><button type="button" onClick={()=>setView("atlas")} disabled={unavailable}>← MAP</button></div>
-      <div className="tsa-identity" aria-label={`${HERO_TITLES[heroId]} combat identity`}>
-        <div className="tsa-identity-portrait"><img src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/></div>
-        <div className="tsa-identity-copy"><span className="tsa-eyebrow">OPERATIVE / SKILL PROFILE</span><strong>{HERO_TITLES[heroId]}</strong><span>{hero?.discipline ? `${hero.discipline.toUpperCase()} · RECORDED` : "CHOOSE A DISCIPLINE"}</span></div>
-        <div className="tsa-identity-progress"><strong>{sector.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}<small>/{sector.skillIds.length*2}</small></strong><span>RANKS SAVED</span></div>
-      </div>
       <div className="tsa-sector-switch" role="group" aria-label="Choose live sector">{sectors.map(s=><button type="button" key={s.id} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`} aria-pressed={s.id===sector.id} disabled={unavailable} onClick={()=>openSector(s)}>{s.title}<small>{s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2} RECORDED</small></button>)}</div>
-      {showDoctrine && <button type="button" className="tsa-doctrine-jump" disabled={unavailable} onClick={()=>doctrineRef.current?.scrollIntoView({block:"start",behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}>
-        <span><b>⌁ LUNGE FIELD DOCTRINE</b><small>HEAVY ↔ WIDE · 0 SKILL POINTS</small></span><span aria-hidden="true">↓</span>
-      </button>}
-      <div className="tsa-disciplines" role="group" aria-label="Choose specialization preview">
-        {HERO_PATHS[heroId].map(p=><button key={p} type="button" aria-pressed={chosenPath===p} disabled={unavailable}
-          onClick={()=>{setPathPreview(p);setSelection(null);setFeedback(null);}}
-          className={chosenPath===p?"is-chosen":""}>
-          <img onError={hideArt} src={tacticalEmblemFor(heroId,p)||""} alt=""/><b>{p.toUpperCase()}</b>
-          <span>{hero?.discipline===p?"SERVER RECORDED":hero?.discipline?"ALTERNATIVE · UNAVAILABLE":"PREVIEW PATH"}</span></button>)}
+      <div className="tsa-blueprint-overline" aria-hidden="true"><span>TACTICAL SKILL BLUEPRINT</span><span>LIVE BUILD · {HERO_TITLES[heroId]}</span></div>
+      <div className="tsa-forge-stage" aria-label={`${HERO_TITLES[heroId]} combat blueprint`}>
+        <div className="tsa-identity" aria-label={`${HERO_TITLES[heroId]} combat identity`}>
+          <div className="tsa-identity-portrait">
+            <img className="tsa-identity-bezel" src={SIGNAL_ATLAS_ASSETS.coreBezel} onError={hideArt} alt=""/>
+            <img className="tsa-identity-face" src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/>
+          </div>
+          <div className="tsa-identity-copy"><span className="tsa-eyebrow">OPERATIVE / COMBAT CORE</span><strong>{HERO_TITLES[heroId]}</strong><span>{hero?.discipline ? `${hero.discipline.toUpperCase()} · RECORDED` : "CHOOSE A DISCIPLINE"}</span></div>
+          <div className="tsa-identity-progress"><strong>{sector.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}<small>/{sector.skillIds.length*2}</small></strong><span>RANKS SAVED</span></div>
+        </div>
+        <div className="tsa-disciplines" role="group" aria-label="Choose specialization preview">
+          {HERO_PATHS[heroId].map(p=><button key={p} type="button" aria-pressed={chosenPath===p} disabled={unavailable}
+            onClick={()=>{setPathPreview(p);setSelection(null);setFeedback(null);}}
+            className={chosenPath===p?"is-chosen":""}>
+            <img onError={hideArt} src={tacticalEmblemFor(heroId,p)||""} alt=""/><b>{p.toUpperCase()}</b>
+            <span>{hero?.discipline===p?"SERVER RECORDED":hero?.discipline?"ALTERNATIVE · UNAVAILABLE":"PREVIEW PATH"}</span></button>)}
+        </div>
       </div>
+      {showDoctrine && !doctrineStage && <button type="button" className="tsa-doctrine-jump" disabled={unavailable} onClick={()=>{setDoctrineStage(true);requestAnimationFrame(()=>doctrineRef.current?.scrollIntoView({block:"start",behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"}));}}>
+        <span><b>LUNGE FIELD DOCTRINE</b><small>HEAVY ↔ WIDE · 0 SKILL POINTS</small></span><span aria-hidden="true">↗</span>
+      </button>}
       <p className="tsa-path-explain">{PATH_EXPLANATIONS[chosenPath]} {hero?.discipline?"Your recorded discipline is fixed until an eligible one-time reset.":"Previewing does not save a discipline. Your first successful skill purchase selects it."}</p>
       <button type="button" className="tsa-detail-toggle" disabled={unavailable} aria-pressed={!compactFocus} onClick={()=>setCompactFocus(v=>!v)}>{compactFocus?"SHOW FULL SKILL DETAILS +":"COMPACT SKILL NETWORK −"}</button>
       <div className={`tsa-lanes ${compactFocus?"is-compact":""}`}>
@@ -270,6 +278,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
         </>:<><span className="tsa-eyebrow">◈ SELECT A SKILL NODE</span><p>Tap any rank to inspect its effect, requirements and saved progression.</p></>}
       </section>
       {showDoctrine && <section ref={doctrineRef} className="tsa-doctrine" aria-label="Lunge field doctrine">
+        {doctrineStage && <button type="button" className="tsa-doctrine-back" disabled={unavailable} onClick={()=>setDoctrineStage(false)}>← BACK TO SKILL TREE</button>}
         <div className="tsa-doctrine-heading"><div><span className="tsa-eyebrow">PURSUIT / A2 LUNGE</span><h3>LUNGE FIELD DOCTRINE</h3><p>Two tactics. One saved choice. <strong>0 skill points</strong> to switch.</p></div><span className="tsa-doctrine-insignia" aria-hidden="true">⌁</span></div>
         <p className="tsa-doctrine-requirement">{doctrineEligible ? "✓ PURSUER LUNGE RANK I UNLOCKED" : "◈ REQUIRES PURSUER LUNGE RANK I"} <span>· Applies to your next accepted run</span></p>
         {doctrineLocked && <p role="status">Finish the active run to switch.</p>}
