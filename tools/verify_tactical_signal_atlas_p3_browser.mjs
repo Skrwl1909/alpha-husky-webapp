@@ -72,6 +72,7 @@ for (const width of [320,390,430]) {
  await page.getByRole('button',{name:/LUNGE FIELD DOCTRINE/}).first().click();
  assert(await page.locator('.tsa-focus.is-doctrine-stage').isVisible(),'Concept 03 dedicated doctrine stage visible');
  assert.equal(await page.locator('.tsa-doctrine-card').count(),2,'Heavy and Wide doctrine cards');
+ assert.equal(await page.locator('.tsa-doctrine-option.is-selected .tsa-doctrine-card').evaluate(el=>getComputedStyle(el).opacity),'1','Recorded doctrine must remain legible, not washed out by disabled-button CSS');
  assert(await page.getByRole('button',{name:'← BACK TO SKILL TREE'}).isVisible());
  await layout();await shot(width+'-concept03-lunge-doctrine');
  assert.equal(await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression)),before,'Opening doctrine is read-only');
