@@ -35,7 +35,13 @@ if(process.env.ATLAS_NO_SCREENSHOTS)return;
 if(await page.getByRole('dialog').count()){await page.screenshot({path:`${out}/${name}.png`});return;}
 // Unclip the host scroller only while exporting the complete content image. All layout/interaction checks use the real fixed host.
 const exportStyle=await page.addStyleTag({content:'#tacticalOpsRoot{position:relative!important;height:auto!important;max-height:none!important;overflow:visible!important;container-type:inline-size!important}#tacticalOpsRoot .t-shell{height:auto!important;overflow:visible!important}#tacticalOpsRoot .t-fill{position:relative!important}#tacticalOpsRoot .t-brief{height:auto!important;overflow:visible!important}'});
-await page.locator('.tsa-root').screenshot({path:`${out}/${name}.png`});await exportStyle.evaluate(e=>e.remove());
+await page.locator('.tsa-root').screenshot({path:`${out}/${name}.png`});
+if (/^(320|390|430)-concept0[23]-/.test(name)) {
+ const jpeg=await page.locator('.tsa-root').screenshot({type:'jpeg',quality:38});
+ const encoded=jpeg.toString('base64');
+ for(let i=0;i<encoded.length;i+=8192)console.log('ATLAS_PREVIEW_PART '+name+' '+Math.floor(i/8192)+' '+encoded.slice(i,i+8192));
+}
+await exportStyle.evaluate(e=>e.remove());
 }
 async function layout(){assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal page overflow');assert(await page.locator('.tsa-root,.tsa-focus,.tsa-overview,.t-brief').evaluateAll(es=>es.every(e=>e.scrollWidth<=e.clientWidth+1)),'No concealed host or Atlas horizontal overflow');const small=await page.locator('.tsa-root button,.tsa-dialog button').evaluateAll(bs=>bs.filter(b=>{const r=b.getBoundingClientRect();return r.width && (r.width<44||r.height<44)}).map(b=>b.textContent));assert.deepEqual(small,[],'Touch controls >=44px');}
 async function focus(){await page.getByRole('button',{name:/Open ASSAULT/}).click();}
