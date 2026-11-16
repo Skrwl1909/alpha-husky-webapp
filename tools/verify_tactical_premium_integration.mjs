@@ -110,6 +110,7 @@ const approvedMasteryEffectBlobs = Object.freeze({
 });
 const m2Base = '2fdb990846840a997f36a49a176b6f848463a46d';
 const approvedM2Blobs = Object.freeze({
+ '.github/workflows/tactical-purpose-return.yml': 'a5df4935b1579bc9e7f63a5c441ab7a9182e985f',
  'index.html': '1617e41333b2cb5f496df9618c52c1369dd7afe5',
  'js/boot_loaders.js': 'ab0d020260155c0597a0fff641303c3c28d885dd',
  'js/tactical_ops.js': 'c7a613e986aca4f17460968554476131296de8b7',
