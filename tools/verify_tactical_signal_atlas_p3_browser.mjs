@@ -67,6 +67,7 @@ for (const width of [320,390,430]) {
  const skillNode=await page.locator('.tsa-node').first().boundingBox();
  assert(skillNode&&skillNode.width>=60&&skillNode.height>=60,'Live rank nodes remain legible at '+width+'px');
  await layout();await shot(width+'-concept02-cnc-blueprint');
+ assert(await page.locator('.tsa-doctrine').isHidden(),'Heavy/Wide cards belong to the dedicated doctrine stage, not the skill tree');
  const before=await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression));
  await page.getByRole('button',{name:/LUNGE FIELD DOCTRINE/}).first().click();
  assert(await page.locator('.tsa-focus.is-doctrine-stage').isVisible(),'Concept 03 dedicated doctrine stage visible');
