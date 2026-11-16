@@ -32,6 +32,10 @@ try {
   const html = renderToStaticMarkup(React.createElement(SignalAtlas, { onClose: () => {}, target }));
   assert.match(html, /class="tsa-identity"/);
   assert.match(html, /CNC combat identity/);
+  const firstVisit = renderToStaticMarkup(React.createElement(SignalAtlas, { onClose: () => {} }));
+  assert.match(firstVisit, /LIVE SKILL TREE/);
+  assert.match(firstVisit, /tsa-lane/);
+  assert.doesNotMatch(firstVisit, /class="tsa-overview"/, "Decorative map must not hide the skills on first opening");
   // React's server snapshot intentionally excludes subsequent store.setState();
   // test real resolved skills directly and the doctrine component's presentation contract.
   const base = growthPreviewBase("u02-burst", useBattleStore.getState().progression);
@@ -43,7 +47,7 @@ try {
   assert.equal(wide.effects.find(e => e.kind === "damage").multiplier, 1);
   assert.equal(wide.radius, 1);
   const source = readFileSync("tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx", "utf8");
-  for (const fragment of ["tsa-doctrine-card", "tsa-doctrine-choices", "DoctrineFootprint", "CURRENTLY SAVED", "SELECT DOCTRINE · FREE", "An accepted mission keeps its original variant", "Math.round(damage*100)"]) {
+  for (const fragment of ["tsa-doctrine-card", "tsa-doctrine-choices", "tsa-doctrine-jump", "doctrineRef.current?.scrollIntoView", "DoctrineFootprint", "CURRENTLY SAVED", "SELECT DOCTRINE · FREE", "An accepted mission keeps its original variant", "Math.round(damage*100)"]) {
     assert(source.includes(fragment), `Missing production doctrine UI: ${fragment}`);
   }
   const css = readFileSync("tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css", "utf8");
