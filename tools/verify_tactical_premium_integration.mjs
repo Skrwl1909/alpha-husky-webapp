@@ -154,32 +154,57 @@ const approvedSignalAtlasEntryBlobs = Object.freeze({
  'tools/verify_tactical_signal_atlas_premium.mjs': '6442b2f679e9477fe4dc294cc61ac097260b776f',
  'tools/verify_tactical_signal_atlas_v2.mjs': '183d44f586e93b3c6620b18ff75d1dcaa7778e53',
 });
+// Signal Atlas concepts 02/03 (PR #305): reviewed visual source and one
+// canonical 3.6.76 production rebuild. Prior M2/Premium/Entry pins stay frozen.
+const signalAtlasFidelityBase = 'b30ad79db0ae30fd86cd6823078287150bba0246';
+const approvedSignalAtlasFidelityBlobs = Object.freeze({
+ 'js/boot_loaders.js': 'c8fe99057bf8c93af2ac3e1f43067ec32835d305',
+ 'js/tactical_ops.js': '05c42733b46dd1b3fa5c50c2be565312437576c3',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': 'c23f7a760eedcb4865bfc3763630424ff04f1137',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'bb9909a0f37adcbf6ae413f55d875577445b03c1',
+ 'tactical-ops-src/version.ts': '15eda88276fa838fe4af824622a0668e5cc5e3cb',
+ 'tools/verify_tactical_signal_atlas_p3_browser.mjs': 'e4cf01b1a6bb43975bf323cbb42dba0055cb6931',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': 'e2e96a699313205576adc424c6481a9da88c6fba',
+ 'tools/verify_tactical_signal_atlas_premium.mjs': '6487f6b0466173a2252adf81a481a0df9f3e6e5c',
+});
 git('merge-base', '--is-ancestor', m2Base, 'HEAD');
 git('merge-base', '--is-ancestor', signalAtlasPremiumBase, 'HEAD');
 git('merge-base', '--is-ancestor', signalAtlasEntryBase, 'HEAD');
+git('merge-base', '--is-ancestor', signalAtlasFidelityBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', m2Base).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path), 'unreviewed M2 descendant path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed M2 descendant path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedM2Blobs)) {
- const baseline = Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : 'HEAD';
+ const baseline = Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : Object.hasOwn(approvedSignalAtlasFidelityBlobs, path) ? signalAtlasFidelityBase : 'HEAD';
  assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical M2 source: ' + path);
- const current = approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? expected;
+ const current = approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? expected;
  assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), current, 'unreviewed working M2 descendant: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasPremiumBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSignalAtlasPremiumBlobs)) {
  const baseline = Object.hasOwn(approvedSignalAtlasEntryBlobs, path) ? signalAtlasEntryBase : 'HEAD';
  assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical Signal Atlas Premium source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), approvedSignalAtlasEntryBlobs[path] ?? expected, 'unreviewed working Signal Atlas Premium source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? expected, 'unreviewed working Signal Atlas Premium source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasEntryBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasEntryBlobs, path), 'unreviewed Signal Atlas Entry path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Entry path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSignalAtlasEntryBlobs)) {
- assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed Signal Atlas Entry source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), expected, 'unreviewed working Signal Atlas Entry source: ' + path);
+ const historicRef = Object.hasOwn(approvedSignalAtlasFidelityBlobs, path) ? signalAtlasFidelityBase : 'HEAD';
+ assert.equal(git('rev-parse', `${historicRef}:${path}`).trim(), expected, 'unreviewed committed Signal Atlas Entry source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), approvedSignalAtlasFidelityBlobs[path] ?? expected, 'unreviewed working Signal Atlas Entry source: ' + path);
+}
+for (const path of git('diff', '--name-only', '--no-renames', signalAtlasFidelityBase).trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Fidelity path: ' + path);
+}
+for (const [path, sha] of Object.entries(approvedSignalAtlasFidelityBlobs)) {
+ const previous = approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? approvedM2Blobs[path];
+ assert(previous, 'Fidelity path has no historically approved predecessor: ' + path);
+ assert.equal(git('rev-parse', `${signalAtlasFidelityBase}:${path}`).trim(), previous, 'unreviewed historical Fidelity source: ' + path);
+ assert.equal(git('rev-parse', `HEAD:${path}`).trim(), sha, 'unreviewed committed Fidelity source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), sha, 'unreviewed working Fidelity source: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
  assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);
