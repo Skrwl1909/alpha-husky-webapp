@@ -386,6 +386,7 @@
 #tacticalOpsRoot .tsa-doctrine-option.is-wide .tsa-doctrine-card {
   background:radial-gradient(ellipse at 10% 19%,#1fa3b858,transparent 54%),linear-gradient(125deg,#123547,#051721 72%);
 }
+#tacticalOpsRoot .tsa-root .tsa-doctrine-option.is-selected .tsa-doctrine-card:disabled {opacity:1;filter:none}
 #tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-card-title>strong {color:#ffe1af;text-shadow:0 0 12px #daa75e4d}
 #tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-card-desc {color:#d6e4e4}
 #tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-specs>span {border-color:#ac8d60;color:#f4deb4}
