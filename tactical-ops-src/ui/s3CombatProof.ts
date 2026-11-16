@@ -1,6 +1,6 @@
 import type { BattleEvent, BattleState, CombatUnit } from "../combat/types";
 import type { MissionDef } from "../data/operations";
-import { canonicalGrowthSkillId } from "../data/playerGrowth";
+import { canonicalGrowthSkillId, WIDE_LUNGE } from "../data/playerGrowth";
 
 export type S3Action = "CNC_INTERRUPT" | "CNC_CONTROL" | "SHADOW_COVER" | "SHADOW_HOLD" | "PET_COURIER_SLOW" | "PET_SLOW";
 export interface S3Moment { kind: S3Action; unitTurn: number; detail: string }
@@ -39,6 +39,10 @@ export function recordS3Skill(
     buildMoment = events.find(event => event.type === "info" && event.buildEvidence?.includes("beyond the unranked range"))?.buildEvidence;
   } else if (actor.defId === "ally-02" && canonical === "u02-suppress" && interrupted) {
     buildMoment = "CNC PRESSURE canceled a locked enemy intent.";
+  } else if (actor.defId === "ally-02" && canonical === "u02-burst" && actor.growth?.lungeDoctrine === WIDE_LUNGE) {
+    const hit = new Set(events.filter(e => e.type === "damage" && (e.amount ?? 0) > 0 &&
+      before.units.some(unit => unit.id === e.unitId && unit.team === "enemy")).map(e => e.unitId));
+    if (hit.size > 1) buildMoment = `CNC WIDE LUNGE hit ${hit.size} enemies in one action.`;
   } else if (actor.defId === "ally-03" && canonical === "u03-mend" && (rank || actor.growth?.discipline || skillId.includes(":mastery:"))) {
     buildMoment = events.find(event => event.type === "status" && event.kind === "guard" && event.buildEvidence)?.buildEvidence
       ?? events.find(event => event.type === "heal" && (event.amount ?? 0) > 0)?.buildEvidence;

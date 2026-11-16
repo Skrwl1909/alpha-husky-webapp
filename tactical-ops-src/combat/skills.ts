@@ -55,7 +55,8 @@ export function applySkill(
   // Targetability proof compares the same accepted sidegrade/mastery without invested ranks.
   const unranked = resolveGrowthSkill(getSkill(skillId), caster.growth ? { ...caster.growth, ranks: {} } : undefined);
   const baselineTargets = resolveSkillTargets(state.units, caster, unranked, targetId, cell);
-  const addedReach = hits.filter(h => !baselineTargets.some(b => b.id === h.id));
+  const addedReach = skill.targetType === unranked.targetType
+    ? hits.filter(h => !baselineTargets.some(b => b.id === h.id)) : [];
   let units = state.units.map((u) => ({
     ...u,
     statuses: u.statuses.map((s) => ({ ...s })),

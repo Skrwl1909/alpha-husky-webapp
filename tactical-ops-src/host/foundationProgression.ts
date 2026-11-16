@@ -1,5 +1,5 @@
 import type { LastHowlSummary, LastHowlView } from "../combat/lastHowlAuthority";
-import { validateGrowthSnapshot, type GrowthSnapshot } from "../data/playerGrowth";
+import { validateGrowthSnapshot, type GrowthSnapshot, type LungeDoctrine } from "../data/playerGrowth";
 import { parseFieldLegacyMilestone, type FieldLegacyMilestone } from "../data/fieldLegacy";
 import { isSurviveMission, parseRunRulesContract, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import type { DeploymentApproach, DirectiveTier, DirectiveSet, FieldContext, FieldReport, FieldResult } from "../data/fieldOps";
@@ -34,6 +34,7 @@ export interface FoundationProgressionState {
   playerIdentity?: Record<string, unknown>;
   packMastery?: PackMastery;
   playerGrowth?: GrowthProgression;
+  lungeDoctrineAvailable?: boolean;
   version: 1;
   vnextStartAvailable?: boolean;
   lastHowl?: LastHowlSummary;
@@ -240,6 +241,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     packMastery: parsePackMastery(value.packMastery),
     version: 1,
     vnextStartAvailable: value.vnextStartAvailable === true,
+    ...(value.lungeDoctrineAvailable === true ? { lungeDoctrineAvailable: true } : {}),
     ...((value.lastHowl as { version?: number } | undefined)?.version === 1 ? { lastHowl: value.lastHowl as LastHowlSummary } : {}),
     foundationStage: stage as FoundationStage,
     completed: value.completed === true || stage === "completed",
@@ -706,11 +708,16 @@ export async function respecPlayerGrowth(
     { requestId, expectedRevision, heroId }));
 }
 
+export async function saveLungeDoctrine(requestId: string, expectedRevision: number, choice: LungeDoctrine): Promise<FoundationProgressionState> {
+  return responseState(await request("/webapp/tactical-foundation/growth/lunge-doctrine",
+    { requestId, expectedRevision, choice }));
+}
+
 export async function savePackMastery(requestId: string, expectedRevision: number, unitId: string, choice: import("../data/packMastery").MasteryChoice): Promise<FoundationProgressionState> {
   return responseState(await request("/webapp/tactical-foundation/pack-mastery", { requestId, expectedRevision, unitId, choice }));
 }
 
-export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "chapter-choose" | "chapter-start" | "chapter-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec" | "field-rend"): string {
+export function createFoundationRequestId(prefix: "start" | "continue" | "mission-start" | "mission-continue" | "chapter-choose" | "chapter-start" | "chapter-continue" | "koda-sidegrade" | "shadow-sidegrade" | "pack-mastery" | "growth-upgrade" | "growth-respec" | "lunge-doctrine" | "field-rend"): string {
   const random = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
     ? crypto.randomUUID()
     : String(Date.now()) + "-" + Math.random().toString(36).slice(2);

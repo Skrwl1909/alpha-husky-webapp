@@ -108,10 +108,37 @@ const approvedMasteryEffectBlobs = Object.freeze({
  'tools/verify_tactical_command_deck.mjs': 'd5fb05b1cde1d7064522bfe6b3a5d734d16c1ad5',
  'tools/verify_tactical_g1_browser.mjs': 'b525a21a33a615fe03a39a4d7e681182c16a8271',
 });
+const m2Base = '2fdb990846840a997f36a49a176b6f848463a46d';
+const approvedM2Blobs = Object.freeze({
+ 'index.html': '1617e41333b2cb5f496df9618c52c1369dd7afe5',
+ 'js/boot_loaders.js': 'ab0d020260155c0597a0fff641303c3c28d885dd',
+ 'js/tactical_ops.js': 'c7a613e986aca4f17460968554476131296de8b7',
+ 'tactical-ops-src/combat/skills.ts': '189e84a07ee9e4fec938881a22a90bd64e615966',
+ 'tactical-ops-src/data/playerGrowth.ts': '7b0c70704d4c3a4ffe7a3daa02a62dd31eb3e344',
+ 'tactical-ops-src/host/foundationProgression.ts': 'ffd775b1f607b2b29a1ee33472c330c09da70190',
+ 'tactical-ops-src/store/battleStore.ts': 'dd1a8ffc9bba74b25365d961ace01a7164512c17',
+ 'tactical-ops-src/ui/Battle.tsx': 'a7cafc9629cf9993ea842d47c1a8cc86bd41af33',
+ 'tactical-ops-src/ui/s3CombatProof.ts': 'ecc2d3168249281a15d998e09436b4f68c59792f',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '60a43d9d2b22b6f5f1520dd8544372ee0a641c09',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlas.css': 'b076dffea8143e76620da40e94aa5b061394887b',
+ 'tactical-ops-src/version.ts': 'ab9e9c074ddc54dd66ce346a32e08061ac1dcbf2',
+ 'tools/build_tactical_m2_workers.mjs': '6ce45bb07ad457733d382e8a69d8dccc33434fc5',
+ 'tools/verify_tactical_last_howl_browser.mjs': '2098f1ea6c2e352889abd81e0330d2eb6d10b32b',
+ 'tools/verify_tactical_m2_wide_lunge.mjs': '1ce797384a6ba6d0f896e310fedccd3f9e8e5d4c',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': '8cbe38cd4b5e080a6fe8b29eceafc896cdf01e92',
+});
+git('merge-base', '--is-ancestor', m2Base, 'HEAD');
+for (const path of git('diff', '--name-only', '--no-renames', m2Base).trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path), 'unreviewed M2 path: ' + path);
+}
+for (const [path, expected] of Object.entries(approvedM2Blobs)) {
+ assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed M2 source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), expected, 'unreviewed working M2 source: ' + path);
+}
 for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
  assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);
 }
-for (const path of git('diff','--name-only','--no-renames',masteryEffectBase,'HEAD').trim().split('\n').filter(Boolean)) {
+for (const path of git('diff','--name-only','--no-renames',masteryEffectBase,m2Base).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(approvedMasteryEffectBlobs, path), 'unreviewed Mastery Effect path: ' + path);
 }
 // Enemy Combat Identity Art Kit V1: exact binary asset approvals. New poses are
@@ -136,12 +163,12 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  }
  // New reviewed blobs pin Git bytes exactly; the historical V1 pins retain
  // their original LF-normalization policy (notably tactical.css is CRLF).
- const rawSource = readLocalFile(path, 'utf8');
+ const rawSource = Object.hasOwn(approvedM2Blobs, path) ? git('show', `${m2Base}:${path}`) : readLocalFile(path, 'utf8');
  const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
   Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) || Object.hasOwn(approvedMasteryEffectBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
 }
-for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
+for (const path of git('diff','--name-only','--no-renames',lastHowlBase,m2Base).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(lastHowlBlobs, path) ||
   Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path) ||
   Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
@@ -150,8 +177,9 @@ for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').
   Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
- if (!Object.hasOwn(lastHowlBlobs, path)) return readLocalFile(path, encoding);
- const historical = git('show', `${lastHowlBase}:${path}`);
+ const baseline = Object.hasOwn(lastHowlBlobs, path) ? lastHowlBase : Object.hasOwn(approvedM2Blobs, path) ? m2Base : null;
+ if (!baseline) return readLocalFile(path, encoding);
+ const historical = git('show', `${baseline}:${path}`);
  return encoding ? historical : Buffer.from(historical);
 }
 const extended='tools/verify_tactical_brief_closure_browser.mjs';
@@ -1030,4 +1058,6 @@ for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','
 assert(readFileSync('js/pet_quick_actions.js','utf8').includes('body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions'));
 execFileSync(process.execPath,['--test','tools/verify_tactical_defeated_tile_hitbox.mjs'],{stdio:'inherit'});
 execFileSync(process.execPath,['tools/verify_tactical_mastery_effect_truth.mjs'],{stdio:'inherit'});
+execFileSync(process.execPath,['tools/verify_tactical_skill_mastery_motion_v1.mjs'],{stdio:'inherit'});
+execFileSync(process.execPath,['tools/verify_tactical_m2_wide_lunge.mjs'],{stdio:'inherit'});
 console.log(`PASS integration provenance: ${preserved} unchanged source/test files, exact App union, no unrelated runtime changes, both feature sets and coherent version/cache in production`);
