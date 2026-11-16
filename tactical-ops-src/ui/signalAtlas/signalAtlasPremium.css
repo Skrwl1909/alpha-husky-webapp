@@ -215,3 +215,206 @@
   #tacticalOpsRoot .tsa-doctrine-card,#tacticalOpsRoot .tsa-identity,#tacticalOpsRoot .tsa-lane,#tacticalOpsRoot .tsa-footprint-tile {border:1px solid CanvasText}
   #tacticalOpsRoot .tsa-doctrine-option.is-selected .tsa-doctrine-card {outline:3px solid Highlight}
 }
+
+
+/* Concept 02 fidelity: a central forged operative core with two distinct doctrine
+   wings, followed by a live, connected upgrade circuit. Presentation only. */
+#tacticalOpsRoot .tsa-blueprint-overline {
+  display:flex;align-items:center;justify-content:space-between;gap:9px;
+  padding:7px 3px 9px;color:#9ac9d4;font-size:9px;font-weight:900;
+  letter-spacing:.16em;text-transform:uppercase;
+}
+#tacticalOpsRoot .tsa-blueprint-overline span:last-child {color:#eac58c;text-align:right}
+#tacticalOpsRoot .tsa-forge-stage {
+  position:relative;isolation:isolate;overflow:hidden;min-width:0;
+  display:grid;grid-template-areas:"left core right";
+  grid-template-columns:minmax(0,1fr) minmax(184px,1.25fr) minmax(0,1fr);
+  align-items:center;gap:clamp(6px,1.8vw,16px);
+  min-height:322px;padding:19px 12px 18px;margin-bottom:10px;
+  border:1px solid #7c9a9d;
+  background:
+    radial-gradient(ellipse at 50% 48%,#23617a7a 0,#0b2f4290 31%,transparent 63%),
+    repeating-linear-gradient(90deg,transparent 0 31px,#5baac30a 31px 32px),
+    linear-gradient(180deg,#081f2dcf,#020d18ec),
+    var(--tsa-sectorBackground) center/cover;
+  box-shadow:inset 0 0 0 1px #cdf4f111,inset 0 0 75px #000c,0 14px 28px #0009;
+  clip-path:polygon(11px 0,calc(100% - 11px) 0,100% 11px,100% calc(100% - 11px),calc(100% - 11px) 100%,11px 100%,0 calc(100% - 11px),0 11px);
+}
+#tacticalOpsRoot .tsa-forge-stage::before {
+  content:"";position:absolute;inset:16px 10% 12px;
+  background:radial-gradient(circle at 50% 48%,transparent 0 84px,#65d9ed52 85px 86px,transparent 87px 112px,#6f9eab3d 113px 114px,transparent 115px),
+    linear-gradient(90deg,transparent 0 13%,#6bbbd24d 13% 50%,#6bbbd24d 50% 87%,transparent 87%) center 54%/100% 2px no-repeat;
+  opacity:.8;pointer-events:none;z-index:0;
+}
+#tacticalOpsRoot .tsa-forge-stage::after {
+  content:"";position:absolute;inset:6px;border:1px solid #7cb7c523;
+  clip-path:polygon(14px 0,calc(100% - 14px) 0,100% 14px,100% calc(100% - 14px),calc(100% - 14px) 100%,14px 100%,0 calc(100% - 14px),0 14px);
+  pointer-events:none;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity {
+  grid-area:core;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;min-width:0;min-height:286px;
+  padding:10px 0;background:transparent;border:0;box-shadow:none;
+  clip-path:none;text-align:center;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity::before {display:none}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait {
+  position:relative;isolation:isolate;display:grid;place-items:center;
+  width:clamp(158px,22vw,190px);height:clamp(158px,22vw,190px);
+  padding:0;border:0;border-radius:50%;overflow:visible;
+  background:radial-gradient(circle,#17516b 22%,#020b13 69%);
+  box-shadow:0 0 0 1px #91d5dc70,0 0 0 9px #102937a0,0 0 30px #31d1f64b,inset 0 0 22px #02080f;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait::after {
+  content:"";position:absolute;inset:6px;border-radius:50%;
+  border:1px solid #d5bd81a3;box-shadow:inset 0 0 14px #03212f,0 0 13px #5bddf14e;
+  pointer-events:none;z-index:4;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait img.tsa-identity-bezel {
+  position:absolute;inset:-16%;width:132%;height:132%;z-index:3;
+  object-fit:contain;border-radius:0;pointer-events:none;filter:drop-shadow(0 0 9px #78d2e55e);
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait img.tsa-identity-face {
+  display:block;width:90%;height:90%;border-radius:50%;object-fit:cover;
+  object-position:center 27%;z-index:2;filter:contrast(1.13) saturate(.91);
+  -webkit-mask-image:radial-gradient(circle,#000 52%,#000c 68%,transparent 76%);
+  mask-image:radial-gradient(circle,#000 52%,#000c 68%,transparent 76%);
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-copy {
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  margin-top:7px;max-width:100%;text-shadow:0 2px 8px #000;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-copy>strong {
+  font-size:clamp(23px,4vw,33px);letter-spacing:.15em;color:#f4f7f3;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-copy>span:last-child {font-size:9px}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-progress {
+  display:flex;align-items:baseline;justify-content:center;gap:7px;
+  text-align:center;margin-top:3px;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-progress strong {font-size:19px}
+#tacticalOpsRoot .tsa-forge-stage .tsa-identity-progress>span {font-size:9px}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines {display:contents}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button {
+  position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:7px;min-width:0;min-height:139px;padding:13px 7px;
+  border:1px solid #537f8e;background:linear-gradient(160deg,#102d3bdc,#03111bf5);
+  box-shadow:inset 0 0 0 1px #9fe1e313,0 4px 16px #0009;
+  clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px);
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:first-child {grid-area:left}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button:last-child {grid-area:right}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button.is-chosen {
+  border-color:#9ce8ed;background:radial-gradient(ellipse at top,#17637b99,#051926f0 80%);
+  box-shadow:inset 0 0 0 1px #84e9f85e,0 0 18px #35c3e45b;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines img {
+  display:block;width:clamp(34px,5vw,58px);height:clamp(34px,5vw,58px);
+  object-fit:contain;filter:drop-shadow(0 0 7px #4dd6f474);
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines b {
+  font-family:var(--t-font-display);font-size:clamp(10px,1.7vw,15px);
+  letter-spacing:.08em;overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .tsa-forge-stage .tsa-disciplines span {
+  font-size:9px;line-height:1.45;color:#b1ced8;overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .tsa-path-explain {border-left:0;border-top:1px solid #3d8794;padding:10px 12px;text-align:center}
+#tacticalOpsRoot .tsa-lanes {position:relative;gap:13px}
+#tacticalOpsRoot .tsa-lane {
+  padding:15px 13px 12px;border-color:#7a9ea9;
+  background:radial-gradient(ellipse at 50% 80%,#154a5b5e,transparent 70%),linear-gradient(120deg,#0d2b3cf5,#030f1cf7),var(--tsa-sectorBackground) center/cover;
+}
+#tacticalOpsRoot .tsa-lane-title {margin-bottom:13px}
+#tacticalOpsRoot .tsa-lane-title b {font-size:clamp(16px,3.2vw,20px)}
+#tacticalOpsRoot .tsa-node-line {padding:6px 0 3px}
+#tacticalOpsRoot .tsa-node {
+  width:clamp(60px,10vw,82px);height:clamp(60px,10vw,82px);
+  border-width:2px;border-style:solid;
+  box-shadow:0 0 0 4px #1a3e4da8,inset 0 0 22px #000c!important;
+}
+#tacticalOpsRoot .tsa-node::before {
+  inset:-8px;filter:drop-shadow(0 0 5px #70dbea44);
+}
+#tacticalOpsRoot .tsa-node img {width:clamp(32px,5.4vw,48px);height:clamp(32px,5.4vw,48px)}
+#tacticalOpsRoot .tsa-connector {
+  top:calc(clamp(60px,10vw,82px) / 2 + 3px);
+  left:calc(-50% + 33px);width:calc(100% - 66px);
+  height:4px;background:linear-gradient(90deg,#536f7d,#7293a3);
+  box-shadow:0 0 9px #23576873;
+}
+#tacticalOpsRoot .tsa-connector.is-lit {background:linear-gradient(90deg,#ca9a59,#f3d8a2);box-shadow:0 0 10px #edbb707c}
+#tacticalOpsRoot .tsa-node.tsa-state-available {
+  box-shadow:0 0 0 4px #266c7b91,0 0 19px #42e9ff75,inset 0 0 18px #12445d!important;
+}
+#tacticalOpsRoot .tsa-node.tsa-state-recorded,#tacticalOpsRoot .tsa-node.tsa-state-maxed {
+  box-shadow:0 0 0 4px #896a3b83,0 0 16px #f3be6e70,inset 0 0 20px #6f4a20!important;
+}
+#tacticalOpsRoot .tsa-node-wrap>small {font-size:10px}
+#tacticalOpsRoot .tsa-lanes.is-compact .tsa-lane {padding:12px 11px}
+#tacticalOpsRoot .tsa-lanes.is-compact .tsa-lane-title {margin-bottom:10px}
+#tacticalOpsRoot .tsa-lanes.is-compact .tsa-lane-title img {width:42px;height:42px}
+#tacticalOpsRoot .tsa-lanes.is-compact .tsa-node-line {padding:6px 0 3px}
+#tacticalOpsRoot .tsa-lanes.is-compact .tsa-node-wrap>small {margin-top:9px}
+
+/* Concept 03 fidelity: doctrine becomes a distinct screen via the existing quick
+   jump, while normal inline cards remain available for legacy navigation/QA. */
+#tacticalOpsRoot .tsa-focus.is-doctrine-stage > :not(.tsa-doctrine) {display:none!important}
+#tacticalOpsRoot .tsa-focus.is-doctrine-stage {
+  padding:14px clamp(8px,3vw,20px) 22px;min-height:440px;
+  background:linear-gradient(180deg,#051726ed,#020b15f3),var(--tsa-sectorBackground) center/cover;
+}
+#tacticalOpsRoot .tsa-focus.is-doctrine-stage .tsa-doctrine {
+  margin-top:0;min-height:400px;border-color:#c4a77a;
+  box-shadow:0 0 0 1px #efc98c41,0 16px 38px #000b;
+}
+#tacticalOpsRoot .tsa-doctrine-back {
+  display:block;width:100%;min-height:44px;padding:10px 13px;
+  color:#a9e6f5!important;text-align:left;font-size:11px;font-weight:850;
+  letter-spacing:.08em;background:linear-gradient(90deg,#0d3446,#061c2b);
+  border:0;border-bottom:1px solid #54879d;cursor:pointer;
+}
+#tacticalOpsRoot .tsa-doctrine-heading {background:radial-gradient(ellipse at right,#225065a8,transparent 65%),linear-gradient(90deg,#092a3adf,#041522e9)}
+#tacticalOpsRoot .tsa-doctrine-option .tsa-doctrine-card {min-height:265px}
+#tacticalOpsRoot .tsa-doctrine-option.is-heavy .tsa-doctrine-card {
+  background:radial-gradient(ellipse at 12% 19%,#bc79394d,transparent 53%),linear-gradient(125deg,#342b24,#07151e 72%);
+}
+#tacticalOpsRoot .tsa-doctrine-option.is-wide .tsa-doctrine-card {
+  background:radial-gradient(ellipse at 10% 19%,#1fa3b858,transparent 54%),linear-gradient(125deg,#123547,#051721 72%);
+}
+#tacticalOpsRoot .tsa-footprint {min-height:143px;grid-template-columns:repeat(5,25px);grid-auto-rows:25px}
+#tacticalOpsRoot .tsa-doctrine-card-title>strong {font-size:clamp(19px,4.6vw,26px)}
+
+@media (max-width:560px) {
+  #tacticalOpsRoot .tsa-forge-stage {
+    grid-template-areas:"core core" "left right";grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;min-height:0;padding:13px 10px 14px;
+  }
+  #tacticalOpsRoot .tsa-forge-stage::before {inset:12px 3%;background:radial-gradient(circle at 50% 29%,transparent 0 78px,#65d9ed43 79px 80px,transparent 81px 107px,#6f9eab2c 108px 109px,transparent 110px)}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-identity {min-height:253px;padding:9px 0}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait {width:162px;height:162px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button {min-height:96px;gap:5px;padding:9px 5px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines img {width:36px;height:36px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines b {font-size:12px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines span {font-size:9px}
+  #tacticalOpsRoot .tsa-node {width:66px;height:66px}
+  #tacticalOpsRoot .tsa-node img {width:35px;height:35px}
+  #tacticalOpsRoot .tsa-connector {top:36px;left:calc(-50% + 35px);width:calc(100% - 70px)}
+}
+@media (max-width:350px) {
+  #tacticalOpsRoot .tsa-forge-stage .tsa-identity-portrait {width:148px;height:148px}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-identity {min-height:237px}
+  #tacticalOpsRoot .tsa-blueprint-overline {font-size:8px;letter-spacing:.09em}
+  #tacticalOpsRoot .tsa-node {width:60px;height:60px}
+  #tacticalOpsRoot .tsa-node img {width:31px;height:31px}
+  #tacticalOpsRoot .tsa-connector {top:33px;left:calc(-50% + 32px);width:calc(100% - 64px)}
+  #tacticalOpsRoot .tsa-node-status {font-size:8px}
+}
+@media (prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .tsa-forge-stage,#tacticalOpsRoot .tsa-forge-stage * {transition:none!important;animation:none!important}
+}
+@media (forced-colors:active) {
+  #tacticalOpsRoot .tsa-forge-stage {border:2px solid CanvasText;background:Canvas}
+  #tacticalOpsRoot .tsa-forge-stage::before,#tacticalOpsRoot .tsa-forge-stage::after {display:none}
+  #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button.is-chosen {outline:2px solid Highlight}
+}
