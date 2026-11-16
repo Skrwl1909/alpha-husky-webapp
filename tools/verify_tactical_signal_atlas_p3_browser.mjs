@@ -14,9 +14,9 @@ import{HERO_SKILLS,HERO_PATHS}from'/tactical-ops-src/data/playerGrowth.ts';
 import{TACTICAL_CSS}from'/tactical-ops-src/styles.ts';
 const style=document.createElement('style');style.textContent=TACTICAL_CSS;document.head.append(style);
 const params=new URLSearchParams(location.search),mode=params.get('state')||'default';
-const heroes=Object.keys(HERO_SKILLS).map(id=>({heroId:id,discipline:mode==='maxed'||mode==='partial'?HERO_PATHS[id][0]:null,respecUsed:false,ranks:mode==='maxed'?Object.fromEntries(HERO_SKILLS[id].map(s=>[s,2])):mode==='partial'?{[HERO_SKILLS[id][0]]:1}:{}}));
+const heroes=Object.keys(HERO_SKILLS).map(id=>({heroId:id,discipline:['maxed','partial','doctrine'].includes(mode)?HERO_PATHS[id][0]:null,respecUsed:false,ranks:mode==='maxed'?Object.fromEntries(HERO_SKILLS[id].map(s=>[s,2])):mode==='doctrine'&&id==='ally-02'?{'u02-burst':1}:mode==='partial'?{[HERO_SKILLS[id][0]]:1}:{}}));
 let calls=0,behavior='success';
-const snapshot={version:1,revision:10,playerGrowth:{version:1,revision:10,earnedPoints:mode==='maxed'?18:6,spentPoints:mode==='maxed'?18:mode==='partial'?3:0,heroes}};
+const snapshot={version:1,revision:10,lungeDoctrineAvailable:mode==='doctrine',playerGrowth:{version:mode==='doctrine'?2:1,revision:10,earnedPoints:mode==='maxed'?18:6,spentPoints:mode==='maxed'?18:mode==='partial'?3:mode==='doctrine'?1:0,heroes}};
 store.setState({progression:mode==='absent'?null:snapshot,progressionError:null,progressionCommitPending:false,
 upgradeGrowth:async(id,path,skill,rank)=>{calls++;store.setState({progressionCommitPending:true});await new Promise(r=>setTimeout(r,500));store.setState({progressionCommitPending:false});if(behavior==='network')throw Error('fixture network');if(behavior==='failed'){store.setState({progressionError:'Fixture server rejected upgrade'});return}if(behavior==='stale')return;const p=store.getState().progression;store.setState({progression:{...p,revision:p.revision+1,playerGrowth:{...p.playerGrowth,spentPoints:p.playerGrowth.spentPoints+1,heroes:p.playerGrowth.heroes.map(h=>h.heroId===id?{...h,discipline:path,ranks:{...h.ranks,[skill]:rank}}:h)}}})},
 respecGrowth:async(id)=>{calls++;const p=store.getState().progression;const h=p.playerGrowth.heroes.find(h=>h.heroId===id);store.setState({progression:{...p,revision:p.revision+1,playerGrowth:{...p.playerGrowth,spentPoints:p.playerGrowth.spentPoints-Object.values(h.ranks).reduce((a,b)=>a+b,0),heroes:p.playerGrowth.heroes.map(h=>h.heroId===id?{...h,discipline:null,ranks:{},respecUsed:true}:h)}}})}});
@@ -49,6 +49,23 @@ for(const width of [320,360,390,430])for(const state of ['default','partial','ma
 await load(width,state);assert(await page.locator('.tsa-focus').isVisible(),'Skill tree is the default Atlas entry');await layout();await shot(`${width}-${state}-skill-tree`);await rank(state==='maxed'?2:1);await layout();await shot(`${width}-${state}-inspector`);
 if(state==='default'){await review();const buttons=page.getByRole('dialog').getByRole('button');for(const b of await buttons.all()){const r=await b.boundingBox();assert(r.y>=0&&r.y+r.height<=(width===320?568:844),'Dialog controls within viewport')}await shot(`${width}-confirm`);await page.getByRole('button',{name:'CANCEL',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.calls()),0)}
 console.log(`Captured ${width} ${state}`);results.push(`${width} ${state}: first-visit skill tree/inspector, no overflow, 44px targets`);
+}
+// Real Concept 02 / Concept 03 stage captures across the acceptance phone widths.
+for (const width of [320,390,430]) {
+ await load(width,'doctrine');
+ await page.getByRole('button',{name:/^CNC/}).first().click();
+ assert(await page.locator('.tsa-forge-stage').isVisible(),'Concept 02 operative blueprint visible');
+ await layout();await shot(width+'-concept02-cnc-blueprint');
+ const before=await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression));
+ await page.getByRole('button',{name:/LUNGE FIELD DOCTRINE/}).first().click();
+ assert(await page.locator('.tsa-focus.is-doctrine-stage').isVisible(),'Concept 03 dedicated doctrine stage visible');
+ assert.equal(await page.locator('.tsa-doctrine-card').count(),2,'Heavy and Wide doctrine cards');
+ assert(await page.getByRole('button',{name:'← BACK TO SKILL TREE'}).isVisible());
+ await layout();await shot(width+'-concept03-lunge-doctrine');
+ assert.equal(await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression)),before,'Opening doctrine is read-only');
+ await page.getByRole('button',{name:'← BACK TO SKILL TREE'}).click();
+ assert(await page.locator('.tsa-forge-stage').isVisible(),'Back returns to the real skill tree');
+ results.push(width+' Concept 02 blueprint + Concept 03 doctrine, no overflow, no progression write');
 }
 // Hero/sector navigation and rank 0/1/2. Preview must not mutate store.
 await load();for(const hero of ['ALPHA','CNC','SHADOW']){await page.getByRole('button',{name:new RegExp('^'+hero)}).first().click();await page.getByRole('button',{name:'◇ SECTOR FOCUS',exact:true}).click();for(let i=0;i<2;i++){await page.getByRole('group',{name:'Choose live sector'}).getByRole('button').nth(i).click();for(const b of await page.locator('.tsa-node').all())await b.click();}const before=await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression));await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button').nth(1).click();assert.equal(await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression)),before)}
