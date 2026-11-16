@@ -16,7 +16,7 @@ const mode=new URLSearchParams(location.search).get('mode')||'atlas';
 const heroes=[{heroId:'alpha',discipline:'vanguard',ranks:{}},{heroId:'ally-02',discipline:'disruptor',ranks:{}},{heroId:'ally-03',discipline:'medic',ranks:{'u03-mend':mode==='rank2'?1:0},respecUsed:true}];
 const packMastery=Object.fromEntries(['ally-02','ally-03'].map(id=>[id,{progress:8,stage:3,selected:'A',unlockedOptions:['A','B']}]));
 const progression={version:1,revision:10,foundationStage:'completed',completed:true,activeRunId:null,operations:{},playerGrowth:{version:2,revision:10,earnedPoints:12,spentPoints:0,heroes},packMastery,shadowSidegrade:'A',kodaSidegrade:'B'};
-store.setState({progression,screen:mode==='results'?'results':'brief',foundationCompleted:true,progressionStatus:'ready',progressionCommitPending:false,progressionError:null,selectedMissionId:'field-relay-hold',selectedSquadIds:['alpha','ally-02','ally-03'],currentRunKey:'fixture-run',s3CombatProof:{runId:'fixture-run',missionId:'field-relay-hold',moments:[],fieldcraft:['ALPHA HOWL: GUARD applied to SHADOW (1 personal turn).','SHADOW: GUARD prevented 8 damage.']},battle:{...store.getState().battle,results:{victory:true,turns:10,hostilesEliminated:3,squadStanding:3,squadDeployed:3,damageTaken:20,bonesRecovered:0}}});
+store.setState({progression,screen:mode==='results'?'results':'brief',foundationCompleted:true,progressionStatus:'ready',progressionCommitPending:false,progressionError:null,selectedMissionId:'field-relay-hold',selectedSquadIds:['alpha','ally-02','ally-03'],currentRunKey:'fixture-run',s3CombatProof:{runId:'fixture-run',missionId:'field-relay-hold',moments:[],buildMoment:'SHADOW: GUARD prevented 8 damage.'},battle:{...store.getState().battle,results:{victory:true,turns:10,hostilesEliminated:3,squadStanding:3,squadDeployed:3,damageTaken:20,bonesRecovered:0}}});
 window.fixture={store};
 const component=React.createElement(mode==='mastery'?PackMasteryPanel:mode==='brief'||mode==='results'?TacticalApp:SignalAtlas,{onClose:()=>{}});
 createRoot(document.getElementById('mount')).render(mode==='brief'||mode==='results'?component:React.createElement('div',{className:'t-shell'},React.createElement('div',{className:'t-fill'},React.createElement('div',{className:'t-brief'},component))));`;
@@ -31,9 +31,11 @@ try{
    await page.getByRole('button',{name:/^SHADOW/}).first().click();await page.getByRole('button',{name:'◇ SECTOR FOCUS',exact:true}).click();await page.getByRole('group',{name:'Choose live sector'}).getByRole('button').nth(1).click();
    await page.getByRole('button',{name:new RegExp('MEND rank '+(mode==='rank2'?2:1)+',')}).click();
    assert(await page.getByRole('button',{name:'REVIEW UPGRADE'}).isEnabled());
-   assert(await page.getByText(/Costs 1 shared point/).isVisible());
+   assert(await page.getByText('COST: 1 SKILL POINT',{exact:true}).isVisible(),'Point cost is visible');
+   assert(await page.getByText(/CURRENT · R/).isVisible(),'Current resolved effect is visible');
+   assert(await page.getByText(/NEXT · R/).isVisible(),'Next resolved effect is visible');
    if(mode==='atlas')assert(await page.getByText('RADIUS 1 → 2',{exact:true}).isVisible());
-   else assert(await page.getByText(/≤50% HP before healing/).isVisible());
+   else assert(await page.locator('.tsa-inspector').getByText(/≤50% HP before healing/).first().isVisible());
   } else if(mode==='mastery'){
    await page.getByRole('button',{name:'SHADOW',exact:true}).click();assert(await page.getByLabel('Saved versus alternate Mastery').isVisible());
    assert(await page.getByText(/HEAL/).count()>0);
@@ -49,9 +51,12 @@ try{
    assert(await tactics.getByText(/ALPHA:|SHADOW:|CNC:/).first().isVisible(),'Real build notes remain accessible');
   } else {
    await page.getByText('Combat report · this device',{exact:true}).click();
-   await page.getByLabel('Why your build mattered').waitFor();assert(await page.getByText('SHADOW: GUARD prevented 8 damage.').isVisible());
+   assert(await page.getByText('YOUR BUILD MATTERED',{exact:true}).isVisible());
+   assert(await page.getByText(/SHADOW: GUARD prevented 8 damage/).isVisible());
    await page.screenshot({path:out+'/'+width+'-results-observed.png',fullPage:true});
-   await page.evaluate(()=>fixture.store.setState({currentRunKey:'other-run'}));await page.getByText('No build-specific effect observed in this encounter.').waitFor();
+   await page.evaluate(()=>fixture.store.setState({currentRunKey:'other-run'}));
+   await page.getByText('YOUR BUILD MATTERED',{exact:true}).waitFor({state:'hidden'});
+   assert.equal(await page.getByText(/SHADOW: GUARD prevented 8 damage/).count(),0,'Stale run must hide its build proof');
   }
   assert.deepEqual(errors,[]);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'Page overflow '+width+' '+mode);
   if(mode==='atlas'||mode==='rank2')assert(await page.locator('.tsa-root,.tsa-focus,.tsa-inspector').evaluateAll(es=>es.every(e=>e.scrollWidth<=e.clientWidth+1)),'Atlas overflow');

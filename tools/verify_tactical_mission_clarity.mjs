@@ -21,7 +21,7 @@ assert.match(onboarding, /STRIKE \(A1\), then tap the scout/);
 assert.doesNotMatch(onboarding, /Close to melee|Move, then Strike at range 1|You cannot be in two cells at once/);
 
 assert.match(brief, /trainingSteps\.length \? \(/, "Foundation briefing should render player steps");
-assert.match(brief, /const buildNotes = mission \? buildFit\(mission, allies, previewGrowth\) : \[\]/, "Training has no build-fit notes");
+assert.match(brief, /const buildNotes = mission \? buildFit\(mission, allies, previewGrowth, hasIntent\) : \[\]/, "Training has no build-fit notes");
 assert.match(brief, /buildNotes\.length \? <section aria-label="Squad tactics">/, "Details hides empty build-fit sections");
 assert.doesNotMatch(brief, /NEXT ACCEPTED RUN|<b>BUILD FIT:<\/b>/, "Avoid developer-only labels");
 

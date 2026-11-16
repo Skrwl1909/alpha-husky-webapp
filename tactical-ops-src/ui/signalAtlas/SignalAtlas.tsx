@@ -1,5 +1,6 @@
 import { growthPreviewBase, savedGrowthHero, DOCTRINE_TRADEOFF } from "../../data/buildPreview";
-import { upgradeDescription } from "../../data/playerGrowth";
+import { canonicalGrowthSkillId, resolveGrowthSkill } from "../../data/playerGrowth";
+import { skillEffectView } from "../skillEffectView";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { SIGNAL_ATLAS_ASSETS } from "./signalAtlasAssets";
@@ -10,7 +11,7 @@ import { UNIT_DEFS } from "../../data/units";
 import { tacticalActionImageForSkill } from "../tacticalActionIcons";
 import { tacticalEmblemFor } from "../tacticalEmblems";
 import { portraitFallback } from "../PlayerIdentity";
-import { ATLAS_SECTORS, HERO_TITLES, HERO_SUBTITLES, PATH_EXPLANATIONS, getNodeView, hasActiveGrowthRun, atlasSectorPosition, type AtlasSector, type NodeView } from "./model";
+import { ATLAS_SECTORS, HERO_TITLES, HERO_SUBTITLES, PATH_EXPLANATIONS, getNodeView, hasActiveGrowthRun, atlasSectorPosition, type AtlasSector, type availableAtlasUpgrade } from "./model";
 
 type Feedback = { kind: "success" | "error"; text: string } | null;
 type Selection = { skillId: string; rank: 0|1|2 };
@@ -28,19 +29,21 @@ const RESERVES = [
   {id:"future-d", title:"FUTURE 04",x:86,y:86},
 ];
 
-export function SignalAtlas({ onClose }: { onClose: () => void }) {
+export function SignalAtlas({ onClose, target }: { onClose: () => void; target?: ReturnType<typeof availableAtlasUpgrade> }) {
   const progression = useBattleStore(s=>s.progression);
   const growth = progression?.playerGrowth;
   const progressionPending = useBattleStore(s=>s.progressionCommitPending);
   const progressionError = useBattleStore(s=>s.progressionError);
   const upgrade = useBattleStore(s=>s.upgradeGrowth);
   const respec = useBattleStore(s=>s.respecGrowth);
-  const [heroId,setHeroId] = useState<HeroId>("alpha");
-  const [view,setView] = useState<"atlas"|"sector">("atlas");
-  const [sectorId,setSectorId] = useState("assault");
+  const [heroId,setHeroId] = useState<HeroId>(target?.heroId ?? "alpha");
+  const [view,setView] = useState<"atlas"|"sector">(target ? "sector" : "atlas");
+  const [sectorId,setSectorId] = useState(() => target
+    ? ATLAS_SECTORS[target.heroId].find(sector => sector.skillIds.includes(target.skillId))?.id ?? ""
+    : "assault");
   const [sectorPage,setSectorPage] = useState(0);
-  const [pathPreview,setPathPreview] = useState<Discipline>("vanguard");
-  const [selection,setSelection] = useState<Selection | null>(null);
+  const [pathPreview,setPathPreview] = useState<Discipline>(() => savedGrowthHero(growth, heroId)?.discipline ?? HERO_PATHS[heroId][0]);
+  const [selection,setSelection] = useState<Selection | null>(target ?? null);
   const [confirm,setConfirm] = useState<"upgrade"|"respec"|null>(null);
   const [saving,setSaving] = useState(false);
   const [feedback,setFeedback] = useState<Feedback>(null);
@@ -60,6 +63,12 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
   const activeRun=hasActiveGrowthRun(progression);
   const node=selection && sector.skillIds.includes(selection.skillId)
     ? getNodeView(heroId,selection.skillId,selection.rank,hero,chosenPath,points,growthPreviewBase(selection.skillId,progression),activeRun) : null;
+  const baseSkill = node ? growthPreviewBase(node.skillId, progression) : null;
+  const currentSkill = baseSkill && hero ? skillEffectView(resolveGrowthSkill(baseSkill, hero), hero) : null;
+  const nextHero = hero && baseSkill && node?.changes.length
+    ? { ...hero, discipline: hero.discipline ?? chosenPath, ranks: { ...hero.ranks, [canonicalGrowthSkillId(baseSkill.id)]: node.rank } }
+    : null;
+  const nextSkill = baseSkill && nextHero ? skillEffectView(resolveGrowthSkill(baseSkill, nextHero), nextHero) : null;
   const canBuy=Boolean(node?.state==="available" && !unavailable && growth);
   const canRespec=Boolean(hero?.discipline && !hero.respecUsed && Object.keys(hero.ranks).length>0 && !unavailable && !activeRun);
   const purchased=hero?.ranks || {};
@@ -209,9 +218,13 @@ export function SignalAtlas({ onClose }: { onClose: () => void }) {
       <section ref={inspectorRef} className={`tsa-inspector ${node ? "has-selection" : ""}`} aria-label="Skill node inspection" aria-live="polite">
         {node ? <><span className="tsa-eyebrow">{getSkill(node.skillId).name} / {node.rank===0?"BASE":`RANK ${node.rank===1?"I":"II"}`}</span>
           <h3>{node.title}</h3><div className="tsa-saved-rank">SAVED RANK {purchased[node.skillId]||0} / 2 · {node.rank===0?"BASE ACTION":`INSPECTING RANK ${node.rank}`}</div><p>{node.reason}</p>
-          {node.rank > 0 ? <p>{upgradeDescription(node.skillId,node.rank,growth?.version)}<br/>{DOCTRINE_TRADEOFF[chosenPath]}<br/>Costs 1 shared point. Saved runs keep their frozen build; changes apply to the next accepted run.</p> : null}
+          {currentSkill ? <p><b>CURRENT · R{currentSkill.rank}</b>{currentSkill.discipline ? ` · ${currentSkill.discipline.toUpperCase()}` : ""}
+            {node.skillId === "u03-mend" ? ` · GROWTH V${currentSkill.version}` : ""}<br/>
+            {[currentSkill.geometry, ...currentSkill.effects].join(" · ")}</p> : null}
+          {nextSkill ? <p><b>NEXT · R{nextSkill.rank}</b> · {chosenPath.toUpperCase()}<br/>
+            {[nextSkill.geometry, ...nextSkill.effects].join(" · ")}<br/>{DOCTRINE_TRADEOFF[chosenPath]}</p> : null}
           {node.changes.length?<div className="tsa-deltas">{node.changes.map(c=><strong key={c}>{c}</strong>)}</div>:null}
-          <div className="tsa-inspector-bottom"><span>{node.rank===0?"ALREADY OWNED":node.state==="recorded"||node.state==="maxed"?"SERVER RECORDED":"COST: 1 SKILL POINT"}</span>
+          <div className="tsa-inspector-bottom"><span>{node.rank===0?"ALREADY OWNED":node.state==="recorded"||node.state==="maxed"?"SERVER RECORDED":node.changes.length?"COST: 1 SKILL POINT":""}</span>
           <button type="button" disabled={!canBuy} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("upgrade")}>{saving?"SAVING…":node.state==="active-run"?"COMPLETE CURRENT MISSION":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
         </>:<><span className="tsa-eyebrow">SELECT A NODE</span><h3>BUILD YOUR COMBAT IDENTITY</h3><p>Tap a rank to inspect its real effect, prerequisite and server ownership before spending a point.</p></>}
       </section>

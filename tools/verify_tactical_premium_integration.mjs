@@ -84,6 +84,36 @@ const approvedSkillMasteryMotionV1Blobs = Object.freeze({
  'tactical-ops-src/version.ts': '7f3e294ffea9695fce86ae77ae06744644de4f49',
  'tools/verify_tactical_skill_mastery_motion_v1.mjs': '9ace068ba4f86ed9f3792dcdcee1ee881ef974d0',
 });
+const masteryEffectBase = 'bdc545d9fe140e7a79581452ad4309588af3e7b1';
+const approvedMasteryEffectBlobs = Object.freeze({
+ // PR #301 CI follow-up: precisely reviewed fixture and legacy contract checks.
+ '.github/workflows/tactical-cinematic-results.yml': '200decc48c1c7e794f44def110cecabf2c3622f6',
+ 'index.html': '21c752ecc6362185b41c7afb8471625c3f4b9f32',
+ 'js/boot_loaders.js': '20ac0088ac7840f3bd004bf489fedcca7b71341e',
+ 'js/tactical_ops.js': 'e57986c501d536f241f5d381c6853c4afbb34c48',
+ 'tactical-ops-src/ui/App.tsx': '951f8f41b03fd3ec62dd69cc3f7db055a7de6a9d',
+ 'tactical-ops-src/ui/Battle.tsx': 'b94d2f5ba6050af8c1a62ffddbe5b02679e5dc3c',
+ 'tactical-ops-src/ui/LastHowl.tsx': 'a8df931c0ee5e9b13bf8fc7a39b2ecad85c44c6f',
+ 'tactical-ops-src/ui/PackMastery.tsx': '9cdcb19ff9915f467544c2259ed7fe644edf9c32',
+ 'tactical-ops-src/ui/Skillbook.tsx': '9bcea2551b46d98fc7f3e9768001a338df7aa804',
+ 'tactical-ops-src/ui/fieldcraft.ts': '44d90dbc35ce96804d397ac2d2c210443871a834',
+ 'tactical-ops-src/ui/s3CombatProof.ts': 'eb7d32ab19ea2bd8c5535b7a468182f0219bf309',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': 'd650ca0a718e9eb94ae6a8a23b0dbe4a4d87170b',
+ 'tactical-ops-src/ui/signalAtlas/model.ts': '3a2bef9d5b848ecc1e8bf715f06fd1f73a846f05',
+ 'tactical-ops-src/ui/skillEffectView.ts': 'ae3fec10c6b6f58e4b1d6021c459a842d20679f3',
+ 'tactical-ops-src/version.ts': '8e2df04014f30393ae8a002c588a5b411b12e5cf',
+ 'tools/verify_tactical_mastery_effect_truth.mjs': '7b0dd5d7ae33a0c59b865f474eb7313a101e2355',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': 'f9a4c97a85b2f6ebe325d34253f2d0bae5f8341e',
+ 'tools/verify_tactical_mission_clarity.mjs': '0140481466f7631c96b88891f175f830916873f9',
+ 'tools/verify_tactical_command_deck.mjs': 'd5fb05b1cde1d7064522bfe6b3a5d734d16c1ad5',
+ 'tools/verify_tactical_g1_browser.mjs': 'b525a21a33a615fe03a39a4d7e681182c16a8271',
+});
+for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
+ assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);
+}
+for (const path of git('diff','--name-only','--no-renames',masteryEffectBase,'HEAD').trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(approvedMasteryEffectBlobs, path), 'unreviewed Mastery Effect path: ' + path);
+}
 // Enemy Combat Identity Art Kit V1: exact binary asset approvals. New poses are
 // additive and do not replace any of the original four-direction hound sprites.
 const approvedEnemyPoseAssets = Object.freeze({
@@ -99,7 +129,7 @@ for (const [path, expected] of Object.entries(approvedEnemyPoseAssets)) {
 for (const [path, expected] of Object.entries(lastHowlBlobs)) {
  assert.equal(git('rev-parse', `${lastHowlV1Release}:${path}`).trim(), expected, 'unreviewed V1 source: ' + path);
 }
-for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs, ...approvedEnemyMotionV1Blobs, ...approvedSkillMasteryMotionV1Blobs })) {
+for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPressureBlobs, ...approvedCombatMotionBlobs, ...approvedEnemyMotionV1Blobs, ...approvedSkillMasteryMotionV1Blobs, ...approvedMasteryEffectBlobs })) {
  if (retiredV1WorkerSources.has(path)) {
   assert(!existsSync(path), 'V1 worker must be built from the V1 release: ' + path);
   continue;
@@ -107,7 +137,8 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  // New reviewed blobs pin Git bytes exactly; the historical V1 pins retain
  // their original LF-normalization policy (notably tactical.css is CRLF).
  const rawSource = readLocalFile(path, 'utf8');
- const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) || Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
+ const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
+  Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) || Object.hasOwn(approvedMasteryEffectBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
 }
 for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').trim().split('\n').filter(Boolean)) {
@@ -115,6 +146,7 @@ for (const path of git('diff','--name-only','--no-renames',lastHowlBase,'HEAD').
   Object.hasOwn(lastHowlPressureBlobs, path) || Object.hasOwn(approvedCombatMotionBlobs, path) ||
   Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
   Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) ||
+  Object.hasOwn(approvedMasteryEffectBlobs, path) ||
   Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
@@ -313,6 +345,9 @@ const approvedCurrentBlobs=Object.freeze({
   ...Object.fromEntries(Object.entries(approvedCombatMotionBlobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
   ...Object.fromEntries(Object.entries(approvedEnemyMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
   ...Object.fromEntries(Object.entries(approvedSkillMasteryMotionV1Blobs).filter(([path]) => !Object.hasOwn(lastHowlBlobs,path))),
+  // The reviewed #301 CI workflow is also a historical Player Identity V2 leaf.
+  // Override this single hash without changing older production approvals.
+  '.github/workflows/tactical-cinematic-results.yml': approvedMasteryEffectBlobs['.github/workflows/tactical-cinematic-results.yml'],
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
@@ -631,6 +666,16 @@ let preserved=0;
 for(const head of heads)for(const path of changed(head)){
  if(generated.has(path)||path===app||path===extended||presentationLeaves.has(path)||updatedBrowserTests.has(path))continue;
  let source=approvedG3Sources.has(path) ? git('show',`${reviewedMain}:${path}`) : approvedG2Sources.has(path) ? git('show',`${g2Baseline}:${path}`) : readFileSync(path,'utf8');
+ if(path==='tools/verify_tactical_g1_browser.mjs'){
+  // M1 updates only this fixture's truthful cost/proof assertions. Keep both
+  // historical phases pinned and require the exact reviewed new test blob.
+  const historicSha = head===heads[0]
+   ? '06659241dbcac1dea536f546d54fe51eac019c14'
+   : 'd46a9c8b59958af921303269b2776cc44ffc9e5d';
+  assert.equal(git('rev-parse',`${head}:${path}`).trim(),historicSha,'unreviewed historical G1 browser');
+  assert.equal(sourceBlob(source),approvedMasteryEffectBlobs[path],'unreviewed current M1 G1 browser');
+  preserved++;continue;
+ }
  if(path==='tactical-ops-src/styles.ts'){
   source=normalizeHoundStyles(source);
   // The only allowed new style wiring is our isolated, presentational Command Deck leaf.
@@ -984,4 +1029,5 @@ assert(loader.includes(version.match(/CACHE_KEY = "([^"]+)"/)[1]));
 for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','New option unlocked'])assert(bundle.toLowerCase().includes(feature.toLowerCase()),`missing compiled feature: ${feature}`);
 assert(readFileSync('js/pet_quick_actions.js','utf8').includes('body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions'));
 execFileSync(process.execPath,['--test','tools/verify_tactical_defeated_tile_hitbox.mjs'],{stdio:'inherit'});
+execFileSync(process.execPath,['tools/verify_tactical_mastery_effect_truth.mjs'],{stdio:'inherit'});
 console.log(`PASS integration provenance: ${preserved} unchanged source/test files, exact App union, no unrelated runtime changes, both feature sets and coherent version/cache in production`);

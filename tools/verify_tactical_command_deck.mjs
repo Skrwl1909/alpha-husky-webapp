@@ -16,9 +16,12 @@ for (const id of ["mission","squad","loadout","intel"]) {
 for (const feature of ["<SkillbookPanel onClose=", "<PackMasteryPanel />", "openOperationBrief", "BATTLEFIELD_LAB_KEY"]) {
   assert(war.includes(feature), "War Table functionality "+feature);
 }
-for (const feature of ["onClick={deploy}", "onClick={backToHub}", "selectKodaSidegrade", "selectShadowSidegrade", "selectedApproach", "selectedDirectiveTier", "readyCounters", "resuming ? savedRun?.packMastery"]) {
+for (const feature of ["onClick={deploy}", "onClick={backToHub}", "selectKodaSidegrade", "selectShadowSidegrade", "selectedApproach", "selectedDirectiveTier", "readyCounters"]) {
   assert(brief.includes(feature), "Brief functionality "+feature);
 }
+assert.match(brief, /const acceptedBuild = selectedTrialLevel !== null \? trialRun : savedRun;/, "Use the correct accepted run for the selected mission");
+assert.match(brief, /const briefMastery = resuming \? acceptedBuild\?\.packMastery \?\? \{\} : packMastery;/, "Resumes use accepted mastery and fresh runs use the account preview");
+assert.match(brief, /<PackMasteryPanel snapshot=\{resuming \? briefMastery \?\? \{\} : undefined\}/, "The Mastery panel receives the same accepted snapshot");
 assert.equal((brief.match(/t-deploy-actions-v29/g) || []).length,1,"All tabs use the same deploy controls");
 assert.match(brief, /\{deployActions\}\s*\{purpose \? <details/, "Mission keeps deploy ahead of optional details");
 assert(brief.indexOf('{briefTab !== "mission" ? deployActions : null}') > brief.indexOf('briefTab === "intel"'), "All other panes retain deploy controls");
