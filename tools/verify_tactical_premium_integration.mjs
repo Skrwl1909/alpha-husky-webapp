@@ -141,23 +141,45 @@ const approvedSignalAtlasPremiumBlobs = Object.freeze({
  'tactical-ops-src/version.ts': 'a652b7adc7707af494e64d4e3ea3f7763ef5120d',
  'tools/verify_tactical_signal_atlas_premium.mjs': 'de669670c22d5161c017f0bd72832d4023fb89f8',
 });
+// Signal Atlas entry correction: make real skill ranks the first view after #303.
+// Exact UI/test/bundle leaves are pinned independently from the prior premium release.
+const signalAtlasEntryBase = '6cb0a0d5599986a03ba27acf58aa966b7ba0e407';
+const approvedSignalAtlasEntryBlobs = Object.freeze({
+ 'js/boot_loaders.js': '1af002d47cf76cbd06aa5ec8264f207cd75aeb10',
+ 'js/tactical_ops.js': 'daf85ab357c3e2539a2494c7d12ee69652387afe',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '56cf08da56320f52210fded85db5223dc683dcb4',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': '2a9e446506b78fd56f74ca15b3076b9e8e53fe13',
+ 'tactical-ops-src/version.ts': 'de242d8684f3150b59eb325b757b19f24d2ad6fb',
+ 'tools/verify_tactical_signal_atlas_p3_browser.mjs': 'e046a1cf2cd83412e1c11041a871f503b42e6dfe',
+ 'tools/verify_tactical_signal_atlas_premium.mjs': '6442b2f679e9477fe4dc294cc61ac097260b776f',
+ 'tools/verify_tactical_signal_atlas_v2.mjs': '183d44f586e93b3c6620b18ff75d1dcaa7778e53',
+});
 git('merge-base', '--is-ancestor', m2Base, 'HEAD');
 git('merge-base', '--is-ancestor', signalAtlasPremiumBase, 'HEAD');
+git('merge-base', '--is-ancestor', signalAtlasEntryBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', m2Base).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path), 'unreviewed M2 descendant path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path), 'unreviewed M2 descendant path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedM2Blobs)) {
  const baseline = Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : 'HEAD';
  assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical M2 source: ' + path);
- const current = approvedSignalAtlasPremiumBlobs[path] ?? expected;
+ const current = approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? expected;
  assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), current, 'unreviewed working M2 descendant: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasPremiumBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSignalAtlasPremiumBlobs)) {
- assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed Signal Atlas Premium source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), expected, 'unreviewed working Signal Atlas Premium source: ' + path);
+ const baseline = Object.hasOwn(approvedSignalAtlasEntryBlobs, path) ? signalAtlasEntryBase : 'HEAD';
+ assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical Signal Atlas Premium source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), approvedSignalAtlasEntryBlobs[path] ?? expected, 'unreviewed working Signal Atlas Premium source: ' + path);
+}
+for (const path of git('diff', '--name-only', '--no-renames', signalAtlasEntryBase).trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(approvedSignalAtlasEntryBlobs, path), 'unreviewed Signal Atlas Entry path: ' + path);
+}
+for (const [path, expected] of Object.entries(approvedSignalAtlasEntryBlobs)) {
+ assert.equal(git('rev-parse', `HEAD:${path}`).trim(), expected, 'unreviewed committed Signal Atlas Entry source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), expected, 'unreviewed working Signal Atlas Entry source: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
  assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);

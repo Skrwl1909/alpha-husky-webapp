@@ -88,7 +88,8 @@ try {
   const uiModule=await server.ssrLoadModule("/tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx");
   const html=renderToStaticMarkup(React.createElement(uiModule.SignalAtlas,{onClose:()=>undefined}));
   assert(html.includes("THE SIGNAL ATLAS") && html.includes("ASSAULT") && html.includes("COMMAND"),"Atlas must render with its live sectors even before login");
-  assert(html.includes("NOT RELEASED"),"Reservation legend must not mislabel future content as locked rewards");
+  assert(html.includes("LIVE SKILL TREE") && html.includes("tsa-lanes") && !html.includes('class="tsa-overview"'),"Official Atlas entry must display actionable skill ranks before the optional network map");
+  assert(ui.includes("DESIGN RESERVE — NOT RELEASED"),"Optional network map must still label its expansion markers honestly");
   const official=await server.ssrLoadModule('/tactical-ops-src/ui/Skillbook.tsx');
   const officialHtml=renderToStaticMarkup(React.createElement(official.SkillbookPanel,{onClose:()=>undefined}));
   assert.equal((officialHtml.match(/class="tsa-root"/g)||[]).length,1);

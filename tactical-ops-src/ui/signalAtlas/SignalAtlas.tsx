@@ -57,7 +57,8 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const respec = useBattleStore(s=>s.respecGrowth);
   const saveDoctrine = useBattleStore(s=>s.selectLungeDoctrine);
   const [heroId,setHeroId] = useState<HeroId>(target?.heroId ?? "alpha");
-  const [view,setView] = useState<"atlas"|"sector">(target ? "sector" : "atlas");
+  // Open on actionable skills. The ornamental combat network remains available as a map.
+  const [view,setView] = useState<"atlas"|"sector">("sector");
   const [sectorId,setSectorId] = useState(() => target
     ? ATLAS_SECTORS[target.heroId].find(sector => sector.skillIds.includes(target.skillId))?.id ?? ""
     : "assault");
@@ -72,6 +73,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const [compactFocus,setCompactFocus] = useState(true);
   const dialogRef=useRef<HTMLDivElement>(null);
   const inspectorRef=useRef<HTMLElement>(null);
+  const doctrineRef=useRef<HTMLElement>(null);
   const sectors=ATLAS_SECTORS[heroId];
   const sectorPageCount=Math.ceil(sectors.length/3);
   const visibleSectors=sectors.slice(sectorPage*3,(sectorPage+1)*3);
@@ -123,7 +125,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   function changeHero(id:HeroId){
     if(unavailable)return;
     setHeroId(id);setSectorPage(0);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
-    setView("atlas");setSelection(null);setFeedback(null);setConfirm(null);setDoctrineFeedback("");
+    setView("sector");setSelection(null);setFeedback(null);setConfirm(null);setDoctrineFeedback("");
   }
   function openSector(s:AtlasSector){
     if(unavailable)return;
@@ -186,8 +188,8 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
     {!growth?<p className="tsa-banner" role="status">Waiting for authenticated Skillbook progression. No skills can be purchased offline.</p>:null}
     {activeRun?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>ACTIVE RUN · COMPLETE CURRENT MISSION</strong><br/>Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged.</p>:null}
     <div className="tsa-nav" role="group" aria-label="Skillbook view">
-      <button type="button" className={view==="atlas"?"is-current":""} aria-pressed={view==="atlas"} onClick={()=>{setView("atlas");setConfirm(null);setFeedback(null);}} disabled={unavailable}>◈ ATLAS OVERVIEW</button>
-      <button type="button" className={view==="sector"?"is-current":""} aria-pressed={view==="sector"} onClick={()=>setView("sector")} disabled={unavailable}>◇ SECTOR FOCUS</button>
+      <button type="button" className={view==="atlas"?"is-current":""} aria-label="◈ ATLAS OVERVIEW" aria-pressed={view==="atlas"} onClick={()=>{setView("atlas");setConfirm(null);setFeedback(null);}} disabled={unavailable}>◈ NETWORK MAP</button>
+      <button type="button" className={view==="sector"?"is-current":""} aria-label="◇ SECTOR FOCUS" aria-pressed={view==="sector"} onClick={()=>setView("sector")} disabled={unavailable}>◇ SKILL TREE</button>
       <button type="button" onClick={onClose} disabled={unavailable} aria-label="Close Signal Atlas">✕ CLOSE</button>
     </div>
     {view==="atlas"?<div className="tsa-overview">
@@ -212,14 +214,17 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
       </div>
       <button type="button" className="tsa-future-toggle" disabled={unavailable} aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
       {showFuture?<p className="tsa-explain">This atlas can accept additional sectors without changing existing skill IDs. Grey markers are design space only—not earnable abilities, locked missions or promised rewards.</p>:null}
-    </div>:<div className="tsa-focus">
-      <div className="tsa-focus-heading"><div><span className="tsa-eyebrow">{HERO_TITLES[heroId]} / {sector.title} SECTOR</span><h3>{sector.title} NETWORK</h3><small>{sector.description} · {sector.skillIds.length} real combat skills</small></div><button type="button" onClick={()=>setView("atlas")} disabled={unavailable}>← ATLAS</button></div>
+    </div>:<div className="tsa-focus" aria-label="Live skill tree">
+      <div className="tsa-focus-heading"><div><span className="tsa-eyebrow">LIVE SKILL TREE / {HERO_TITLES[heroId]}</span><h3>{sector.title} NETWORK</h3><small>{sector.description} · {sector.skillIds.length} real combat skills</small></div><button type="button" onClick={()=>setView("atlas")} disabled={unavailable}>← MAP</button></div>
       <div className="tsa-identity" aria-label={`${HERO_TITLES[heroId]} combat identity`}>
         <div className="tsa-identity-portrait"><img src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/></div>
         <div className="tsa-identity-copy"><span className="tsa-eyebrow">OPERATIVE / SKILL PROFILE</span><strong>{HERO_TITLES[heroId]}</strong><span>{hero?.discipline ? `${hero.discipline.toUpperCase()} · RECORDED` : "CHOOSE A DISCIPLINE"}</span></div>
         <div className="tsa-identity-progress"><strong>{sector.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}<small>/{sector.skillIds.length*2}</small></strong><span>RANKS SAVED</span></div>
       </div>
-      <div className="tsa-sector-switch" role="group" aria-label="Choose live sector">{sectors.map(s=><button type="button" key={s.id} aria-pressed={s.id===sector.id} disabled={unavailable} onClick={()=>openSector(s)}>{s.title}<small>{s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2} RECORDED</small></button>)}</div>
+      <div className="tsa-sector-switch" role="group" aria-label="Choose live sector">{sectors.map(s=><button type="button" key={s.id} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`} aria-pressed={s.id===sector.id} disabled={unavailable} onClick={()=>openSector(s)}>{s.title}<small>{s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2} RECORDED</small></button>)}</div>
+      {showDoctrine && <button type="button" className="tsa-doctrine-jump" disabled={unavailable} onClick={()=>doctrineRef.current?.scrollIntoView({block:"start",behavior:window.matchMedia?.("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}>
+        <span><b>⌁ LUNGE FIELD DOCTRINE</b><small>HEAVY ↔ WIDE · 0 SKILL POINTS</small></span><span aria-hidden="true">↓</span>
+      </button>}
       <div className="tsa-disciplines" role="group" aria-label="Choose specialization preview">
         {HERO_PATHS[heroId].map(p=><button key={p} type="button" aria-pressed={chosenPath===p} disabled={unavailable}
           onClick={()=>{setPathPreview(p);setSelection(null);setFeedback(null);}}
@@ -264,7 +269,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
           <button type="button" disabled={!canBuy} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("upgrade")}>{saving?"SAVING…":node.state==="active-run"?"COMPLETE CURRENT MISSION":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
         </>:<><span className="tsa-eyebrow">◈ SELECT A SKILL NODE</span><p>Tap any rank to inspect its effect, requirements and saved progression.</p></>}
       </section>
-      {showDoctrine && <section className="tsa-doctrine" aria-label="Lunge field doctrine">
+      {showDoctrine && <section ref={doctrineRef} className="tsa-doctrine" aria-label="Lunge field doctrine">
         <div className="tsa-doctrine-heading"><div><span className="tsa-eyebrow">PURSUIT / A2 LUNGE</span><h3>LUNGE FIELD DOCTRINE</h3><p>Two tactics. One saved choice. <strong>0 skill points</strong> to switch.</p></div><span className="tsa-doctrine-insignia" aria-hidden="true">⌁</span></div>
         <p className="tsa-doctrine-requirement">{doctrineEligible ? "✓ PURSUER LUNGE RANK I UNLOCKED" : "◈ REQUIRES PURSUER LUNGE RANK I"} <span>· Applies to your next accepted run</span></p>
         {doctrineLocked && <p role="status">Finish the active run to switch.</p>}
