@@ -549,7 +549,8 @@ function SkillHud({ actionStates, usedSkillId }: { actionStates: ReturnType<type
         const rankLabel = sk && actor ? skillRankLabel(actor, sk.id) : null;
         const effect = sk && actor ? skillEffectView(sk, actor.growth,
           sk.cooldownMax + supportCooldownExtra(battle.directive, actor, sk)) : null;
-        const effectText = effect ? [`R${effect.rank}`, effect.discipline?.toUpperCase(), effect.geometry, ...effect.effects].filter(Boolean).join(" · ") : "";
+        const effectText = effect ? [`R${effect.rank}`, effect.discipline?.toUpperCase(), effect.geometry, ...effect.effects,
+          sk?.name === "WIDE LUNGE" ? sk.desc : null].filter(Boolean).join(" · ") : "";
         return (
           <button
             key={i}

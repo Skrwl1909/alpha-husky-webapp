@@ -2,7 +2,7 @@ import { companionRunLocked, masteryRecord } from "../data/packMastery";
 import { recordFieldcraft } from "../ui/fieldcraft";
 import { growthPreviewBase, rankChanges } from "../data/buildPreview";
 import { growthHero } from "../data/playerGrowth";
-import { resolveGrowthSkill, type GrowthSnapshot } from "../data/playerGrowth";
+import { canSelectLungeDoctrine, resolveGrowthSkill, type GrowthSnapshot, type LungeDoctrine } from "../data/playerGrowth";
 import { withFieldRend, type FieldRend } from "../data/fieldContracts";
 import { fieldReport, type DeploymentApproach, type DirectiveTier, type FieldContext, type FieldResult } from "../data/fieldOps";
 import { create } from "zustand";
@@ -34,6 +34,7 @@ import {
   savePackMastery,
   upgradePlayerGrowth,
   respecPlayerGrowth,
+  saveLungeDoctrine,
   type CampaignResult,
   type CampaignReport,
   type ChapterResult,
@@ -189,6 +190,7 @@ interface Store extends UiBattle {
   selectMastery: (unitId: string, choice: import("../data/packMastery").MasteryChoice) => Promise<void>;
   upgradeGrowth: (heroId: "alpha" | "ally-02" | "ally-03", discipline: string, skillId: string, rank: 1 | 2) => Promise<void>;
   respecGrowth: (heroId: "alpha" | "ally-02" | "ally-03") => Promise<void>;
+  selectLungeDoctrine: (choice: LungeDoctrine) => Promise<boolean>;
   saveFieldResult: () => Promise<void>;
   saveCampaignResult: () => Promise<void>;
   saveChapterResult: () => Promise<void>;
@@ -878,6 +880,30 @@ export const useBattleStore = create<Store>((set, get) => {
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
         if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
         set({ progressionError: "Respec was not saved. Refresh your Skillbook and try again." });
+      } finally { set({ progressionCommitPending: false }); }
+    },
+    selectLungeDoctrine: async (choice) => {
+      const current = get();
+      const progression = current.progression;
+      const hero = growthHero(progression?.playerGrowth, "ally-02");
+      if (current.screen !== "war-table" || current.busy || current.progressionCommitPending ||
+          !progression?.lungeDoctrineAvailable || !canSelectLungeDoctrine(hero) ||
+          (hero?.lungeDoctrine ?? "heavy") === choice) return false;
+      const requestId = createFoundationRequestId("lunge-doctrine");
+      set({ progressionCommitPending: true, progressionError: null });
+      try {
+        const receipt = await saveLungeDoctrine(requestId, progression.revision, choice);
+        if (receipt.revision <= progression.revision ||
+            (growthHero(receipt.playerGrowth, "ally-02")?.lungeDoctrine ?? "heavy") !== choice ||
+            receipt.revision < (get().progression?.revision ?? 0)) return false;
+        applyCanonicalProgression(receipt);
+        return true;
+      } catch (error) {
+        const canonical = error instanceof FoundationProgressionError ? error.state : null;
+        if (canonical && canonical.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(canonical);
+        const code = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
+        set({ progressionError: `Doctrine save not confirmed (${code}). Refresh to check your saved choice.` });
+        return false;
       } finally { set({ progressionCommitPending: false }); }
     },
     selectMastery: async (unitId, choice) => {

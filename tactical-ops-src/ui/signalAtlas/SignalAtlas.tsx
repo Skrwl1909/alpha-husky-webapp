@@ -1,5 +1,5 @@
 import { growthPreviewBase, savedGrowthHero, DOCTRINE_TRADEOFF } from "../../data/buildPreview";
-import { canonicalGrowthSkillId, resolveGrowthSkill } from "../../data/playerGrowth";
+import { canSelectLungeDoctrine, canonicalGrowthSkillId, resolveGrowthSkill, WIDE_LUNGE, type LungeDoctrine } from "../../data/playerGrowth";
 import { skillEffectView } from "../skillEffectView";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
@@ -36,6 +36,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const progressionError = useBattleStore(s=>s.progressionError);
   const upgrade = useBattleStore(s=>s.upgradeGrowth);
   const respec = useBattleStore(s=>s.respecGrowth);
+  const saveDoctrine = useBattleStore(s=>s.selectLungeDoctrine);
   const [heroId,setHeroId] = useState<HeroId>(target?.heroId ?? "alpha");
   const [view,setView] = useState<"atlas"|"sector">(target ? "sector" : "atlas");
   const [sectorId,setSectorId] = useState(() => target
@@ -47,6 +48,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const [confirm,setConfirm] = useState<"upgrade"|"respec"|null>(null);
   const [saving,setSaving] = useState(false);
   const [feedback,setFeedback] = useState<Feedback>(null);
+  const [doctrineFeedback,setDoctrineFeedback] = useState("");
   const [showFuture,setShowFuture] = useState(false);
   const [compactFocus,setCompactFocus] = useState(true);
   const dialogRef=useRef<HTMLDivElement>(null);
@@ -61,6 +63,9 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const points=growth ? growth.earnedPoints-growth.spentPoints : 0;
   const unavailable=saving || progressionPending;
   const activeRun=hasActiveGrowthRun(progression);
+  const doctrineLocked = activeRun || Boolean(progression?.signalTrials?.activeRun || progression?.lastHowl?.status === "ACTIVE");
+  const showDoctrine = heroId === "ally-02" && sector.id === "pursuit" && progression?.lungeDoctrineAvailable && hero;
+  const doctrineEligible = canSelectLungeDoctrine(hero ?? undefined);
   const node=selection && sector.skillIds.includes(selection.skillId)
     ? getNodeView(heroId,selection.skillId,selection.rank,hero,chosenPath,points,growthPreviewBase(selection.skillId,progression),activeRun) : null;
   const baseSkill = node ? growthPreviewBase(node.skillId, progression) : null;
@@ -99,7 +104,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   function changeHero(id:HeroId){
     if(unavailable)return;
     setHeroId(id);setSectorPage(0);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
-    setView("atlas");setSelection(null);setFeedback(null);setConfirm(null);
+    setView("atlas");setSelection(null);setFeedback(null);setConfirm(null);setDoctrineFeedback("");
   }
   function openSector(s:AtlasSector){
     if(unavailable)return;
@@ -138,6 +143,12 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
       } else setFeedback({kind:"error",text:current.progressionError||"Reset not confirmed. Refresh and check server progression."});
     } catch{setFeedback({kind:"error",text:"Reset receipt could not be verified."});}
     finally{setSaving(false);}
+  }
+  async function commitDoctrine(choice: LungeDoctrine) {
+    setDoctrineFeedback("");
+    const recorded = await saveDoctrine(choice);
+    setDoctrineFeedback(recorded ? "Server recorded. Applies to the next accepted run."
+      : "Save not confirmed. Refresh to check your saved choice.");
   }
 
   return <section className="tsa-root" style={atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
@@ -228,6 +239,29 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
           <button type="button" disabled={!canBuy} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("upgrade")}>{saving?"SAVING…":node.state==="active-run"?"COMPLETE CURRENT MISSION":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
         </>:<><span className="tsa-eyebrow">SELECT A NODE</span><h3>BUILD YOUR COMBAT IDENTITY</h3><p>Tap a rank to inspect its real effect, prerequisite and server ownership before spending a point.</p></>}
       </section>
+      {showDoctrine && <section className="tsa-doctrine" aria-label="Lunge field doctrine">
+        <h3>Lunge field doctrine</h3>
+        <p>Requires Pursuer Lunge Rank I. Switching costs 0 skill points.</p>
+        {doctrineLocked && <p role="status">Finish the active run to switch.</p>}
+        {(["heavy", WIDE_LUNGE] as const).map(choice => {
+          const selected = (hero.lungeDoctrine ?? "heavy") === choice;
+          const previewHero = { ...hero, discipline: "pursuer" as const,
+            ranks: { ...hero.ranks, "u02-burst": hero.ranks["u02-burst"] || 1 },
+            lungeDoctrine: choice === WIDE_LUNGE ? WIDE_LUNGE : undefined };
+          const skill = resolveGrowthSkill(growthPreviewBase("u02-burst", progression), previewHero);
+          const effect = skillEffectView(skill, previewHero);
+          const damage = skill.effects.find(item => item.kind === "damage")?.multiplier;
+          return <div className="tsa-doctrine-option" key={choice}>
+            <button type="button" aria-pressed={selected} disabled={selected || !doctrineEligible || doctrineLocked || unavailable}
+              onClick={() => void commitDoctrine(choice)}>
+              {choice === "heavy" ? "Heavy Lunge" : "Wide Lunge"}{selected ? " · Selected" : ""}
+            </button>
+            <p>{effect.geometry} · {damage}× per target{effect.effects.length ? ` · ${effect.effects.join(" · ")}` : ""}</p>
+            <p>{choice === "heavy" ? "Use the stronger hit to finish a priority target." : skill.desc}</p>
+          </div>;
+        })}
+        {doctrineFeedback && <p role="status">{doctrineFeedback}</p>}
+      </section>}
       <div className="tsa-secondary"><button type="button" disabled={!canRespec} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("respec")}>{hero?.respecUsed?"ONE-TIME RESET USED":"RESET THIS HERO · ONCE FREE"}</button><small>Pack Mastery remains separate.</small></div>
     </div>}
     {progressionError?<p className="tsa-feedback error" role="alert">{progressionError}</p>:feedback?<p className={`tsa-feedback ${feedback.kind}`} role={feedback.kind==="error"?"alert":"status"}>{feedback.text}</p>:null}

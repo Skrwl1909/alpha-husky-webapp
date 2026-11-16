@@ -17,7 +17,12 @@ let canonical={version:1,foundationStage:'completed',completed:true,revision:10,
  heroes:['alpha','ally-02','ally-03'].map(heroId=>({heroId,discipline:null,ranks:{},respecUsed:false}))},
  packMastery:Object.fromEntries(['ally-02','ally-03'].map(id=>[id,{progress:8,stage:3,selected:'A',unlockedOptions:['A','B']}]))};
 const calls=[],receipts=new Map();let mode='ok';
-window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical),active:kind=>{
+window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical),doctrine:(rank,active=false)=>{
+ canonical.lungeDoctrineAvailable=true;canonical.revision++;
+ canonical.playerGrowth.heroes[1]={heroId:'ally-02',discipline:rank?'pursuer':null,ranks:rank?{'u02-burst':rank}:{},respecUsed:false};
+ canonical.playerGrowth.spentPoints=rank;
+ canonical.lastHowl={version:1,runId:active?'frozen-run':null,status:active?'ACTIVE':null,best:null};
+},active:kind=>{
  canonical.activeRunId=null;delete canonical.fieldOps;delete canonical.chapterActiveMission;delete canonical.tacticalChapter;
  canonical.operations['broken-signal'].activeMissionRun=null;delete canonical.operations['dead-relay'];
  canonical.playerGrowth.heroes[0]={heroId:'alpha',discipline:'vanguard',ranks:{'alpha-strike':1},respecUsed:false};
@@ -35,17 +40,24 @@ window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical
 }};
 window.apiPost=async(path,body={})=>{
  calls.push({path,body});if(path.endsWith('/state')){if(mode==='refresh-network')throw Error('synthetic refresh failure');return {ok:true,data:structuredClone(canonical)};}
- if(!['/webapp/tactical-foundation/growth/upgrade','/webapp/tactical-foundation/growth/respec'].includes(path))throw Error('unexpected fixture request '+path);
+ if(!['/webapp/tactical-foundation/growth/upgrade','/webapp/tactical-foundation/growth/respec','/webapp/tactical-foundation/growth/lunge-doctrine'].includes(path))throw Error('unexpected fixture request '+path);
  await new Promise(resolve=>setTimeout(resolve,250));
  if(mode==='network')throw Error('synthetic disconnected before commit');
  if(mode==='409')throw Object.assign(Error('Conflict'),{status:409,data:{ok:false,code:'growth_run_active',details:{state:structuredClone(canonical)}}});
  if(mode==='stale')throw Object.assign(Error('Conflict'),{status:409,data:{ok:false,code:'stale_revision',details:{state:structuredClone(canonical)}}});
+ if(mode==='401')throw Object.assign(Error('Unauthorized'),{status:401,data:{ok:false,code:'unauthorized'}});
  if(receipts.has(body.requestId))return structuredClone(receipts.get(body.requestId));
  if(body.expectedRevision!==canonical.revision)throw Error('fixture revision mismatch');
  const hero=canonical.playerGrowth.heroes.find(h=>h.heroId===body.heroId);
- if(path.endsWith('/upgrade')){hero.discipline=body.discipline;hero.ranks[body.skillId]=body.rank;canonical.playerGrowth.spentPoints++;}
+ if(path.endsWith('/lunge-doctrine')){
+  const cnc=canonical.playerGrowth.heroes[1];
+  if(body.choice==='wide-v1')cnc.lungeDoctrine='wide-v1';else delete cnc.lungeDoctrine;
+ }
+ else if(path.endsWith('/upgrade')){hero.discipline=body.discipline;hero.ranks[body.skillId]=body.rank;canonical.playerGrowth.spentPoints++;}
  else {canonical.playerGrowth.spentPoints-=Object.values(hero.ranks).reduce((n,r)=>n+r,0);hero.ranks={};hero.discipline=null;hero.respecUsed=true;}
- canonical.revision++;const receipt={ok:true,data:structuredClone(canonical)};receipts.set(body.requestId,receipt);return receipt;
+ canonical.revision++;const receipt={ok:true,data:structuredClone(canonical)};receipts.set(body.requestId,receipt);
+ if(mode==='lost')throw Error('synthetic reply lost after commit');
+ return receipt;
 };
 if(params.get('runtime')==='bundle')await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/js/tactical_ops.js';script.onload=resolve;script.onerror=reject;document.head.append(script);});
 else await import('/tactical-ops-src/host/production-entry.ts');
@@ -68,7 +80,7 @@ async function load(runtime,width,growth=1){
  page.on('pageerror',error=>errors.push(String(error)));
  await page.goto(base+'/official-atlas?'+new URLSearchParams({runtime,growth}));
  await page.getByRole('navigation',{name:'Tactical command sections'}).waitFor();
- if (!process.env.ATLAS_DEFAULT_ACTIONS_ONLY) {
+ if (!process.env.ATLAS_DEFAULT_ACTIONS_ONLY && !process.env.ATLAS_M2_ONLY) {
   const target = page.getByRole('region', { name: 'Next target' });
   await target.getByRole('button', { name: 'INSPECT UPGRADE' }).click();
   const inspection = page.getByRole('region', { name: 'Skill node inspection' });
@@ -93,6 +105,52 @@ async function inspectStrike(){
  await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).waitFor();
 }
 try{
+ for(const runtime of ['source','bundle'])for(const width of [320,390,430]){
+  await load(runtime,width,2);
+  await page.getByRole('button',{name:/CNC TACTICAL HUNTER/}).click();
+  await page.getByRole('button',{name:/Open PURSUIT/}).click();
+  const panel=page.getByRole('region',{name:'Lunge field doctrine'});
+  assert.equal(await panel.count(),0,'older backend hides the doctrine');
+  const refresh=()=>page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.evaluate(()=>fixture.doctrine(0));await refresh();
+  const wide=panel.getByRole('button',{name:'Wide Lunge',exact:true});
+  await wide.waitFor();
+  assert(await wide.isDisabled(),'R0 cannot select');
+  await page.evaluate(()=>fixture.doctrine(1,true));await refresh();
+  await panel.getByText('Finish the active run to switch.').waitFor();
+  assert(await wide.isDisabled());
+  await page.evaluate(()=>fixture.doctrine(1));await refresh();
+  await panel.getByText('Finish the active run to switch.').waitFor({state:'detached'});
+  await layout();
+  await panel.scrollIntoViewIfNeeded();
+  assert(await panel.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'doctrine fits without clipping');
+  if(width===390){
+   for(const [mode,code] of [['401','unauthorized'],['stale','stale_revision']]){
+    await page.evaluate(mode=>fixture.mode(mode),mode);
+    await wide.click();
+    await page.getByRole('alert').filter({hasText:code}).waitFor();
+    assert.equal(await panel.getByText(/Server recorded/).count(),0);
+   }
+   await page.evaluate(()=>fixture.mode('lost'));
+   await wide.click();
+   await page.getByRole('alert').filter({hasText:'progression_request_failed'}).waitFor();
+   assert.equal(await panel.getByText(/Server recorded/).count(),0);
+   assert(await panel.getByRole('button',{name:'Heavy Lunge · Selected',exact:true}).isVisible());
+   await page.evaluate(()=>fixture.mode('ok'));await refresh();
+   await panel.getByRole('button',{name:'Wide Lunge · Selected',exact:true}).waitFor();
+   assert.equal(await panel.getByText(/Server recorded/).count(),0,'refresh is not a mutation receipt');
+   await panel.getByRole('button',{name:'Heavy Lunge',exact:true}).click();
+  }else{
+   await wide.evaluate(button=>{button.click();button.click();});
+  }
+  await panel.getByText('Server recorded. Applies to the next accepted run.').waitFor();
+  const received=await page.evaluate(()=>({calls:fixture.calls.filter(c=>c.path.endsWith('/lunge-doctrine')),state:fixture.state()}));
+  assert.equal(received.calls.length,width===390?4:1,'one mutation per deliberate switch');
+  assert.equal(received.state.playerGrowth.spentPoints,1);
+  await page.screenshot({path:out+'/'+runtime+'-'+width+'-wide-lunge.png'});
+  results.push({runtime,width,doctrine:true});
+ }
+ if(!process.env.ATLAS_M2_ONLY){
  if(!process.env.ATLAS_DEFAULT_ACTIONS_ONLY)for(const runtime of ['source','bundle'])for(const width of [320,360,390,430])for(const growth of [1,2]){
   await load(runtime,width,growth);await layout();
   assert.equal(await page.locator('.tsa-root').count(),1);
@@ -193,6 +251,7 @@ try{
   await page.getByRole('button',{name:'CANCEL',exact:true}).click();
   assert.equal(await page.evaluate(()=>fixture.calls.filter(c=>/growth\/(upgrade|respec)$/.test(c.path)).length),0);
   results.push({runtime,action,confirmationInvalidatedByCanonicalRun:true});
+ }
  }
  assert.deepEqual(errors,[]);
  console.log('PASS official Atlas source/IIFE parity: '+results.length+' scenario groups');

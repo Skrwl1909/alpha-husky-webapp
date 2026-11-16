@@ -4,6 +4,8 @@ import type { SkillDef } from "../combat/types";
 export type HeroId = "alpha" | "ally-02" | "ally-03";
 export type Discipline = "vanguard" | "howlkeeper" | "pursuer" | "disruptor" | "sentinel" | "medic";
 export type SkillRank = 0 | 1 | 2;
+export const WIDE_LUNGE = "wide-v1";
+export type LungeDoctrine = "heavy" | typeof WIDE_LUNGE;
 export interface HeroGrowth {
   heroId: HeroId;
   /** Runtime rules copied from the validated accepted snapshot, never account ownership. */
@@ -11,7 +13,13 @@ export interface HeroGrowth {
   discipline: Discipline | null;
   /** Only present on persistent records, not frozen run snapshots. */
   respecUsed?: boolean;
+  /** Absence preserves the existing single-target loadout. */
+  lungeDoctrine?: typeof WIDE_LUNGE;
   ranks: Record<string, SkillRank>;
+}
+
+export function canSelectLungeDoctrine(hero: HeroGrowth | undefined): boolean {
+  return hero?.heroId === "ally-02" && hero.discipline === "pursuer" && (hero.ranks["u02-burst"] ?? 0) >= 1;
 }
 export interface GrowthSnapshot {
   version: 1 | 2;
@@ -72,6 +80,8 @@ export function validateGrowthSnapshot(value: unknown): GrowthSnapshot {
     for (const [skillId, rank] of Object.entries(hero.ranks)) {
       if (!HERO_SKILLS[id].includes(skillId) || !Number.isInteger(rank) || rank < 1 || rank > 2) throw Error("invalid_growth_rank");
     }
+    if (Object.hasOwn(hero, "lungeDoctrine") &&
+      (s.version !== 2 || hero.lungeDoctrine !== WIDE_LUNGE || !canSelectLungeDoctrine(hero))) throw Error("invalid_lunge_doctrine");
   }
   return s;
 }
@@ -138,6 +148,20 @@ export function resolveGrowthSkill(base: SkillDef, hero: HeroGrowth | undefined)
         }
       }
       break;
+  }
+  if (v2 && canonicalId === "u02-burst" && hero.lungeDoctrine === WIDE_LUNGE && canSelectLungeDoctrine(hero)) {
+    const heavyDamage = skill.effects.find(effect => effect.kind === "damage")?.multiplier;
+    const multiplier = 1;
+    const closeSidegrade = base.maxRange === 1;
+    skill.name = "WIDE LUNGE";
+    skill.targetType = closeSidegrade ? "ENEMY_AOE" : "AREA_RADIUS";
+    skill.minRange = closeSidegrade ? 0 : 1;
+    skill.maxRange = closeSidegrade ? 0 : 1;
+    skill.radius = 1;
+    skill.effects = [{ kind: "damage", multiplier, on: "hits" }];
+    skill.desc = (closeSidegrade ? "Hits enemies adjacent to CNC. Gives up Lunge's initiative boost."
+      : "Aim at an adjacent enemy. Hits enemies within 1 cell of the target.") +
+      ` Deals ${multiplier}× per target instead of ${heavyDamage}× to one target.`;
   }
   if (v2 && canonicalId === "u03-mend") skill.desc = `MEND: ${skill.targetType === "ALLY_AOE" ? `radius ${skill.radius}` : `range ${skill.maxRange}`}; cooldown ${skill.cooldownMax}. ${rank ? upgradeDescription(canonicalId,rank as 1 | 2,2) : "Restore HP to an ally."}${hero.discipline === "medic" && base.cooldownMax === 1 ? " STEADY HAND: +8 base healing at the cooldown floor." : ""}`;
   return skill;

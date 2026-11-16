@@ -34,10 +34,18 @@ jobs:
           node tools/verify_tactical_ops_vnext_contract.mjs
           node tools/verify_tactical_vnext_run_contract_wire.mjs
           node tools/verify_tactical_recover_authority_client.mjs
-      - name: Verify new RECOVER worker (legacy pinned worker remains on VPS)
+      - name: Verify the pinned RECOVER worker and both M2 workers
         run: |
-          node tools/build_tactical_recover_engine_v1.mjs
-          echo "13568770cba259bcee808d03794e0e260a8d8c82ba5e87d630bd82100aaf78a0  artifacts/recover-authority-v1/tactical_recover_engine_v1.cjs" | sha256sum --check
+          mkdir -p artifacts/legacy-recover
+          git archive 2fdb990846840a997f36a49a176b6f848463a46d tactical-ops-src tools/build_tactical_recover_engine_v1.mjs tools/tactical_recover_engine_v1.ts | tar -x -C artifacts/legacy-recover
+          node artifacts/legacy-recover/tools/build_tactical_recover_engine_v1.mjs
+          echo "13568770cba259bcee808d03794e0e260a8d8c82ba5e87d630bd82100aaf78a0  artifacts/legacy-recover/artifacts/recover-authority-v1/tactical_recover_engine_v1.cjs" | sha256sum --check
+          node tools/build_tactical_m2_workers.mjs
+          sha256sum --check <<'EOF'
+          94bb393f30e7832edf33233563b5895fb547dfe718dfe687bb7d1e5b7c07ecff  artifacts/tactical-m2-workers/tactical_recover_engine_m2.cjs
+          a984afefece5fcd59f4cf6c8bbe34e9049b1901b1ac1641de9a54dfca7b458dd  artifacts/tactical-m2-workers/tactical_last_howl_engine_m2.cjs
+          EOF
+          TACTICAL_M2_WORKERS=artifacts/tactical-m2-workers node tools/verify_tactical_m2_wide_lunge.mjs
       - name: Next decision at 320, 390, 430 and desktop
         run: NEXT_DECISION_ONLY=1 node tools/verify_tactical_purpose_return_browser.mjs
         env:

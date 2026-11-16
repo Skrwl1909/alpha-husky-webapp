@@ -267,6 +267,12 @@
 #tacticalOpsRoot .tsa-inspector-bottom {flex-wrap:wrap;}
 #tacticalOpsRoot .tsa-inspector-bottom button {white-space:normal;clip-path:none;min-width:44px;}
 #tacticalOpsRoot .tsa-secondary small {font-size:11px;}
+#tacticalOpsRoot .tsa-doctrine {margin-top:12px;padding:12px;border:1px solid #5a94ab;border-radius:6px;background:#081b29;}
+#tacticalOpsRoot .tsa-doctrine h3 {margin:0 0 4px;font-size:16px;color:#f5f9ff;}
+#tacticalOpsRoot .tsa-doctrine p {margin:4px 0;font-size:12px;line-height:1.45;color:#c3d7e2;}
+#tacticalOpsRoot .tsa-doctrine-option {padding:8px 0;border-top:1px solid #2b4d60;}
+#tacticalOpsRoot .tsa-doctrine-option button {width:100%;min-height:44px;padding:6px 9px;border:1px solid #55778a;border-radius:4px;background:#132634;color:#e0f4ff;text-align:left;}
+#tacticalOpsRoot .tsa-doctrine-option button[aria-pressed="true"] {border-color:#eac080;color:#eac080;}
 #tacticalOpsRoot .tsa-dialog-backdrop {padding:max(16px,env(safe-area-inset-top),var(--tg-content-safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom),var(--tg-content-safe-area-inset-bottom,0px));height:100dvh;overflow-y:auto;overscroll-behavior:contain;}
 #tacticalOpsRoot .tsa-dialog {box-sizing:border-box;max-height:100%;overflow-y:auto;overscroll-behavior:contain;padding:18px;flex-shrink:1;overflow-wrap:anywhere;}
 #tacticalOpsRoot .tsa-dialog-actions {position:sticky;bottom:-18px;background:#0b2030;padding:10px 0;margin-top:10px;}
