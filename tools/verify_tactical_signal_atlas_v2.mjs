@@ -44,6 +44,7 @@ try {
     {activeRunId:'foundation'},
     {operations:{'broken-signal':{activeMissionRun:null},'dead-relay':{activeMissionRun:{runId:'campaign'}}}},
     {fieldOps:{activeMissionRun:{runId:'field'}}},
+    {signalTrials:{activeRun:{runId:'trial'}}},
     {chapterActiveMission:{runId:'chapter'}},
     {tacticalChapter:{activeRunId:'chapter'}},
   ]){
@@ -87,12 +88,12 @@ try {
   // Actual React SSR smoke test catches runtime import/render failures beyond string checks.
   const uiModule=await server.ssrLoadModule("/tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx");
   const html=renderToStaticMarkup(React.createElement(uiModule.SignalAtlas,{onClose:()=>undefined}));
-  assert(html.includes("THE SIGNAL ATLAS") && html.includes("ASSAULT") && html.includes("COMMAND"),"Atlas must render with its live sectors even before login");
-  assert(html.includes("LIVE SKILL TREE") && html.includes("tsa-lanes") && !html.includes('class="tsa-overview"'),"Official Atlas entry must display actionable skill ranks before the optional network map");
+  assert(html.includes("SIGNAL ATLAS") && html.includes("FANG") && html.includes("HOWL"),"Alpha's two live branches render before login");
+  assert(html.includes('aria-label="Alpha Overview"') && html.includes("FUTURE SIGNAL") && !html.includes("tsa-lanes"),"The overview precedes the focused rank graph");
   assert(ui.includes("DESIGN RESERVE — NOT RELEASED"),"Optional network map must still label its expansion markers honestly");
   const official=await server.ssrLoadModule('/tactical-ops-src/ui/Skillbook.tsx');
   const officialHtml=renderToStaticMarkup(React.createElement(official.SkillbookPanel,{onClose:()=>undefined}));
-  assert.equal((officialHtml.match(/class="tsa-root"/g)||[]).length,1);
+  assert.equal((officialHtml.match(/class="tsa-root\b/g)||[]).length,1);
   assert(!/OPEN SIGNAL ATLAS|BETA|t-growth-panel/.test(officialHtml),'Only official Atlas renders with no query or storage opt-in');
     const hostStyles=readFileSync("tactical-ops-src/styles.ts","utf8");
   assert(hostStyles.includes("signalAtlas.css?raw"),"Atlas CSS must be injected by Tactical host, not extracted into unused standalone stylesheet");

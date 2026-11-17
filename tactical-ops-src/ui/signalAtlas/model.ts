@@ -7,15 +7,15 @@ import type { FoundationProgressionState } from "../../host/foundationProgressio
 /** Mirrors the backend growth lock using only the canonical public snapshot. */
 export function hasActiveGrowthRun(state: Partial<FoundationProgressionState> | null | undefined): boolean {
   return Boolean(state?.activeRunId || state?.chapterActiveMission || state?.tacticalChapter?.activeRunId ||
-    state?.fieldOps?.activeMissionRun || Object.values(state?.operations || {}).some(operation=>operation.activeMissionRun));
+    state?.fieldOps?.activeMissionRun || state?.signalTrials?.activeRun || Object.values(state?.operations || {}).some(operation=>operation.activeMissionRun));
 }
 
 /** UI-only sector taxonomy: no additional backend progression or unlock conditions. */
 export type AtlasSector = { id: string; title: string; description: string; skillIds: readonly string[]; tone: "cyan" | "amber"; emblemSrc: string };
 export const ATLAS_SECTORS: Record<HeroId, readonly AtlasSector[]> = {
   alpha: [
-    { id: "assault", title: "ASSAULT", description: "Strike · Rend", skillIds: ["alpha-strike", "alpha-rend"], tone: "amber" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.assault },
-    { id: "command", title: "COMMAND", description: "Howl", skillIds: ["alpha-howl"], tone: "cyan" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.command },
+    { id: "assault", title: "FANG", description: "Strike reach · Rend bleed", skillIds: ["alpha-strike", "alpha-rend"], tone: "amber" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.assault },
+    { id: "command", title: "HOWL", description: "Pack support · Shorter cooldown", skillIds: ["alpha-howl"], tone: "cyan" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.command },
   ],
   "ally-02": [
     { id: "pursuit", title: "PURSUIT", description: "Thrust · Lunge", skillIds: ["u02-shot", "u02-burst"], tone: "amber" , emblemSrc: SIGNAL_ATLAS_SECTOR_EMBLEMS.pursuit },
@@ -53,8 +53,10 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
   if (activeRun) return { ...base, state:"active-run", reason:"Complete the current mission before upgrading or resetting skills. The accepted run keeps its saved build." };
   const differentPath = Boolean(hero.discipline && hero.discipline !== path);
   const changes = differentPath ? [] : nextSkillChanges(skillId,rank,hero,path,baseSkill);
+  if (differentPath) return { ...base, state:"different-discipline", reason:hero.respecUsed
+    ? "Another discipline is saved. The one-time reset has already been used."
+    : "Another discipline is saved. Use the one-time reset to choose again." };
   if (rank===2 && current<1) return { ...base, changes, state:"needs-rank-one", reason:"Record Rank I of this skill first." };
-  if (differentPath) return { ...base, state:"different-discipline", reason:"Another discipline is saved. A one-time respec may change it." };
   if (!changes.length) return { ...base, changes, state:"no-effect", reason:skillId==="u03-mend"
     ? "MEND is already at its minimum cooldown in this build. This rank adds no combat effect and cannot cost a point."
     : "This rank adds no combat effect to the current build. No point can be spent." };
@@ -63,11 +65,11 @@ export function getNodeView(heroId: HeroId, skillId: string, rank: 0|1|2, hero: 
 }
 
 /** The first currently actionable Atlas upgrade, using the same eligibility as its inspector. */
-export function availableAtlasUpgrade(state: FoundationProgressionState | null) {
+export function availableAtlasUpgrade(state: FoundationProgressionState | null, onlyHero?: HeroId) {
   const growth = state?.playerGrowth;
   if (!state || !growth || growth.earnedPoints <= growth.spentPoints || hasActiveGrowthRun(state) ||
       state.signalTrials?.activeRun || state.lastHowl?.status === "ACTIVE") return null;
-  for (const heroId of Object.keys(HERO_SKILLS) as HeroId[]) {
+  for (const heroId of onlyHero ? [onlyHero] : Object.keys(HERO_SKILLS) as HeroId[]) {
     const hero = savedGrowthHero(growth, heroId);
     if (!hero) continue;
     for (const skillId of HERO_SKILLS[heroId]) {

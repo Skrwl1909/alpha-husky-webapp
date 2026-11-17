@@ -36,9 +36,12 @@ try {
   assert.match(html, /tsa-blueprint-overline/);
   assert.match(html, /CNC combat identity/);
   const firstVisit = renderToStaticMarkup(React.createElement(SignalAtlas, { onClose: () => {} }));
-  assert.match(firstVisit, /LIVE SKILL TREE/);
-  assert.match(firstVisit, /tsa-lane/);
-  assert.doesNotMatch(firstVisit, /class="tsa-overview"/, "Decorative map must not hide the skills on first opening");
+  assert.match(firstVisit, /aria-label="Alpha Overview"/);
+  assert.match(firstVisit, /ALPHA combat identity/);
+  assert.match(firstVisit, /Open FANG sector, 2 skills/);
+  assert.match(firstVisit, /Open HOWL sector, 1 skills/);
+  assert.match(firstVisit, /INSTINCT.*FUTURE SIGNAL/);
+  assert.doesNotMatch(firstVisit, /aria-label="Skill node inspection"/);
   // React's server snapshot intentionally excludes subsequent store.setState();
   // test real resolved skills directly and the doctrine component's presentation contract.
   const base = growthPreviewBase("u02-burst", useBattleStore.getState().progression);

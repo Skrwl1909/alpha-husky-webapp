@@ -84,8 +84,8 @@ async function load(runtime,width,growth=1){
   const target = page.getByRole('region', { name: 'Next target' });
   await target.getByRole('button', { name: 'INSPECT UPGRADE' }).click();
   const inspection = page.getByRole('region', { name: 'Skill node inspection' });
-  await inspection.getByText('CURRENT · R0', { exact: true }).waitFor();
-  await inspection.getByText('NEXT · R1', { exact: true }).waitFor();
+  await inspection.getByText('1 cell reach', { exact: true }).waitFor();
+  await inspection.getByText('2 cells reach', { exact: true }).waitFor();
   await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
  }
  await page.getByRole('button',{name:'03 SQUAD',exact:true}).click();
@@ -100,7 +100,7 @@ async function layout(){
  assert.deepEqual(small,[],'Atlas controls retain 44px targets');
 }
 async function inspectStrike(){
- await page.getByRole('button',{name:/Open ASSAULT/}).click();
+ await page.getByRole('button',{name:/Open FANG/}).click();
  await page.getByRole('button',{name:/STRIKE rank 1,/}).click();
  await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).waitFor();
 }
@@ -219,13 +219,26 @@ try{
   assert.equal(await page.evaluate(()=>window.TacticalOps.getState().open),false);
   results.push({runtime,dialogEscape:true,hostEscape:true,canonicalFailureCodes:true,noRetry:true,canonicalPurchase:true,oneTimeRespec:true});
  }
+ // A lost purchase response is followed by a state read, never another write.
+ for (const runtime of ['source','bundle']) {
+  await load(runtime,390,2);await inspectStrike();
+  await page.evaluate(()=>fixture.mode('lost'));
+  await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).click();
+  await page.getByRole('button',{name:'CONFIRM',exact:true}).evaluate(button=>{button.click();button.click()});
+  await page.getByRole('alert').filter({hasText:'progression_request_failed'}).waitFor();
+  await page.getByRole('button',{name:/STRIKE rank 1, recorded:/}).waitFor();
+  assert.equal(await page.locator('.tsa-feedback.success').count(),0,'refresh does not impersonate the lost receipt');
+  assert.equal(await page.evaluate(()=>fixture.calls.filter(call=>call.path.endsWith('/growth/upgrade')).length),1);
+  assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),1);
+  results.push({runtime,lostPurchaseReconciled:true,singleDebit:true,noFalseReceipt:true});
+ }
  // One active-run family per requested width, in both saved Growth contracts and runtimes.
  for(const runtime of ['source','bundle'])for(const [width,kind] of [[320,'foundation'],[360,'campaign'],[390,'field'],[430,'chapter']])for(const growth of [1,2]){
   await load(runtime,width,growth);await page.evaluate(kind=>fixture.active(kind),kind);
   await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
   await page.getByText('ACTIVE RUN · COMPLETE CURRENT MISSION',{exact:true}).waitFor();
   const frozen=await page.evaluate(()=>JSON.stringify(fixture.state()));
-  await page.getByRole('button',{name:/Open ASSAULT/}).click();
+  await page.getByRole('button',{name:/Open FANG/}).click();
   await page.getByRole('button',{name:/STRIKE rank 2, active-run:/}).click();
   assert(await page.getByRole('button',{name:'COMPLETE CURRENT MISSION',exact:true}).isDisabled());
   assert(await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).isDisabled());
@@ -242,7 +255,7 @@ try{
  for(const runtime of ['source','bundle'])for(const action of ['upgrade','respec']){
   await load(runtime,390,2);
   if(action==='respec'){await page.evaluate(()=>fixture.active(null));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();}
-  await page.getByRole('button',{name:/Open ASSAULT/}).click();
+  await page.getByRole('button',{name:/Open FANG/}).click();
   if(action==='upgrade'){await page.getByRole('button',{name:/STRIKE rank 1,/}).click();await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).click();}
   else await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).click();
   await page.getByRole('dialog').waitFor();

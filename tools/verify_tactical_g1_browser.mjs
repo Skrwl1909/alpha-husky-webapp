@@ -20,7 +20,10 @@ store.setState({progression,screen:mode==='results'?'results':'brief',foundation
 window.fixture={store};
 const component=React.createElement(mode==='mastery'?PackMasteryPanel:mode==='brief'||mode==='results'?TacticalApp:SignalAtlas,{onClose:()=>{}});
 createRoot(document.getElementById('mount')).render(mode==='brief'||mode==='results'?component:React.createElement('div',{className:'t-shell'},React.createElement('div',{className:'t-fill'},React.createElement('div',{className:'t-brief'},component))));`;
-const server=await createServer({configFile:false,plugins:[{name:'g1-browser',configureServer(s){s.middlewares.use((req,res,next)=>{if(req.url?.startsWith('/g1-fixture')){res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial}#tacticalOpsRoot{width:100%;box-sizing:border-box}</style><div id="tacticalOpsRoot"><div id="mount" style="height:100%"></div></div><script type="module" src="/@g1"></script>');return}next()})},resolveId(id){if(id==='/@g1')return '\0g1'},load(id){if(id==='\0g1')return entry}}],server:{host:'127.0.0.1',port:0}});
+const server=await createServer({configFile:false,cacheDir:'node_modules/.vite-g1-browser',
+ resolve:{dedupe:['react','react-dom']},
+ optimizeDeps:{include:['react','react-dom','react-dom/client','react/jsx-dev-runtime','lucide-react','zustand']},
+ plugins:[{name:'g1-browser',configureServer(s){s.middlewares.use((req,res,next)=>{if(req.url?.startsWith('/g1-fixture')){res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial}#tacticalOpsRoot{width:100%;box-sizing:border-box}</style><div id="tacticalOpsRoot"><div id="mount" style="height:100%"></div></div><script type="module" src="/@g1"></script>');return}next()})},resolveId(id){if(id==='/@g1')return '\0g1'},load(id){if(id==='\0g1')return entry}}],server:{host:'127.0.0.1',port:0,hmr:false}});
 await server.listen();const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});
 const results=[];
 try{
