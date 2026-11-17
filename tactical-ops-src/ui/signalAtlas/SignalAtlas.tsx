@@ -4,7 +4,7 @@ import type { SkillDef } from "../../combat/types";
 import { skillEffectView } from "../skillEffectView";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
-import { SIGNAL_ATLAS_ASSETS } from "./signalAtlasAssets";
+import { SIGNAL_ATLAS_ASSETS, SIGNAL_ATLAS_PREMIUM_ART } from "./signalAtlasAssets";
 import { useBattleStore } from "../../store/battleStore";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, type Discipline, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
@@ -39,7 +39,22 @@ function atlasPortraitFallback(event: SyntheticEvent<HTMLImageElement>) {
   if (event.currentTarget.dataset.fallback) { hideArt(event); return; }
   event.currentTarget.dataset.fallback = "1"; portraitFallback(event);
 }
+function alphaPortraitFallback(event: SyntheticEvent<HTMLImageElement>) {
+  const face = event.currentTarget;
+  const source = face.previousElementSibling;
+  if (source?.hasAttribute("srcset")) {
+    source.removeAttribute("srcset");
+    face.src = UNIT_DEFS.alpha.portrait;
+    return;
+  }
+  atlasPortraitFallback(event);
+}
 const atlasArt = Object.fromEntries(Object.entries(SIGNAL_ATLAS_ASSETS).map(([key,src])=>[`--tsa-${key}`,`url("${src}")`])) as CSSProperties;
+const alphaAtlasArt = {
+  ...atlasArt,
+  "--tsa-alpha-environment": `url("${SIGNAL_ATLAS_PREMIUM_ART.environment}")`,
+} as CSSProperties;
+const alphaPathEmblems: Readonly<Partial<Record<string, string>>> = SIGNAL_ATLAS_PREMIUM_ART.pathEmblems;
 const RESERVES = [
   {id:"future-a", title:"FUTURE 01",x:14,y:62},
   {id:"future-b", title:"FUTURE 02",x:86,y:62},
@@ -243,7 +258,12 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
         <div className="tsa-identity" aria-label={`${HERO_TITLES[heroId]} combat identity`}>
           <div className="tsa-identity-portrait">
             <img className="tsa-identity-bezel" src={SIGNAL_ATLAS_ASSETS.coreBezel} onError={hideArt} alt=""/>
-            <img className="tsa-identity-face" src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/>
+            {alpha ? <picture className="tsa-alpha-portrait-art">
+              <source media="(max-width: 560px)" srcSet={SIGNAL_ATLAS_PREMIUM_ART.alphaCloseup}/>
+              <img className="tsa-identity-face" src={SIGNAL_ATLAS_PREMIUM_ART.alphaFull}
+                width={768} height={768} decoding="async" onError={alphaPortraitFallback} alt=""/>
+            </picture>
+              : <img className="tsa-identity-face" src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/>}
           </div>
           <div className="tsa-identity-copy"><span className="tsa-eyebrow">{alpha ? "PACK LEADER" : "OPERATIVE / COMBAT CORE"}</span><strong>{HERO_TITLES[heroId]}</strong><span>{hero?.discipline ? `${hero.discipline.toUpperCase()} · RECORDED` : offline ? "BUILD UNAVAILABLE" : "CHOOSE A DISCIPLINE"}</span></div>
           <div className="tsa-identity-progress"><strong>{hero ? identitySkills.reduce((sum,id)=>sum+(purchased[id]||0),0) : "—"}<small>/{identitySkills.length*2}</small></strong><span>RANKS SAVED</span></div>
@@ -271,7 +291,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
     </div>
   </section>;
 
-  return <section ref={atlasRef} className={`tsa-root ${alpha ? "tsa-alpha" : ""}`} style={atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
+  return <section ref={atlasRef} className={`tsa-root ${alpha ? "tsa-alpha" : ""}`} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
     <header className="tsa-header">
       <div><span className="tsa-eyebrow">{alpha ? "ALPHA / PACK LEADER" : "SQUAD / CHARACTER DEVELOPMENT"}</span>
         <h2>SIGNAL ATLAS</h2></div>
@@ -295,12 +315,15 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
           const count=s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0);
           return <button key={s.id} type="button" className={`tsa-alpha-branch tsa-tone-${s.tone}`}
             onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
-            <img src={s.emblemSrc} onError={hideArt} alt=""/>
+            <img className="tsa-path-emblem" src={alphaPathEmblems[s.id] ?? s.emblemSrc}
+              width={48} height={48} loading="lazy" decoding="async" onError={hideArt} alt=""/>
             <span><b>{s.title}</b><small>{s.description}</small></span>
             <strong>{hero ? `${count}/${s.skillIds.length*2}` : "—"} <small>saved</small></strong>
           </button>;
         })}
-        <div className="tsa-alpha-branch tsa-future-signal"><span aria-hidden="true">◇</span>
+        <div className="tsa-alpha-branch tsa-future-signal">
+          <img className="tsa-path-emblem" src={SIGNAL_ATLAS_PREMIUM_ART.instinct}
+            width={48} height={48} loading="lazy" decoding="async" onError={hideArt} alt=""/>
           <span><b>INSTINCT</b><small>FUTURE SIGNAL</small></span></div>
       </div>
       {nextAlpha ? <button className="tsa-alpha-next" type="button" disabled={unavailable} onClick={()=>{
@@ -333,7 +356,18 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
       <button type="button" className="tsa-future-toggle" disabled={unavailable} aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
       {showFuture?<p className="tsa-explain">This atlas can accept additional sectors without changing existing skill IDs. Grey markers are design space only—not earnable abilities, locked missions or promised rewards.</p>:null}
     </div>:<div className={`tsa-focus ${doctrineStage ? "is-doctrine-stage" : ""}`} aria-label="Live skill tree">
-      <div ref={treeHeadingRef} className="tsa-focus-heading"><div><span className="tsa-eyebrow">LIVE SKILL TREE / {HERO_TITLES[heroId]}</span><h3>{sector.title}{alpha ? " SKILL TREE" : " NETWORK"}</h3><small>{sector.description}</small></div><button type="button" onClick={showOverview} disabled={unavailable}>{alpha ? "← ALPHA" : "← MAP"}</button></div>
+      <div ref={treeHeadingRef} className="tsa-focus-heading">
+        <div className="tsa-focus-title">
+          {alpha && <img className="tsa-path-emblem" src={alphaPathEmblems[sector.id] ?? sector.emblemSrc}
+            width={48} height={48} decoding="async" onError={hideArt} alt=""/>}
+          <div>
+            <span className="tsa-eyebrow">LIVE SKILL TREE / {HERO_TITLES[heroId]}</span>
+            <h3>{sector.title}{alpha ? " SKILL TREE" : " NETWORK"}</h3>
+            <small>{sector.description}</small>
+          </div>
+        </div>
+        <button type="button" onClick={showOverview} disabled={unavailable}>{alpha ? "← ALPHA" : "← MAP"}</button>
+      </div>
       <div className="tsa-sector-switch" role="group" aria-label="Choose live sector">{sectors.map(s=><button type="button" key={s.id} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`} aria-pressed={s.id===sector.id} disabled={unavailable} onClick={()=>openSector(s)}>{s.title}<small>{s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2} RECORDED</small></button>)}</div>
       {!alpha && <div className="tsa-blueprint-overline" aria-hidden="true"><span>TACTICAL SKILL BLUEPRINT</span><span>LIVE BUILD · {HERO_TITLES[heroId]}</span></div>}
       {!alpha && forge}

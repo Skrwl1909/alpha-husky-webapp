@@ -17,3 +17,14 @@ export const SIGNAL_ATLAS_SECTOR_EMBLEMS = {
   line: ROOT + "/sectors/emblem_front_line.webp",
   support: ROOT + "/sectors/emblem_support.webp",
 } as const;
+
+export const SIGNAL_ATLAS_PREMIUM_ART = {
+  environment: ROOT + "/premium/atlas_environment_v1.webp",
+  alphaFull: ROOT + "/premium/atlas_alpha_portrait_full_v1.webp",
+  alphaCloseup: ROOT + "/premium/atlas_alpha_portrait_closeup_v1.webp",
+  pathEmblems: {
+    assault: ROOT + "/premium/atlas_path_fang_v1.webp",
+    command: ROOT + "/premium/atlas_path_howl_v1.webp",
+  },
+  instinct: ROOT + "/premium/atlas_path_instinct_v1.webp",
+} as const;

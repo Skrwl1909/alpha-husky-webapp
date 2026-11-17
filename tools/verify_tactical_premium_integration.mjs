@@ -185,13 +185,43 @@ const alphaSkillTreeBlobs = Object.freeze({
  'tools/verify_tactical_signal_atlas_premium.mjs': '5c315c9b5c3efc2c32e8519f3b322b1929b19ba1',
  'tools/verify_tactical_signal_atlas_v2.mjs': '8fdfce6c92d4f4828773b8250aa527f415759aab',
 });
-const alphaSkillTreePath = path => Object.hasOwn(alphaSkillTreeBlobs, path);
+// Art Kit follow-up to draft #306. Keep the original P0 release pinned and
+// verify the exact presentation, WebP, QA and delivery changes independently.
+const alphaArtKitBase = 'a91dfc99ebb1e55366db9164b684c87ad5de4c07';
+const alphaArtKitBlobs = Object.freeze({
+ 'index.html': '7a61dc40381b37b4e084781af219fda12831e1c3',
+ 'js/boot_loaders.js': '1b019103cce684437f8332a76187534813dd14c8',
+ 'js/tactical_ops.js': '6d00c5f5568035124ea7c876d833b9721714eff6',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '96eb6ad834db5542def58f449ef236818c538f10',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasAssets.ts': '4676fface71e8a2e1e3027e245e74e60aaa8b7f5',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'cd1e729d14e150af6e5b4a7d3bcbbe08d7b65529',
+ 'tactical-ops-src/version.ts': '26a8d0b9967d4d332ad39362e0a912ded304659a',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': 'efb09995110249fc08b71ae14c4a66be9d8e370f',
+ 'tools/verify_tactical_signal_atlas_p3.mjs': '3abd9b9e488c9f68643caf53e53d45f241dbccbd',
+ 'tools/verify_tactical_signal_atlas_p3_browser.mjs': '187a89403281ffae0b46b3c0b82e518ba64e90b3',
+ 'images/tactical_ops/signal_atlas/v1/premium/atlas_alpha_portrait_closeup_v1.webp': 'e2cca9c00846a71b59a2e5d90b91976a6b8dc5d1',
+ 'images/tactical_ops/signal_atlas/v1/premium/atlas_alpha_portrait_full_v1.webp': '350d3f8d5deccab4c8510a6eeceffa52f7f9abd4',
+ 'images/tactical_ops/signal_atlas/v1/premium/atlas_environment_v1.webp': '4083dbf40d62148886cb2edad718fb68c81a8af5',
+ 'images/tactical_ops/signal_atlas/v1/premium/atlas_path_fang_v1.webp': '78140b7d043805f1eb262a37d65d4041d5873ffe',
+ 'images/tactical_ops/signal_atlas/v1/premium/atlas_path_howl_v1.webp': '04ebf70169f9e2a5b3c2dcebdbac98f033b9924e',
+ 'images/tactical_ops/signal_atlas/v1/premium/atlas_path_instinct_v1.webp': '48c95a7e75b3f454607612d57cdfc5dd4e17e04b',
+ 'images/tactical_ops/signal_atlas/v1/premium/manifest.json': '6979dc4fe849668b2e3c076ed63ed65d59d7c3a8',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs };
+const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
+git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
+for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
+ assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
+}
+for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+}
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', alphaSkillTreeBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || alphaSkillTreePath(path), 'unreviewed Alpha Skill Tree path: ' + path);
 }
-for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
+for (const [path, expected] of Object.entries(currentAlphaSkillTreeBlobs)) {
  assert.equal(workingBlob(path), expected, 'unreviewed working Alpha Skill Tree source: ' + path);
 }
 git('merge-base', '--is-ancestor', m2Base, 'HEAD');
@@ -204,7 +234,7 @@ for (const path of git('diff', '--name-only', '--no-renames', m2Base).trim().spl
 for (const [path, expected] of Object.entries(approvedM2Blobs)) {
  const baseline = Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : Object.hasOwn(approvedSignalAtlasFidelityBlobs, path) ? signalAtlasFidelityBase : alphaSkillTreePath(path) ? alphaSkillTreeBase : 'HEAD';
  assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical M2 source: ' + path);
- const current = alphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? expected;
+ const current = currentAlphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? expected;
  assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), current, 'unreviewed working M2 descendant: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasPremiumBase).trim().split('\n').filter(Boolean)) {
@@ -213,7 +243,7 @@ for (const path of git('diff', '--name-only', '--no-renames', signalAtlasPremium
 for (const [path, expected] of Object.entries(approvedSignalAtlasPremiumBlobs)) {
  const baseline = Object.hasOwn(approvedSignalAtlasEntryBlobs, path) ? signalAtlasEntryBase : alphaSkillTreePath(path) ? alphaSkillTreeBase : 'HEAD';
  assert.equal(git('rev-parse', `${baseline}:${path}`).trim(), expected, 'unreviewed historical Signal Atlas Premium source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), alphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? expected, 'unreviewed working Signal Atlas Premium source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), currentAlphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? expected, 'unreviewed working Signal Atlas Premium source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasEntryBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Entry path: ' + path);
@@ -221,7 +251,7 @@ for (const path of git('diff', '--name-only', '--no-renames', signalAtlasEntryBa
 for (const [path, expected] of Object.entries(approvedSignalAtlasEntryBlobs)) {
  const historicRef = Object.hasOwn(approvedSignalAtlasFidelityBlobs, path) ? signalAtlasFidelityBase : alphaSkillTreePath(path) ? alphaSkillTreeBase : 'HEAD';
  assert.equal(git('rev-parse', `${historicRef}:${path}`).trim(), expected, 'unreviewed committed Signal Atlas Entry source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), alphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? expected, 'unreviewed working Signal Atlas Entry source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), currentAlphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? expected, 'unreviewed working Signal Atlas Entry source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasFidelityBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Fidelity path: ' + path);
@@ -231,7 +261,7 @@ for (const [path, sha] of Object.entries(approvedSignalAtlasFidelityBlobs)) {
  assert(previous, 'Fidelity path has no historically approved predecessor: ' + path);
  assert.equal(git('rev-parse', `${signalAtlasFidelityBase}:${path}`).trim(), previous, 'unreviewed historical Fidelity source: ' + path);
  assert.equal(git('rev-parse', `${alphaSkillTreeBase}:${path}`).trim(), sha, 'unreviewed committed Fidelity source: ' + path);
- assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), alphaSkillTreeBlobs[path] ?? sha, 'unreviewed working Fidelity source: ' + path);
+ assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), currentAlphaSkillTreeBlobs[path] ?? sha, 'unreviewed working Fidelity source: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSkillMasteryMotionV1Blobs)) {
  assert.equal(git('rev-parse', `${masteryEffectBase}:${path}`).trim(), expected, 'unreviewed Skill & Mastery Motion V1 source: ' + path);
@@ -803,7 +833,7 @@ for(const head of heads)for(const path of changed(head)){
    : 'd46a9c8b59958af921303269b2776cc44ffc9e5d';
   assert.equal(git('rev-parse',`${head}:${path}`).trim(),historicSha,'unreviewed historical G1 browser');
   assert.equal(git('rev-parse', `${alphaSkillTreeBase}:${path}`).trim(),approvedMasteryEffectBlobs[path],'unreviewed M1 G1 browser at #305');
-  assert.equal(sourceBlob(source),alphaSkillTreeBlobs[path],'unreviewed Alpha Skill Tree G1 browser');
+  assert.equal(sourceBlob(source),currentAlphaSkillTreeBlobs[path],'unreviewed Alpha Skill Tree G1 browser');
   preserved++;continue;
  }
  if(path==='tactical-ops-src/styles.ts'){
@@ -1156,7 +1186,7 @@ const version=readLocalFile('tactical-ops-src/version.ts','utf8');
 const bundle=readLocalFile('js/tactical_ops.js','utf8'),loader=readLocalFile('js/boot_loaders.js','utf8');
 assert(bundle.includes(version.match(/VERSION = "([^"]+)"/)[1]));
 assert(loader.includes(version.match(/CACHE_KEY = "([^"]+)"/)[1]));
-assert(readLocalFile('index.html','utf8').includes("WEBAPP_VER + '-alpha-skill-tree-v1'"), 'stale boot loader URL');
+assert(readLocalFile('index.html','utf8').includes("WEBAPP_VER + '-alpha-skill-tree-art-v1'"), 'stale boot loader URL');
 for(const feature of ['WIN CONDITION · RECOVER THE SIGNAL','TACTICAL THREATS','NO ADDITIONAL RANK CONFIRMED BY THIS RECEIPT.','t-field-results','RECORDING FAILED','RECORDED THIS RUN','New option unlocked'])assert(bundle.toLowerCase().includes(feature.toLowerCase()),`missing compiled feature: ${feature}`);
 assert(readFileSync('js/pet_quick_actions.js','utf8').includes('body:has(#tacticalOpsRoot[data-open="1"]) #petQuickActions'));
 execFileSync(process.execPath,['--test','tools/verify_tactical_defeated_tile_hitbox.mjs'],{stdio:'inherit'});

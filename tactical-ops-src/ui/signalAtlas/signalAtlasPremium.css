@@ -461,7 +461,7 @@
 #tacticalOpsRoot .tsa-alpha-branches {display:grid;gap:7px}
 #tacticalOpsRoot .tsa-alpha-branch {
   display: grid;
-  grid-template-columns: 34px minmax(0,1fr) auto;
+  grid-template-columns: 46px minmax(0,1fr) auto;
   align-items: center;
   gap: 10px;
   min-height: 55px;
@@ -478,7 +478,14 @@
   background: linear-gradient(108deg,#3b2d1f,#0d1b24 72%);
   border-left-color: #e4b47b;
 }
-#tacticalOpsRoot .tsa-alpha-branch img {width:34px;height:34px;object-fit:contain}
+#tacticalOpsRoot .tsa-path-emblem {
+  display:block;
+  flex:none;
+  width:46px;
+  height:46px;
+  object-fit:contain;
+  filter:drop-shadow(0 1px 5px #4eadc754);
+}
 #tacticalOpsRoot .tsa-alpha-branch img[hidden] + span {grid-column:2}
 #tacticalOpsRoot .tsa-alpha-branch b {
   display:block;
@@ -493,7 +500,7 @@
   background:#0a1720;
   color:#afbfcb;
 }
-#tacticalOpsRoot .tsa-future-signal > span:first-child {text-align:center;font-size:23px}
+#tacticalOpsRoot .tsa-future-signal .tsa-path-emblem {opacity:.62;filter:saturate(.55)}
 #tacticalOpsRoot .tsa-alpha-next {
   display:grid;
   width:100%;
@@ -618,4 +625,46 @@
   }
   #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines img {grid-row:auto;width:24px;height:24px}
   #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines b {font-size:10px;white-space:nowrap}
+}
+
+/* The portrait and the room are confined to Alpha's own Atlas panels. */
+#tacticalOpsRoot .tsa-alpha-portrait-art {
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-identity-portrait .tsa-alpha-portrait-art img {
+  width:94%;
+  height:94%;
+  object-fit:contain;
+  object-position:center;
+  filter:contrast(1.04);
+  -webkit-mask-image:radial-gradient(circle,#000 58%,#000d 69%,transparent 77%);
+  mask-image:radial-gradient(circle,#000 58%,#000d 69%,transparent 77%);
+}
+#tacticalOpsRoot .tsa-alpha > .tsa-focus {
+  background:
+    linear-gradient(180deg,#07162572,#071521b8 350px,#04121bf2 900px),
+    var(--tsa-alpha-environment) center top / 100% auto no-repeat,
+    #06131e;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-focus-title {
+  display:flex;
+  flex:1;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-focus-title > div {min-width:0}
+#tacticalOpsRoot .tsa-alpha .tsa-focus-heading button {flex:none}
+@media(max-width:380px) {
+  #tacticalOpsRoot .tsa-alpha .tsa-focus-title .tsa-path-emblem {width:38px;height:38px}
+}
+@media(prefers-reduced-transparency:reduce) {
+  #tacticalOpsRoot .tsa-alpha > .tsa-focus {background:#071726}
+}
+@media(forced-colors:active) {
+  #tacticalOpsRoot .tsa-alpha > .tsa-focus {background:Canvas}
 }

@@ -4,6 +4,9 @@ import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 import {createServer} from 'vite';
 const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
 const out=process.env.ATLAS_DEFAULT_OUT||'artifacts/signal-atlas-official/default-route';
+const artKitOnly=process.env.ATLAS_ART_KIT_ONLY==='1';
+const artDir=out+'/art-kit';
+const premiumPath='/images/tactical_ops/signal_atlas/v1/premium/';
 mkdirSync(out,{recursive:true});
 const expectedVersion=readFileSync('tactical-ops-src/version.ts','utf8').match(/VERSION\s*=\s*"([^"]+)"/)[1];
 const entry=`
@@ -75,12 +78,16 @@ const base='http://127.0.0.1:'+server.httpServer.address().port;
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});
 const results=[],errors=[];
 let page;
-async function load(runtime,width,growth=1){
+async function load(runtime,width,growth=1,{artKit=false}={}){
  if(page)await page.close();page=await browser.newPage({viewport:{width,height:width===320?568:844},hasTouch:true,reducedMotion:'reduce'});
  page.on('pageerror',error=>errors.push(String(error)));
  await page.goto(base+'/official-atlas?'+new URLSearchParams({runtime,growth}));
  await page.getByRole('navigation',{name:'Tactical command sections'}).waitFor();
- if (!process.env.ATLAS_DEFAULT_ACTIONS_ONLY && !process.env.ATLAS_M2_ONLY) {
+ if(artKit){
+  assert.equal(await page.evaluate(path=>performance.getEntriesByType('resource').filter(item=>item.name.includes(path)).length,premiumPath),0,
+   'the art kit is not requested on the War Table');
+ }
+ if (!artKit && !process.env.ATLAS_DEFAULT_ACTIONS_ONLY && !process.env.ATLAS_M2_ONLY) {
   const target = page.getByRole('region', { name: 'Next target' });
   await target.getByRole('button', { name: 'INSPECT UPGRADE' }).click();
   const inspection = page.getByRole('region', { name: 'Skill node inspection' });
@@ -104,7 +111,89 @@ async function inspectStrike(){
  await page.getByRole('button',{name:/STRIKE rank 1,/}).click();
  await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).waitFor();
 }
+async function captureKit(width,scene){
+ // Temporarily unclip the outer shell for the evidence image only. The
+ // interaction/target checks above this call use the real fixed mobile shell.
+ const exportStyle=await page.addStyleTag({content:'html,body{overflow:visible!important}#tacticalOpsRoot{position:relative!important;height:auto!important;max-height:none!important;overflow:visible!important;container-type:inline-size!important}#tacticalOpsRoot .t-shell{height:auto!important;overflow:visible!important}#tacticalOpsRoot .t-fill{position:relative!important}#tacticalOpsRoot .t-brief{height:auto!important;overflow:visible!important}'});
+ try { await page.locator('.tsa-root').screenshot({path:artDir+'/'+width+'-'+scene+'.png'}); }
+ finally { await exportStyle.evaluate(style=>style.remove()); }
+}
+async function assertArtImage(locator,file,size){
+ await locator.scrollIntoViewIfNeeded();
+ const image=await locator.evaluate(async element=>{
+  await element.decode();
+  return {src: element.currentSrc, width: element.naturalWidth, height: element.naturalHeight};
+ });
+ assert(image.src.endsWith('/'+file),image.src);
+ assert.deepEqual([image.width,image.height],[size,size],file);
+}
+async function verifyArtKit(){
+ mkdirSync(artDir,{recursive:true});
+ for(const width of [320,390,430]){
+  await load('bundle',width,2,{artKit:true});
+  const portrait=page.locator('.tsa-alpha-portrait-art img');
+  await assertArtImage(portrait,'atlas_alpha_portrait_closeup_v1.webp',768);
+  const pathImages=page.locator('.tsa-alpha-branches img');
+  assert.equal(await pathImages.count(),3);
+  for(const [index,name] of ['fang','howl','instinct'].entries())
+   await assertArtImage(pathImages.nth(index),'atlas_path_'+name+'_v1.webp',640);
+  assert.equal(await page.locator('.tsa-future-signal button').count(),0);
+  assert(await page.getByText('FUTURE SIGNAL',{exact:true}).isVisible());
+  assert.equal(await page.evaluate(()=>performance.getEntriesByType('resource').filter(item=>/atlas_environment_v1|atlas_alpha_portrait_full_v1/.test(item.name)).length),0,
+   'overview does not request the tree environment or full portrait on mobile');
+  await layout();await captureKit(width,'overview');
+
+  await inspectStrike();
+  await assertArtImage(page.locator('.tsa-focus-title img'),'atlas_path_fang_v1.webp',640);
+  const tree=page.locator('.tsa-focus');
+  assert.match(await tree.evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_environment_v1\.webp/);
+  await page.waitForFunction(()=>performance.getEntriesByType('resource').some(item=>item.name.endsWith('/atlas_environment_v1.webp')));
+  const nodeImage=page.locator('.tsa-node img').first();
+  assert(!((await nodeImage.getAttribute('src'))||'').includes(premiumPath),'skill nodes retain their action icons');
+  assert(await page.getByText('2 cells reach',{exact:true}).isVisible());
+  assert.equal(await page.locator('.tsa-alpha .tsa-state-available').first().evaluate(node=>getComputedStyle(node).animationName),'none','reduced motion');
+  await layout();await captureKit(width,'fang-inspector');
+
+  await page.getByRole('group',{name:'Choose live sector'}).getByRole('button',{name:/Open HOWL/}).click();
+  await assertArtImage(page.locator('.tsa-focus-title img'),'atlas_path_howl_v1.webp',640);
+  await page.getByRole('button',{name:/HOWL rank 1, available:/}).click();
+  assert(await page.getByText('3 turns cooldown',{exact:true}).isVisible());
+  await layout();await captureKit(width,'howl-inspector');
+
+  await page.evaluate(()=>fixture.active('field'));
+  await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.getByText('ACTIVE RUN · COMPLETE CURRENT MISSION',{exact:true}).waitFor();
+  await page.getByRole('button',{name:/HOWL rank 1, active-run:/}).click();
+  assert(await page.getByRole('button',{name:'COMPLETE CURRENT MISSION',exact:true}).isDisabled());
+  await layout();await captureKit(width,'active-run');
+
+  await page.getByRole('button',{name:'Alpha Overview',exact:true}).click();
+  await page.getByRole('button',{name:/CNC TACTICAL HUNTER/}).click();
+  assert.equal(await page.locator('.tsa-alpha-portrait-art,.tsa-focus-title .tsa-path-emblem').count(),0);
+  assert.doesNotMatch(await page.locator('.tsa-focus').evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_environment_v1/);
+  await layout();await captureKit(width,'squad-cnc');
+  assert.equal(await page.evaluate(()=>fixture.calls.filter(call=>call.path.includes('/growth/')).length),0);
+  results.push({runtime:'bundle',width,artKit:true,overview:true,fang:true,howl:true,activeRun:true,squad:true,reducedMotion:true});
+ }
+ await load('bundle',820,2,{artKit:true});
+ await assertArtImage(page.locator('.tsa-alpha-portrait-art img'),'atlas_alpha_portrait_full_v1.webp',768);
+ assert.equal(await page.evaluate(()=>performance.getEntriesByType('resource').filter(item=>item.name.includes('atlas_alpha_portrait_closeup_v1')).length),0,
+  'desktop selects only the full portrait');
+ results.push({runtime:'bundle',width:820,fullPortrait:true});
+ await page.setViewportSize({width:320,height:568});
+ await page.route('**/premium/atlas_alpha_portrait_*.webp',route=>route.abort());
+ await page.reload();
+ await page.getByRole('button',{name:'03 SQUAD',exact:true}).click();
+ await page.waitForFunction(()=>{
+  const image=document.querySelector('.tsa-alpha-portrait-art img');
+  return image?.complete && image.naturalWidth>0 && !image.currentSrc.includes('/premium/');
+ });
+ await layout();
+ results.push({runtime:'bundle',width:320,portraitFallback:true});
+
+}
 try{
+ if(!artKitOnly){
  for(const runtime of ['source','bundle'])for(const width of [320,390,430]){
   await load(runtime,width,2);
   await page.getByRole('button',{name:/CNC TACTICAL HUNTER/}).click();
@@ -269,6 +358,8 @@ try{
   results.push({runtime,action,confirmationInvalidatedByCanonicalRun:true});
  }
  }
+ }
+ if(!process.env.ATLAS_M2_ONLY && !process.env.ATLAS_DEFAULT_ACTIONS_ONLY)await verifyArtKit();
  assert.deepEqual(errors,[]);
  console.log('PASS official Atlas source/IIFE parity: '+results.length+' scenario groups');
 }catch(error){

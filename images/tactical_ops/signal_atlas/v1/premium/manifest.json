@@ -1,0 +1,67 @@
+{
+  "project": "Alpha Husky",
+  "kit": "Signal Atlas Premium Art Kit V1",
+  "intended_for": "Frontend PR #306 visual-only pass",
+  "assets": [
+    {
+      "file": "atlas_environment_v1.webp",
+      "role": "background",
+      "format": "webp",
+      "width": 864,
+      "height": 1536,
+      "transparent": false,
+      "size_bytes": 47012,
+      "sha256": "7fb8bfe432e99ec7344d79667e5b90deefbed82f7a18b2962419ea3e866e8179"
+    },
+    {
+      "file": "atlas_path_fang_v1.webp",
+      "role": "fang_crest",
+      "format": "webp",
+      "width": 640,
+      "height": 640,
+      "transparent": true,
+      "size_bytes": 96320,
+      "sha256": "8ee48f14c945963cd4a4da7e41f00449a51d49dc2b3d267498606a4018d7c896"
+    },
+    {
+      "file": "atlas_path_howl_v1.webp",
+      "role": "howl_crest",
+      "format": "webp",
+      "width": 640,
+      "height": 640,
+      "transparent": true,
+      "size_bytes": 104152,
+      "sha256": "1c3a31dd57d51f5fd0a25bbf7c5cdb32b8c59b7ca92e9de715f3a52b136eb680"
+    },
+    {
+      "file": "atlas_path_instinct_v1.webp",
+      "role": "instinct_future_crest",
+      "format": "webp",
+      "width": 640,
+      "height": 640,
+      "transparent": true,
+      "size_bytes": 118170,
+      "sha256": "ed32c364c525cc1ae6aa8d29efdc058d0410c0f105981a7a433755ab5e585748"
+    },
+    {
+      "file": "atlas_alpha_portrait_full_v1.webp",
+      "role": "alpha_portrait_full",
+      "format": "webp",
+      "width": 768,
+      "height": 768,
+      "transparent": true,
+      "size_bytes": 241736,
+      "sha256": "dcd0e9c1ae3d285d320fd65bb377b12f6e10988df9dfdc418390484c6d28fc83"
+    },
+    {
+      "file": "atlas_alpha_portrait_closeup_v1.webp",
+      "role": "alpha_portrait_ring_crop",
+      "format": "webp",
+      "width": 768,
+      "height": 768,
+      "transparent": true,
+      "size_bytes": 254962,
+      "sha256": "9fd29efd80d09f594972829f536b4a65ef3e9594ed61d455d6f25a6c88cdab57"
+    }
+  ]
+}
