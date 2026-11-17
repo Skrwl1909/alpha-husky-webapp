@@ -248,14 +248,23 @@ const alphaLastHowlHudBlobs = Object.freeze({
  'tools/verify_tactical_last_howl_browser.mjs': '13e4cabd466bef00bf4566d3c6f33e531ac8de59',
  'tools/verify_tactical_signal_atlas_default_browser.mjs': '9753bdaf60f3ea328a7ee8404a2335b4b6ebe592',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs };
+// Review Upgrade modal layer regression, including real topmost hit-testing
+// on 320/390/430px. Keep merged HUD and previous Art Kit pins immutable.
+const alphaAtlasModalBlobs = Object.freeze({
+ 'js/boot_loaders.js': 'cb2d07ef6e7812b58ef79bfec632a662fed733c6',
+ 'js/tactical_ops.js': 'd2b8b72ceef267976ed30dae4a5f1b5bd0eecf46',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': '57b681a9b048756874345d57ab34224ec91415e1',
+ 'tactical-ops-src/version.ts': 'a91405e666570265516fc4d8e6a82703db61795b',
+ 'tools/verify_tactical_signal_atlas_p3_browser.mjs': '350f5c8c23e7c0ff0a849a31132724ba94545aa7',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');

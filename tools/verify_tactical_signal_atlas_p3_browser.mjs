@@ -56,10 +56,31 @@ async function focus(){
 }
 async function overview(){await page.getByRole('button',{name:'Alpha Overview',exact:true}).click();}
 async function rank(n=1){await page.getByRole('button',{name:new RegExp('STRIKE rank '+n+',')}).click()}
-async function review(){await page.getByRole('button',{name:'REVIEW UPGRADE'}).click();await page.getByRole('dialog').waitFor();}
+async function review(){
+ await page.getByRole('button',{name:'REVIEW UPGRADE'}).click();
+ const dialog=page.getByRole('dialog');await dialog.waitFor();
+ for(const name of ['CANCEL','CONFIRM']){
+  const button=dialog.getByRole('button',{name,exact:true});
+  await button.scrollIntoViewIfNeeded();
+  assert(await button.evaluate(el=>{
+   const rect=el.getBoundingClientRect();
+   const hit=document.elementFromPoint(rect.left+rect.width/2,rect.top+rect.height/2);
+   return rect.width>=44 && rect.height>=44 && !!hit && (hit===el || el.contains(hit));
+  }),`Review Upgrade ${name} must be the topmost reachable touch target, not behind the immersive Atlas`);
+ }
+}
 try{
 if(process.env.ATLAS_CAPTURE_ONLY){await load();await shot('390-alpha-overview');await focus();await rank();await shot('390-before-inspector');}
 else {
+// The Telegram regression: a recorded STRIKE I upgrading to Relentless (II)
+// must open a *visible and clickable* confirmation, not trap focus behind Atlas.
+for(const width of [320,390,430]){
+ await load(width,'partial');await focus();await rank(2);await review();
+ await page.getByRole('dialog').getByRole('button',{name:'CANCEL',exact:true}).click();
+ assert.equal(await page.getByRole('dialog').count(),0);
+ assert(await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).isEnabled());
+ results.push(`${width}px Relentless rank II review, clickable modal and cancel recovery`);
+}
 for(const width of [320,360,390,430])for(const state of ['default','partial','maxed']){
 await load(width,state);assert(await page.locator('.tsa-alpha-overview').isVisible(),'Alpha Overview is the default Atlas entry');await layout();await shot(`${width}-${state}-alpha-overview`);await focus();await layout();
 assert(await page.locator('.tsa-lane img').count()>0);
