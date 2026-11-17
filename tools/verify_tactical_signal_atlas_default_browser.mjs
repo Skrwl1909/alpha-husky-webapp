@@ -114,6 +114,38 @@ async function layout(){
  const small=await page.locator('.tsa-root button').evaluateAll(buttons=>buttons.filter(button=>{const r=button.getBoundingClientRect();return r.width&&(r.width<44||r.height<44);}).map(button=>button.textContent));
  assert.deepEqual(small,[],'Atlas controls retain 44px targets');
 }
+async function verifyTelegramChrome(runtime,width){
+ await load(runtime,width,2);
+ const bounds=()=>page.evaluate(()=>({
+  heading:document.querySelector('.tsa-header h2').getBoundingClientRect().top,
+  exit:document.querySelector('.tsa-immersive-close').getBoundingClientRect().top,
+  headerHeight:document.querySelector('.tsa-header').getBoundingClientRect().height,
+  horizontalOverflow:document.documentElement.scrollWidth>innerWidth,
+ }));
+ // Android system inset plus Telegram's native content controls.
+ await page.evaluate(()=>{
+  const style=document.documentElement.style;
+  style.setProperty('--ah-safe-top','64px');
+  style.setProperty('--ah-chrome-top','0px');
+  style.setProperty('--tg-safe-area-inset-top','26px');
+  style.setProperty('--tg-content-safe-area-inset-top','64px');
+ });
+ const combined=await bounds();
+ assert(combined.heading>=90 && combined.exit>=90,'Telegram insets leave the Atlas title and Exit accessible');
+ assert(!combined.horizontalOverflow,'Telegram header clearance preserves mobile width');
+ // The host updates its chrome inset when Telegram expands or enters fullscreen.
+ await page.evaluate(()=>document.documentElement.style.setProperty('--ah-chrome-top','112px'));
+ const updated=await bounds();
+ assert(updated.heading>=112 && updated.exit>=112 && updated.headerHeight>combined.headerHeight,
+  'Atlas header responds to native chrome changes without remounting');
+ await page.locator('.tsa-root').evaluate(element=>{element.scrollTop=180;});
+ const scrolled=await bounds();
+ assert(scrolled.exit>=112,'sticky Exit stays clear of Telegram controls during scrolling');
+ await page.screenshot({path:out+'/'+runtime+'-'+width+'-telegram-safe-area.png'});
+ await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
+ assert.equal(await page.locator('.tsa-root').count(),0,'Telegram-safe Atlas still closes normally');
+ results.push({runtime,width,telegramChrome:true,contentInset:90,changedChrome:112});
+}
 async function inspectStrike(){
  await page.getByRole('button',{name:/Open FANG/}).click();
  await page.getByRole('button',{name:/STRIKE rank 1,/}).click();
@@ -202,6 +234,7 @@ async function verifyArtKit(){
 }
 try{
  if(!artKitOnly){
+ for(const runtime of ['source','bundle'])for(const width of [320,390,430])await verifyTelegramChrome(runtime,width);
  for(const runtime of ['source','bundle'])for(const width of [320,390,430]){
   await load(runtime,width,2);
   await page.getByRole('button',{name:/CNC TACTICAL HUNTER/}).click();
