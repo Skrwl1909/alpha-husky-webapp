@@ -107,6 +107,8 @@ async function layout(){
  assert.equal(immersive.position,'fixed','Atlas is a dedicated overlay, not an embedded squad card');
  assert(Math.abs(immersive.top)<=2 && immersive.width>=immersive.viewportWidth-2 && immersive.height>=immersive.viewportHeight-2,'Atlas covers the full mobile viewport');
  assert(await page.locator('.t-fill').first().evaluate(element=>element.inert),'underlying War Table is inert while Atlas is open');
+ assert.equal(await page.locator('.t-fill').first().getAttribute('aria-hidden'),'true','underlying War Table is hidden from assistive technology');
+ assert.equal(await page.getByRole('button',{name:'PACK MASTERY',exact:true}).count(),1,'only the in-Atlas Pack Mastery button is accessible');
  assert.equal(await page.locator('.t-growth-panel,.t-growth-atlas-cta').count(),0,'legacy purchase panel and beta launcher absent');
  assert.equal(await page.getByRole('button',{name:/OPEN SIGNAL ATLAS|CHARACTER SKILLBOOK|BETA/}).count(),0);
  const small=await page.locator('.tsa-root button').evaluateAll(buttons=>buttons.filter(button=>{const r=button.getBoundingClientRect();return r.width&&(r.width<44||r.height<44);}).map(button=>button.textContent));

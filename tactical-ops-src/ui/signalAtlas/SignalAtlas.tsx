@@ -159,11 +159,19 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
     const previouslyFocused=document.activeElement as HTMLElement | null;
     const host=document.querySelector<HTMLElement>("#tacticalOpsRoot .t-fill");
     const wasInert=host?.inert ?? false;
-    if(host)host.inert=true;
+    const previousAriaHidden=host?.getAttribute("aria-hidden") ?? null;
     document.body.style.overflow="hidden";
     atlasRef.current?.querySelector<HTMLButtonElement>(".tsa-immersive-close")?.focus({preventScroll:true});
+    if(host){
+      host.inert=true;
+      host.setAttribute("aria-hidden","true");
+    }
     return ()=>{
-      if(host)host.inert=wasInert;
+      if(host){
+        host.inert=wasInert;
+        if(previousAriaHidden===null)host.removeAttribute("aria-hidden");
+        else host.setAttribute("aria-hidden",previousAriaHidden);
+      }
       document.body.style.overflow=previousOverflow;
       if(previouslyFocused?.isConnected)previouslyFocused.focus({preventScroll:true});
     };
