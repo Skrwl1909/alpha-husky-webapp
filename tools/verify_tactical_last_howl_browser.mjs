@@ -47,7 +47,11 @@ window.apiPost = async (path, body) => {
     active = { ...fresh.view, mode: "last_howl", runId: "fixture-" + ++creates, revision: 0, token: "fixture-token",
       status: "ACTIVE", activeCombatProfileV3: profile, newRecord: false, best: active?.best ?? null, roster };
   } else if (path.endsWith("/last-howl/command")) {
-    if (wide) {
+    if (body.command?.type === "abandon") {
+      active = { ...active, status: "ABANDONED", token: null, revision: active.revision + 1,
+        completedWaves: active.completedWaves || 0, eliteKills: active.eliteKills || 0, kills: active.kills || 0,
+        newRecord: false, battle: { ...active.battle, outcome: "defeat", activeId: null } };
+    } else if (wide) {
       fresh = stepLastHowl(encounter, fresh.snapshot, body.command);
       if (!fresh) throw Error("invalid fixture action");
       window.receivedHits = fresh.frames[0].events.filter(event => event.type === "damage").length;
@@ -106,6 +110,12 @@ try {
     assert.match(await hud.innerText(), /WAVE 1.*KILLS 0.*SQUAD 3\/3/s);
     assert.equal(await page.locator(".t-grid > i").count(), 70);
     assert(await hud.evaluate(node => node.scrollWidth <= node.clientWidth + 1));
+    const abandon = hud.getByRole("button", { name: "ABANDON RUN", exact: true });
+    const abandonRect = await abandon.boundingBox();
+    const hudRect = await hud.boundingBox();
+    assert(abandonRect && hudRect && abandonRect.y >= hudRect.y - 1 &&
+      abandonRect.y + abandonRect.height <= hudRect.y + hudRect.height + 1,
+      'Last Howl abandon must be inside the visible HUD, not clipped by the 44px rail');
     const field = page.locator(".t-field-wrap");
     assert((await field.boundingBox()).y >= (await hud.boundingBox()).y + (await hud.boundingBox()).height - 1);
     await hud.getByRole("button", { name: "EXIT", exact: true }).click();
@@ -122,6 +132,11 @@ try {
     await results.getByRole("button", { name: "TRY AGAIN" }).click();
     await hud.waitFor();
     assert.equal(await page.evaluate(() => JSON.parse(sessionStorage.lastHowl).active.runId), "fixture-2");
+    await hud.getByRole("button", { name: "ABANDON RUN", exact: true }).tap();
+    const confirm = hud.getByRole("group", { name: "Confirm abandoning Last Howl" });
+    await confirm.getByRole("button", { name: "CONFIRM ABANDON" }).tap();
+    await results.getByText("RUN ABANDONED").waitFor();
+    assert.equal(await page.evaluate(() => JSON.parse(sessionStorage.lastHowl).active.status), "ABANDONED");
     await page.evaluate(() => sessionStorage.clear());
     await page.goto(url + "?wide");
     await page.getByRole("button", { name: "DEPLOY", exact: true }).click();

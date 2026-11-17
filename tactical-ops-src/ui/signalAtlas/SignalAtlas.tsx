@@ -334,7 +334,9 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
     </header>
     {!alpha && squad}
     {offline && <p className="tsa-banner" role="status"><strong>OFFLINE</strong> · Skillbook progression is unavailable. <button type="button" disabled={unavailable} onClick={()=>void refresh()}>REFRESH</button></p>}
-    {growthLocked?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>ACTIVE RUN · COMPLETE CURRENT MISSION</strong><br/>Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged.</p>:null}
+    {growthLocked?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>{lastHowlActive ? "LAST HOWL RUN ACTIVE" : "ACTIVE RUN · COMPLETE CURRENT MISSION"}</strong><br/>{lastHowlActive
+      ? "Return to COMMAND → LAST HOWL → RESUME. Finish or abandon that run to unlock upgrades. Your points are preserved."
+      : "Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged."}</p>:null}
     <div className={`tsa-nav ${onOpenMastery ? "has-mastery" : ""}`} role="group" aria-label="Skillbook view">
       <button type="button" className={view==="atlas"?"is-current":""} aria-label={alpha ? "Alpha Overview" : "◈ ATLAS OVERVIEW"} aria-pressed={view==="atlas"} onClick={showOverview} disabled={unavailable}>{alpha ? "ALPHA OVERVIEW" : "◈ NETWORK MAP"}</button>
       <button type="button" className={view==="sector"?"is-current":""} aria-label="◇ SECTOR FOCUS" aria-pressed={view==="sector"} onClick={showTree} disabled={unavailable}>◇ SKILL TREE</button>
@@ -366,7 +368,9 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
         const nextSector=sectors.find(item=>item.skillIds.includes(nextAlpha.skillId));
         if (nextSector) { openSector(nextSector); inspect(nextAlpha.skillId,nextAlpha.rank); }
       }}><small>NEXT UPGRADE</small><b>{getNodeView("alpha",nextAlpha.skillId,nextAlpha.rank,hero,hero?.discipline ?? chosenPath,points).title}</b><span>{nextAlpha.change} · 1 point</span></button>
-        : !offline && <p className="tsa-alpha-next-note" role="status">{growthLocked ? "Complete your active operation to unlock upgrades. Your available points are preserved." : identitySkills.every(id=>(purchased[id]||0)===2)
+        : !offline && <p className="tsa-alpha-next-note" role="status">{growthLocked ? lastHowlActive
+          ? "Last Howl is still running. Resume and finish or abandon it before upgrading. Your points are preserved."
+          : "Complete your active operation to unlock upgrades. Your available points are preserved." : identitySkills.every(id=>(purchased[id]||0)===2)
           ? "All six Alpha ranks recorded." : points===0 ? "Earn a first-clear skill point to upgrade." : "No eligible Alpha upgrade for the recorded specialization. Open a path to inspect requirements or reset eligibility."}</p>}
       {squad}
     </div> : view==="atlas" ? <div className="tsa-overview">
