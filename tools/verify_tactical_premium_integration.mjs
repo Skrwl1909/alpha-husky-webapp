@@ -237,6 +237,7 @@ const alphaTelegramSafeBlobs = Object.freeze({
 // Last Howl 44px HUD clipping fix: exact changed paths, including the rebuilt
 // bundle and an end-to-end abandon interaction regression on touch layouts.
 const alphaLastHowlHudBlobs = Object.freeze({
+ '.github/workflows/tactical-premium-integration.yml': 'd0f23dba358600f4f60b10baf71aab4fedbf4711',
  'js/boot_loaders.js': '544edd048bb870b38af2745a202f0a3c327cc5b3',
  'js/tactical_ops.js': '3dd15ccf150247965f768cfa14c6997342bd5791',
  'tactical-ops-src/ui/Battle.tsx': '92f3e36561655251c3aaf3c5203754cd6798b184',
