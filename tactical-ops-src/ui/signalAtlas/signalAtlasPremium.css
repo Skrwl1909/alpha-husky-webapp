@@ -433,3 +433,238 @@
   #tacticalOpsRoot .tsa-forge-stage::before,#tacticalOpsRoot .tsa-forge-stage::after {display:none}
   #tacticalOpsRoot .tsa-forge-stage .tsa-disciplines button.is-chosen {outline:2px solid Highlight}
 }
+
+/* Alpha's permanent Skillbook entry and compact branch view. */
+#tacticalOpsRoot .tsa-alpha-overview {
+  padding: 8px 10px 12px;
+  background: linear-gradient(180deg,#04121be8,#04121bef),var(--tsa-sectorBackground) center top / cover;
+}
+#tacticalOpsRoot .tsa-squad h3 {
+  margin: 14px 10px 0;
+  font: 800 12px var(--t-font-display);
+  letter-spacing: .14em;
+  color: #b8d3df;
+}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-hero-tabs {
+  grid-template-columns: repeat(2,minmax(0,1fr));
+  padding: 6px 0 0;
+}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-hero-tabs button {
+  min-height: 48px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-hero-tabs img {display:block}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage {margin-bottom:8px}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-path-explain {margin:6px 2px 12px}
+#tacticalOpsRoot .tsa-alpha-branches {display:grid;gap:7px}
+#tacticalOpsRoot .tsa-alpha-branch {
+  display: grid;
+  grid-template-columns: 46px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 55px;
+  width: 100%;
+  padding: 7px 12px;
+  text-align: left;
+  color: #edf7fd;
+  background: linear-gradient(108deg,#183947,#081a27 72%);
+  border: 1px solid #4f8399;
+  border-left: 3px solid #9adce8;
+  border-radius: 4px;
+}
+#tacticalOpsRoot .tsa-alpha-branch.tsa-tone-amber {
+  background: linear-gradient(108deg,#3b2d1f,#0d1b24 72%);
+  border-left-color: #e4b47b;
+}
+#tacticalOpsRoot .tsa-path-emblem {
+  display:block;
+  flex:none;
+  width:46px;
+  height:46px;
+  object-fit:contain;
+  filter:drop-shadow(0 1px 5px #4eadc754);
+}
+#tacticalOpsRoot .tsa-alpha-branch img[hidden] + span {grid-column:2}
+#tacticalOpsRoot .tsa-alpha-branch b {
+  display:block;
+  font: 800 15px var(--t-font-display);
+  letter-spacing:.1em;
+}
+#tacticalOpsRoot .tsa-alpha-branch small {display:block;color:#b8d3df;font-size:11px}
+#tacticalOpsRoot .tsa-alpha-branch strong {color:#a4e4ec;text-align:right}
+#tacticalOpsRoot .tsa-future-signal {
+  min-height:46px;
+  border:1px dashed #516674;
+  background:#0a1720;
+  color:#afbfcb;
+}
+#tacticalOpsRoot .tsa-future-signal .tsa-path-emblem {opacity:.62;filter:saturate(.55)}
+#tacticalOpsRoot .tsa-alpha-next {
+  display:grid;
+  width:100%;
+  gap:3px;
+  min-height:44px;
+  margin:11px 0 0;
+  padding:8px 12px;
+  text-align:left;
+  color:#f7deb5;
+  background:#202521;
+  border:1px solid #998462;
+  border-radius:4px;
+}
+#tacticalOpsRoot .tsa-alpha-next small {font-size:9px;letter-spacing:.1em}
+#tacticalOpsRoot .tsa-alpha-next span,
+#tacticalOpsRoot .tsa-alpha-next-note {color:#c1d5df;font-size:12px}
+#tacticalOpsRoot .tsa-banner button {
+  min-width:44px;
+  min-height:44px;
+  margin-left:6px;
+  background:#142d3f;
+  color:#e3f4ff;
+  border:1px solid #4c7183;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-lane {
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+  scrollbar-color:#698899 #0a1722;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-node-line {
+  min-width:208px;
+  grid-template-columns:repeat(3,minmax(64px,1fr));
+  padding:6px 0;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-node-wrap>small {
+  white-space:normal;
+  font-size:10px;
+  line-height:1.25;
+  min-height:2.5em;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-node-status {font-size:9px}
+#tacticalOpsRoot .tsa-alpha .tsa-state-recorded,
+#tacticalOpsRoot .tsa-alpha .tsa-state-maxed {
+  border-color:#9be9f0;
+  background:radial-gradient(circle,#155263,#0a2431);
+}
+#tacticalOpsRoot .tsa-alpha .tsa-state-recorded .tsa-rank-stamp,
+#tacticalOpsRoot .tsa-alpha .tsa-state-maxed .tsa-rank-stamp {color:#c7f9ff;border-color:#8adceb;background:#14404b}
+#tacticalOpsRoot .tsa-alpha .tsa-node-wrap:has(.tsa-state-recorded,.tsa-state-maxed) .tsa-node-status {color:#b1f0f5}
+#tacticalOpsRoot .tsa-alpha .tsa-state-pending {border-style:dashed;border-color:#ebc387}
+#tacticalOpsRoot .tsa-alpha .tsa-connector.is-lit {background:#77c2d3}
+#tacticalOpsRoot .tsa-alpha .tsa-connector.is-confirmed {
+  position:absolute;
+  background:#92e3ef;
+}
+#tacticalOpsRoot .tsa-effect-compare {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:7px 0}
+#tacticalOpsRoot .tsa-effect-compare:has(.tsa-effect:only-child) {grid-template-columns:1fr}
+#tacticalOpsRoot .tsa-effect {
+  display:grid;
+  align-content:start;
+  gap:4px;
+  padding:7px;
+  border:1px solid #456a7d;
+  background:#0b2333;
+  color:#edf8fd;
+}
+#tacticalOpsRoot .tsa-effect > span:first-child {font-size:9px;font-weight:800;letter-spacing:.11em;color:#9bd3e5}
+#tacticalOpsRoot .tsa-effect strong {font-size:12px}
+#tacticalOpsRoot .tsa-reach-grid {display:flex;gap:3px}
+#tacticalOpsRoot .tsa-reach-grid i {
+  display:grid;
+  place-items:center;
+  width:16px;
+  height:16px;
+  border:1px solid #66b8c7;
+  background:#154552;
+  color:#dcf8fc;
+  font:800 9px/1 var(--t-font-display);
+}
+#tacticalOpsRoot .tsa-reach-grid .is-origin {background:#745032;border-color:#e4c18e;color:#ffedcf}
+@keyframes tsa-rank-receipt {
+  0% {clip-path:inset(0 100% 0 0);filter:brightness(2)}
+  100% {clip-path:inset(0);filter:brightness(1)}
+}
+@keyframes tsa-eligible-rank {
+  50% {outline-color:#a5e8f499}
+}
+@media(prefers-reduced-motion:no-preference) {
+  #tacticalOpsRoot .tsa-alpha .tsa-connector.is-confirmed {animation:tsa-rank-receipt 260ms ease-out both}
+  #tacticalOpsRoot .tsa-alpha .tsa-state-available:not(.is-focused) {animation:tsa-eligible-rank 1.8s ease-in-out 2}
+}
+@media(max-width:550px) {
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-identity {min-height:0;padding:15px 0 6px}
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-identity-portrait {
+    width:clamp(124px,38vw,158px);
+    height:clamp(124px,38vw,158px);
+  }
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines button {
+    min-height:64px;
+    padding:6px;
+    display:grid;
+    grid-template-columns:26px minmax(0,1fr);
+    align-content:center;
+    justify-items:start;
+    text-align:left;
+  }
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines img {
+    grid-row:span 2;
+    width:26px;
+    height:26px;
+  }
+}
+#tacticalOpsRoot .tsa-alpha .tsa-points {min-width:70px;padding-inline:4px;flex:none}
+#tacticalOpsRoot .tsa-alpha .tsa-points small {white-space:nowrap}
+@media(max-width:380px) {
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines button {
+    grid-template-columns:1fr;
+    justify-items:center;
+    text-align:center;
+    min-height:70px;
+    gap:3px;
+  }
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines img {grid-row:auto;width:24px;height:24px}
+  #tacticalOpsRoot .tsa-alpha-overview .tsa-forge-stage .tsa-disciplines b {font-size:10px;white-space:nowrap}
+}
+
+/* The portrait and the room are confined to Alpha's own Atlas panels. */
+#tacticalOpsRoot .tsa-alpha-portrait-art {
+  position:relative;
+  display:grid;
+  place-items:center;
+  width:100%;
+  height:100%;
+}
+#tacticalOpsRoot .tsa-alpha-overview .tsa-identity-portrait .tsa-alpha-portrait-art img {
+  width:94%;
+  height:94%;
+  object-fit:contain;
+  object-position:center;
+  filter:contrast(1.04);
+  -webkit-mask-image:radial-gradient(circle,#000 58%,#000d 69%,transparent 77%);
+  mask-image:radial-gradient(circle,#000 58%,#000d 69%,transparent 77%);
+}
+#tacticalOpsRoot .tsa-alpha > .tsa-focus {
+  background:
+    linear-gradient(180deg,#07162572,#071521b8 350px,#04121bf2 900px),
+    var(--tsa-alpha-environment) center top / 100% auto no-repeat,
+    #06131e;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-focus-title {
+  display:flex;
+  flex:1;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+#tacticalOpsRoot .tsa-alpha .tsa-focus-title > div {min-width:0}
+#tacticalOpsRoot .tsa-alpha .tsa-focus-heading button {flex:none}
+@media(max-width:380px) {
+  #tacticalOpsRoot .tsa-alpha .tsa-focus-title .tsa-path-emblem {width:38px;height:38px}
+}
+@media(prefers-reduced-transparency:reduce) {
+  #tacticalOpsRoot .tsa-alpha > .tsa-focus {background:#071726}
+}
+@media(forced-colors:active) {
+  #tacticalOpsRoot .tsa-alpha > .tsa-focus {background:Canvas}
+}

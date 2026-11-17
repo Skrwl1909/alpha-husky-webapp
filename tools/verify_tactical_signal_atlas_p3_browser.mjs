@@ -15,14 +15,18 @@ import{TACTICAL_CSS}from'/tactical-ops-src/styles.ts';
 const style=document.createElement('style');style.textContent=TACTICAL_CSS;document.head.append(style);
 const params=new URLSearchParams(location.search),mode=params.get('state')||'default';
 const heroes=Object.keys(HERO_SKILLS).map(id=>({heroId:id,discipline:['maxed','partial','doctrine'].includes(mode)?HERO_PATHS[id][0]:null,respecUsed:false,ranks:mode==='maxed'?Object.fromEntries(HERO_SKILLS[id].map(s=>[s,2])):mode==='doctrine'&&id==='ally-02'?{'u02-burst':1}:mode==='partial'?{[HERO_SKILLS[id][0]]:1}:{}}));
-let calls=0,behavior='success';
+let calls=0,refreshes=0,behavior='success';
 const snapshot={version:1,revision:10,lungeDoctrineAvailable:mode==='doctrine',playerGrowth:{version:mode==='doctrine'?2:1,revision:10,earnedPoints:mode==='maxed'?18:6,spentPoints:mode==='maxed'?18:mode==='partial'?3:mode==='doctrine'?1:0,heroes}};
 store.setState({progression:mode==='absent'?null:snapshot,progressionError:null,progressionCommitPending:false,
+loadFoundationProgression:async()=>{refreshes++;store.setState({progressionError:null})},
 upgradeGrowth:async(id,path,skill,rank)=>{calls++;store.setState({progressionCommitPending:true});await new Promise(r=>setTimeout(r,500));store.setState({progressionCommitPending:false});if(behavior==='network')throw Error('fixture network');if(behavior==='failed'){store.setState({progressionError:'Fixture server rejected upgrade'});return}if(behavior==='stale')return;const p=store.getState().progression;store.setState({progression:{...p,revision:p.revision+1,playerGrowth:{...p.playerGrowth,spentPoints:p.playerGrowth.spentPoints+1,heroes:p.playerGrowth.heroes.map(h=>h.heroId===id?{...h,discipline:path,ranks:{...h.ranks,[skill]:rank}}:h)}}})},
 respecGrowth:async(id)=>{calls++;const p=store.getState().progression;const h=p.playerGrowth.heroes.find(h=>h.heroId===id);store.setState({progression:{...p,revision:p.revision+1,playerGrowth:{...p.playerGrowth,spentPoints:p.playerGrowth.spentPoints-Object.values(h.ranks).reduce((a,b)=>a+b,0),heroes:p.playerGrowth.heroes.map(h=>h.heroId===id?{...h,discipline:null,ranks:{},respecUsed:true}:h)}}})}});
-window.fixture={store,calls:()=>calls,behavior:v=>{behavior=v},mount:()=>{root.render(React.createElement(SkillbookPanel,{onClose:()=>root.render(React.createElement('p',null,'CLOSED'))}))}};
+window.fixture={store,calls:()=>calls,refreshes:()=>refreshes,behavior:v=>{behavior=v},mount:()=>{root.render(React.createElement(SkillbookPanel,{onClose:()=>root.render(React.createElement('p',null,'CLOSED'))}))}};
 const root=createRoot(document.getElementById('mount'));window.fixture.mount();`;
-const server=await createServer({configFile:false,server:{host:'127.0.0.1',port:0},plugins:[{name:'atlas-browser-fixture',configureServer(s){s.middlewares.use((req,res,next)=>{
+const server=await createServer({configFile:false,cacheDir:'node_modules/.vite-atlas-p3',
+ resolve:{dedupe:['react','react-dom']},
+ optimizeDeps:{include:['react','react-dom','react-dom/client','react/jsx-dev-runtime','lucide-react','zustand']},
+ server:{host:'127.0.0.1',port:0,hmr:false},plugins:[{name:'atlas-browser-fixture',configureServer(s){s.middlewares.use((req,res,next)=>{
 if(req.url?.startsWith('/atlas-fixture')){res.setHeader('Content-Type','text/html');res.end('<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;font-family:Arial,sans-serif}#tacticalOpsRoot{width:100%;max-width:640px;margin:auto;padding:8px;box-sizing:border-box}</style><div id="tacticalOpsRoot"><div class="t-shell"><div class="t-fill"><div class="t-brief t-command-art-shell t-premium-ux"><div id="mount" class="t-command-pane"></div></div></div></div></div><script type="module" src="/@atlas-fixture"></script>');return}next()})},resolveId(id){if(id==='/@atlas-fixture')return '\0atlas-fixture'},load(id){if(id==='\0atlas-fixture')return entry}}]});
 await server.listen();const url=`http://127.0.0.1:${server.httpServer.address().port}/atlas-fixture`;
 const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_EXECUTABLE||undefined,args:['--no-sandbox']});
@@ -44,18 +48,50 @@ if (/^(320|390|430)-concept0[23]-/.test(name)) {
 await exportStyle.evaluate(e=>e.remove());
 }
 async function layout(){assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'No horizontal page overflow');assert(await page.locator('.tsa-root,.tsa-focus,.tsa-overview,.t-brief').evaluateAll(es=>es.every(e=>e.scrollWidth<=e.clientWidth+1)),'No concealed host or Atlas horizontal overflow');const small=await page.locator('.tsa-root button,.tsa-dialog button').evaluateAll(bs=>bs.filter(b=>{const r=b.getBoundingClientRect();return r.width && (r.width<44||r.height<44)}).map(b=>b.textContent));assert.deepEqual(small,[],'Touch controls >=44px');}
-async function focus(){await page.getByRole('button',{name:/Open ASSAULT/}).click();}
-async function overview(){await page.getByRole('button',{name:'◈ ATLAS OVERVIEW',exact:true}).click();}
+async function focus(){
+ const heading=page.getByRole('heading',{name:'FANG SKILL TREE'});
+ await page.getByRole('button',{name:/Open FANG/}).click();
+ await heading.waitFor();
+ await page.waitForFunction(()=>{const el=document.querySelector('.tsa-focus-heading');const rect=el.getBoundingClientRect();return rect.top>=0&&rect.bottom<=innerHeight});
+}
+async function overview(){await page.getByRole('button',{name:'Alpha Overview',exact:true}).click();}
 async function rank(n=1){await page.getByRole('button',{name:new RegExp('STRIKE rank '+n+',')}).click()}
 async function review(){await page.getByRole('button',{name:'REVIEW UPGRADE'}).click();await page.getByRole('dialog').waitFor();}
 try{
-if(process.env.ATLAS_CAPTURE_ONLY){await load();await shot('390-before-skill-tree');await overview();await shot('390-before-overview');await focus();await rank();await shot('390-before-inspector');}
+if(process.env.ATLAS_CAPTURE_ONLY){await load();await shot('390-alpha-overview');await focus();await rank();await shot('390-before-inspector');}
 else {
 for(const width of [320,360,390,430])for(const state of ['default','partial','maxed']){
-await load(width,state);assert(await page.locator('.tsa-focus').isVisible(),'Skill tree is the default Atlas entry');await layout();await shot(`${width}-${state}-skill-tree`);await rank(state==='maxed'?2:1);await layout();await shot(`${width}-${state}-inspector`);
+await load(width,state);assert(await page.locator('.tsa-alpha-overview').isVisible(),'Alpha Overview is the default Atlas entry');await layout();await shot(`${width}-${state}-alpha-overview`);await focus();await layout();
+assert(await page.locator('.tsa-lane img').count()>0);
+assert(await page.locator('.tsa-node').evaluateAll(nodes=>nodes.every(node=>{const rect=node.getBoundingClientRect();return rect.width>=60&&rect.height>=60})), 'Alpha nodes are at least 60px');
+await shot(`${width}-${state}-skill-tree`);await rank(state==='maxed'?2:1);await layout();await shot(`${width}-${state}-inspector`);
 if(state==='default'){await review();const buttons=page.getByRole('dialog').getByRole('button');for(const b of await buttons.all()){const r=await b.boundingBox();assert(r.y>=0&&r.y+r.height<=(width===320?568:844),'Dialog controls within viewport')}await shot(`${width}-confirm`);await page.getByRole('button',{name:'CANCEL',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.calls()),0)}
 console.log(`Captured ${width} ${state}`);results.push(`${width} ${state}: first-visit skill tree/inspector, no overflow, 44px targets`);
 }
+// Every Alpha rank is an authored node, with independent prerequisites and real deltas.
+await load(390);
+await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button',{name:/HOWLKEEPER/}).click();
+await page.getByRole('button',{name:/NEXT UPGRADE LONG STEP/i}).click();
+assert(await page.getByText(/First purchase will record HOWLKEEPER/).isHidden());
+assert.equal(await page.locator('.tsa-lane').count(),2);
+assert.equal(await page.locator('.tsa-node').count(),6);
+assert(await page.getByRole('button',{name:/REND rank 1, available:/}).isEnabled());
+await page.getByRole('button',{name:/REND rank 2, needs-rank-one:/}).click();
+assert(await page.getByText('Record Rank I of this skill first.',{exact:true}).isVisible());
+await page.getByRole('button',{name:/REND rank 1, available:/}).click();
+assert(await page.getByText('2 turns of BLEED',{exact:true}).isVisible());
+assert(await page.getByText('3 turns of BLEED',{exact:true}).isVisible());
+await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).click();
+assert(await page.getByRole('dialog').getByText(/First purchase will record HOWLKEEPER/).isVisible());
+await page.getByRole('button',{name:'CANCEL',exact:true}).click();
+await page.getByRole('button',{name:/Open HOWL sector/}).click();
+assert.equal(await page.locator('.tsa-node').count(),3);
+await page.getByRole('button',{name:/HOWL rank 1, available:/}).click();
+assert(await page.getByText('4 turns cooldown',{exact:true}).isVisible());
+assert(await page.getByText('3 turns cooldown',{exact:true}).isVisible());
+await layout();await shot('390-howl-inspector');
+assert.equal(await page.evaluate(()=>fixture.calls()),0);
+results.push('Nine Alpha nodes, independent Fang prerequisites, both disciplines, real Rend and Howl preview, read-only inspection');
 // Real Concept 02 / Concept 03 stage captures across the acceptance phone widths.
 for (const width of [320,390,430]) {
  await load(width,'doctrine');
@@ -81,17 +117,22 @@ for (const width of [320,390,430]) {
  results.push(width+' Concept 02 blueprint + Concept 03 doctrine, no overflow, no progression write');
 }
 // Hero/sector navigation and rank 0/1/2. Preview must not mutate store.
-await load();for(const hero of ['ALPHA','CNC','SHADOW']){await page.getByRole('button',{name:new RegExp('^'+hero)}).first().click();await page.getByRole('button',{name:'◇ SECTOR FOCUS',exact:true}).click();for(let i=0;i<2;i++){await page.getByRole('group',{name:'Choose live sector'}).getByRole('button').nth(i).click();for(const b of await page.locator('.tsa-node').all())await b.click();}const before=await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression));await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button').nth(1).click();assert.equal(await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression)),before)}
+await load();for(const hero of ['ALPHA','CNC','SHADOW']){if(hero!=='ALPHA')await page.getByRole('button',{name:new RegExp('^'+hero)}).first().click();await page.getByRole('button',{name:'◇ SECTOR FOCUS',exact:true}).click();for(let i=0;i<2;i++){await page.getByRole('group',{name:'Choose live sector'}).getByRole('button').nth(i).click();for(const b of await page.locator('.tsa-node').all())await b.click();}if(hero==='ALPHA')await overview();const before=await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression));await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button').nth(1).click();assert.equal(await page.evaluate(()=>JSON.stringify(fixture.store.getState().progression)),before)}
 results.push('All heroes, 6 sectors, 9 skills, rank 0/1/2 and non-mutating specialization previews');
-await load();await overview();assert(await page.locator('.tsa-overview').isVisible());await page.locator('.tsa-future-toggle').click();assert(await page.locator('.tsa-explain').isVisible());await focus();await page.locator('.tsa-detail-toggle').click();assert.equal(await page.locator('.tsa-lanes.is-compact').count(),0);assert(await page.locator('.tsa-lane-title small').first().isVisible());await page.locator('.tsa-detail-toggle').click();await rank();await review();await page.keyboard.press('Shift+Tab');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'CONFIRM');await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'CANCEL');await page.keyboard.press('Escape');assert.equal(await page.getByRole('dialog').count(),0);assert(await page.getByRole('button',{name:'REVIEW UPGRADE'}).evaluate(b=>b===document.activeElement));
-await review();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();assert(await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).isDisabled());assert.equal(await page.locator('.tsa-root button:not(:disabled)').count(),0,'All Atlas taps locked while saving');await page.getByText(/SERVER RECORDED · STRIKE RANK 1/).waitFor();assert.equal(await page.evaluate(()=>fixture.calls()),1);await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();await page.evaluate(()=>fixture.mount());await focus();await rank();assert(await page.getByText('SAVED RANK 1 / 2',{exact:false}).isVisible());await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE'}).click();await page.getByRole('button',{name:'CANCEL',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.calls()),1);await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE'}).click();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();await page.getByText(/This hero's one-time reset was used/).waitFor();assert(await page.getByRole('button',{name:'ONE-TIME RESET USED'}).isDisabled());
+await load();assert(await page.locator('.tsa-alpha-overview').isVisible());assert(await page.locator('.tsa-future-signal').isVisible());assert.equal(await page.locator('.tsa-future-signal button').count(),0);await focus();await page.locator('.tsa-detail-toggle').click();assert.equal(await page.locator('.tsa-lanes.is-compact').count(),0);assert(await page.locator('.tsa-lane-title small').first().isVisible());await page.locator('.tsa-detail-toggle').click();await rank();await review();await page.keyboard.press('Shift+Tab');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'CONFIRM');await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.textContent),'CANCEL');await page.keyboard.press('Escape');assert.equal(await page.getByRole('dialog').count(),0);assert(await page.getByRole('button',{name:'REVIEW UPGRADE'}).evaluate(b=>b===document.activeElement));
+await review();await page.getByRole('button',{name:'CONFIRM',exact:true}).evaluate(button=>{button.click();button.click()});await page.getByText('PENDING',{exact:true}).waitFor();assert(await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).isDisabled());assert.equal(await page.locator('.tsa-root button:not(:disabled)').count(),0,'All Atlas taps locked while saving');await page.getByText(/SERVER RECORDED · STRIKE RANK 1/).waitFor();
+const inspector=page.getByRole('region',{name:'Skill node inspection'});
+assert(await inspector.getByText('1 cell reach',{exact:true}).isVisible() && await inspector.getByText('2 cells reach',{exact:true}).isVisible());
+await inspector.getByRole('button',{name:/NEXT RANK RELENTLESS/i}).click();
+assert(await inspector.getByText('2 cells reach',{exact:true}).isVisible() && await inspector.getByText('3 cells reach',{exact:true}).isVisible());
+assert.equal(await page.evaluate(()=>fixture.calls()),1);await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();await page.evaluate(()=>fixture.mount());await focus();await rank();assert(await page.getByText('SAVED RANK 1 / 2',{exact:false}).isVisible());await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE'}).click();await page.getByRole('button',{name:'CANCEL',exact:true}).click();assert.equal(await page.evaluate(()=>fixture.calls()),1);await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE'}).click();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();await page.getByText(/This hero's one-time reset was used/).waitFor();assert(await page.getByRole('button',{name:'ONE-TIME RESET USED'}).isDisabled());
 results.push('Dialog focus trap/Escape/focus restoration; pending blocks controls; fixture receipt/reopen/reset/cancel');
-for(const mode of ['stale','failed','network']){await load();await page.evaluate(m=>fixture.behavior(m),mode);await focus();await rank();await review();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();await page.locator('.tsa-feedback.error').waitFor();assert.equal(await page.locator('.tsa-feedback.success').count(),0);assert.equal(await page.evaluate(()=>fixture.store.getState().progression.playerGrowth.spentPoints),0);}
+for(const mode of ['stale','failed','network']){await load();await page.evaluate(m=>fixture.behavior(m),mode);await focus();await rank();await review();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();await page.locator('.tsa-feedback.error').waitFor();assert.equal(await page.locator('.tsa-feedback.success').count(),0);assert.equal(await page.evaluate(()=>fixture.refreshes()),1);assert.equal(await page.evaluate(()=>fixture.store.getState().progression.playerGrowth.spentPoints),0);}
 results.push('Stale, failed and network fixture saves never report success or spend points');
 await load(320,'absent','reduced');await focus();await rank();assert(await page.getByRole('button',{name:'UNAVAILABLE',exact:true}).isDisabled());await layout();await shot('320-absent-reduced');
 await load(390,'partial');await page.getByRole('button',{name:/^SHADOW/}).click();await page.getByRole('button',{name:'◇ SECTOR FOCUS',exact:true}).click();await page.getByRole('group',{name:'Choose live sector'}).getByRole('button').nth(1).click();await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button').nth(1).click();await page.getByRole('button',{name:/MEND rank 1,/}).click();assert(await page.getByRole('button',{name:'UNAVAILABLE',exact:true}).isDisabled());
 // Art failures include fallback portrait itself; no error loops or broken image layout.
-await load();await page.route('**/images/**',r=>r.abort());await page.reload();await page.locator('.tsa-root').waitFor();await page.waitForTimeout(300);await overview();await layout();await shot('390-missing-art-overview');assert.equal(await page.locator('.tsa-sector-glyph[data-art-failed="1"]').count(),2);await focus();await rank();await layout();await shot('390-missing-art-focus');
+await load();await page.route('**/images/**',r=>r.abort());await page.reload();await page.locator('.tsa-root').waitFor();await page.waitForTimeout(300);await layout();await shot('390-missing-art-overview');assert.equal(await page.locator('.tsa-alpha-branch img[hidden]').count(),3);await focus();await rank();await layout();await shot('390-missing-art-focus');
 await load(320,'default','reduced');await page.getByRole('button',{name:/^SHADOW/}).click();await page.getByRole('button',{name:'◇ SECTOR FOCUS',exact:true}).click();await page.getByRole('group',{name:'Choose live sector'}).getByRole('button').nth(1).click();await page.getByRole('group',{name:'Choose specialization preview'}).getByRole('button').nth(1).click();await page.getByRole('button',{name:/MEND rank 1, no-effect:/}).click();assert(await page.getByRole('button',{name:'UNAVAILABLE',exact:true}).isDisabled());await shot('320-zero-effect');
 await load(430);await page.setViewportSize({width:430,height:300});await page.addStyleTag({content:'#tacticalOpsRoot{--tg-content-safe-area-inset-top:32px;--tg-content-safe-area-inset-bottom:24px}'});await focus();await rank();await review();await layout();for(const b of await page.getByRole('dialog').getByRole('button').all()){const r=await b.boundingBox();assert(r.y>=32&&r.y+r.height<=276,'Short viewport + Telegram safe areas keep dialog actions reachable')}await shot('430-short-safe-area-confirm');await page.keyboard.press('Escape');
 results.push('Absent progression/reduced motion; alternative path locked; zero-effect disabled; missing art; short dialog with simulated Telegram safe areas');
