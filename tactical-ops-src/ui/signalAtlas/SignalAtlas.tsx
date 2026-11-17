@@ -323,7 +323,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
     </div>
   </section>;
 
-  const content = <section ref={atlasRef} className={`tsa-root tsa-immersive ${alpha ? "tsa-alpha" : ""}`} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
+  const content = <section ref={atlasRef} className={`tsa-root tsa-immersive ${alpha ? "tsa-alpha" : ""}`} data-atlas-view={view} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
     <header className="tsa-header">
       <div><span className="tsa-eyebrow">{alpha ? "ALPHA / PACK LEADER" : "SQUAD / CHARACTER DEVELOPMENT"}</span>
         <h2>SIGNAL ATLAS</h2></div>

@@ -690,8 +690,13 @@
   border-radius:0;
   background:
     linear-gradient(180deg,#03101ae8,#051521f0 48%,#020a13f9),
-    var(--tsa-alpha-environment, url('/images/tactical_ops/presentation/command_deck/command_room.webp')) center top / cover;
+    url('/images/tactical_ops/presentation/command_deck/command_room.webp') center top / cover;
   box-shadow:inset 0 0 80px #000c;
+}
+#tacticalOpsRoot .tsa-root.tsa-immersive.tsa-alpha[data-atlas-view="sector"] {
+  background:
+    linear-gradient(180deg,#03101ae8,#051521f0 48%,#020a13f9),
+    var(--tsa-alpha-environment) center top / cover;
 }
 #tacticalOpsRoot .tsa-immersive .tsa-header {
   position:sticky;
@@ -742,8 +747,8 @@
 #tacticalOpsRoot .tsa-immersive > .tsa-feedback {max-width:740px;margin-left:auto;margin-right:auto}
 #tacticalOpsRoot .tsa-immersive .tsa-alpha-overview {
   background:
-    linear-gradient(180deg,#04131bb0,#04121be8 340px,#04121bf7 85%),
-    var(--tsa-alpha-environment) center top / 100% auto no-repeat;
+    radial-gradient(ellipse at 50% 14%,#23536b24,transparent 64%),
+    linear-gradient(180deg,#04131bb0,#04121be8 340px,#04121bf7 85%);
 }
 #tacticalOpsRoot .tsa-immersive .tsa-alpha-overview .tsa-forge-stage {margin-top:4px}
 #tacticalOpsRoot .tsa-immersive .tsa-focus {scroll-margin-top:83px}

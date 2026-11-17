@@ -212,11 +212,11 @@ const alphaArtKitBlobs = Object.freeze({
 // the historical Art Kit allowlist beyond these explicitly pinned files.
 const alphaImmersiveV11Blobs = Object.freeze({
  'js/boot_loaders.js': 'c7fc6b8c70f293a2789d6cd851770499227aae4e',
- 'js/tactical_ops.js': '80280e6ea8a8b5662eb4813d69b722f6f95db7f4',
+ 'js/tactical_ops.js': 'a9cf1a72ec429997e3796022880da404e0c973bf',
  'tactical-ops-src/ui/App.tsx': '7e4c7cb1e57c5c44f95701bc5e3a321935c1ff60',
  'tactical-ops-src/ui/Skillbook.tsx': 'b08f17af290a8b66ec184276c6a4c81286d5ddf0',
- 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': 'cf3044e4c7f984c3b50c83da10c626bd267c1029',
- 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': 'c876c4fa810b640c13ffac5186e6ae9e19c95399',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '62c1334c2ab347be4e7e2418a9a44b3b0f14fad2',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': '5b85bbc7e0444cd39eb5f66c6cc4662a3a544ced',
  'tactical-ops-src/version.ts': '18276688e7a9c73ce298fc2887a35218a09b5bd1',
  'tools/verify_tactical_command_deck.mjs': 'ed85de854014baf71cb8e7a5c7c477e385875547',
  'tools/verify_tactical_ops_action_icons.mjs': '8cba122bc7d54cd50d49d4d533138853494dfb66',
