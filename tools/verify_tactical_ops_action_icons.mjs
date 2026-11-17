@@ -43,7 +43,7 @@ assert.ok(battle.includes("tacticalActionImageForSkill(sk.id)"), "Dock skill ico
 assert.ok(battle.includes('tacticalActionImageForCommand("recover")'), "Recover icon binding");
 assert.ok(battle.includes('tacticalActionImageForCommand("skip")'), "Skip icon binding");
 assert.ok(battle.includes('classList.add("has-icon-error")'), "Image load fallback");
-assert.ok(skillbook.includes('<SignalAtlas onClose={onClose} />') && atlas.includes("tacticalActionImageForSkill(skillId)"), "Official Skillbook icon binding");
+assert.ok(skillbook.includes('<SignalAtlas onClose={onClose} onOpenMastery={onOpenMastery}') && atlas.includes("tacticalActionImageForSkill(skillId)"), "Official Skillbook icon binding");
 assert.ok(css.includes('action_system_move.png'), "Movement marker icon binding");
 assert.ok(css.includes("pointer-events: none;"), "Icon art must not intercept input");
 console.log("verify_tactical_ops_action_icons: 14 PNG + skill mapping + presentation wiring PASS");

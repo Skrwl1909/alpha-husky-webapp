@@ -668,3 +668,156 @@
 @media(forced-colors:active) {
   #tacticalOpsRoot .tsa-alpha > .tsa-focus {background:Canvas}
 }
+
+/* V1.1 immersive Atlas: keep the War Table mounted, but give progression its own
+   mobile viewport. All state and server-owned purchase flows remain unchanged. */
+#tacticalOpsRoot .tsa-root.tsa-immersive {
+  position:fixed;
+  inset:0;
+  z-index:1200;
+  box-sizing:border-box;
+  width:100%;
+  max-width:none;
+  height:100vh;
+  height:100dvh;
+  min-height:0;
+  padding-bottom:max(22px,env(safe-area-inset-bottom));
+  overflow-x:hidden;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  border:0;
+  border-radius:0;
+  background:
+    linear-gradient(180deg,#03101ae8,#051521f0 48%,#020a13f9),
+    url('/images/tactical_ops/presentation/command_deck/command_room.webp') center top / cover;
+  box-shadow:inset 0 0 80px #000c;
+}
+#tacticalOpsRoot .tsa-root.tsa-immersive.tsa-alpha[data-atlas-view="sector"] {
+  background:
+    linear-gradient(180deg,#03101ae8,#051521f0 48%,#020a13f9),
+    var(--tsa-alpha-environment) center top / cover;
+}
+#tacticalOpsRoot .tsa-immersive .tsa-header {
+  position:sticky;
+  top:0;
+  z-index:12;
+  box-sizing:border-box;
+  min-height:77px;
+  padding:9px max(12px,env(safe-area-inset-left)) 9px max(12px,env(safe-area-inset-right));
+  background:linear-gradient(110deg,#061522f7,#092c3af5);
+  border-bottom:1px solid #5597ac91;
+  box-shadow:0 8px 20px #000a;
+}
+#tacticalOpsRoot .tsa-immersive .tsa-header h2 {font-size:clamp(20px,5.1vw,27px)}
+#tacticalOpsRoot .tsa-header-actions {display:flex;align-items:center;gap:7px;flex:none}
+#tacticalOpsRoot .tsa-immersive .tsa-points {min-height:51px;min-width:62px;padding:3px 6px}
+#tacticalOpsRoot .tsa-immersive .tsa-points strong {font-size:26px}
+#tacticalOpsRoot .tsa-immersive-close {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  min-width:52px;
+  min-height:52px;
+  padding:4px 7px;
+  border:1px solid #608b9d;
+  border-radius:4px;
+  background:linear-gradient(#0c2d3e,#071722);
+  color:#d8ecf3;
+}
+#tacticalOpsRoot .tsa-immersive-close > span {font-size:18px;line-height:1.1}
+#tacticalOpsRoot .tsa-immersive-close > small {font-size:9px;font-weight:900;letter-spacing:.11em}
+#tacticalOpsRoot .tsa-immersive .tsa-nav {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  max-width:740px;
+  margin:0 auto;
+  padding:10px 12px 9px;
+  background:transparent;
+}
+#tacticalOpsRoot .tsa-immersive .tsa-nav.has-mastery {grid-template-columns:repeat(4,minmax(0,1fr))}
+#tacticalOpsRoot .tsa-immersive .tsa-nav button {min-height:48px}
+#tacticalOpsRoot .tsa-immersive .tsa-nav .tsa-nav-sync {color:#b5d2dc;background:#091d2b;border-style:dashed}
+#tacticalOpsRoot .tsa-immersive .tsa-alpha-overview,
+#tacticalOpsRoot .tsa-immersive .tsa-overview,
+#tacticalOpsRoot .tsa-immersive .tsa-focus,
+#tacticalOpsRoot .tsa-immersive > .tsa-squad,
+#tacticalOpsRoot .tsa-immersive > .tsa-banner,
+#tacticalOpsRoot .tsa-immersive > .tsa-feedback {max-width:740px;margin-left:auto;margin-right:auto}
+#tacticalOpsRoot .tsa-immersive .tsa-alpha-overview {
+  background:
+    radial-gradient(ellipse at 50% 14%,#23536b24,transparent 64%),
+    linear-gradient(180deg,#04131bb0,#04121be8 340px,#04121bf7 85%);
+}
+#tacticalOpsRoot .tsa-immersive .tsa-alpha-overview .tsa-forge-stage {margin-top:4px}
+#tacticalOpsRoot .tsa-immersive .tsa-focus {scroll-margin-top:83px}
+#tacticalOpsRoot .tsa-immersive .tsa-focus-heading,
+#tacticalOpsRoot .tsa-immersive .tsa-inspector {scroll-margin-top:86px}
+#tacticalOpsRoot .tsa-immersive .tsa-alpha-next-note {
+  padding:12px;
+  margin:12px 0;
+  border-left:3px solid #d4ab70;
+  background:#1f2a2d;
+  color:#f3dfbb;
+  line-height:1.5;
+}
+
+/* The activation moment starts only after the canonical purchase response was
+   verified; no optimistic node lighting or client-owned rank is introduced. */
+#tacticalOpsRoot .tsa-activation {
+  position:fixed;
+  left:50%;
+  bottom:max(18px,env(safe-area-inset-bottom));
+  z-index:40;
+  transform:translateX(-50%);
+  display:flex;
+  align-items:center;
+  gap:13px;
+  box-sizing:border-box;
+  width:min(480px,calc(100% - 24px));
+  min-height:90px;
+  padding:12px 16px;
+  overflow:hidden;
+  pointer-events:none;
+  border:1px solid #d6bc8b;
+  background:linear-gradient(115deg,#302b24ef,#071d2af5 63%,#0b3645f5);
+  box-shadow:0 10px 35px #000e,inset 0 0 0 1px #e8d6aa2b,0 0 25px #6dbfce4d;
+}
+#tacticalOpsRoot .tsa-activation::before {content:"";position:absolute;inset:4px;border:1px solid #d4c09224;pointer-events:none}
+#tacticalOpsRoot .tsa-activation > img {z-index:1;width:58px;height:58px;object-fit:contain;filter:drop-shadow(0 0 9px #a4e3e87a);flex:none}
+#tacticalOpsRoot .tsa-activation > span:last-child {z-index:1;min-width:0;display:grid;gap:4px}
+#tacticalOpsRoot .tsa-activation small {font-size:9px;font-weight:900;letter-spacing:.13em;color:#a6e5ef}
+#tacticalOpsRoot .tsa-activation strong {font:900 clamp(15px,4vw,21px)/1.1 var(--t-font-display);letter-spacing:.07em;color:#ffe4b5}
+#tacticalOpsRoot .tsa-activation em {font-style:normal;font-size:9px;letter-spacing:.035em;color:#bdd8e0}
+#tacticalOpsRoot .tsa-activation-signal {position:absolute;inset:0 auto 0 -40%;width:36%;background:linear-gradient(90deg,transparent,#a9ecf72d,transparent);pointer-events:none}
+@keyframes tsa-activation-reveal {
+  0% {opacity:0;transform:translate(-50%,14px) scale(.96)}
+  18%,78% {opacity:1;transform:translate(-50%,0) scale(1)}
+  100% {opacity:0;transform:translate(-50%,-6px) scale(1)}
+}
+@keyframes tsa-activation-sweep {from {left:-40%} to {left:110%}}
+@media(prefers-reduced-motion:no-preference) {
+  #tacticalOpsRoot .tsa-activation {animation:tsa-activation-reveal 1400ms ease-out both}
+  #tacticalOpsRoot .tsa-activation-signal {animation:tsa-activation-sweep 1000ms ease-out both}
+}
+@media(max-width:380px) {
+  #tacticalOpsRoot .tsa-immersive .tsa-header .tsa-eyebrow {font-size:8px}
+  #tacticalOpsRoot .tsa-immersive .tsa-points {min-width:55px}
+  #tacticalOpsRoot .tsa-immersive .tsa-points strong {font-size:23px}
+  #tacticalOpsRoot .tsa-immersive-close {min-width:48px;min-height:48px}
+  #tacticalOpsRoot .tsa-activation {gap:9px;padding:10px}
+  #tacticalOpsRoot .tsa-activation > img {width:47px;height:47px}
+}
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .tsa-activation {animation:none}
+  #tacticalOpsRoot .tsa-activation-signal {display:none}
+}
+@media(prefers-reduced-transparency:reduce) {
+  #tacticalOpsRoot .tsa-root.tsa-immersive {background:#051521}
+  #tacticalOpsRoot .tsa-activation {background:#0c2938}
+}
+@media(forced-colors:active) {
+  #tacticalOpsRoot .tsa-root.tsa-immersive {background:Canvas;border:1px solid CanvasText}
+  #tacticalOpsRoot .tsa-activation {border:2px solid Highlight;background:Canvas}
+}

@@ -101,6 +101,14 @@ async function load(runtime,width,growth=1,{artKit=false}={}){
 async function layout(){
  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'page must not overflow horizontally');
  assert(await page.locator('.tsa-root,.t-command-pane,.t-brief').evaluateAll(elements=>elements.every(e=>e.scrollWidth<=e.clientWidth+1)),'host and Atlas must not conceal horizontal overflow');
+ const immersive=await page.locator('.tsa-root').evaluate(element=>{
+  const rect=element.getBoundingClientRect();return {position:getComputedStyle(element).position,top:rect.top,width:rect.width,height:rect.height,viewportWidth:innerWidth,viewportHeight:innerHeight};
+ });
+ assert.equal(immersive.position,'fixed','Atlas is a dedicated overlay, not an embedded squad card');
+ assert(Math.abs(immersive.top)<=2 && immersive.width>=immersive.viewportWidth-2 && immersive.height>=immersive.viewportHeight-2,'Atlas covers the full mobile viewport');
+ assert(await page.locator('.t-fill').first().evaluate(element=>element.inert),'underlying War Table is inert while Atlas is open');
+ assert.equal(await page.locator('.t-fill').first().getAttribute('aria-hidden'),'true','underlying War Table is hidden from assistive technology');
+ assert.equal(await page.getByRole('button',{name:'PACK MASTERY',exact:true}).count(),1,'only the in-Atlas Pack Mastery button is accessible');
  assert.equal(await page.locator('.t-growth-panel,.t-growth-atlas-cta').count(),0,'legacy purchase panel and beta launcher absent');
  assert.equal(await page.getByRole('button',{name:/OPEN SIGNAL ATLAS|CHARACTER SKILLBOOK|BETA/}).count(),0);
  const small=await page.locator('.tsa-root button').evaluateAll(buttons=>buttons.filter(button=>{const r=button.getBoundingClientRect();return r.width&&(r.width<44||r.height<44);}).map(button=>button.textContent));
@@ -263,6 +271,7 @@ try{
   await layout();
   await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
   assert.equal(await page.locator('.tsa-root').count(),0);
+  assert(!await page.locator('.t-fill').first().evaluate(element=>element.inert),'War Table restores interaction on close');
   assert(await page.getByRole('button',{name:'01 COMMAND',exact:true}).getAttribute('aria-pressed')==='true');
   await page.getByRole('button',{name:'03 SQUAD',exact:true}).click();await page.locator('.tsa-root').waitFor();
   await layout();
@@ -284,21 +293,24 @@ try{
    assert.equal(await page.locator('.t-wt-error').count(),0);
    assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),0);
    assert.equal(await page.locator('.tsa-feedback.success').count(),0);
+   assert.equal(await page.locator('.tsa-activation').count(),0,'server rejection never triggers unlock animation');
   }
   assert.equal(await page.evaluate(()=>fixture.calls.filter(c=>c.path.endsWith('/growth/upgrade')).length),3,'one request per manual confirmation, no auto retry');
   await page.evaluate(()=>fixture.mode('ok'));
   await page.getByRole('button',{name:'REVIEW UPGRADE',exact:true}).click();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();
+  await page.locator('.tsa-activation').waitFor();
+  assert(await page.locator('.tsa-activation').getByText(/STRIKE · RANK I/).isVisible(),'confirmed rank gets an activation moment');
   await page.getByText(/SERVER RECORDED · STRIKE RANK 1/).waitFor();
   assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),1);
   await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).click();await page.getByRole('button',{name:'CONFIRM',exact:true}).click();
   await page.getByText(/This hero's one-time reset was used/).waitFor();
   assert(await page.getByRole('button',{name:'ONE-TIME RESET USED',exact:true}).isDisabled());
   assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),0);
+  await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
   await page.evaluate(()=>fixture.mode('refresh-network'));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
   await page.getByRole('alert').filter({hasText:'progression_request_failed'}).waitFor();
-  assert.equal(await page.getByRole('alert').count(),1,'refresh failures remain readable after local success feedback');
-  assert.equal(await page.locator('.tsa-feedback.success,.t-wt-error').count(),0);
-  await page.getByRole('button',{name:'Close Signal Atlas',exact:true}).click();
+  assert.equal(await page.getByRole('alert').count(),1,'refresh failures remain readable after returning to War Table');
+  assert.equal(await page.locator('.tsa-feedback.success').count(),0);
   assert.equal(await page.locator('.t-wt-error[role="alert"]').count(),1,'global error resumes when Atlas is closed');
   await page.evaluate(()=>fixture.mode('ok'));await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
   await page.getByRole('alert').waitFor({state:'detached'});
@@ -322,6 +334,18 @@ try{
   results.push({runtime,lostPurchaseReconciled:true,singleDebit:true,noFalseReceipt:true});
  }
  // One active-run family per requested width, in both saved Growth contracts and runtimes.
+ for(const runtime of ['source','bundle']){
+  await load(runtime,390,2);
+  await page.evaluate(()=>fixture.doctrine(1,true));
+  await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+  await page.getByText('ACTIVE RUN · COMPLETE CURRENT MISSION',{exact:true}).waitFor();
+  assert(await page.getByText(/available points are preserved/).isVisible(),'Last Howl lock explains why unspent points cannot be used');
+  await page.getByRole('button',{name:/Open FANG/}).click();
+  await page.getByRole('button',{name:/STRIKE rank 1, active-run:/}).click();
+  assert(await page.getByRole('button',{name:'COMPLETE CURRENT MISSION',exact:true}).isDisabled());
+  assert.equal(await page.evaluate(()=>fixture.calls.filter(call=>call.path.endsWith('/growth/upgrade')).length),0);
+  results.push({runtime,lastHowlLock:true,pointsReason:true,noPurchase:true});
+ }
  for(const runtime of ['source','bundle'])for(const [width,kind] of [[320,'foundation'],[360,'campaign'],[390,'field'],[430,'chapter']])for(const growth of [1,2]){
   await load(runtime,width,growth);await page.evaluate(kind=>fixture.active(kind),kind);
   await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
@@ -349,7 +373,7 @@ try{
   else await page.getByRole('button',{name:'RESET THIS HERO · ONCE FREE',exact:true}).click();
   await page.getByRole('dialog').waitFor();
   // Model a background canonical refresh while the modal blocks pointer input.
-  await page.evaluate(()=>{fixture.active('field');document.querySelector('button[aria-label="Refresh Tactical Ops"]').click();});
+  await page.evaluate(()=>{fixture.active('field');document.querySelector('.t-fill button[aria-label="Refresh Tactical Ops"]').dispatchEvent(new MouseEvent('click',{bubbles:true}));});
   await page.getByRole('dialog').getByText(/ACTIVE RUN/).waitFor();
   assert(await page.getByRole('button',{name:'CONFIRM',exact:true}).isDisabled(),'new canonical run invalidates an already-open confirmation');
   assert(await page.getByRole('dialog').getByText(/ACTIVE RUN/).isVisible());

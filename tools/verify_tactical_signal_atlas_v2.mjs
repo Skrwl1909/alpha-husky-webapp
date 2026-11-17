@@ -79,7 +79,7 @@ try {
   assert.throws(()=>atlas.demoLayout(501));
   const ui=readFileSync("tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx","utf8");
   const skillbook=readFileSync("tactical-ops-src/ui/Skillbook.tsx","utf8");
-  assert(skillbook.includes('<SignalAtlas onClose={onClose} />'),"Official Skillbook always renders Atlas");
+  assert(skillbook.includes('<SignalAtlas onClose={onClose} onOpenMastery={onOpenMastery}'),"Official Skillbook always renders Atlas and preserves mastery access");
   assert(!/atlasOpen|BetaAllowed|localStorage|signalAtlasBeta|t-growth-panel/.test(skillbook),"No beta gate or legacy purchase UI");
   assert(ui.includes("useBattleStore") && ui.includes("await upgrade(") && ui.includes("await respec("),"Real authenticated store actions");
   assert(ui.includes("current.progression.revision>captured.revision") && ui.includes("saved?.ranks[captured.skillId]"),"Upgrade acknowledgment must be canonical");
@@ -99,7 +99,7 @@ try {
   assert(hostStyles.includes("signalAtlas.css?raw"),"Atlas CSS must be injected by Tactical host, not extracted into unused standalone stylesheet");
   assert(!ui.includes('import "./signalAtlas.css"'),"No external CSS import in IIFE component");
   const app=readFileSync('tactical-ops-src/ui/App.tsx','utf8');
-  assert(app.includes('<SkillbookPanel onClose={() => setDeckTab("command")} />'),"Atlas closes to War Table Command");
+  assert(app.includes('<SkillbookPanel onClose={() => setDeckTab("command")} onOpenMastery='),"Atlas closes to War Table Command and exposes Pack Mastery");
   assert(app.includes('>SIGNAL ATLAS</button>') && app.includes('>PACK MASTERY</button>'),"Official Skillbook and separate mastery remain accessible");
   assert(ui.includes('src={s.emblemSrc}') && ui.includes('data-art-failed'),"Atlas must use sector artwork with fallback");
   assert(ui.includes('className="tsa-rank-stamp"') && ui.includes('tacticalActionImageForSkill(skillId)'),"Premium nodes reuse authored skill art and separate rank state");

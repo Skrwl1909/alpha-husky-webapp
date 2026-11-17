@@ -207,14 +207,32 @@ const alphaArtKitBlobs = Object.freeze({
  'images/tactical_ops/signal_atlas/v1/premium/atlas_path_instinct_v1.webp': '48c95a7e75b3f454607612d57cdfc5dd4e17e04b',
  'images/tactical_ops/signal_atlas/v1/premium/manifest.json': '6979dc4fe849668b2e3c076ed63ed65d59d7c3a8',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs };
+// Signal Atlas immersive V1.1 (#307): exact reviewed full-screen presentation,
+// accessibility, compiled delivery, and focused regression checks. Do not widen
+// the historical Art Kit allowlist beyond these explicitly pinned files.
+const alphaImmersiveV11Blobs = Object.freeze({
+ 'js/boot_loaders.js': 'c7fc6b8c70f293a2789d6cd851770499227aae4e',
+ 'js/tactical_ops.js': 'a9cf1a72ec429997e3796022880da404e0c973bf',
+ 'tactical-ops-src/ui/App.tsx': '7e4c7cb1e57c5c44f95701bc5e3a321935c1ff60',
+ 'tactical-ops-src/ui/Skillbook.tsx': 'b08f17af290a8b66ec184276c6a4c81286d5ddf0',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '62c1334c2ab347be4e7e2418a9a44b3b0f14fad2',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': '5b85bbc7e0444cd39eb5f66c6cc4662a3a544ced',
+ 'tactical-ops-src/version.ts': '18276688e7a9c73ce298fc2887a35218a09b5bd1',
+ 'tools/verify_tactical_command_deck.mjs': 'ed85de854014baf71cb8e7a5c7c477e385875547',
+ 'tools/verify_tactical_ops_action_icons.mjs': '8cba122bc7d54cd50d49d4d533138853494dfb66',
+ 'tools/verify_tactical_signal_atlas_assets_p2.mjs': '9de93fc7f9b941b5bedf5a3d6d3f95446b160025',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': '4267ebe5973fe78aea52c7712de6686f6734cf8b',
+ 'tools/verify_tactical_signal_atlas_v2.mjs': 'e11785caaeed331a9ff9a2c22f1de96c86805d64',
+ 'tools/verify_tactical_vnext_skillbook_integration.mjs': '0b824c5040ccf20a7720b8c6b5c65215f5e80577',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
