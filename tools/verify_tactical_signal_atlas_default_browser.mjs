@@ -371,8 +371,8 @@ try{
   await load(runtime,390,2);
   await page.evaluate(()=>fixture.doctrine(1,true));
   await page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
-  await page.getByText('ACTIVE RUN · COMPLETE CURRENT MISSION',{exact:true}).waitFor();
-  assert(await page.getByText(/available points are preserved/).isVisible(),'Last Howl lock explains why unspent points cannot be used');
+  await page.getByText('LAST HOWL RUN ACTIVE',{exact:true}).waitFor();
+  assert(await page.getByText(/Resume and finish or abandon it before upgrading/).isVisible(),'Last Howl lock must identify which run to close');
   await page.getByRole('button',{name:/Open FANG/}).click();
   await page.getByRole('button',{name:/STRIKE rank 1, active-run:/}).click();
   assert(await page.getByRole('button',{name:'COMPLETE CURRENT MISSION',exact:true}).isDisabled());

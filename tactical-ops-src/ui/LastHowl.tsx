@@ -49,9 +49,9 @@ export function LastHowlHud({ view }: { view: LastHowlView }) {
     <div className="t-last-howl-controls">
       <small>{eliteSignal ? "ELITE SIGNAL DETECTED" : `NEXT ELITE ${view.nextElite}`}</small>
       <button type="button" className="t-btn" onClick={leave}>EXIT</button>
-      <button type="button" className="t-btn" disabled={busy} onClick={() => setConfirm(!confirm)}>{confirm ? "CANCEL" : "ABANDON RUN"}</button>
+      <button type="button" className="t-btn" disabled={busy} aria-expanded={confirm} aria-controls="t-last-howl-abandon-confirm" onClick={() => setConfirm(!confirm)}>{confirm ? "CANCEL" : "ABANDON RUN"}</button>
     </div>
-    {confirm ? <div className="t-last-howl-confirm"><span>End this run without a record?</span>
+    {confirm ? <div className="t-last-howl-confirm" id="t-last-howl-abandon-confirm" role="group" aria-label="Confirm abandoning Last Howl"><span>End this run without a record?</span>
       <button type="button" className="t-btn" disabled={busy} onClick={() => { setConfirm(false); void abandon(); }}>CONFIRM ABANDON</button>
     </div> : null}
     <span className="t-last-howl-sr" role="status">{announcement}</span>

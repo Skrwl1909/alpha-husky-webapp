@@ -234,14 +234,28 @@ const alphaTelegramSafeBlobs = Object.freeze({
  'tactical-ops-src/version.ts': '2a2c6bbed17508a9100fb65aaf89af2a12da364e',
  'tools/verify_tactical_signal_atlas_default_browser.mjs': '3161a74f6410a1abc68ef2170b3ea4eb77db35d9',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs };
+// Last Howl 44px HUD clipping fix: exact changed paths, including the rebuilt
+// bundle and an end-to-end abandon interaction regression on touch layouts.
+const alphaLastHowlHudBlobs = Object.freeze({
+ '.github/workflows/tactical-premium-integration.yml': 'd0f23dba358600f4f60b10baf71aab4fedbf4711',
+ 'js/boot_loaders.js': '544edd048bb870b38af2745a202f0a3c327cc5b3',
+ 'js/tactical_ops.js': '3dd15ccf150247965f768cfa14c6997342bd5791',
+ 'tactical-ops-src/ui/Battle.tsx': '92f3e36561655251c3aaf3c5203754cd6798b184',
+ 'tactical-ops-src/ui/LastHowl.tsx': '72d4b8b543ce1b11ebde2b5b9c294af71169be69',
+ 'tactical-ops-src/ui/lastHowl.css': '1ce83f2b33693b8d2178256e573f8376bdf188e5',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '2de5527bd6c2f39be81585c808aeb36714a851fc',
+ 'tactical-ops-src/version.ts': '77003a02dd6dbfe6b92d8198fa661ccf821b8a9d',
+ 'tools/verify_tactical_last_howl_browser.mjs': '13e4cabd466bef00bf4566d3c6f33e531ac8de59',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': '9753bdaf60f3ea328a7ee8404a2335b4b6ebe592',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');

@@ -694,7 +694,7 @@ export function BattleScreen() {
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
     >
-      <header className="t-top t-battle-hud-rail" aria-label="Battle status and mission">
+      <header className="t-top t-battle-hud-rail" data-last-howl={lastHowl ? "true" : undefined} aria-label="Battle status and mission">
         <StatusStrip />
         {lastHowl ? <LastHowlHud view={lastHowl} /> : <ObjectiveChip />}
       </header>

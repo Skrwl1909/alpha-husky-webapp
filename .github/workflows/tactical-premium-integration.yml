@@ -35,6 +35,10 @@ jobs:
         run: BRIEF_INTEGRATED=1 BRIEF_PRODUCTION=1 node tools/verify_tactical_brief_closure_browser.mjs
         env:
           CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Last Howl visible touch controls and abandon confirmation
+        run: node tools/verify_tactical_last_howl_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - uses: actions/upload-artifact@v4
         if: always()
         with:

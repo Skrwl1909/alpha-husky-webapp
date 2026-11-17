@@ -36,3 +36,83 @@
 @media (prefers-reduced-motion: reduce) {
   .t-last-howl-card *, .t-last-howl-results *, .t-last-howl-hud *, .t-last-howl-entry { animation: none; transition: none; }
 }
+
+/* The standard battlefield rail limits every HUD card to 44px and clips the
+   Last Howl controls. Give this mode its own visible, touch-sized action row. */
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 44px 48px;
+  height: calc(100px + var(--t-battle-safe-top));
+  min-height: calc(100px + var(--t-battle-safe-top));
+  gap: 4px;
+  overflow: visible;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] > .t-status {
+  grid-column: 1;
+  grid-row: 1;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-hud-card.t-last-howl-hud {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+  height: 48px;
+  min-height: 48px;
+  max-height: none;
+  padding: 2px 7px;
+  overflow: visible;
+  cursor: default;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-stats {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  white-space: nowrap;
+  font-size: 10px;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-controls {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 3px;
+  flex-shrink: 0;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-controls > small,
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-hud > small { display: none; }
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-controls .t-btn {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 7px;
+  font-size: 10px;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-confirm {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid #c68d5c;
+  border-radius: 6px;
+  background: #10202b;
+  color: #f3e6d9;
+  box-shadow: 0 8px 26px #000b;
+}
+#tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-confirm .t-btn {
+  min-height: 44px;
+  padding: 0 10px;
+  font-size: 11px;
+  letter-spacing: .02em;
+}
+@media (max-width: 360px) {
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-stats { gap: 3px; font-size: 9px; }
+  #tacticalOpsRoot .t-shell[data-screen="battle"] .t-battle-hud-rail[data-last-howl="true"] .t-last-howl-controls .t-btn { padding: 0 5px; font-size: 9px; }
+}
