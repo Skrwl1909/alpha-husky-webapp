@@ -225,14 +225,23 @@ const alphaImmersiveV11Blobs = Object.freeze({
  'tools/verify_tactical_signal_atlas_v2.mjs': 'e11785caaeed331a9ff9a2c22f1de96c86805d64',
  'tools/verify_tactical_vnext_skillbook_integration.mjs': '0b824c5040ccf20a7720b8c6b5c65215f5e80577',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs };
+// Telegram physical-device follow-up: five exact frontend/cache/test changes.
+// The V1.1 source pins above still describe the already merged #307 baseline.
+const alphaTelegramSafeBlobs = Object.freeze({
+ 'js/boot_loaders.js': '39c07352c2777de3708424b0b1856d8e5e58e37c',
+ 'js/tactical_ops.js': '46b1e4f1d20c1fd81e471d32154d188d92361b6e',
+ 'tactical-ops-src/ui/signalAtlas/signalAtlasPremium.css': '4880596e02b168e172d8b31f7594601b69b7b92a',
+ 'tactical-ops-src/version.ts': '2a2c6bbed17508a9100fb65aaf89af2a12da364e',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': '3161a74f6410a1abc68ef2170b3ea4eb77db35d9',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');

@@ -672,6 +672,9 @@
 /* V1.1 immersive Atlas: keep the War Table mounted, but give progression its own
    mobile viewport. All state and server-owned purchase flows remain unchanged. */
 #tacticalOpsRoot .tsa-root.tsa-immersive {
+  /* The host already maintains --t-safe-top and --ah-chrome-top as Telegram
+     changes its native header, fullscreen mode and content safe area. */
+  --tsa-chrome-clearance:max(var(--t-safe-top,0px),var(--ah-chrome-top,0px),env(safe-area-inset-top,0px));
   position:fixed;
   inset:0;
   z-index:1200;
@@ -704,7 +707,7 @@
   z-index:12;
   box-sizing:border-box;
   min-height:77px;
-  padding:9px max(12px,env(safe-area-inset-left)) 9px max(12px,env(safe-area-inset-right));
+  padding:calc(9px + var(--tsa-chrome-clearance)) max(12px,env(safe-area-inset-left)) 9px max(12px,env(safe-area-inset-right));
   background:linear-gradient(110deg,#061522f7,#092c3af5);
   border-bottom:1px solid #5597ac91;
   box-shadow:0 8px 20px #000a;
