@@ -238,10 +238,10 @@ const alphaTelegramSafeBlobs = Object.freeze({
 // bundle and an end-to-end abandon interaction regression on touch layouts.
 const alphaLastHowlHudBlobs = Object.freeze({
  'js/boot_loaders.js': '544edd048bb870b38af2745a202f0a3c327cc5b3',
- 'js/tactical_ops.js': 'e53763087b004677aeb6002f2e1943f743a30122',
- 'tactical-ops-src/ui/Battle.tsx': '84baad9ceed0fa8f13117aa7d65d1c24842cf2d4',
+ 'js/tactical_ops.js': '3dd15ccf150247965f768cfa14c6997342bd5791',
+ 'tactical-ops-src/ui/Battle.tsx': '92f3e36561655251c3aaf3c5203754cd6798b184',
  'tactical-ops-src/ui/LastHowl.tsx': '72d4b8b543ce1b11ebde2b5b9c294af71169be69',
- 'tactical-ops-src/ui/lastHowl.css': '1ceef1763a83df8a22e0bfafb92cac51c68dab9d',
+ 'tactical-ops-src/ui/lastHowl.css': '1ce83f2b33693b8d2178256e573f8376bdf188e5',
  'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '2de5527bd6c2f39be81585c808aeb36714a851fc',
  'tactical-ops-src/version.ts': '77003a02dd6dbfe6b92d8198fa661ccf821b8a9d',
  'tools/verify_tactical_last_howl_browser.mjs': '13e4cabd466bef00bf4566d3c6f33e531ac8de59',
