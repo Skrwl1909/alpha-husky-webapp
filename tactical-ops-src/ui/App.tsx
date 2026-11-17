@@ -621,8 +621,8 @@ function WarTable() {
           <button type="button" aria-pressed={squadView === "mastery"} className={squadView === "mastery" ? "is-selected" : ""} onClick={() => setSquadView("mastery")}>PACK MASTERY</button>
         </div>
         {squadView === "mastery" ? <PackMasteryPanel /> : atlasTarget
-          ? <SkillbookPanel onClose={() => { setAtlasTarget(null); setDeckTab("command"); }} target={atlasTarget} />
-          : <SkillbookPanel onClose={() => setDeckTab("command")} />}
+          ? <SkillbookPanel onClose={() => { setAtlasTarget(null); setDeckTab("command"); }} onOpenMastery={() => { setAtlasTarget(null); setSquadView("mastery"); }} target={atlasTarget} />
+          : <SkillbookPanel onClose={() => setDeckTab("command")} onOpenMastery={() => setSquadView("mastery")} />}
 
 
         </div> : null}

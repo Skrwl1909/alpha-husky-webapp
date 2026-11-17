@@ -17,6 +17,7 @@ import { ATLAS_SECTORS, HERO_TITLES, HERO_SUBTITLES, PATH_EXPLANATIONS, availabl
 type Feedback = { kind: "success" | "error"; text: string } | null;
 type Selection = { skillId: string; rank: 0|1|2 };
 type RankReceipt = { selection: Selection; before: SkillDef; after: SkillDef };
+type Activation = { skillId: string; rank: 1|2; title: string };
 
 function AlphaEffect({ skill, id, label }: { skill: SkillDef; id: string; label: string }) {
   const bleed = skill.effects.find(effect => effect.status === "BLEED");
@@ -81,7 +82,7 @@ function DoctrineFootprint({ wide, centered, range }: { wide: boolean; centered:
   </div>;
 }
 
-export function SignalAtlas({ onClose, target }: { onClose: () => void; target?: ReturnType<typeof availableAtlasUpgrade> }) {
+export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () => void; onOpenMastery?: () => void; target?: ReturnType<typeof availableAtlasUpgrade> }) {
   const progression = useBattleStore(s=>s.progression);
   const growth = progression?.playerGrowth;
   const progressionPending = useBattleStore(s=>s.progressionCommitPending);
@@ -103,6 +104,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const [saving,setSaving] = useState(false);
   const [pendingNode,setPendingNode] = useState<Selection | null>(null);
   const [rankReceipt,setRankReceipt] = useState<RankReceipt | null>(null);
+  const [activation,setActivation] = useState<Activation | null>(null);
   const mutation = useRef(false);
   const alpha = heroId === "alpha";
   const [feedback,setFeedback] = useState<Feedback>(null);
@@ -127,12 +129,14 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const offline=!growth || progressionStatus === "error";
   const nextAlpha = alpha && !offline ? availableAtlasUpgrade(progression, "alpha") : null;
   const activeRun=hasActiveGrowthRun(progression);
-  const doctrineLocked = activeRun || progression?.lastHowl?.status === "ACTIVE";
+  const lastHowlActive = progression?.lastHowl?.status === "ACTIVE";
+  const growthLocked = activeRun || lastHowlActive;
+  const doctrineLocked = growthLocked;
   const showDoctrine = heroId === "ally-02" && sector.id === "pursuit" && progression?.lungeDoctrineAvailable && hero;
   useEffect(()=>{if(doctrineStage && !showDoctrine)setDoctrineStage(false);},[doctrineStage,showDoctrine]);
   const doctrineEligible = canSelectLungeDoctrine(hero ?? undefined);
   const node=selection && sector.skillIds.includes(selection.skillId)
-    ? getNodeView(heroId,selection.skillId,selection.rank,offline ? null : hero,chosenPath,points,growthPreviewBase(selection.skillId,progression),activeRun) : null;
+    ? getNodeView(heroId,selection.skillId,selection.rank,offline ? null : hero,chosenPath,points,growthPreviewBase(selection.skillId,progression),growthLocked) : null;
   const baseSkill = node ? growthPreviewBase(node.skillId, progression) : null;
   const resolvedCurrent = baseSkill ? resolveGrowthSkill(baseSkill, hero ?? undefined) : null;
   const currentSkill = resolvedCurrent && hero ? skillEffectView(resolvedCurrent, hero) : null;
@@ -146,10 +150,29 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   const before = activeReceipt?.before ?? resolvedCurrent;
   const after = activeReceipt?.after ?? resolvedNext;
   const nextRank = node?.rank === 1 && activeReceipt && hero
-    ? getNodeView(heroId,node.skillId,2,hero,chosenPath,points,baseSkill ?? undefined,activeRun) : null;
+    ? getNodeView(heroId,node.skillId,2,hero,chosenPath,points,baseSkill ?? undefined,growthLocked) : null;
   const canBuy=Boolean(node?.state==="available" && !unavailable && !offline && growth);
-  const canRespec=Boolean(hero?.discipline && !hero.respecUsed && Object.keys(hero.ranks).length>0 && !unavailable && !offline && !activeRun);
+  const canRespec=Boolean(hero?.discipline && !hero.respecUsed && Object.keys(hero.ranks).length>0 && !unavailable && !offline && !growthLocked);
   const purchased=hero?.ranks || {};
+  useEffect(()=>{
+    const previousOverflow=document.body.style.overflow;
+    const previouslyFocused=document.activeElement as HTMLElement | null;
+    const host=document.querySelector<HTMLElement>("#tacticalOpsRoot .t-fill");
+    const wasInert=host?.inert ?? false;
+    if(host)host.inert=true;
+    document.body.style.overflow="hidden";
+    atlasRef.current?.querySelector<HTMLButtonElement>(".tsa-immersive-close")?.focus({preventScroll:true});
+    return ()=>{
+      if(host)host.inert=wasInert;
+      document.body.style.overflow=previousOverflow;
+      if(previouslyFocused?.isConnected)previouslyFocused.focus({preventScroll:true});
+    };
+  },[]);
+  useEffect(()=>{
+    if(!activation)return;
+    const timer=window.setTimeout(()=>setActivation(null),1400);
+    return ()=>window.clearTimeout(timer);
+  },[activation]);
   useEffect(()=>{
     if(!confirm)return;
     const previous=document.activeElement as HTMLElement | null;
@@ -187,7 +210,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
   function changeHero(id:HeroId){
     if(unavailable)return;
     setHeroId(id);setSectorPage(0);setSectorId(ATLAS_SECTORS[id][0].id);setPathPreview(growth?.heroes.find(h=>h.heroId===id)?.discipline || HERO_PATHS[id][0]);
-    setView(id === "alpha" ? "atlas" : "sector");setDoctrineStage(false);setSelection(null);setFeedback(null);setRankReceipt(null);setConfirm(null);setDoctrineFeedback("");
+    setView(id === "alpha" ? "atlas" : "sector");setDoctrineStage(false);setSelection(null);setFeedback(null);setRankReceipt(null);setActivation(null);setConfirm(null);setDoctrineFeedback("");
     requestAnimationFrame(()=>atlasRef.current?.scrollIntoView({block:"start",behavior:"instant"}));
   }
   function openSector(s:AtlasSector){
@@ -211,6 +234,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
           const telegram = (window as Window & { Telegram?: { WebApp?: { HapticFeedback?: { notificationOccurred?: (type: "success") => void } } } }).Telegram;
           try { telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success"); } catch { /* Haptics are optional. */ }
         }
+        setActivation({skillId:captured.skillId,rank:captured.rank,title:getSkill(captured.skillId).name});
         setFeedback({kind:"success",text:`SERVER RECORDED · ${getSkill(captured.skillId).name} RANK ${captured.rank}. Your next accepted run will use the saved skill. Existing runs keep their frozen build.`});
       } else {
         await refresh();
@@ -291,19 +315,23 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
     </div>
   </section>;
 
-  return <section ref={atlasRef} className={`tsa-root ${alpha ? "tsa-alpha" : ""}`} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
+  const content = <section ref={atlasRef} className={`tsa-root tsa-immersive ${alpha ? "tsa-alpha" : ""}`} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
     <header className="tsa-header">
       <div><span className="tsa-eyebrow">{alpha ? "ALPHA / PACK LEADER" : "SQUAD / CHARACTER DEVELOPMENT"}</span>
         <h2>SIGNAL ATLAS</h2></div>
-      <div className="tsa-points" aria-label={!offline?`${points} unspent skill points`:"Points unavailable"}><strong>{offline?"—":points}</strong><small>POINTS<br/>AVAILABLE</small></div>
+      <div className="tsa-header-actions">
+        <div className="tsa-points" aria-label={!offline?`${points} unspent skill points`:"Points unavailable"}><strong>{offline?"—":points}</strong><small>POINTS<br/>AVAILABLE</small></div>
+        <button type="button" className="tsa-immersive-close" onClick={onClose} disabled={unavailable} aria-label="Close Signal Atlas"><span aria-hidden="true">✕</span><small>EXIT</small></button>
+      </div>
     </header>
     {!alpha && squad}
     {offline && <p className="tsa-banner" role="status"><strong>OFFLINE</strong> · Skillbook progression is unavailable. <button type="button" disabled={unavailable} onClick={()=>void refresh()}>REFRESH</button></p>}
-    {activeRun?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>ACTIVE RUN · COMPLETE CURRENT MISSION</strong><br/>Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged.</p>:null}
-    <div className="tsa-nav" role="group" aria-label="Skillbook view">
+    {growthLocked?<p className="tsa-banner" role="status" id="tsa-active-run"><strong>ACTIVE RUN · COMPLETE CURRENT MISSION</strong><br/>Upgrades and one-time resets unlock after the server records the mission result. Your accepted build stays unchanged.</p>:null}
+    <div className={`tsa-nav ${onOpenMastery ? "has-mastery" : ""}`} role="group" aria-label="Skillbook view">
       <button type="button" className={view==="atlas"?"is-current":""} aria-label={alpha ? "Alpha Overview" : "◈ ATLAS OVERVIEW"} aria-pressed={view==="atlas"} onClick={showOverview} disabled={unavailable}>{alpha ? "ALPHA OVERVIEW" : "◈ NETWORK MAP"}</button>
       <button type="button" className={view==="sector"?"is-current":""} aria-label="◇ SECTOR FOCUS" aria-pressed={view==="sector"} onClick={showTree} disabled={unavailable}>◇ SKILL TREE</button>
-      <button type="button" onClick={onClose} disabled={unavailable} aria-label="Close Signal Atlas">✕ CLOSE</button>
+      {onOpenMastery && <button type="button" onClick={onOpenMastery} disabled={unavailable}>PACK MASTERY</button>}
+      <button type="button" className="tsa-nav-sync" onClick={()=>void refresh()} disabled={unavailable} aria-label="Refresh Tactical Ops">↻ SYNC</button>
     </div>
     {view==="atlas" && alpha ? <div className="tsa-alpha-overview" aria-label="Alpha Overview">
       {forge}
@@ -330,8 +358,8 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
         const nextSector=sectors.find(item=>item.skillIds.includes(nextAlpha.skillId));
         if (nextSector) { openSector(nextSector); inspect(nextAlpha.skillId,nextAlpha.rank); }
       }}><small>NEXT UPGRADE</small><b>{getNodeView("alpha",nextAlpha.skillId,nextAlpha.rank,hero,hero?.discipline ?? chosenPath,points).title}</b><span>{nextAlpha.change} · 1 point</span></button>
-        : !offline && <p className="tsa-alpha-next-note">{activeRun ? "Finish the active mission to upgrade." : identitySkills.every(id=>(purchased[id]||0)===2)
-          ? "All six Alpha ranks recorded." : points===0 ? "Earn a first-clear skill point to upgrade." : "No Alpha upgrade currently available."}</p>}
+        : !offline && <p className="tsa-alpha-next-note" role="status">{growthLocked ? "Complete your active operation to unlock upgrades. Your available points are preserved." : identitySkills.every(id=>(purchased[id]||0)===2)
+          ? "All six Alpha ranks recorded." : points===0 ? "Earn a first-clear skill point to upgrade." : "No eligible Alpha upgrade for the recorded specialization. Open a path to inspect requirements or reset eligibility."}</p>}
       {squad}
     </div> : view==="atlas" ? <div className="tsa-overview">
       <div className="tsa-atlas-title"><span>ALPHA HUSKY / {HERO_TITLES[heroId]}</span><strong>COMBAT NETWORK</strong><small>Select a live sector to inspect its real skills.</small></div>
@@ -384,7 +412,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
             <div className="tsa-lane-title"><img onError={hideArt} src={tacticalActionImageForSkill(skillId)||""} alt=""/><div><b>{skill.name}</b><small>{skill.slot} · {skill.desc}</small></div><span>{purchased[skillId]||0}/2</span></div>
             <div className="tsa-node-line" role="group" aria-label={`${skill.name} upgrade ranks`}>
               {([0,1,2] as const).map((rank,index)=>{
-                const current=getNodeView(heroId,skillId,rank,offline ? null : hero,chosenPath,points,previewBase,activeRun);
+                const current=getNodeView(heroId,skillId,rank,offline ? null : hero,chosenPath,points,previewBase,growthLocked);
                 const pending=pendingNode?.skillId===skillId && pendingNode.rank===rank;
                 const confirmed=rankReceipt?.selection.skillId===skillId && rankReceipt.selection.rank===rank && (purchased[skillId]||0)>=rank;
                 const focused=selection?.skillId===skillId && selection.rank===rank;
@@ -416,7 +444,7 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
             {[nextSkill.geometry, ...nextSkill.effects].join(" · ")}<br/>{DOCTRINE_TRADEOFF[chosenPath]}</p> : null}
           {!alpha && node.changes.length?<div className="tsa-deltas">{node.changes.map(c=><strong key={c}>{c}</strong>)}</div>:null}
           <div className="tsa-inspector-bottom"><span>{alpha ? <>{offline ? "POINTS UNAVAILABLE" : `${points} POINTS AVAILABLE`}{canBuy && " · COST 1"}</> : node.rank===0?"ALREADY OWNED":node.state==="recorded"||node.state==="maxed"?"SERVER RECORDED":node.changes.length?"COST: 1 SKILL POINT":""}</span>
-          <button type="button" disabled={!canBuy} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("upgrade")}>{saving?"SYNCING…":node.state==="active-run"?"COMPLETE CURRENT MISSION":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
+          <button type="button" disabled={!canBuy} aria-describedby={growthLocked?"tsa-active-run":undefined} onClick={()=>setConfirm("upgrade")}>{saving?"SYNCING…":node.state==="active-run"?"COMPLETE CURRENT MISSION":node.state==="available"?"REVIEW UPGRADE":"UNAVAILABLE"}</button></div>
           {alpha && notice}
           {nextRank?.state === "available" && <button type="button" className="tsa-alpha-next" disabled={unavailable || offline}
             onClick={()=>inspect(nextRank.skillId,nextRank.rank)}><small>NEXT RANK</small><b>{nextRank.title}</b><span>{nextRank.changes.join(" · ")}</span></button>}
@@ -454,17 +482,27 @@ export function SignalAtlas({ onClose, target }: { onClose: () => void; target?:
         <p className="tsa-doctrine-truth">◈ The server records your choice. An accepted mission keeps its original variant, even after resuming.</p>
         {doctrineFeedback && <p className="tsa-doctrine-receipt" role="status">{doctrineFeedback}</p>}
       </section>}
-      <div className="tsa-secondary"><button type="button" disabled={!canRespec} aria-describedby={activeRun?"tsa-active-run":undefined} onClick={()=>setConfirm("respec")}>{hero?.respecUsed?"ONE-TIME RESET USED":"RESET THIS HERO · ONCE FREE"}</button><small>Pack Mastery remains separate.</small></div>
+      <div className="tsa-secondary"><button type="button" disabled={!canRespec} aria-describedby={growthLocked?"tsa-active-run":undefined} onClick={()=>setConfirm("respec")}>{hero?.respecUsed?"ONE-TIME RESET USED":"RESET THIS HERO · ONCE FREE"}</button><small>Pack Mastery remains separate.</small></div>
     </div>}
     {!(alpha && view==="sector" && node) && notice}
+    {activation && <div className="tsa-activation" role="status" aria-live="polite" aria-label={`${activation.title} rank ${activation.rank} activated`}>
+      <span className="tsa-activation-signal" aria-hidden="true"/>
+      <img src={tacticalActionImageForSkill(activation.skillId)||""} onError={hideArt} alt=""/>
+      <span><small>THE FRACTURE / SIGNAL RECORDED</small><strong>{activation.title.toUpperCase()} · RANK {activation.rank===1?"I":"II"}</strong><em>ACTIVE ON YOUR NEXT ACCEPTED RUN</em></span>
+    </div>}
     {confirm && typeof document!=="undefined"?createPortal(<div className="tsa-dialog-backdrop"><div ref={dialogRef} className="tsa-dialog" role="dialog" aria-modal="true" aria-labelledby="tsa-confirm-title">
       <span className="tsa-eyebrow">SERVER-RECORDED ACTION</span>
       <h3 id="tsa-confirm-title">{confirm==="upgrade"?"CONFIRM SKILL UPGRADE":"CONFIRM ONE-TIME RESET"}</h3>
-      {activeRun?<p role="status">ACTIVE RUN · COMPLETE CURRENT MISSION before confirming an upgrade or reset.</p>:null}
+      {growthLocked?<p role="status">ACTIVE RUN · COMPLETE CURRENT MISSION before confirming an upgrade or reset.</p>:null}
       <p>{confirm==="upgrade" ? `${node?.title} · cost 1 shared skill point. ${hero?.discipline?"Existing discipline remains recorded.":`First purchase will record ${chosenPath.toUpperCase()} as this hero's discipline.`}` : "Refund this hero's spent skill points and clear their specialization. You cannot use this one-time reset again."}</p>
       {confirm==="upgrade" && node?.changes.length?<div className="tsa-deltas">{node.changes.map(c=><strong key={c}>{c}</strong>)}</div>:null}
       {confirm === "upgrade" ? <p>{DOCTRINE_TRADEOFF[chosenPath]}<br/>1 shared point. First purchase selects this doctrine. One reset per hero. Applies to the next accepted run; saved runs stay frozen.</p> : null}
       <div className="tsa-dialog-actions"><button type="button" onClick={()=>setConfirm(null)}>CANCEL</button><button type="button" className="is-primary" disabled={confirm==="upgrade"?!canBuy:!canRespec} onClick={()=>void (confirm==="upgrade"?commitUpgrade():commitRespec())}>CONFIRM</button></div>
     </div></div>,document.getElementById("tacticalOpsRoot") || document.body):null}
   </section>;
+  // A dedicated screen inside Tactical Ops: host navigation stays mounted beneath it.
+  // SSR keeps inline markup for deterministic prerendering and existing inspection tools.
+  return typeof document!=="undefined"
+    ? createPortal(content,document.getElementById("tacticalOpsRoot") || document.body)
+    : content;
 }
