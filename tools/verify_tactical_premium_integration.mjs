@@ -315,7 +315,7 @@ const counterstrikeBlobs = Object.freeze({
  'tactical-ops-src/data/operations.ts': '18b88d5881ec4b1fb360bd8c6feadcd4ee5bb748',
  'tactical-ops-src/data/packMastery.ts': '3a7c6bc938f2d6802e13130b85103d3900a7423f',
  'tactical-ops-src/host/foundationProgression.ts': 'ddc2392618518c513727f7ff226c23c72060b9a5',
- 'tactical-ops-src/store/battleStore.ts': '292a26811156bd95961ec08b2abb5b6cc5531513',
+ 'tactical-ops-src/store/battleStore.ts': '9ab22cfc3bf39cd6dcab3a3db7d87e53ee4faece',
  'tactical-ops-src/ui/App.tsx': 'b6038994cf6018096cd38636655e16b556627fce',
  'tactical-ops-src/ui/Battle.tsx': 'c8c51edf4591085d9ccfda598b55835167ea4c29',
  'tactical-ops-src/ui/Counterstrike.tsx': '81b1adbf88106edbb4ded92e5f21d0f82f643938',
