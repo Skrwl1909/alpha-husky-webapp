@@ -283,12 +283,21 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
+  function showBloodScent(event: BattleEvent) {
+    if (event.type !== "ticker" || !event.text?.startsWith("BLOOD SCENT") || event.buildEvidence !== event.text) return;
+    const alpha = get().battle.units.find(unit => unit.defId === "alpha");
+    if (alpha) pushFloat(alpha.id, event.text, "info");
+  }
+
   const playEvents = async (events: BattleEvent[], g: number) => {
     if (g !== runGen) return;
     set(s => ({ s3CombatProof: recordFieldcraft(s.s3CombatProof,events) }));
     for (const ev of events) {
       if (g !== runGen) return;
-      if (ev.type === "ticker" && ev.text) set({ ticker: ev.text });
+      if (ev.type === "ticker" && ev.text) {
+        set({ ticker: ev.text });
+        showBloodScent(ev);
+      }
       if (ev.type === "banner" && ev.text) {
         set({ banner: ev.text });
         sfx("turn");
@@ -413,6 +422,9 @@ export const useBattleStore = create<Store>((set, get) => {
       if (g !== runGen) return;
     }
     acceptLastHowl(accepted);
+    if (reducedMotion) {
+      for (const frame of accepted.frames ?? []) frame.events.forEach(showBloodScent);
+    }
     if (accepted.revision === view.revision && accepted.status === "ACTIVE") {
       set({ progressionError: "Action not confirmed. Check the board and try again." });
     }
@@ -852,7 +864,9 @@ export const useBattleStore = create<Store>((set, get) => {
             (heroId === "ally-02" && ["pursuer", "disruptor"].includes(discipline)) ||
             (heroId === "ally-03" && ["sentinel", "medic"].includes(discipline))) ||
           (growth.earnedPoints - growth.spentPoints) < 1 || (hero.ranks[skillId] ?? 0) + 1 !== rank) return;
-      if (!rankChanges(growthPreviewBase(skillId,current.progression),hero,rank,discipline).length) return;
+      if (skillId === "blood-scent-v1") {
+        if (current.progression.bloodScentCostV1 !== 1 || heroId !== "alpha" || !hero.ranks["alpha-rend"] || hero.bloodScent || rank !== 1) return;
+      } else if (!rankChanges(growthPreviewBase(skillId,current.progression),hero,rank,discipline).length) return;
       set({ progressionCommitPending: true, progressionError: null });
       try {
         const state = await upgradePlayerGrowth(createFoundationRequestId("growth-upgrade"), current.progression.revision, heroId, discipline, skillId, rank);

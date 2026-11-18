@@ -5,7 +5,7 @@ import { computeHeal, mitigatedDamage } from "./damage";
 import { applyGearOffense, applyGearGuard } from "./gearImpactV31";
 import { resolveSkillTargets, skillNeedsTargetPick, validTargetIds } from "./targeting";
 import { getSkill } from "../data/skills";
-import { resolveGrowthSkill } from "../data/playerGrowth";
+import { canonicalGrowthSkillId, resolveGrowthSkill } from "../data/playerGrowth";
 
 export function unitSkills(unit: CombatUnit): SkillDef[] {
   return unit.skillIds.map((id) => resolveGrowthSkill(getSkill(id), unit.growth));
@@ -154,6 +154,19 @@ export function applySkill(
     }
   }
 
+  if (caster.defId === "alpha" && caster.team === "ally" && caster.growth?.bloodScent === "blood-scent-v1"
+      && !caster.bloodScentUsed && canonicalGrowthSkillId(skill.id) === "alpha-strike"
+      && hits.some(target => target.id === targetId && !target.defeated && target.team === "enemy"
+        && target.statuses.some(status => status.type === "BLEED" && status.duration > 0))) {
+    const rend = caster.skillIds.find(id => canonicalGrowthSkillId(id) === "alpha-rend");
+    if (rend && cooldownLeft(caster, rend) > 0) {
+      const remaining = cooldownLeft(caster, rend) - 1;
+      units = patch(units, caster.id, unit => ({ ...unit, bloodScentUsed: true,
+        cooldowns: { ...unit.cooldowns, [rend]: remaining } }));
+      const text = `BLOOD SCENT · REND cooldown ${remaining + 1} → ${remaining}`;
+      events.push({ type: "ticker", text, buildEvidence: text });
+    }
+  }
   if (caster.team === "ally") for (const target of addedReach) {
     if (events.some(e => e.unitId === target.id && ["damage", "heal", "status"].includes(e.type))) {
       events.push({ type: "info", buildEvidence: `${caster.name} ${skill.name}: reached ${target.name} beyond the unranked ${skill.targetType === "ALLY_AOE" ? "radius" : "range"} (${Math.max(Math.abs(caster.c-target.c), Math.abs(caster.r-target.r))} cells).` });

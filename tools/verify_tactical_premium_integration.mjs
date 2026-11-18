@@ -269,14 +269,32 @@ const alphaCommandDeckV2Blobs = Object.freeze({
  'tactical-ops-src/version.ts': '7daa9fdfa33ca8d5289c6c61c83b7eb884fb3b90',
  'tools/verify_tactical_last_howl_browser.mjs': 'e1a276990748774a0ef4d8500552dced2a67e9cf',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs };
+const bloodScentBase = "5818ea1bcc45f6f36e32ac937bf9589d560211bb";
+const bloodScentBlobs = Object.freeze({
+ 'tools/verify_tactical_last_howl_browser.mjs': '811b1868f5b03de7ad38d02fd9cfecb30873edb0',
+ '.github/workflows/tactical-purpose-return.yml': 'f7e1f65d30b2b0b379515983742ee52f54a71087',
+ '.github/workflows/tactical-premium-integration.yml': '25d71fef492259ae205b8083eb2f33edb37a7e2f',
+ 'js/boot_loaders.js': 'b1c1ca423a4823040115f9ab58317a6c0cb6c2bc',
+ 'js/tactical_ops.js': '5d5379f33271558e5752864b9509028ed1f0a2fd',
+ 'tactical-ops-src/combat/skills.ts': '9d3aa498f691b8362d33dfee1b668027445b8d93',
+ 'tactical-ops-src/combat/types.ts': 'd6f10bb2cb5bf364612bed80d049251b9aa795b1',
+ 'tactical-ops-src/data/playerGrowth.ts': '1f6287816484fa042baf5c1479d7a76d8e207c10',
+ 'tactical-ops-src/host/foundationProgression.ts': 'c86f3176d88cff1e951d23625d85ccfccdbec530',
+ 'tactical-ops-src/store/battleStore.ts': 'abbb8c602e8c2dabb7c5d04f5a1786317d3ad04a',
+ 'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '05f31fa6c321a850e20831e68d8fd2d3b656ab8d',
+ 'tactical-ops-src/version.ts': '6236716547124cc1be01e6d21b0632217125b075',
+ 'tools/build_tactical_m2_workers.mjs': '968d29432c9c56a4201e97de718c7f08f774cb95',
+ 'tools/verify_tactical_blood_scent.mjs': 'eba46f2c6f18c68dac67beefa28888f53fdf6be0',
+ 'tools/verify_tactical_signal_atlas_default_browser.mjs': '5bc51898815d07d525529fdfc29fd69a17efb3fb',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
@@ -370,7 +388,8 @@ for (const path of git('diff','--name-only','--no-renames',lastHowlBase,m2Base).
 }
 function readFileSync(path, encoding) {
  const baseline = Object.hasOwn(lastHowlBlobs, path) ? lastHowlBase : Object.hasOwn(approvedM2Blobs, path) ? m2Base :
-  Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : null;
+  Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase :
+  Object.hasOwn(bloodScentBlobs, path) ? bloodScentBase : null;
  if (!baseline) return readLocalFile(path, encoding);
  const historical = git('show', `${baseline}:${path}`);
  return encoding ? historical : Buffer.from(historical);

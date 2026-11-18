@@ -103,6 +103,7 @@ export interface UnitDef {
 }
 
 export interface CombatUnit {
+  bloodScentUsed?: true;
   gearImpactV31?: { offense: number; guard: number };
   /** Integer micro-points, persisted with the battlefield for deterministic resume. */
   gearOffenseCarryV31?: number;
