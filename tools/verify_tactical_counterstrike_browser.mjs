@@ -75,6 +75,14 @@ try{
   await page.screenshot({path:out+"/"+width+"-archive.png"});
   rows.push({width,consumed,commands:commands.length,reload:true,recorded:true});await page.close();
  }
+ await fetch(api+"/fixture/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({disabled:true})});
+ if(!providedApi){
+  const older=await browser.newPage();
+  await older.goto(api+"/counterstrike-fixture");
+  await older.getByRole("navigation",{name:"Tactical command sections"}).waitFor();
+  assert.equal(await older.getByRole("region",{name:"Counterstrike operation"}).count(),0);
+  await older.close();
+ }
  assert.deepEqual(errors,[]);console.log("PASS COUNTERSTRIKE browser",JSON.stringify(rows));
 }finally{
  writeFileSync(out+"/results.json",JSON.stringify({rows,errors,browser:browser.version(),transport:providedApi?"private Python fixture with synthetic identity":"synthetic host with real encounter engine"},null,2));

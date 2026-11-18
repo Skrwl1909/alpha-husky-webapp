@@ -308,10 +308,10 @@ const counterstrikeBlobs = Object.freeze({
  '.github/workflows/tactical-counterstrike.yml': 'd794d805e5ad5579303296efb36f7c909e172535',
  'docs/TACTICAL_COUNTERSTRIKE.md': 'b950f20088ad46bc82cdf4633fcb42600cb2a1fb',
  'js/boot_loaders.js': '8100017b8f6adb5c864cfce8c9653e7fd8e1cb43',
- 'js/tactical_ops.js': '26441f8a23d287188748fe1e26230b35cff0097f',
+ 'js/tactical_ops.js': '416e821560c5886bec739d7f11585b694b40eec4',
  'tactical-ops-src/combat/counterstrikeAuthority.ts': '05ad8009a0350c1be178a8decdf8c158ae4e9e82',
  'tactical-ops-src/combat/recoverAuthority.ts': '0eb34ff153180bd5bdab83367ecbe09c1aee4e54',
- 'tactical-ops-src/data/counterstrike.ts': '43495e050aca03ae8d6016d9873e3b456d2bb019',
+ 'tactical-ops-src/data/counterstrike.ts': 'cec27d7bf8326481bde6741af62eae8bfc503cb6',
  'tactical-ops-src/data/operations.ts': '18b88d5881ec4b1fb360bd8c6feadcd4ee5bb748',
  'tactical-ops-src/data/packMastery.ts': '3a7c6bc938f2d6802e13130b85103d3900a7423f',
  'tactical-ops-src/host/foundationProgression.ts': 'ddc2392618518c513727f7ff226c23c72060b9a5',
@@ -325,7 +325,7 @@ const counterstrikeBlobs = Object.freeze({
  'tools/counterstrike_browser_fixture.mjs': '68586d375c4058ceeb1c947dd3563fe804420d6b',
  'tools/tactical_counterstrike_engine_v1.ts': 'd515b2fabbb448099b307e9feb7967c25f63775d',
  'tools/verify_tactical_counterstrike.mjs': '2ea10e05f07c346ba13e305c1ac7727544932f4e',
- 'tools/verify_tactical_counterstrike_browser.mjs': 'c78923bc87c7ff99d73522d5011fdc09001d5ea7',
+ 'tools/verify_tactical_counterstrike_browser.mjs': '1fd9f322f89ccf1808c7ffb685a00282682bfd54',
  'tools/verify_tactical_counterstrike_workers.mjs': '9f32b3423836421e6adb28eb1ebea6727f898c9b',
 });
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);

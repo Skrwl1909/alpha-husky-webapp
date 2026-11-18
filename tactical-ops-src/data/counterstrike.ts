@@ -30,7 +30,7 @@ export type CounterstrikeRun = OperationMissionRun & {
 export function parseCounterstrike(raw:unknown):CounterstrikeSummary | undefined {
  if (!raw || typeof raw !== "object") return;
  const x=raw as CounterstrikeSummary;
- if(x.version!==1 || typeof x.available!=="boolean" || typeof x.blocked!=="boolean" ||
+ if(!Array.isArray(x.squadIds) || x.squadIds.some(id=>typeof id!=="string") || x.version!==1 || typeof x.available!=="boolean" || typeof x.blocked!=="boolean" ||
    !["active","cleared"].includes(x.status) || !["APPLIED","PREVIOUSLY_CONSUMED","NONE"].includes(x.intelStatus) ||
    x.activeRunId!==null && (typeof x.activeRunId!=="string" || !x.activeRunId.startsWith(COUNTERSTRIKE_PREFIX))) return;
  for (const r of [x.firstClear,x.lastResult]) if(r!==null && (!r || r.missionId!==COUNTERSTRIKE_ID ||
