@@ -14,6 +14,7 @@ export interface HeroGrowth {
   /** Only present on persistent records, not frozen run snapshots. */
   respecUsed?: boolean;
   /** Absence preserves the existing single-target loadout. */
+  packLink?: "pack-link-v1";
   bloodScent?: "blood-scent-v1";
   lungeDoctrine?: typeof WIDE_LUNGE;
   ranks: Record<string, SkillRank>;
@@ -81,6 +82,7 @@ export function validateGrowthSnapshot(value: unknown): GrowthSnapshot {
     for (const [skillId, rank] of Object.entries(hero.ranks)) {
       if (!HERO_SKILLS[id].includes(skillId) || !Number.isInteger(rank) || rank < 1 || rank > 2) throw Error("invalid_growth_rank");
     }
+    if (Object.hasOwn(hero, "packLink") && (s.version !== 2 || id !== "alpha" || hero.packLink !== "pack-link-v1" || !hero.ranks["alpha-howl"])) throw Error("invalid_pack_link");
     if (Object.hasOwn(hero, "bloodScent") && (s.version !== 2 || id !== "alpha" || hero.bloodScent !== "blood-scent-v1" || !hero.ranks["alpha-rend"])) throw Error("invalid_blood_scent");
     if (Object.hasOwn(hero, "lungeDoctrine") &&
       (s.version !== 2 || hero.lungeDoctrine !== WIDE_LUNGE || !canSelectLungeDoctrine(hero))) throw Error("invalid_lunge_doctrine");

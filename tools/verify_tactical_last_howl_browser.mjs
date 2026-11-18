@@ -16,15 +16,25 @@ style.textContent = TACTICAL_CSS;
 document.head.append(style);
 const profile = { version: 3, mode: "battle-v1", alpha: { hp: 120, atk: 28, def: 12, spd: 14 }, pet: null };
 const roster = { squadIds: ["alpha","ally-02","ally-03"], combatProfileV2: { pet: null }, packMastery: {} };
+const link = new URLSearchParams(location.search).has("link");
 const scent = new URLSearchParams(location.search).has("scent");
 const wide = new URLSearchParams(location.search).has("wide");
 const playerGrowth = { version: 2, revision: 1, heroes: [
-  scent ? {heroId:"alpha", discipline:"vanguard", ranks:{"alpha-rend":1}, bloodScent:"blood-scent-v1"} : { heroId: "alpha", discipline: null, ranks: {} },
+  link ? {heroId:"alpha", discipline:"vanguard", ranks:{"alpha-howl":1}, packLink:"pack-link-v1"} : scent ? {heroId:"alpha", discipline:"vanguard", ranks:{"alpha-rend":1}, bloodScent:"blood-scent-v1"} : { heroId: "alpha", discipline: null, ranks: {} },
   { heroId: "ally-02", discipline: "pursuer", ranks: { "u02-burst": 1 }, lungeDoctrine: "wide-v1" },
   { heroId: "ally-03", discipline: null, ranks: {} },
 ] };
-const encounter = { seed: 7, ...roster, activeCombatProfileV3: profile, ...(wide || scent ? { playerGrowth } : {}) };
+const encounter = { seed: 7, ...roster, activeCombatProfileV3: profile, ...(wide || scent || link ? { playerGrowth } : {}) };
 let fresh = stepLastHowl(encounter);
+if (link) {
+  const board = fresh.snapshot.battle;
+  const alpha = board.units.find(unit => unit.defId === "alpha");
+  const teammate = board.units.find(unit => unit.defId === "ally-02");
+  Object.assign(alpha,{c:4,r:3,hasActed:false});
+  Object.assign(teammate,{c:5,r:3});
+  board.activeId=alpha.id;
+  fresh=stepLastHowl(encounter,fresh.snapshot);
+}
 if (scent) {
   const board = fresh.snapshot.battle;
   const alpha = board.units.find(unit => unit.defId === "alpha");
@@ -63,7 +73,7 @@ window.apiPost = async (path, body) => {
       active = { ...active, status: "ABANDONED", token: null, revision: active.revision + 1,
         completedWaves: active.completedWaves || 0, eliteKills: active.eliteKills || 0, kills: active.kills || 0,
         newRecord: false, battle: { ...active.battle, outcome: "defeat", activeId: null } };
-    } else if (wide || scent) {
+    } else if (wide || scent || link) {
       fresh = stepLastHowl(encounter, fresh.snapshot, body.command);
       if (!fresh) throw Error("invalid fixture action");
       window.receivedHits = fresh.frames[0].events.filter(event => event.type === "damage").length;
@@ -205,6 +215,14 @@ try {
     assert.match(await feedback.innerText(), /REND cooldown 2.*1/);
     mkdirSync("artifacts/blood-scent", {recursive:true});
     await page.screenshot({path:`artifacts/blood-scent/${width}-activation.png`});
+    await page.evaluate(() => sessionStorage.clear());
+    await page.goto(url + "?link");
+    await page.getByRole("button",{name:"DEPLOY",exact:true}).click();
+    await page.getByRole("button",{name:/^A3 HOWL/}).tap();
+    const linkFeedback = page.locator(".t-float").filter({hasText:"PACK LINK"});
+    await linkFeedback.waitFor();
+    mkdirSync("artifacts/pack-link",{recursive:true});
+    await page.screenshot({path:`artifacts/pack-link/${width}-activation.png`});
     assert.deepEqual(errors, []);
     await page.close();
     console.log(`PASS ${width}px premium COMMAND art, touch deploy/resume, HUD, results, target, retry and Forge bridge`);
