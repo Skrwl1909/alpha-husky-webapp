@@ -43,5 +43,7 @@ jobs:
         if: always()
         with:
           name: tactical-integrated-mobile-evidence
-          path: artifacts/brief-closure/after-production
+          path: |
+            artifacts/brief-closure/after-production
+            artifacts/command-deck-v2
           if-no-files-found: error

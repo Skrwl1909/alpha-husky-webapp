@@ -257,14 +257,26 @@ const alphaAtlasModalBlobs = Object.freeze({
  'tactical-ops-src/version.ts': 'a91405e666570265516fc4d8e6a82703db61795b',
  'tools/verify_tactical_signal_atlas_p3_browser.mjs': '350f5c8c23e7c0ff0a849a31132724ba94545aa7',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs };
+// COMMAND V2: full-size operational art, mobile decision hierarchy and
+// 320/390/430px touch evidence. All previously merged provenance pins remain.
+const alphaCommandDeckV2Blobs = Object.freeze({
+ '.github/workflows/tactical-premium-integration.yml': '0ebbc2df79bb282f0b852a936c9a9a7a5795d11d',
+ 'js/boot_loaders.js': '4fab53d3471f36df707a83663dec22efae50f92b',
+ 'js/tactical_ops.js': '269c1aef215d724158b6e80d910c603e480c0713',
+ 'tactical-ops-src/ui/App.tsx': '328ad8c6a3589333025780620c9c524d28702c1c',
+ 'tactical-ops-src/ui/LastHowl.tsx': 'ebeeb4c4730e0dd7d8f8638213b1b1d38cb8dd97',
+ 'tactical-ops-src/ui/commandDeck.css': '35314e37c360f0801f0cf9e04158cb99589921be',
+ 'tactical-ops-src/version.ts': '7daa9fdfa33ca8d5289c6c61c83b7eb884fb3b90',
+ 'tools/verify_tactical_last_howl_browser.mjs': 'e1a276990748774a0ef4d8500552dced2a67e9cf',
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
@@ -557,6 +569,11 @@ const approvedCurrentBlobs=Object.freeze({
   // The reviewed #301 CI workflow is also a historical Player Identity V2 leaf.
   // Override this single hash without changing older production approvals.
   '.github/workflows/tactical-cinematic-results.yml': approvedMasteryEffectBlobs['.github/workflows/tactical-cinematic-results.yml'],
+  // Legacy audits read some files from frozen historical commits. Update only
+  // the current-file subset; all new live leaves are pinned above.
+  ...Object.fromEntries(Object.entries(alphaCommandDeckV2Blobs).filter(([path]) =>
+    !Object.hasOwn(lastHowlBlobs, path) && !Object.hasOwn(approvedM2Blobs, path) &&
+    !Object.hasOwn(approvedSignalAtlasPremiumBlobs, path))),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');

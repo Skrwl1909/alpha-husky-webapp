@@ -13,14 +13,28 @@ export function LastHowlCard() {
   const open = useBattleStore(s => s.openLastHowl);
   const busy = useBattleStore(s => s.busy || s.progressionStatus === "loading");
   if (!summary) return null;
-  return <section className="t-panel t-last-howl-card" aria-label="Last Howl">
-    <div><h2>LAST HOWL · ENDLESS</h2><p>Survive. Beat your record.</p><PersonalBest best={summary.best} /></div>
-    <div className="t-last-howl-actions">
+  const active = summary.status === "ACTIVE";
+  return <section className="t-panel t-last-howl-card t-cdv2-operation" aria-label="Last Howl" data-run-status={active ? "active" : "ready"}>
+    <img className="t-cdv2-operation-scene" src="/images/tactical_ops/presentation/command_deck/operations/alpha_wartable_fracture_front_v1.webp" alt="" aria-hidden="true" loading="eager" decoding="async" />
+    <div className="t-cdv2-operation-content">
+      <div className="t-cdv2-operation-top"><span className="t-cdv2-overline">ENDLESS PROTOCOL <i aria-hidden="true" /> {active ? "RUN ACTIVE" : "SURVIVAL OPERATION"}</span>
+        <img src="/images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_survive_v1_256.webp" alt="" aria-hidden="true" decoding="async" />
+      </div>
+      <h2>LAST HOWL <span>· ENDLESS</span></h2>
+      <p className="t-cdv2-operation-line">Survive the waves. Outlast your record.</p>
+      <div className="t-cdv2-operation-record" aria-label="Personal best">
+        <span><small>BEST WAVES</small><strong>{summary.best?.completedWaves ?? "—"}</strong></span>
+        <span><small>BEST KILLS</small><strong>{summary.best?.kills ?? "—"}</strong></span>
+        <span className="t-cdv2-record-badge">{active ? "IN PROGRESS" : "NO REWARD RUN"}</span>
+      </div>
+      <p className="t-cdv2-build-note">{active ? "Resume with the build saved at deployment." : "New deployment · uses your current saved skills."}</p>
+    </div>
+    <div className="t-last-howl-actions t-cdv2-operation-actions">
       <button type="button" className="t-btn t-btn-primary" disabled={busy}
-        onClick={() => void open(summary.status === "ACTIVE" ? "state" : "start", summary.runId)}>
-        {summary.status === "ACTIVE" ? "RESUME" : "DEPLOY"}
+        onClick={() => void open(active ? "state" : "start", summary.runId)}>
+        {active ? "RESUME" : "DEPLOY"}<span aria-hidden="true">↗</span>
       </button>
-      {summary.runId && summary.status !== "ACTIVE" ? <button type="button" className="t-btn" disabled={busy}
+      {summary.runId && !active ? <button type="button" className="t-btn" disabled={busy}
         onClick={() => void open("state", summary.runId)}>LAST RESULT</button> : null}
     </div>
   </section>;

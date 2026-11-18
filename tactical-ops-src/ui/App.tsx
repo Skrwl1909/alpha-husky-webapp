@@ -303,7 +303,6 @@ function WarTable() {
 
   const activeMissionIds = field?.board?.activeMissionIds || [];
   const activeMissionDefs = activeMissionIds.map((id) => getMissionDef(id)).filter(Boolean) as NonNullable<ReturnType<typeof getMissionDef>>[];
-  const currentCycleId = field?.board?.cycleId;
   const rotationProgress = field?.rotationProgress;
   const securedMissionIds = new Set(rotationProgress?.clearedMissionIds || []);
   const recommendedBase = getMissionDef(primaryPurpose?.missionId);
@@ -367,7 +366,7 @@ function WarTable() {
     <div className="t-fill">
       <Background dim={0.5} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
-      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux t-command-deck-v3" style={{ maxWidth: "64rem" }}>
+      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux t-command-deck-v3 t-command-deck-v4" style={{ maxWidth: "64rem" }}>
         <header className="t-panel t-wt-hero t-wt-hero-compact">
           <div className="t-wt-branding">
             <div className="t-kicker">Alpha Husky / Tactical Ops</div>
@@ -394,17 +393,22 @@ function WarTable() {
             </button>
           ))}
         </nav>
-        {deckTab === "command" ? <div className="t-command-pane" aria-label="Command overview">
-        <LastHowlCard />
-        {nextUpgrade ? <section className="t-panel t-command-order" aria-label="Next target">
-          <div className="t-kicker">NEXT TARGET · SIGNAL ATLAS</div>
-          <h2>{HERO_TITLES[nextUpgrade.heroId]} · {getSkill(nextUpgrade.skillId).name} R{nextUpgrade.rank}</h2>
-          <p>{nextUpgrade.change} · 1 available skill point</p>
-          <button type="button" className="t-btn t-btn-primary" disabled={loading || chapterSaving} onClick={() => {
+        {deckTab === "command" ? <div className="t-command-pane t-cdv2-overview" aria-label="Command overview">
+        {progression?.lastHowl?.status === "ACTIVE" ? <LastHowlCard /> : null}
+        {nextUpgrade ? <section className="t-panel t-command-order t-cdv2-build-card" aria-label="Next target">
+          <div className="t-cdv2-build-icon" aria-hidden="true"><img src={tacticalActionImageForSkill(nextUpgrade.skillId) || ""} alt="" decoding="async" onError={e=>{e.currentTarget.hidden=true;}} /></div>
+          <div className="t-cdv2-build-copy">
+            <div className="t-kicker">NEXT BUILD DECISION · SIGNAL ATLAS</div>
+            <h2>{HERO_TITLES[nextUpgrade.heroId]} · {getSkill(nextUpgrade.skillId).name} R{nextUpgrade.rank}</h2>
+            <p>{nextUpgrade.change}</p>
+            <small>{Math.max(0,(progression?.playerGrowth?.earnedPoints ?? 0) - (progression?.playerGrowth?.spentPoints ?? 0))} POINTS AVAILABLE · COST 1</small>
+          </div>
+          <button type="button" className="t-btn t-cdv2-build-cta" disabled={loading || chapterSaving} onClick={() => {
             setAtlasTarget(nextUpgrade);
             setSquadView("skillbook");
             setDeckTab("squad");
-          }}>INSPECT UPGRADE</button>
+          }}>INSPECT UPGRADE <ChevronRight className="t-ico" /></button>
+          <p className="t-cdv2-build-advice">Review the effect before spending a point. Recorded upgrades apply to your next accepted deployment.</p>
         </section> : recommendedMission && primaryPurpose ? (() => {
           const visual = missionPresentation(recommendedMission);
           const contract = !primaryPurpose.resume && primaryPurpose.title === nextContract?.title ? nextContract : null;
@@ -437,7 +441,10 @@ function WarTable() {
             </div>
           </section>;
         })() : <p role="status">Refresh to see available operations.</p>}
-        <section className="t-command-progress" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
+        {progression?.lastHowl?.status !== "ACTIVE" ? <LastHowlCard /> : null}
+        <section className="t-command-progress t-cdv2-command-status" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
+          <div className="t-cdv2-commander-seal" aria-hidden="true">{commanderRank || "—"}</div>
+          <div className="t-cdv2-commander-info"><span className="t-kicker">COMMANDER STATUS · SERVICE RECORD</span>
           <div className="t-command-progress-line">
             <strong>{rankLabel}</strong>
             {veteranCareer ? <span>VETERAN · {veteranCareer.credits}/{VETERAN_TARGET}</span> :
@@ -450,6 +457,28 @@ function WarTable() {
             <progress className="t-progress" aria-label="Commander rank points" value={Math.min(commanderProgress, commanderTarget)} max={commanderTarget} />
             <small>Next · Rank {commanderRank + 1}</small>
           </> : null}
+          </div>
+        </section>
+        <section className="t-cdv2-front-intel" aria-label="Current front intelligence">
+          {field?.board && rotationProgress ? (
+            <button type="button" className="t-premium-front-link" onClick={() => setDeckTab("missions")}>
+              <span><strong>FRONT STATUS</strong><small>{rotationProgress.securedCount}/{rotationProgress.total} FIELD OPS SECURED · {rotationProgress.challengeMissionIds.length} CHALLENGES</small></span>
+              <span>VIEW MISSIONS <ChevronRight className="t-ico" /></span>
+            </button>
+          ) : null}
+          <div className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail t-cd-status" aria-label="Tactical Ops overview">
+            <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
+              <span className="t-kicker">Area status</span>
+              <strong>{areaPressure}</strong>
+              <small>{pressureCopy}</small>
+              {highlightedFieldWindow ? <small data-g4-world-window="true">{getMissionDef(highlightedFieldWindow.id)?.name} · {highlightedFieldWindow.window?.text}</small> : null}
+            </div>
+            <div className="t-panel t-wt-status-card">
+              <span className="t-kicker">Rotation</span>
+              <strong>{rotationLabel}</strong>
+              <small>{activeMissionIds.length || 0} active Field Ops{currentDirective ? ` · ${currentDirective}` : ""}</small>
+            </div>
+          </div>
         </section>
         {trials?.enabled ? <section className="t-panel t-field-contract" aria-label="Signal Trials" data-signal-trials="true">
           <div className="t-kicker">SIGNAL TRIALS · RELAY PRESSURE</div>
@@ -484,35 +513,6 @@ function WarTable() {
           {(() => { const proof = ["ally-02", "ally-03", ...(progression?.equippedPet ? [`pet:${progression.equippedPet.id}`] : [])].map(id => savedMasteryProof(id, progression || {}, progression?.equippedPet)).find(Boolean); return proof ? <p>{proof.subject}: {proof.changes[0]}. Compare your saved specialization before deploying.</p> : <p>Review saved abilities and squad roles before your next mission.</p>; })()}
           <button type="button" className="t-btn" onClick={() => setDeckTab("squad")}>REVIEW SQUAD DEVELOPMENT</button>
         </div></details>
-
-        <section className="t-wt-status-rail t-wt-status-rail-v29 t-premium-status-rail t-cd-status" aria-label="Tactical Ops overview">
-          {field?.board ? <div className="t-panel t-wt-status-card">
-            <span className="t-kicker">Field Ops secured</span>
-            <strong>{rotationProgress?.securedCount ?? activeMissionIds.filter(id => field.records[id]?.lastClearCycle === currentCycleId).length}/{rotationProgress?.total ?? activeMissionIds.length} FIELD OPS SECURED</strong>
-          </div> : null}
-          <div className={`t-panel t-wt-status-card t-wt-pressure-card is-${areaPressure.toLowerCase()}`}>
-            <span className="t-kicker">Area status</span>
-            <strong>{areaPressure}</strong>
-            <small>{pressureCopy}</small>
-            {highlightedFieldWindow ? <small data-g4-world-window="true">{getMissionDef(highlightedFieldWindow.id)?.name} · {highlightedFieldWindow.window?.text}</small> : null}
-          </div>
-          <div className="t-panel t-wt-status-card">
-            <span className="t-kicker">Rotation</span>
-            <strong>{rotationLabel}</strong>
-            <small>{activeMissionIds.length || 0} active Field Ops{currentDirective ? ` · ${currentDirective}` : ""}</small>
-          </div>
-        </section>
-
-
-        {field?.board && rotationProgress ? (
-          <button type="button" className="t-premium-front-link" onClick={() => setDeckTab("missions")}>
-            <span><strong>FRONT STATUS</strong><small>{rotationProgress.securedCount}/{rotationProgress.total} SECURED · {rotationProgress.challengeMissionIds.length} CHALLENGES</small></span>
-            <span>VIEW MISSIONS <ChevronRight className="t-ico" /></span>
-          </button>
-        ) : null}
-
-
-
 
         </div> : null}
         {deckTab === "missions" ? <div className="t-command-pane" aria-label="Operations and field missions">

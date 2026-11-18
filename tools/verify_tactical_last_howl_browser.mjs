@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { mkdirSync } from "node:fs";
 import { createServer } from "vite";
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || "playwright");
@@ -92,6 +93,8 @@ const server = await createServer({
 await server.listen();
 const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE, args: ["--no-sandbox"] });
 const url = `http://127.0.0.1:${server.httpServer.address().port}/last-howl-fixture`;
+const commandEvidence = "artifacts/command-deck-v2";
+mkdirSync(commandEvidence, { recursive: true });
 try {
   for (const [width, height] of [[320, 568], [390, 844], [430, 932]]) {
     const page = await browser.newPage({ viewport: { width, height }, hasTouch: true, reducedMotion: "reduce" });
@@ -104,6 +107,33 @@ try {
     });
     assert.equal(await page.getByRole("region", { name: "Last Howl" }).count(), 0);
     await page.goto(url);
+    const operation = page.getByRole("region", { name: "Last Howl" });
+    await operation.waitFor();
+    assert.equal(await operation.getAttribute("data-run-status"), "ready");
+    assert.equal(await operation.getByText("BEST WAVES", { exact: true }).count(), 1);
+    assert.equal(await operation.getByText("BEST KILLS", { exact: true }).count(), 1);
+    assert(await operation.locator("img.t-cdv2-operation-scene").evaluate(async image => {
+      await image.decode();
+      return image.naturalWidth >= 1000 && image.naturalHeight >= 500;
+    }), "premium operation artwork must load at native resolution");
+    const deploy = operation.getByRole("button", { name: "DEPLOY", exact: true });
+    const deployRect = await deploy.boundingBox();
+    assert(deployRect && deployRect.height >= 44 && deployRect.width >= 110, "primary deploy action must be touch-sized");
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "COMMAND must not horizontally overflow");
+    assert(await operation.evaluate(element => element.scrollWidth <= element.clientWidth + 1), "operation card content must fit mobile width");
+    const regularMission = page.locator('.t-cdv2-overview [data-primary-purpose="true"]');
+    if (await regularMission.count()) {
+      const missionBox = await regularMission.boundingBox();
+      const howlBox = await operation.boundingBox();
+      assert(missionBox && howlBox && missionBox.y < howlBox.y, "normal COMMAND prioritizes the next actionable mission above optional Last Howl");
+    }
+    await page.screenshot({ path: `${commandEvidence}/${width}-command-ready.png`, fullPage: true, animations: "disabled" });
+    await deploy.scrollIntoViewIfNeeded();
+    assert(await deploy.evaluate(button => {
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return hit === button || button.contains(hit);
+    }), "LAST HOWL DEPLOY must be topmost at its mobile tap location");
     await page.getByRole("button", { name: "DEPLOY", exact: true }).click();
     const hud = page.locator(".t-last-howl-hud");
     await hud.waitFor();
@@ -120,6 +150,14 @@ try {
     assert((await field.boundingBox()).y >= (await hud.boundingBox()).y + (await hud.boundingBox()).height - 1);
     await hud.getByRole("button", { name: "EXIT", exact: true }).click();
     await page.reload();
+    assert.equal(await operation.getAttribute("data-run-status"), "active");
+    await operation.getByText("Resume with the build saved at deployment.").waitFor();
+    if (await regularMission.count()) {
+      const missionBox = await regularMission.boundingBox();
+      const howlBox = await operation.boundingBox();
+      assert(missionBox && howlBox && howlBox.y < missionBox.y, "active Last Howl RESUME has priority above unaccepted missions");
+    }
+    await page.screenshot({ path: `${commandEvidence}/${width}-command-active.png`, fullPage: true, animations: "disabled" });
     await page.getByRole("button", { name: "RESUME", exact: true }).click();
     await hud.waitFor();
     await page.keyboard.press("s");
@@ -148,7 +186,7 @@ try {
     await page.waitForFunction(() => window.receivedHits === 2);
     assert.deepEqual(errors, []);
     await page.close();
-    console.log(`PASS ${width}px touch HUD, wide-lunge target, results, gated card, resume, retry and Forge bridge`);
+    console.log(`PASS ${width}px premium COMMAND art, touch deploy/resume, HUD, results, target, retry and Forge bridge`);
   }
 } finally {
   await browser.close();
