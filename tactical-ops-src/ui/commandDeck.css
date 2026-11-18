@@ -217,3 +217,235 @@
   grid-column:2;grid-row:2;font-size:9px;letter-spacing:0;overflow-wrap:normal;
  }
 }
+
+/* COMMAND DECK V2 — an operational destination, not a stack of status widgets.
+   All actions and server-owned records are preserved; existing War Table art
+   and emblem assets are reused without additional image requests elsewhere. */
+#tacticalOpsRoot .t-command-deck-v4 {
+ --cdv2-gold:#edc88b;--cdv2-cyan:#88dce9;--cdv2-muted:#b6cbd5;
+}
+#tacticalOpsRoot .t-command-deck-v4 .t-cdv2-overview {
+ display:grid;grid-template-columns:minmax(0,1fr);gap:13px;
+ min-width:0;padding-bottom:17px;
+}
+#tacticalOpsRoot .t-command-deck-v4 .t-command-nav {
+ border:1px solid #527e8d75;padding:4px;background:linear-gradient(145deg,#112836ed,#05131feb);
+ box-shadow:0 7px 20px #0009,inset 0 1px #92d9e321;border-radius:8px;
+}
+#tacticalOpsRoot .t-command-deck-v4 .t-command-nav button {
+ position:relative;min-width:0;border:1px solid transparent;border-radius:5px;
+ background:linear-gradient(155deg,#122d3c,#071521);color:#b5ccd6;
+}
+#tacticalOpsRoot .t-command-deck-v4 .t-command-nav button.is-current {
+ border-color:#84d7e2b3;background:linear-gradient(165deg,#16465a,#092435 80%);
+ box-shadow:inset 0 0 19px #41d5ed29,0 0 11px #4cb2c340;color:#f4fcff;
+}
+#tacticalOpsRoot .t-command-deck-v4 .t-command-nav button.is-current::after {
+ content:"";position:absolute;bottom:0;left:22%;right:22%;height:2px;
+ background:#a4eef9;box-shadow:0 0 10px #72deef;
+}
+
+/* Art-backed Last Howl operation card. The CTA remains its real store action. */
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation {
+ position:relative;isolation:isolate;display:grid;grid-template-columns:minmax(0,1fr);
+ padding:0;margin:0;min-width:0;overflow:hidden;border:1px solid #699aaa;
+ border-radius:7px;background:#05131e;
+ box-shadow:inset 0 0 0 1px #bdebf320,0 13px 31px #000a,0 0 19px #409ec21b;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-scene {
+ position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+ object-position:56% 42%;filter:saturate(.72) contrast(1.12) brightness(.73);
+ pointer-events:none;z-index:-2;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation::before {
+ content:"";position:absolute;inset:0;pointer-events:none;z-index:-1;
+ background:linear-gradient(180deg,#02101a77 0%,#03111b3f 25%,#041420d9 55%,#03111cf8 83%),
+  linear-gradient(90deg,#07162099,transparent 85%);
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation::after {
+ content:"";position:absolute;inset:7px;border:1px solid #a1d7df34;
+ clip-path:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px);
+ pointer-events:none;z-index:0;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-content {
+ position:relative;z-index:1;display:flex;flex-direction:column;min-height:295px;
+ gap:0;padding:17px 18px 10px;min-width:0;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-top {
+ display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-top img {
+ width:43px;height:43px;object-fit:contain;filter:drop-shadow(0 1px 8px #fac48452);
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-overline {
+ display:inline-flex;align-items:center;flex-wrap:wrap;gap:6px;
+ color:#c3e8ef;font-size:10px;letter-spacing:.14em;font-weight:900;
+ text-shadow:0 2px 8px #000;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-overline i {
+ width:5px;height:5px;border-radius:50%;background:#eac68d;box-shadow:0 0 8px #eac68d;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation h2 {
+ margin:auto 0 5px;font-size:clamp(27px,7.8vw,41px);line-height:1.05;
+ font-weight:900;letter-spacing:.06em;color:#f8fbfb;
+ text-shadow:0 2px 16px #000,0 0 25px #070f1b;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation h2 span {
+ font-size:clamp(11px,2.9vw,14px);font-weight:800;letter-spacing:.17em;color:var(--cdv2-gold);
+ white-space:nowrap;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-line {
+ margin:0 0 14px;font-size:13px;line-height:1.4;color:#d8e8ed;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-record {
+ display:flex;align-items:stretch;gap:7px;flex-wrap:wrap;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-record>span:not(.t-cdv2-record-badge) {
+ display:grid;gap:3px;min-width:82px;padding:8px 11px;
+ background:#071924dd;border:1px solid #719baa7d;box-shadow:inset 0 1px #98e4f323;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-record small {
+ font-size:9px;letter-spacing:.11em;font-weight:800;color:#a9d2de;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-record strong {
+ color:#fce0ad;font-size:23px;line-height:1;font-variant-numeric:tabular-nums;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-record-badge {
+ align-self:center;font-size:9px;line-height:1.4;letter-spacing:.09em;
+ font-weight:900;color:#c9d9df;padding:5px 8px;border-left:2px solid #d9b47c;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-note {
+ margin:9px 0 0;font-size:11px;line-height:1.35;color:#b9d9e3;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions {
+ position:relative;z-index:2;display:grid;grid-template-columns:minmax(0,1fr) auto;
+ gap:9px;padding:9px 18px 18px;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions button {
+ min-width:0;min-height:52px;padding:10px 15px;border-radius:4px;
+ font-size:12px;font-weight:900;letter-spacing:.14em;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions button:first-child {
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ background:linear-gradient(135deg,#1a6177,#0b344b);
+ border:1px solid #83dcea;box-shadow:inset 0 1px #bcf3fc42,0 0 16px #43b6cf29;
+ color:#e9fcff;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions button:first-child span {font-size:20px;font-weight:500;line-height:1}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions button:nth-child(2) {
+ border:1px solid #7894a27d;background:#071521e8;color:#d7e2e6;
+}
+
+/* Next build decision is supporting intel, not a second mission-sized hero. */
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-card {
+ display:grid;grid-template-columns:58px minmax(0,1fr);gap:8px 12px;align-items:center;
+ min-width:0;margin:0;padding:15px 15px 12px;
+ background:radial-gradient(circle at 0 0,#9a754019,transparent 55%),linear-gradient(125deg,#122b36,#061722 75%);
+ border:1px solid #a989607e;border-left:3px solid #e8bd77;
+ box-shadow:inset 0 1px #f8d49924,0 7px 21px #0007;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-icon {
+ display:grid;place-items:center;width:58px;height:65px;
+ background:radial-gradient(circle,#275367,#071923 71%);
+ border:1px solid #6f9ea86c;clip-path:polygon(14% 0,86% 0,100% 13%,100% 87%,86% 100%,14% 100%,0 87%,0 13%);
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-icon img {width:45px;height:45px;object-fit:contain;filter:drop-shadow(0 1px 8px #000)}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-copy {min-width:0}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-copy .t-kicker {font-size:9px;letter-spacing:.13em;color:#e6c894}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-copy h2 {
+ margin:6px 0;font-size:clamp(18px,4.8vw,24px);line-height:1.15;
+ letter-spacing:.03em;color:#f3f8f7;overflow-wrap:anywhere;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-copy p {margin:0;color:#c5dbe2;font-size:12px;line-height:1.42}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-copy small {
+ display:block;margin-top:9px;font-size:10px;font-weight:900;letter-spacing:.08em;color:#f1cf98;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-cta {
+ grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+ min-height:46px;width:100%;padding:9px 13px;background:#113447;
+ border:1px solid #5c9eb3;color:#d7f5fc;font-size:11px;letter-spacing:.12em;font-weight:900;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-advice {
+ grid-column:1/-1;margin:0;padding-top:9px;border-top:1px solid #85b4c136;
+ color:#acc4ce;font-size:11px;line-height:1.45;
+}
+
+/* One compact career identity and a legible two-column front readout. */
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-command-status {
+ display:grid;grid-template-columns:54px minmax(0,1fr);gap:13px;align-items:center;
+ padding:12px 14px;margin:0;border:1px solid #6a91a080;
+ background:linear-gradient(115deg,#142f3b,#071722 70%);
+ box-shadow:inset 0 1px #b7e2ef18;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-commander-seal {
+ display:grid;place-items:center;width:53px;height:65px;
+ clip-path:polygon(50% 0,94% 21%,94% 75%,50% 100%,6% 75%,6% 21%);
+ background:linear-gradient(155deg,#6d9eaf,#1a3a4b 34%,#0c2030 70%,#d9af73);
+ color:#fce3b7;font-size:23px;font-weight:900;text-shadow:0 2px 6px #000;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-commander-info {display:grid;gap:6px;min-width:0}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-commander-info>.t-kicker {font-size:9px;color:#98d8e4;letter-spacing:.12em}
+#tacticalOpsRoot .t-cdv2-overview .t-command-progress-line {flex-wrap:wrap;gap:5px 12px;min-width:0}
+#tacticalOpsRoot .t-cdv2-overview .t-command-progress-line strong {font-size:clamp(12px,3.4vw,16px);color:#f7f9fa}
+#tacticalOpsRoot .t-cdv2-overview .t-command-progress-line span {font-size:11px;color:#edca8f}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-command-status .t-progress {height:6px;margin:0;background:#17333e}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-command-status small {font-size:11px;color:#b3cfda}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-front-intel {display:grid;gap:7px;min-width:0}
+#tacticalOpsRoot .t-cdv2-overview .t-premium-front-link {
+ min-height:61px;padding:11px 14px;margin:0;
+ border:1px solid #5b9db0;border-left:3px solid #66cee4;
+ background:linear-gradient(105deg,#11313f,#071924);
+ box-shadow:inset 0 1px #a2f2ff1d;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-premium-front-link strong {font-size:11px;color:#eac588}
+#tacticalOpsRoot .t-cdv2-overview .t-premium-front-link small {font-size:12px}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-front-intel .t-cd-status {
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:0;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-front-intel .t-wt-status-card {
+ min-height:78px;padding:11px 12px;border:1px solid #51758478;
+ background:linear-gradient(145deg,#102a36,#071722);
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-front-intel .t-wt-status-card strong {font-size:clamp(13px,3.1vw,17px)}
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-front-intel .t-wt-status-card small {font-size:11px;line-height:1.4}
+
+/* Records stay navigable, but they no longer compete with DEPLOY. */
+#tacticalOpsRoot .t-cdv2-overview .t-cd-records,
+#tacticalOpsRoot .t-cdv2-overview .t-purpose-alternatives {
+ margin:0;border:1px solid #4e708075;background:#071823ed;border-radius:4px;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-cd-records {padding:0 13px}
+#tacticalOpsRoot .t-cdv2-overview .t-cd-records>summary,
+#tacticalOpsRoot .t-cdv2-overview .t-purpose-alternatives>summary {
+ min-height:49px;padding:12px 0;font-size:11px;letter-spacing:.1em;
+ color:#c3d7df;font-weight:800;
+}
+#tacticalOpsRoot .t-cdv2-overview .t-purpose-alternatives {padding:0 13px}
+#tacticalOpsRoot .t-cdv2-overview .t-cd-records[open],
+#tacticalOpsRoot .t-cdv2-overview .t-purpose-alternatives[open] {border-color:#87b7c08c}
+#tacticalOpsRoot .t-cdv2-overview button:focus-visible,
+#tacticalOpsRoot .t-cdv2-overview summary:focus-visible {outline:3px solid #d1f6fb;outline-offset:3px}
+@media(min-width:780px) {
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-content {min-height:330px;padding:22px 28px 12px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions {padding:10px 28px 23px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-scene {object-position:center 43%}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-card {grid-template-columns:69px minmax(0,1fr) auto;gap:10px 17px;padding:17px 20px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-icon {grid-column:1;grid-row:1/3}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-copy {grid-column:2;grid-row:1/3}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-cta {grid-column:3;grid-row:1/3;min-width:195px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-advice {grid-column:2/4}
+}
+@media(max-width:360px) {
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-content {min-height:279px;padding:13px 13px 8px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions {padding:9px 13px 14px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-record>span:not(.t-cdv2-record-badge) {min-width:69px;padding:7px 8px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-record-badge {font-size:8px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-card {grid-template-columns:48px minmax(0,1fr);gap:9px;padding:12px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-icon {width:48px;height:59px}
+ #tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-icon img {width:36px;height:36px}
+ #tacticalOpsRoot .t-cdv2-overview .t-premium-front-link {padding:9px 10px}
+}
+@media(prefers-reduced-motion:reduce) {
+ #tacticalOpsRoot .t-command-deck-v4 .t-command-nav *,
+ #tacticalOpsRoot .t-cdv2-overview * {animation:none!important;transition:none!important}
+}
