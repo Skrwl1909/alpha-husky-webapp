@@ -1,3 +1,4 @@
+import {COUNTERSTRIKE_PREFIX,parseCounterstrike,type CounterstrikeSummary} from "../data/counterstrike";
 import type { LastHowlSummary, LastHowlView } from "../combat/lastHowlAuthority";
 import { validateGrowthSnapshot, type GrowthSnapshot, type LungeDoctrine } from "../data/playerGrowth";
 import { parseFieldLegacyMilestone, type FieldLegacyMilestone } from "../data/fieldLegacy";
@@ -34,6 +35,7 @@ export interface FoundationProgressionState {
   playerIdentity?: Record<string, unknown>;
   packMastery?: PackMastery;
   playerGrowth?: GrowthProgression;
+  counterstrike?: CounterstrikeSummary;
   packLinkCostV1?: 1;
   bloodScentCostV1?: 1;
   lungeDoctrineAvailable?: boolean;
@@ -242,6 +244,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
   const state: FoundationProgressionState = {
     packMastery: parsePackMastery(value.packMastery),
     version: 1,
+    ...(parseCounterstrike(value.counterstrike) ? {counterstrike:parseCounterstrike(value.counterstrike)} : {}),
     vnextStartAvailable: value.vnextStartAvailable === true,
     ...(value.packLinkCostV1 === 1 ? { packLinkCostV1: 1 as const } : {}),
     ...(value.bloodScentCostV1 === 1 ? { bloodScentCostV1: 1 as const } : {}),
@@ -598,17 +601,27 @@ export async function startOperationMission(
 }
 
 export function isRecoverAuthorityRun(runId: string | null | undefined): boolean {
-  return typeof runId === "string" && runId.startsWith("field_recover_v1_");
+  return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
 }
 
 async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>) {
-  const response = await request(`/webapp/tactical-foundation/recover/${path}`, { runId, ...body });
+  const isCounterstrike=runId.startsWith(COUNTERSTRIKE_PREFIX);
+  const response = await request("/webapp/tactical-foundation/"+(isCounterstrike?"counterstrike":"recover")+"/"+path, { runId, ...body });
   const view = response.recover as RecoverView | undefined;
   if (view?.runId !== runId || !Number.isSafeInteger(view.revision) || typeof view.token !== "string" ||
-      view.battle?.objective?.type !== "RECOVER" || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
+      view.battle?.objective?.type !== (isCounterstrike?"HOLD":"RECOVER") || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
     throw new FoundationProgressionError("invalid_progression_response");
   }
   return view;
+}
+
+export async function startCounterstrike(requestId:string,expectedRevision:number,squadIds:string[]) {
+  const response=await request("/webapp/tactical-foundation/counterstrike/start",{requestId,expectedRevision,squadIds});
+  const view=response.recover as RecoverView;
+  if(!view || !view.runId.startsWith(COUNTERSTRIKE_PREFIX) || view.battle?.objective?.type!=="HOLD" ||
+    !Number.isSafeInteger(view.revision) || typeof view.token!=="string" || !Array.isArray(view.threats) ||
+    !Array.isArray(view.counterstrike?.radio))throw new FoundationProgressionError("invalid_progression_response");
+  return {state:responseState(response),view};
 }
 
 export function loadRecoverBattle(runId: string) {
@@ -616,7 +629,7 @@ export function loadRecoverBattle(runId: string) {
 }
 
 export async function sendRecoverCommand(view: RecoverView, command: RecoverCommand) {
-  const next = await recoverRequest("command", view.runId, { expectedRevision: view.revision, token: view.token, command });
+  const next = await recoverRequest("command", view.runId, { ...(view.runId.startsWith(COUNTERSTRIKE_PREFIX)?{requestId:createFoundationRequestId("counterstrike-command")} : {}), expectedRevision: view.revision, token: view.token, command });
   if (next.revision !== view.revision + 1 || !Array.isArray(next.frames)) {
     throw new FoundationProgressionError("invalid_progression_response");
   }

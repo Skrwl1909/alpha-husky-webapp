@@ -304,14 +304,39 @@ const packLinkBlobs = Object.freeze({
  'tools/verify_tactical_pack_link.mjs': 'de07c9c0894ee54cbe39df38e337435a7eb5fc89',
  'tools/verify_tactical_signal_atlas_default_browser.mjs': '32dd8175334abccad5f74597801a8a14b27be629',
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs };
+const counterstrikeBlobs = Object.freeze({
+ '.github/workflows/tactical-counterstrike.yml': 'd794d805e5ad5579303296efb36f7c909e172535',
+ 'docs/TACTICAL_COUNTERSTRIKE.md': 'b950f20088ad46bc82cdf4633fcb42600cb2a1fb',
+ 'js/boot_loaders.js': '8100017b8f6adb5c864cfce8c9653e7fd8e1cb43',
+ 'js/tactical_ops.js': '416e821560c5886bec739d7f11585b694b40eec4',
+ 'tactical-ops-src/combat/counterstrikeAuthority.ts': '05ad8009a0350c1be178a8decdf8c158ae4e9e82',
+ 'tactical-ops-src/combat/recoverAuthority.ts': '0eb34ff153180bd5bdab83367ecbe09c1aee4e54',
+ 'tactical-ops-src/data/counterstrike.ts': 'cec27d7bf8326481bde6741af62eae8bfc503cb6',
+ 'tactical-ops-src/data/operations.ts': '18b88d5881ec4b1fb360bd8c6feadcd4ee5bb748',
+ 'tactical-ops-src/data/packMastery.ts': '3a7c6bc938f2d6802e13130b85103d3900a7423f',
+ 'tactical-ops-src/host/foundationProgression.ts': 'ddc2392618518c513727f7ff226c23c72060b9a5',
+ 'tactical-ops-src/store/battleStore.ts': '9ab22cfc3bf39cd6dcab3a3db7d87e53ee4faece',
+ 'tactical-ops-src/ui/App.tsx': 'b6038994cf6018096cd38636655e16b556627fce',
+ 'tactical-ops-src/ui/Battle.tsx': 'c8c51edf4591085d9ccfda598b55835167ea4c29',
+ 'tactical-ops-src/ui/Counterstrike.tsx': '81b1adbf88106edbb4ded92e5f21d0f82f643938',
+ 'tactical-ops-src/ui/signalAtlas/model.ts': 'cc4d37df270179b79de2131203afc0ac0ec5115b',
+ 'tactical-ops-src/version.ts': '990fa95de9b0e17c76cbdaf78a58c8a679e1e356',
+ 'tools/build_tactical_counterstrike.mjs': 'c96959922c693466f2fd8b7dbe588bf5cb1cc633',
+ 'tools/counterstrike_browser_fixture.mjs': '68586d375c4058ceeb1c947dd3563fe804420d6b',
+ 'tools/tactical_counterstrike_engine_v1.ts': 'd515b2fabbb448099b307e9feb7967c25f63775d',
+ 'tools/verify_tactical_counterstrike.mjs': '2ea10e05f07c346ba13e305c1ac7727544932f4e',
+ 'tools/verify_tactical_counterstrike_browser.mjs': '1fd9f322f89ccf1808c7ffb685a00282682bfd54',
+ 'tools/verify_tactical_counterstrike_workers.mjs': '9f32b3423836421e6adb28eb1ebea6727f898c9b',
+});
+const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
@@ -407,7 +432,8 @@ function readFileSync(path, encoding) {
  const baseline = Object.hasOwn(lastHowlBlobs, path) ? lastHowlBase : Object.hasOwn(approvedM2Blobs, path) ? m2Base :
   Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase :
   Object.hasOwn(bloodScentBlobs, path) ? bloodScentBase :
-  Object.hasOwn(packLinkBlobs, path) ? "9f0d2a34" : null;
+  Object.hasOwn(packLinkBlobs, path) ? "9f0d2a34" :
+  counterstrikeHistoricalPaths.has(path) ? "3b2eb7c8" : null;
  if (!baseline) return readLocalFile(path, encoding);
  const historical = git('show', `${baseline}:${path}`);
  return encoding ? historical : Buffer.from(historical);

@@ -1,3 +1,4 @@
+import {COUNTERSTRIKE_ID, COUNTERSTRIKE_MISSION} from "./counterstrike";
 import { isSurviveMission, TACTICAL_VNEXT_RULESET, type RunRulesContract } from "../combat/intentContract";
 import { DEPLOYMENT_APPROACHES, type DeploymentApproach, type FieldContext, type MissionChallenge } from "./fieldOps";
 import type { SpawnSpec } from "./units";
@@ -163,7 +164,7 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
 };
 
 export function getMissionDef(missionId: string | null | undefined): MissionDef | null {
-  return missionId ? MISSION_DEFS[missionId] || null : null;
+  return missionId === COUNTERSTRIKE_ID ? COUNTERSTRIKE_MISSION : missionId ? MISSION_DEFS[missionId] || null : null;
 }
 
 

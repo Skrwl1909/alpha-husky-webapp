@@ -1,3 +1,5 @@
+import {CounterstrikeCard,CounterstrikeBrief,CounterstrikeResults} from "./Counterstrike";
+import {COUNTERSTRIKE_ID} from "../data/counterstrike";
 import { getHost } from "../host/bridge";
 import { LastHowlCard, LastHowlResults } from "./LastHowl";
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
@@ -394,6 +396,7 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane t-cdv2-overview" aria-label="Command overview">
+        <CounterstrikeCard />
         {progression?.lastHowl?.status === "ACTIVE" ? <LastHowlCard /> : null}
         {nextUpgrade ? <section className="t-panel t-command-order t-cdv2-build-card" aria-label="Next target">
           <div className="t-cdv2-build-icon" aria-hidden="true"><img src={tacticalActionImageForSkill(nextUpgrade.skillId) || ""} alt="" decoding="async" onError={e=>{e.currentTarget.hidden=true;}} /></div>
@@ -627,6 +630,7 @@ function WarTable() {
 
         </div> : null}
         {deckTab === "archive" ? <div className="t-command-pane" aria-label="Campaign archive and test settings">
+        <CounterstrikeCard archive />
         {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
 
 
@@ -1623,10 +1627,10 @@ export function TacticalApp() {
       {receipt?.confirmed ? <RecordedFirstResult receipt={receipt} /> : <>
       {screen === "hub" ? <Hub /> : null}
       {screen === "war-table" ? <WarTable /> : null}
-      {screen === "brief" ? <Brief /> : null}
+      {screen === "brief" ? useBattleStore.getState().selectedMissionId===COUNTERSTRIKE_ID ? <CounterstrikeBrief/> : <Brief /> : null}
       {screen === "battle" ? <BattleScreen /> : null}
       {screen === "sector" ? <Sector /> : null}
-      {screen === "results" ? lastHowl ? <LastHowlResults view={lastHowl} /> : <Results /> : null}
+      {screen === "results" ? useBattleStore.getState().selectedMissionId===COUNTERSTRIKE_ID ? <CounterstrikeResults/> : lastHowl ? <LastHowlResults view={lastHowl} /> : <Results /> : null}
       {screen === "defeat" ? <Defeat /> : null}
       </>}
     </div>
