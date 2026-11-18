@@ -283,12 +283,21 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
+  function showBloodScent(event: BattleEvent) {
+    if (event.type !== "ticker" || !event.text?.startsWith("BLOOD SCENT") || event.buildEvidence !== event.text) return;
+    const alpha = get().battle.units.find(unit => unit.defId === "alpha");
+    if (alpha) pushFloat(alpha.id, event.text, "info");
+  }
+
   const playEvents = async (events: BattleEvent[], g: number) => {
     if (g !== runGen) return;
     set(s => ({ s3CombatProof: recordFieldcraft(s.s3CombatProof,events) }));
     for (const ev of events) {
       if (g !== runGen) return;
-      if (ev.type === "ticker" && ev.text) set({ ticker: ev.text });
+      if (ev.type === "ticker" && ev.text) {
+        set({ ticker: ev.text });
+        showBloodScent(ev);
+      }
       if (ev.type === "banner" && ev.text) {
         set({ banner: ev.text });
         sfx("turn");
@@ -413,6 +422,9 @@ export const useBattleStore = create<Store>((set, get) => {
       if (g !== runGen) return;
     }
     acceptLastHowl(accepted);
+    if (reducedMotion) {
+      for (const frame of accepted.frames ?? []) frame.events.forEach(showBloodScent);
+    }
     if (accepted.revision === view.revision && accepted.status === "ACTIVE") {
       set({ progressionError: "Action not confirmed. Check the board and try again." });
     }

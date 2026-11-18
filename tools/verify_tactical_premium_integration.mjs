@@ -271,15 +271,16 @@ const alphaCommandDeckV2Blobs = Object.freeze({
 });
 const bloodScentBase = "5818ea1bcc45f6f36e32ac937bf9589d560211bb";
 const bloodScentBlobs = Object.freeze({
+ 'tools/verify_tactical_last_howl_browser.mjs': '811b1868f5b03de7ad38d02fd9cfecb30873edb0',
  '.github/workflows/tactical-purpose-return.yml': 'f7e1f65d30b2b0b379515983742ee52f54a71087',
  '.github/workflows/tactical-premium-integration.yml': '25d71fef492259ae205b8083eb2f33edb37a7e2f',
  'js/boot_loaders.js': 'b1c1ca423a4823040115f9ab58317a6c0cb6c2bc',
- 'js/tactical_ops.js': '7544d58bc92474e4c29e1b175be46d0df7bb613e',
+ 'js/tactical_ops.js': '5d5379f33271558e5752864b9509028ed1f0a2fd',
  'tactical-ops-src/combat/skills.ts': '9d3aa498f691b8362d33dfee1b668027445b8d93',
  'tactical-ops-src/combat/types.ts': 'd6f10bb2cb5bf364612bed80d049251b9aa795b1',
  'tactical-ops-src/data/playerGrowth.ts': '1f6287816484fa042baf5c1479d7a76d8e207c10',
  'tactical-ops-src/host/foundationProgression.ts': 'c86f3176d88cff1e951d23625d85ccfccdbec530',
- 'tactical-ops-src/store/battleStore.ts': '9c6ff26eb78938c28a0b57a49e696b626db2a021',
+ 'tactical-ops-src/store/battleStore.ts': 'abbb8c602e8c2dabb7c5d04f5a1786317d3ad04a',
  'tactical-ops-src/ui/signalAtlas/SignalAtlas.tsx': '05f31fa6c321a850e20831e68d8fd2d3b656ab8d',
  'tactical-ops-src/version.ts': '6236716547124cc1be01e6d21b0632217125b075',
  'tools/build_tactical_m2_workers.mjs': '968d29432c9c56a4201e97de718c7f08f774cb95',
