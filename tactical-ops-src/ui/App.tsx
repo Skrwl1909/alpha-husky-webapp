@@ -394,7 +394,7 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane t-cdv2-overview" aria-label="Command overview">
-        <LastHowlCard />
+        {progression?.lastHowl?.status === "ACTIVE" ? <LastHowlCard /> : null}
         {nextUpgrade ? <section className="t-panel t-command-order t-cdv2-build-card" aria-label="Next target">
           <div className="t-cdv2-build-icon" aria-hidden="true"><img src={tacticalActionImageForSkill(nextUpgrade.skillId) || ""} alt="" decoding="async" onError={e=>{e.currentTarget.hidden=true;}} /></div>
           <div className="t-cdv2-build-copy">
@@ -441,6 +441,7 @@ function WarTable() {
             </div>
           </section>;
         })() : <p role="status">Refresh to see available operations.</p>}
+        {progression?.lastHowl?.status !== "ACTIVE" ? <LastHowlCard /> : null}
         <section className="t-command-progress t-cdv2-command-status" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
           <div className="t-cdv2-commander-seal" aria-hidden="true">{commanderRank || "—"}</div>
           <div className="t-cdv2-commander-info"><span className="t-kicker">COMMANDER STATUS · SERVICE RECORD</span>
@@ -461,7 +462,7 @@ function WarTable() {
         <section className="t-cdv2-front-intel" aria-label="Current front intelligence">
           {field?.board && rotationProgress ? (
             <button type="button" className="t-premium-front-link" onClick={() => setDeckTab("missions")}>
-              <span><strong>FRONT STATUS</strong><small>{rotationProgress.securedCount}/{rotationProgress.total} SECURED · {rotationProgress.challengeMissionIds.length} CHALLENGES</small></span>
+              <span><strong>FRONT STATUS</strong><small>{rotationProgress.securedCount}/{rotationProgress.total} FIELD OPS SECURED · {rotationProgress.challengeMissionIds.length} CHALLENGES</small></span>
               <span>VIEW MISSIONS <ChevronRight className="t-ico" /></span>
             </button>
           ) : null}

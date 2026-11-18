@@ -121,7 +121,19 @@ try {
     assert(deployRect && deployRect.height >= 44 && deployRect.width >= 110, "primary deploy action must be touch-sized");
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), "COMMAND must not horizontally overflow");
     assert(await operation.evaluate(element => element.scrollWidth <= element.clientWidth + 1), "operation card content must fit mobile width");
+    const regularMission = page.locator('.t-cdv2-overview [data-primary-purpose="true"]');
+    if (await regularMission.count()) {
+      const missionBox = await regularMission.boundingBox();
+      const howlBox = await operation.boundingBox();
+      assert(missionBox && howlBox && missionBox.y < howlBox.y, "normal COMMAND prioritizes the next actionable mission above optional Last Howl");
+    }
     await page.screenshot({ path: `${commandEvidence}/${width}-command-ready.png`, fullPage: true, animations: "disabled" });
+    await deploy.scrollIntoViewIfNeeded();
+    assert(await deploy.evaluate(button => {
+      const rect = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return hit === button || button.contains(hit);
+    }), "LAST HOWL DEPLOY must be topmost at its mobile tap location");
     await page.getByRole("button", { name: "DEPLOY", exact: true }).click();
     const hud = page.locator(".t-last-howl-hud");
     await hud.waitFor();
@@ -140,6 +152,11 @@ try {
     await page.reload();
     assert.equal(await operation.getAttribute("data-run-status"), "active");
     await operation.getByText("Resume with the build saved at deployment.").waitFor();
+    if (await regularMission.count()) {
+      const missionBox = await regularMission.boundingBox();
+      const howlBox = await operation.boundingBox();
+      assert(missionBox && howlBox && howlBox.y < missionBox.y, "active Last Howl RESUME has priority above unaccepted missions");
+    }
     await page.screenshot({ path: `${commandEvidence}/${width}-command-active.png`, fullPage: true, animations: "disabled" });
     await page.getByRole("button", { name: "RESUME", exact: true }).click();
     await hud.waitFor();

@@ -223,11 +223,16 @@
    and emblem assets are reused without additional image requests elsewhere. */
 #tacticalOpsRoot .t-command-deck-v4 {
  --cdv2-gold:#edc88b;--cdv2-cyan:#88dce9;--cdv2-muted:#b6cbd5;
+ scroll-padding-top:88px;
 }
 #tacticalOpsRoot .t-command-deck-v4 .t-cdv2-overview {
- display:grid;grid-template-columns:minmax(0,1fr);gap:13px;
+ display:block;
  min-width:0;padding-bottom:17px;
 }
+#tacticalOpsRoot .t-command-deck-v4 .t-cdv2-overview > :not(:first-child) {margin-top:13px}
+#tacticalOpsRoot .t-cdv2-overview .t-wt-main-cta,
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-operation-actions button,
+#tacticalOpsRoot .t-cdv2-overview .t-cdv2-build-cta {scroll-margin-top:88px}
 #tacticalOpsRoot .t-command-deck-v4 .t-command-nav {
  border:1px solid #527e8d75;padding:4px;background:linear-gradient(145deg,#112836ed,#05131feb);
  box-shadow:0 7px 20px #0009,inset 0 1px #92d9e321;border-radius:8px;

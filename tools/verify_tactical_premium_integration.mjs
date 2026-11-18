@@ -262,12 +262,12 @@ const alphaAtlasModalBlobs = Object.freeze({
 const alphaCommandDeckV2Blobs = Object.freeze({
  '.github/workflows/tactical-premium-integration.yml': '0ebbc2df79bb282f0b852a936c9a9a7a5795d11d',
  'js/boot_loaders.js': '4fab53d3471f36df707a83663dec22efae50f92b',
- 'js/tactical_ops.js': 'f8a1376bcb653dc473c931a00fc8724d3ec3ede1',
- 'tactical-ops-src/ui/App.tsx': '5f3b84b3f2fad0c3881044b9f14b89785dbf9210',
+ 'js/tactical_ops.js': '269c1aef215d724158b6e80d910c603e480c0713',
+ 'tactical-ops-src/ui/App.tsx': '328ad8c6a3589333025780620c9c524d28702c1c',
  'tactical-ops-src/ui/LastHowl.tsx': 'ebeeb4c4730e0dd7d8f8638213b1b1d38cb8dd97',
- 'tactical-ops-src/ui/commandDeck.css': '29a0f11231a05f6089c775b52c31b7631e5f87cd',
+ 'tactical-ops-src/ui/commandDeck.css': '35314e37c360f0801f0cf9e04158cb99589921be',
  'tactical-ops-src/version.ts': '7daa9fdfa33ca8d5289c6c61c83b7eb884fb3b90',
- 'tools/verify_tactical_last_howl_browser.mjs': 'c8d46b73bc9c2b9be7b4901e55d2c1a490ae1b2f',
+ 'tools/verify_tactical_last_howl_browser.mjs': 'e1a276990748774a0ef4d8500552dced2a67e9cf',
 });
 const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
