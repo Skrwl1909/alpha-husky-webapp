@@ -1,3 +1,5 @@
+import {COUNTERSTRIKE_ID,COUNTERSTRIKE_PREFIX,COUNTERSTRIKE_MISSION,type CounterstrikeResult} from "../data/counterstrike";
+import {startCounterstrike} from "../host/foundationProgression";
 import { companionRunLocked, masteryRecord } from "../data/packMastery";
 import { recordFieldcraft } from "../ui/fieldcraft";
 import { growthPreviewBase, rankChanges } from "../data/buildPreview";
@@ -75,6 +77,10 @@ export interface FloatText {
 }
 
 interface UiBattle {
+  counterstrikeRadio:string[];
+  counterstrikeResult:CounterstrikeResult|null;
+  openCounterstrikeBrief:()=>void;
+  deployCounterstrike:()=>Promise<void>;
   screen: Screen;
   battle: BattleState;
   busy: boolean;
@@ -343,6 +349,13 @@ export const useBattleStore = create<Store>((set, get) => {
 
   const finishIfNeeded = async (g: number) => {
     const { battle } = get();
+    if(get().currentRunKey?.startsWith(COUNTERSTRIKE_PREFIX) && battle.outcome!=="ongoing"){
+      set({busy:true});
+      try {const canonical=await loadFoundationProgression();if(g===runGen)applyCanonicalProgression(canonical);}
+      catch {if(g===runGen)set({progressionError:"Refresh the War Table to reload the recorded operation."});}
+      if(g===runGen)set({screen:"results",busy:false});
+      return true;
+    }
     if (battle.outcome === "victory") {
       set({ busy: true, banner: "SECTOR SECURED", ticker: null, attackingId: null });
       sfx("win");
@@ -459,6 +472,7 @@ export const useBattleStore = create<Store>((set, get) => {
     }
     if (g !== runGen) return;
     recoverView = accepted;
+    if(accepted.counterstrike)set({counterstrikeRadio:accepted.counterstrike.radio,counterstrikeResult:accepted.counterstrike.result});
     for (const frame of accepted.frames ?? []) {
       const before = get().battle;
       const actor = activeUnit(before);
@@ -730,6 +744,26 @@ export const useBattleStore = create<Store>((set, get) => {
   };
 
   return {
+    counterstrikeRadio:[],
+    counterstrikeResult:null,
+    openCounterstrikeBrief:()=>{
+      if(get().busy || !get().progression?.counterstrike)return;
+      set({screen:"brief",selectedMissionId:COUNTERSTRIKE_ID,selectedSquadIds:get().progression?.counterstrike?.activeRunId?get().progression!.counterstrike!.squadIds:["alpha","ally-02","ally-03"],
+        lastHowl:null,chapterMode:false,selectedTrialLevel:null,progressionError:null});
+    },
+    deployCounterstrike:async()=>{
+      const current=get();
+      if(current.busy || !current.progression?.counterstrike || current.screen!=="brief")return;
+      const g=++runGen;set({busy:true,progressionError:null});
+      try{
+        const accepted=await startCounterstrike(createFoundationRequestId("counterstrike-start"),current.progression.revision,current.selectedSquadIds);
+        if(g!==runGen)return;
+        applyCanonicalProgression(accepted.state);
+        set({counterstrikeRadio:accepted.view.counterstrike?.radio??[],counterstrikeResult:accepted.view.counterstrike?.result??null,lastHowl:null});
+        beginBattle(g,accepted.view.runId,undefined,undefined,false,false,null,COUNTERSTRIKE_MISSION,undefined,null,null,
+          {rulesetVersion:TACTICAL_VNEXT_RULESET},undefined,accepted.view);
+      }catch(e){if(g===runGen)set({busy:false,progressionError:e instanceof FoundationProgressionError?e.code:"counterstrike_start_failed"});}
+    },
     screen: "hub",
     lastHowl: null,
     openLastHowl: async (action, runId) => {
@@ -1536,7 +1570,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const current = get();
       if (current.progression?.fieldOps?.activeMissionRun?.fieldContext?.progressionVersion===2) return;
       if (current.selectedMasteryChallenge && current.progression?.fieldOps?.activeMissionRun?.fieldContext?.lockdownPlan) return;
-      if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" && getMissionDef(current.selectedMissionId)?.operationId !== DEAD_RELAY.operationId)) return;
+      if (current.screen !== "brief" || current.busy || current.kodaSavePending || current.shadowSavePending || (current.selectedMissionId !== COUNTERSTRIKE_ID && current.selectedMissionId !== "broken-signal-commander" && getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" && getMissionDef(current.selectedMissionId)?.operationId !== DEAD_RELAY.operationId)) return;
       if (!recoverSpawnsForSquad(["alpha", unitId], current.progression?.equippedPet)) return;
       const companions = current.selectedSquadIds.slice(1);
       const next = companions.includes(unitId) ? companions.filter((id) => id !== unitId) : companions.length < 2 ? [...companions, unitId] : companions;

@@ -33,6 +33,7 @@ export interface RecoverView {
   battle: BattleState;
   threats: IntentPlan[];
   frames?: RecoverFrame[];
+  counterstrike?: {radio:string[];result:import("../data/counterstrike").CounterstrikeResult|null};
 }
 
 type Encounter = OperationMissionRun & Pick<Parameters<typeof withTeammateSidegrades>[1], "kodaSidegrade" | "shadowSidegrade">;

@@ -1,3 +1,4 @@
+import {CounterstrikeSignal} from "./Counterstrike";
 import { CommanderPortrait } from "./PlayerIdentity";
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
 import { missionHud, recoverSignalOpen } from "../combat/missionRules";
@@ -694,6 +695,7 @@ export function BattleScreen() {
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
     >
+      <CounterstrikeSignal/>
       <header className="t-top t-battle-hud-rail" data-last-howl={lastHowl ? "true" : undefined} aria-label="Battle status and mission">
         <StatusStrip />
         {lastHowl ? <LastHowlHud view={lastHowl} /> : <ObjectiveChip />}

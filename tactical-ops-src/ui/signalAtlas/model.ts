@@ -6,7 +6,7 @@ import type { FoundationProgressionState } from "../../host/foundationProgressio
 
 /** Mirrors the backend growth lock using only the canonical public snapshot. */
 export function hasActiveGrowthRun(state: Partial<FoundationProgressionState> | null | undefined): boolean {
-  return Boolean(state?.activeRunId || state?.chapterActiveMission || state?.tacticalChapter?.activeRunId ||
+  return Boolean(state?.counterstrike?.activeRunId || state?.activeRunId || state?.chapterActiveMission || state?.tacticalChapter?.activeRunId ||
     state?.fieldOps?.activeMissionRun || state?.signalTrials?.activeRun || Object.values(state?.operations || {}).some(operation=>operation.activeMissionRun));
 }
 
