@@ -284,6 +284,9 @@ export const useBattleStore = create<Store>((set, get) => {
   };
 
   function showBloodScent(event: BattleEvent) {
+    if (event.type === "status" && event.text === "PACK LINK · GUARD" && event.buildEvidence?.startsWith("PACK LINK") && event.unitId) {
+      pushFloat(event.unitId, event.text, "guard");
+    }
     if (event.type !== "ticker" || !event.text?.startsWith("BLOOD SCENT") || event.buildEvidence !== event.text) return;
     const alpha = get().battle.units.find(unit => unit.defId === "alpha");
     if (alpha) pushFloat(alpha.id, event.text, "info");
@@ -864,7 +867,9 @@ export const useBattleStore = create<Store>((set, get) => {
             (heroId === "ally-02" && ["pursuer", "disruptor"].includes(discipline)) ||
             (heroId === "ally-03" && ["sentinel", "medic"].includes(discipline))) ||
           (growth.earnedPoints - growth.spentPoints) < 1 || (hero.ranks[skillId] ?? 0) + 1 !== rank) return;
-      if (skillId === "blood-scent-v1") {
+      if (skillId === "pack-link-v1") {
+        if (current.progression.packLinkCostV1 !== 1 || heroId !== "alpha" || !hero.ranks["alpha-howl"] || hero.packLink || rank !== 1) return;
+      } else if (skillId === "blood-scent-v1") {
         if (current.progression.bloodScentCostV1 !== 1 || heroId !== "alpha" || !hero.ranks["alpha-rend"] || hero.bloodScent || rank !== 1) return;
       } else if (!rankChanges(growthPreviewBase(skillId,current.progression),hero,rank,discipline).length) return;
       set({ progressionCommitPending: true, progressionError: null });

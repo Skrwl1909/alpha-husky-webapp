@@ -92,6 +92,8 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
   const upgrade = useBattleStore(s=>s.upgradeGrowth);
   const respec = useBattleStore(s=>s.respecGrowth);
   const saveDoctrine = useBattleStore(s=>s.selectLungeDoctrine);
+  const [linkError, setLinkError] = useState(false);
+  const [linkPending, setLinkPending] = useState(false);
   const [scentError, setScentError] = useState(false);
   const [scentPending, setScentPending] = useState(false);
   const [heroId,setHeroId] = useState<HeroId>(target?.heroId ?? "alpha");
@@ -153,6 +155,23 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
       setScentError(!useBattleStore.getState().progression?.playerGrowth?.heroes.find(h => h.heroId === "alpha")?.bloodScent);
     } finally {
       setScentPending(false);
+      mutation.current = false;
+    }
+  }
+  const inspectingLink = alpha && sector.skillIds.includes("alpha-howl") && selection?.skillId === "pack-link-v1";
+  const linkCost = progression?.packLinkCostV1;
+  const linkState = linkPending ? "PENDING" : offline ? "ERROR" : hero?.packLink ? "RECORDED"
+    : !linkCost ? "FUTURE" : linkError ? "ERROR"
+    : growthLocked || !hero?.ranks["alpha-howl"] || points < linkCost ? "LOCKED" : "AVAILABLE";
+  async function buyLink() {
+    if (mutation.current || linkState !== "AVAILABLE" || !hero?.discipline || unavailable) return;
+    mutation.current = true;
+    setLinkPending(true);
+    try {
+      await upgrade("alpha", hero.discipline, "pack-link-v1", 1);
+      setLinkError(!useBattleStore.getState().progression?.playerGrowth?.heroes.find(h => h.heroId === "alpha")?.packLink);
+    } finally {
+      setLinkPending(false);
       mutation.current = false;
     }
   }
@@ -460,11 +479,22 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
             {alpha && skillId === "alpha-rend" && <button type="button" className="tsa-doctrine-jump"
               disabled={unavailable} aria-pressed={inspectingScent} onClick={()=>inspect("blood-scent-v1",1)}>
               <b>BLOOD SCENT</b><small>{scentState}</small></button>}
+            {alpha && skillId === "alpha-howl" && <button type="button" className="tsa-doctrine-jump"
+              disabled={unavailable} aria-pressed={inspectingLink} onClick={()=>inspect("pack-link-v1",1)}>
+              <b>PACK LINK</b><small>{linkState}</small></button>}
           </div>;
         })}
       </div>
-      <section ref={inspectorRef} className={`tsa-inspector ${node || inspectingScent ? "has-selection" : "is-prompt"}`} aria-label="Skill node inspection" aria-live="polite">
-        {inspectingScent ? <><span className="tsa-eyebrow">FANG / REND</span><h3>BLOOD SCENT</h3>
+      <section ref={inspectorRef} className={`tsa-inspector ${node || inspectingScent || inspectingLink ? "has-selection" : "is-prompt"}`} aria-label="Skill node inspection" aria-live="polite">
+        {inspectingLink ? <><span className="tsa-eyebrow">HOWL / FORMATION</span><h3>PACK LINK</h3>
+          <strong aria-live="polite">{linkState}</strong>
+          <p>Once per battle, HOWL grants adjacent teammates 25% GUARD until their next turn. Diagonal neighbours count. Alpha receives the existing HOWL buffs.</p>
+          <p>Requires Pack Echo I. Applies on your next accepted Relay Recovery or Last Howl run.</p>
+          <p>{linkCost ? `Cost: ${linkCost} skill point · ${points} available` : "Purchase unavailable"}
+            {growthLocked && " · Complete your active run first."}</p>
+          <div className="tsa-inspector-bottom">{linkState === "AVAILABLE" && <button type="button" disabled={unavailable} onClick={buyLink}>CONFIRM PACK LINK · 1 POINT</button>}
+          {linkState === "ERROR" && <button type="button" disabled={unavailable} onClick={async()=>{await refresh();setLinkError(false);}}>REFRESH SAVED BUILD</button>}</div>
+        </> : inspectingScent ? <><span className="tsa-eyebrow">FANG / REND</span><h3>BLOOD SCENT</h3>
           <strong aria-live="polite">{scentState}</strong>
           <p>Once per battle, STRIKE an enemy already bleeding while REND is cooling down. REND recovers one turn sooner.</p>
           <p>Requires Deep Cut I. Applies on your next accepted Relay Recovery or Last Howl run.</p>

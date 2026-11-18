@@ -154,6 +154,25 @@ export function applySkill(
     }
   }
 
+  if (caster.defId === "alpha" && caster.team === "ally" && caster.growth?.packLink === "pack-link-v1"
+      && !caster.packLinkUsed && canonicalGrowthSkillId(skill.id) === "alpha-howl") {
+    const linked = hits.filter(target => target.id !== caster.id && target.team === caster.team
+      && !target.defeated && Math.max(Math.abs(target.c - caster.c), Math.abs(target.r - caster.r)) <= 1);
+    if (linked.length) {
+      for (const target of linked) {
+        const current = units.find(unit => unit.id === target.id)!;
+        const existingGuard = current.statuses.find(status => status.type === "GUARD");
+        const reduction = Math.max(0.25, existingGuard ? existingGuard.guardReduction ?? 0.5 : 0);
+        const guarded = applyStatus(current, "GUARD", "pack-link-v1", 1, reduction).unit;
+        units = patch(units, target.id, () => ({ ...guarded,
+          statuses: guarded.statuses.map(status => status.type === "GUARD"
+            ? { ...status, guardReduction: reduction } : status) }));
+        events.push({ type: "status", unitId: target.id, text: "PACK LINK · GUARD", kind: "guard",
+          buildEvidence: `PACK LINK protected ${target.name} within 1 cell for one personal turn.` });
+      }
+      units = patch(units, caster.id, unit => ({ ...unit, packLinkUsed: true }));
+    }
+  }
   if (caster.defId === "alpha" && caster.team === "ally" && caster.growth?.bloodScent === "blood-scent-v1"
       && !caster.bloodScentUsed && canonicalGrowthSkillId(skill.id) === "alpha-strike"
       && hits.some(target => target.id === targetId && !target.defeated && target.team === "enemy"

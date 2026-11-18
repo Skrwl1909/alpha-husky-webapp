@@ -20,7 +20,11 @@ let canonical={version:1,foundationStage:'completed',completed:true,revision:10,
  heroes:['alpha','ally-02','ally-03'].map(heroId=>({heroId,discipline:null,ranks:{},respecUsed:false}))},
  packMastery:Object.fromEntries(['ally-02','ally-03'].map(id=>[id,{progress:8,stage:3,selected:'A',unlockedOptions:['A','B']}]))};
 const calls=[],receipts=new Map();let mode='ok';
-window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical),scent:rank=>{
+window.fixture={calls,mode:value=>mode=value,state:()=>structuredClone(canonical),link:rank=>{
+ canonical.packLinkCostV1=1;canonical.revision++;
+ canonical.playerGrowth.heroes[0]={heroId:'alpha',discipline:rank?'vanguard':null,ranks:rank?{'alpha-howl':rank}:{},respecUsed:false};
+ canonical.playerGrowth.spentPoints=rank;
+},scent:rank=>{
  canonical.bloodScentCostV1=1;canonical.revision++;
  canonical.playerGrowth.heroes[0]={heroId:'alpha',discipline:rank?'vanguard':null,ranks:rank?{'alpha-rend':rank}:{},respecUsed:false};
  canonical.playerGrowth.spentPoints=rank;
@@ -59,6 +63,10 @@ window.apiPost=async(path,body={})=>{
  if(path.endsWith('/lunge-doctrine')){
   const cnc=canonical.playerGrowth.heroes[1];
   if(body.choice==='wide-v1')cnc.lungeDoctrine='wide-v1';else delete cnc.lungeDoctrine;
+ }
+ else if(path.endsWith('/upgrade') && body.skillId==='pack-link-v1'){
+  if(!canonical.packLinkCostV1 || !hero.ranks['alpha-howl'] || hero.packLink)throw Error('illegal purchase');
+  hero.packLink='pack-link-v1';canonical.playerGrowth.spentPoints++;
  }
  else if(path.endsWith('/upgrade') && body.skillId==='blood-scent-v1'){
   if(!canonical.bloodScentCostV1 || !hero.ranks['alpha-rend'] || hero.bloodScent)throw Error('illegal purchase');
@@ -241,7 +249,30 @@ async function verifyArtKit(){
 
 }
 try{
- if(process.env.ATLAS_BLOOD_SCENT_ONLY){
+ if(process.env.ATLAS_PACK_LINK_ONLY){
+  for(const width of [320,390,430]){
+   await load('bundle',width,2);
+   await page.getByRole('button',{name:/Open HOWL/}).click();
+   const node=page.getByRole('button',{name:/^PACK LINK/});
+   await node.click();
+   const panel=page.getByRole('region',{name:'Skill node inspection'});
+   const state = label=>panel.getByText(label,{exact:true}).waitFor();
+   const refresh = ()=>page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+   await state('FUTURE');
+   await page.evaluate(()=>fixture.link(0));await refresh();await state('LOCKED');
+   await page.evaluate(()=>fixture.link(1));await refresh();await state('AVAILABLE');
+   const confirm=panel.getByRole('button',{name:/CONFIRM PACK LINK/});
+   await confirm.scrollIntoViewIfNeeded();await confirm.click({trial:true});
+   await layout();
+   await page.screenshot({path:out+'/'+width+'-inspector.png'});
+   await page.evaluate(()=>fixture.mode('network'));await confirm.click();await state('PENDING');await state('ERROR');
+   await page.evaluate(()=>fixture.mode('ok'));
+   await panel.getByRole('button',{name:'REFRESH SAVED BUILD'}).click();
+   await confirm.click();await state('RECORDED');await refresh();await state('RECORDED');
+   assert.equal(await page.evaluate(()=>fixture.state().playerGrowth.spentPoints),2);
+   results.push({width,states:6});
+  }
+ }else if(process.env.ATLAS_BLOOD_SCENT_ONLY){
   for(const width of [320,390,430]){
    await load('bundle',width,2);
    await page.getByRole('button',{name:/Open FANG/}).click();
@@ -447,7 +478,7 @@ try{
  }
  }
  }
- if(!process.env.ATLAS_BLOOD_SCENT_ONLY && !process.env.ATLAS_M2_ONLY && !process.env.ATLAS_DEFAULT_ACTIONS_ONLY)await verifyArtKit();
+ if(!process.env.ATLAS_PACK_LINK_ONLY && !process.env.ATLAS_BLOOD_SCENT_ONLY && !process.env.ATLAS_M2_ONLY && !process.env.ATLAS_DEFAULT_ACTIONS_ONLY)await verifyArtKit();
  assert.deepEqual(errors,[]);
  console.log('PASS official Atlas source/IIFE parity: '+results.length+' scenario groups');
 }catch(error){
