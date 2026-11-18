@@ -34,6 +34,7 @@ export interface FoundationProgressionState {
   playerIdentity?: Record<string, unknown>;
   packMastery?: PackMastery;
   playerGrowth?: GrowthProgression;
+  bloodScentCostV1?: 1;
   lungeDoctrineAvailable?: boolean;
   version: 1;
   vnextStartAvailable?: boolean;
@@ -158,7 +159,7 @@ export function parseGrowthProgression(raw: unknown, foundationRevision: number)
       x.claimedFirstClears.some((v: unknown) => typeof v !== "string") ||
       new Set(x.claimedFirstClears).size !== x.claimedFirstClears.length ||
       snapshot.heroes.some((h) => typeof (h as {respecUsed?: unknown}).respecUsed !== "boolean") ||
-      snapshot.heroes.reduce((sum, h) => sum + Object.values(h.ranks).reduce((acc, rank) => acc + rank, 0), 0) !== Number(x.spentPoints)) return null;
+      snapshot.heroes.reduce((sum, h) => sum + (h.bloodScent ? 1 : 0) + Object.values(h.ranks).reduce((acc, rank) => acc + rank, 0), 0) !== Number(x.spentPoints)) return null;
   return { ...snapshot, earnedPoints: Number(x.earnedPoints),
     spentPoints: Number(x.spentPoints), claimedFirstClears: [...x.claimedFirstClears] as string[] };
 }
@@ -241,6 +242,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
     packMastery: parsePackMastery(value.packMastery),
     version: 1,
     vnextStartAvailable: value.vnextStartAvailable === true,
+    ...(value.bloodScentCostV1 === 1 ? { bloodScentCostV1: 1 as const } : {}),
     ...(value.lungeDoctrineAvailable === true ? { lungeDoctrineAvailable: true } : {}),
     ...((value.lastHowl as { version?: number } | undefined)?.version === 1 ? { lastHowl: value.lastHowl as LastHowlSummary } : {}),
     foundationStage: stage as FoundationStage,

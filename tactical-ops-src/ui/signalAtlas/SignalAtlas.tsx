@@ -92,6 +92,8 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
   const upgrade = useBattleStore(s=>s.upgradeGrowth);
   const respec = useBattleStore(s=>s.respecGrowth);
   const saveDoctrine = useBattleStore(s=>s.selectLungeDoctrine);
+  const [scentError, setScentError] = useState(false);
+  const [scentPending, setScentPending] = useState(false);
   const [heroId,setHeroId] = useState<HeroId>(target?.heroId ?? "alpha");
   const [view,setView] = useState<"atlas"|"sector">(target ? "sector" : "atlas");
   const [sectorId,setSectorId] = useState(() => target
@@ -137,6 +139,23 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
   const doctrineEligible = canSelectLungeDoctrine(hero ?? undefined);
   const node=selection && sector.skillIds.includes(selection.skillId)
     ? getNodeView(heroId,selection.skillId,selection.rank,offline ? null : hero,chosenPath,points,growthPreviewBase(selection.skillId,progression),growthLocked) : null;
+  const inspectingScent = alpha && sector.skillIds.includes("alpha-rend") && selection?.skillId === "blood-scent-v1";
+  const scentCost = progression?.bloodScentCostV1;
+  const scentState = scentPending ? "PENDING" : offline ? "ERROR" : hero?.bloodScent ? "RECORDED"
+    : !scentCost ? "FUTURE" : scentError ? "ERROR"
+    : growthLocked || !hero?.ranks["alpha-rend"] || points < scentCost ? "LOCKED" : "AVAILABLE";
+  async function buyScent() {
+    if (mutation.current || scentState !== "AVAILABLE" || !hero?.discipline || unavailable) return;
+    mutation.current = true;
+    setScentPending(true);
+    try {
+      await upgrade("alpha", hero.discipline, "blood-scent-v1", 1);
+      setScentError(!useBattleStore.getState().progression?.playerGrowth?.heroes.find(h => h.heroId === "alpha")?.bloodScent);
+    } finally {
+      setScentPending(false);
+      mutation.current = false;
+    }
+  }
   const baseSkill = node ? growthPreviewBase(node.skillId, progression) : null;
   const resolvedCurrent = baseSkill ? resolveGrowthSkill(baseSkill, hero ?? undefined) : null;
   const currentSkill = resolvedCurrent && hero ? skillEffectView(resolvedCurrent, hero) : null;
@@ -438,11 +457,22 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
                 </div>;
               })}
             </div>
+            {alpha && skillId === "alpha-rend" && <button type="button" className="tsa-doctrine-jump"
+              disabled={unavailable} aria-pressed={inspectingScent} onClick={()=>inspect("blood-scent-v1",1)}>
+              <b>BLOOD SCENT</b><small>{scentState}</small></button>}
           </div>;
         })}
       </div>
-      <section ref={inspectorRef} className={`tsa-inspector ${node ? "has-selection" : "is-prompt"}`} aria-label="Skill node inspection" aria-live="polite">
-        {node ? <><span className="tsa-eyebrow">{getSkill(node.skillId).name} / {node.rank===0?"BASE":`RANK ${node.rank===1?"I":"II"}`}</span>
+      <section ref={inspectorRef} className={`tsa-inspector ${node || inspectingScent ? "has-selection" : "is-prompt"}`} aria-label="Skill node inspection" aria-live="polite">
+        {inspectingScent ? <><span className="tsa-eyebrow">FANG / REND</span><h3>BLOOD SCENT</h3>
+          <strong aria-live="polite">{scentState}</strong>
+          <p>Once per battle, STRIKE an enemy already bleeding while REND is cooling down. REND recovers one turn sooner.</p>
+          <p>Requires Deep Cut I. Applies on your next accepted Relay Recovery or Last Howl run.</p>
+          <p>{scentCost ? `Cost: ${scentCost} skill point · ${points} available` : "Purchase unavailable"}
+            {growthLocked && " · Complete your active run first."}</p>
+          <div className="tsa-inspector-bottom">{scentState === "AVAILABLE" && <button type="button" disabled={unavailable} onClick={buyScent}>CONFIRM BLOOD SCENT · 1 POINT</button>}
+          {scentState === "ERROR" && <button type="button" disabled={unavailable} onClick={async()=>{await refresh();setScentError(false);}}>REFRESH SAVED BUILD</button>}</div>
+        </> : node ? <><span className="tsa-eyebrow">{getSkill(node.skillId).name} / {node.rank===0?"BASE":`RANK ${node.rank===1?"I":"II"}`}</span>
           <h3>{node.title}</h3><div className="tsa-saved-rank">SAVED RANK {purchased[node.skillId]||0} / 2 · {node.rank===0?"BASE ACTION":`INSPECTING RANK ${node.rank}`}</div><p>{node.reason}</p>
           {alpha && before && <div className="tsa-effect-compare">
             <AlphaEffect id={node.skillId} label={after ? "BEFORE" : "CURRENT"} skill={before}/>

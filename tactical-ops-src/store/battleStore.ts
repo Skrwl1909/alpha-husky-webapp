@@ -852,7 +852,9 @@ export const useBattleStore = create<Store>((set, get) => {
             (heroId === "ally-02" && ["pursuer", "disruptor"].includes(discipline)) ||
             (heroId === "ally-03" && ["sentinel", "medic"].includes(discipline))) ||
           (growth.earnedPoints - growth.spentPoints) < 1 || (hero.ranks[skillId] ?? 0) + 1 !== rank) return;
-      if (!rankChanges(growthPreviewBase(skillId,current.progression),hero,rank,discipline).length) return;
+      if (skillId === "blood-scent-v1") {
+        if (current.progression.bloodScentCostV1 !== 1 || heroId !== "alpha" || !hero.ranks["alpha-rend"] || hero.bloodScent || rank !== 1) return;
+      } else if (!rankChanges(growthPreviewBase(skillId,current.progression),hero,rank,discipline).length) return;
       set({ progressionCommitPending: true, progressionError: null });
       try {
         const state = await upgradePlayerGrowth(createFoundationRequestId("growth-upgrade"), current.progression.revision, heroId, discipline, skillId, rank);
