@@ -80,6 +80,8 @@ try{
   assert.equal(await page.locator('[data-story-intro="playing"]').count(),0,"reduced-motion keeps brief accessible");
   assert.equal(await page.locator(".t-false-relay-brief-plate").count(),1);
   await page.waitForFunction(()=>{const art=document.querySelector(".t-false-relay-brief-plate img");return art instanceof HTMLImageElement&&art.complete&&art.naturalWidth>0;});
+  // naturalWidth can precede async image decode/paint in narrow Chromium windows.
+  await page.locator(".t-false-relay-brief-plate img").evaluate(async art=>{await art.decode();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});
   const briefMetrics=await brief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
   assert(briefMetrics.content>briefMetrics.client,"mobile False Relay brief must be vertically scrollable");
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
