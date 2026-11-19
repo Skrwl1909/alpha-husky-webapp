@@ -394,9 +394,9 @@ const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical
 const nextTargetBlobs = Object.freeze({
  '.github/workflows/tactical-premium-integration.yml': '5f9e9c962cd0b5e33b2bc6e80db08ca68467a4fd',
  'js/boot_loaders.js': '637faa35813e5f6e6c85efca7bfb235205244038',
- 'js/tactical_ops.js': '12e7cfe2abc2960528d8ab7932a55476a08fb250',
- 'tactical-ops-src/ui/App.tsx': '7087269940b7eb8346e5f42295e4c48a86e93989',
- 'tactical-ops-src/ui/returnPurpose.ts': '2ef1a1f6e555ced0b54c5af01f52e73283896ac0',
+ 'js/tactical_ops.js': 'f662a5f3284be08e1876d91c3080d6ba1f68be2a',
+ 'tactical-ops-src/ui/App.tsx': 'f4a064f0632f3fbf9ea354489a6ad4ba9c75019f',
+ 'tactical-ops-src/ui/returnPurpose.ts': 'e59a121744d10f4673729a59279acfbf71bf40ed',
  'tactical-ops-src/ui/s3CombatProof.ts': '28d60256f7ea85b796b766fa5807b473cef9154e',
  'tactical-ops-src/version.ts': 'cab31ef0a28fd9291cfd7cdc634e988b3cc4b859',
  'tools/verify_tactical_loadout_browser.mjs': '172105e7bea0e598645ad3c2202a11fcdd33ebce',
