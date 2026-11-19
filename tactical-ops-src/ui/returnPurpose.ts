@@ -92,10 +92,10 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       const lockdown = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', f.lockdownPlansAvailable ? 'Choose Anchor to defend one tile with slower support, or Crosslink to rotate north, east, then south with normal support. Optional practice; no currency or progression rewards.' : recorded
         ? 'Your first recorded Relay Lockdown clear is saved permanently. Try another holder or squad for optional practice; no further unlock or reward is promised.'
         : canRecord ? 'Relay Mastery recorded. Win Relay Lockdown to save its first completion: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.'
-        : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
+        : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge, practice: recorded || !canRecord };
       // An already recorded, reward-free challenge must not displace eligible rotation progress.
       // Preserve the finished challenge as a legal optional route when no accepted run exists.
-      if (recorded) candidates.push({ ...lockdown, practice: true });
+      if (recorded) candidates.push(lockdown);
       else primary = lockdown;
     } else {
       const id = b.activeMissionIds.find(id => ['field-relay-hold','field-isolated-hold'].includes(id));

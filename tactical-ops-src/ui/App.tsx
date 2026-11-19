@@ -281,7 +281,7 @@ function WarTable() {
   const primaryPurpose = purposeRoute.primary;
   const practiceOnly = !primaryPurpose || primaryPurpose.practice;
   const counter = progression?.counterstrike;
-  const counterTarget = counter?.activeRunId || (practiceOnly && counter?.available && !counter.blocked && !counter.firstClear);
+  const counterTarget = counter?.activeRunId || (!primaryPurpose?.resume && counter?.available && !counter.blocked && !counter.firstClear);
   const trialLevel = trials?.enabled ? trials.activeRun?.level ?? (practiceOnly && trials.highestCleared < 6 ? trials.highestCleared + 1 : null) : null;
   const chapterTarget = practiceOnly && progression?.tacticalChapter?.status === "AVAILABLE";
   const nextUpgrade = practiceOnly ? availableAtlasUpgrade(progression) : null;
@@ -1458,7 +1458,7 @@ function Results() {
         <MasteryFeedback changes={recordedFieldResult.masteryChanges} victory={recordedFieldResult.victory} />
         {progression?.playerGrowth && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? <p>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not points earned this run. Open the War Table Skillbook to spend them.</p> : null}
       </details> : null}
-      {recordedFieldResult ? buildProof : null}
+      {buildProof}
       <details className="t-detail"><summary>Combat report · this device</summary>
         <PlayerIdentityCard />
         <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
