@@ -370,17 +370,40 @@ const counterstrikeBriefV2Blobs = Object.freeze({
  'tools/verify_tactical_counterstrike_browser.mjs': '19319b3094304b692ba8319e470733e4b5296374',
  'tools/verify_tactical_counterstrike_story_lite.mjs': 'b50c05c08cab54d3ff7a0c8a23ac7027d73a7b93',
 });
+const carrierJamBlobs = Object.freeze({
+ '.github/workflows/tactical-premium-integration.yml': 'cc20f067af613e8778940dc56414352657141c25',
+ 'js/boot_loaders.js': 'fc9b5c3e28acc39912539eb82c92d4e5d11ce90c',
+ 'js/tactical_ops.js': '7d880527e925bd60ba0845e48018167e1d3cbc6a',
+ 'tactical-ops-src/combat/battle.ts': '689451cffec7a3f03a8658499e7b7412c9b2edd6',
+ 'tactical-ops-src/combat/missionRules.ts': 'cc07009c65e3fb5152982a63d253af6936c1e83b',
+ 'tactical-ops-src/combat/recoverAuthority.ts': 'd12a72a93ed771f6a3734dd8953a997a37a1b577',
+ 'tactical-ops-src/combat/types.ts': '50496d46ab66ab2c0b3ea8de654dfa6b271cfa6d',
+ 'tactical-ops-src/data/fieldOps.ts': '98531b6f265cbcd17af91eb28fac5a8d6340e209',
+ 'tactical-ops-src/data/operations.ts': 'c2159cbf71cc6bf6ade759a312f99b3d8d052d4b',
+ 'tactical-ops-src/host/foundationProgression.ts': '2744806b2e928c0880f6e5e92c39441a94a80e4c',
+ 'tactical-ops-src/store/battleStore.ts': '77711f8b5f1ae270b26c5e21ce31f5150f45e524',
+ 'tactical-ops-src/ui/App.tsx': '0f120f8dfabfebe3c3a34ec90a9df84bfa1c0f34',
+ 'tactical-ops-src/ui/Battle.tsx': '6f958e9cece6b829a2bfb9fb66aefacfbba6f7e1',
+ 'tactical-ops-src/ui/missionPurpose.ts': '1664aab6fe0f9aa1657593eb12b3d0ea30aafbe1',
+ 'tactical-ops-src/version.ts': 'e1c578b68aa8ab5fec70dc17e850d9d39c92e4c9',
+ 'tools/build_tactical_m2_workers.mjs': '9dc126e606b8244d1c88403cf519361362cadf42',
+ 'tools/verify_tactical_carrier_jam.mjs': '1767b7df821fd568332f6d50f18f7c6da062a150',
+ 'tools/verify_tactical_player_voice_v1.mjs': '5615d349d2f8a5cc2b620122ff93cce88e7549da',
+});
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs };
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
-const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
+// types.ts has mixed line endings in Git. The platform clean filter changes its blob.
+const workingBlob = path => path === 'tactical-ops-src/combat/types.ts'
+ ? git('hash-object', '--no-filters', path).trim()
+ : git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', alphaSkillTreeBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || alphaSkillTreePath(path), 'unreviewed Alpha Skill Tree path: ' + path);
@@ -475,7 +498,8 @@ function readFileSync(path, encoding) {
   Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase :
   Object.hasOwn(bloodScentBlobs, path) ? bloodScentBase :
   Object.hasOwn(packLinkBlobs, path) ? "9f0d2a34" :
-  counterstrikeHistoricalPaths.has(path) ? "3b2eb7c8" : null;
+  counterstrikeHistoricalPaths.has(path) ? "3b2eb7c8" :
+  Object.hasOwn(carrierJamBlobs, path) ? "393cd70f" : null;
  if (!baseline) return readLocalFile(path, encoding);
  const historical = git('show', `${baseline}:${path}`);
  return encoding ? historical : Buffer.from(historical);

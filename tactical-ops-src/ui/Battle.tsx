@@ -1,7 +1,7 @@
 import {CounterstrikeSignal} from "./Counterstrike";
 import { CommanderPortrait } from "./PlayerIdentity";
 import { deriveBattlePresentation, cellTouchStyle } from "./battlePresentation";
-import { missionHud, recoverSignalOpen } from "../combat/missionRules";
+import { jammerRoute, missionHud, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionBattlefield } from "../data/operations";
 import { LastHowlHud } from "./LastHowl";
 import { relayPressureMission } from "../data/relayPressure";
@@ -486,7 +486,7 @@ function ObjectiveChip() {
   // Keep the task distinct from its live state in the fixed mobile HUD card.
   // The longer objective and rules remain available in the existing details.
   const heading = !training && objective?.type === "RECOVER"
-    ? objective.completed ? "RELAY RECOVERED" : objective.squadExtractionRadius!=null ? "PACK EXTRACTION" : "RECOVER RELAY"
+    ? objective.completed ? "RELAY RECOVERED" : objective.jammerId ? "CARRIER JAM" : objective.squadExtractionRadius!=null ? "PACK EXTRACTION" : "RECOVER RELAY"
     : !training && objective?.type === "INTERCEPT" ? "INTERCEPT COURIER" : liveGoal || title;
   const summary = training ? trainingCue?.title || "DEFEAT HOSTILES"
     : objective?.type === "RECOVER" && objective.completed ? "OBJECTIVE COMPLETE"
@@ -591,7 +591,7 @@ function SkillHud({ actionStates, usedSkillId }: { actionStates: ReturnType<type
           <span className="t-act-keyline" aria-hidden="true"><span className="slot">OBJ</span></span>
           <ActionArt src={tacticalActionImageForCommand("recover")} archetype={RECOVER_PRESENTATION.archetype} />
           <span className="name">RECOVER</span>
-          <span className="meta">{!allyTurn ? "WAIT" : recoverReady ? "READY" : !recoverSignalOpen(battle) ? `ROUND ${Math.ceil(battle.round / (battle.directive?.recoverEveryRounds || 1)) * (battle.directive?.recoverEveryRounds || 1)}` : "GET CLOSER"}</span>
+          <span className="meta">{!allyTurn ? "WAIT" : recoverReady ? "READY" : !recoverSignalOpen(battle) ? `ROUND ${Math.ceil(battle.round / (battle.directive?.recoverEveryRounds || 1)) * (battle.directive?.recoverEveryRounds || 1)}` : battle.objective?.type === "RECOVER" && battle.objective.jammerId && !jammerRoute(battle) ? "PAIR UP" : "GET CLOSER"}</span>
         </button>
       ) : null}
     </div>

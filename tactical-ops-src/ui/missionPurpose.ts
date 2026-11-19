@@ -1,5 +1,5 @@
 import type { BattleState } from "../combat/types";
-import { holdControlled, holdZoneStatus, recoverSignalOpen } from "../combat/missionRules";
+import { holdControlled, holdZoneStatus, jammerRoute, recoverSignalOpen } from "../combat/missionRules";
 import { getMissionDef, missionForContext, missionBattleRules, type MissionDef } from "../data/operations";
 import type { FieldContext } from "../data/fieldOps";
 import type { FieldResult } from "../data/fieldOps";
@@ -127,6 +127,13 @@ export function deriveMissionPresentation(m: MissionDef, field?: FieldOpsProgres
   const base = context ? missionForContext(m, context, accepted ? acceptedRun?.rulesContract?.missionRevision : undefined) : m;
   const resolved = { ...base, directive: missionBattleRules(base, false, context).directive || undefined };
   const oldCycle = accepted && acceptedRun?.fieldContext?.cycleId != null && field?.board && acceptedRun.fieldContext.cycleId !== field.board.cycleId;
+  if (context?.replayChallenge) return {
+    missionId: m.missionId, objectiveText: resolved.briefCopy, failConditionText: "Your whole squad falls before extraction.",
+    tacticalThreat: resolved.squadHint!, nextConsequence: "Your extraction route is recorded as practice.",
+    rewardEligibility: missionRewardTruth(resolved,field), rewardClearText: "RECORDED PRACTICE", rewardChallengeText: "No progression awards",
+    nextAction: {missionId:m.missionId, reason:"Try the other extraction route."},
+    source: accepted ? "ACCEPTED_RUN_AND_BACKEND_STATE" : "MISSION_DEFINITION_ONLY",
+  };
   if (context?.veteranChallenge) return {
     missionId:m.missionId,objectiveText:missionGoal(resolved),failConditionText:missionFailure(resolved),
     tacticalThreat:'Move the whole squad. A lone runner cannot extract; protect slower allies until an even-round window.',
@@ -185,6 +192,12 @@ export function recoverGuidance(b: BattleState): { status: string; action: strin
   const range = ally ? actor.recoverRange || 1 : 1;
   const distance = ally ? Math.abs(actor.c-o.terminal.c)+Math.abs(actor.r-o.terminal.r) : null;
   const timing = open ? `Signal open for round ${b.round}.` : `Opens round ${next}; every ${every} rounds.`;
+  if (o.jammerId) {
+    const route = jammerRoute(b);
+    const status = route === "carrier-down" ? "CARRIER DOWN" : route === "paired" ? "PAIR READY" : "PAIR NEEDED";
+    const action = route ? "Get in relay range and RECOVER before acting." : "Stand beside a teammate or defeat the Hound Marksman.";
+    return {status, action: timing + " " + action, progress:null, total:null};
+  }
   const present = o.squadExtractionRadius==null ? null : b.units.filter(u=>u.team==="ally"&&!u.defeated&&Math.abs(u.c-o.terminal.c)+Math.abs(u.r-o.terminal.r)<=o.squadExtractionRadius!).length;
   if (present!=null && present<3) return {status:`PACK ${present}/3 AT RELAY`,action:`Move every living squad member within 2 orthogonal cells. ${timing}`,progress:null,total:null};
   const position = distance === null ? "Wait for a living ally's turn." : `Relay distance ${distance}; range ${range} (orthogonal). ${distance > range ? actor!.hasMoved ? "Move spent; use support or SKIP, then approach next turn." : "MOVE closer, then RECOVER." : actor!.hasActed ? "Action spent; wait for this ally's next turn." : "Use RECOVER before acting."}`;

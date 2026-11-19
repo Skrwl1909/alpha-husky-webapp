@@ -158,6 +158,10 @@ export function stepRecover(run: Encounter, saved?: Snapshot, command?: RecoverC
     if (battle.outcome === "ongoing") advance();
   }
   const report = fieldReport(battle);
+  if (report?.victory && battle.objective?.type === "RECOVER" && battle.objective.jammerId) {
+    const carrierId = battle.objective.jammerId;
+    report.recoveryRoute = battle.units.find(unit => unit.id === carrierId)?.defeated ? "carrier-down" : "paired";
+  }
   if (report && run.fieldContext?.fieldContractsVersion) report.fieldContractsVersion = run.fieldContext.fieldContractsVersion;
   if (report && run.fieldContext?.veteranChallenge) report.veteranChallenge = run.fieldContext.veteranChallenge;
   // The scheduler's historical ledger is presentation evidence and isn't read by any transition.
