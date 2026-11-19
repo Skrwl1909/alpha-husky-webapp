@@ -79,6 +79,7 @@ try{
   await page.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true}).waitFor();
   assert.equal(await page.locator('[data-story-intro="playing"]').count(),0,"reduced-motion keeps brief accessible");
   assert.equal(await page.locator(".t-false-relay-brief-plate").count(),1);
+  await page.waitForFunction(()=>{const art=document.querySelector(".t-false-relay-brief-plate img");return art instanceof HTMLImageElement&&art.complete&&art.naturalWidth>0;});
   const briefMetrics=await brief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
   assert(briefMetrics.content>briefMetrics.client,"mobile False Relay brief must be vertically scrollable");
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));

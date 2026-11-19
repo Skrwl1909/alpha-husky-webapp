@@ -88,7 +88,8 @@
 #tacticalOpsRoot .t-false-relay-foot { margin: 13px 0 0; color: #8daab2; font-size: 9px; letter-spacing: .10em; animation: tFalseRelayReveal .4s ease-out 2.7s both; }
 
 #tacticalOpsRoot .t-false-relay-hound-cue {
-  position: absolute; top: 58px; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+  /* Clear the battle HUD and relay objective; the cue must not mask either. */
+  position: absolute; top: max(112px, calc(var(--t-battle-safe-top, 0px) + 92px)); left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
   z-index: 12; display: grid; gap: 4px; padding: 12px 15px; pointer-events: none;
   border: 1px solid rgba(243,174,100,.62); border-left: 3px solid #f2b26a;
   background: linear-gradient(110deg, rgba(34,25,21,.96), rgba(9,23,29,.93));
