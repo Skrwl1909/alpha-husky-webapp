@@ -74,6 +74,7 @@ export interface FieldOpsProgression {
   interceptRevisionAvailable?: 2;
   veteranProgressionAvailable?: boolean;
   veteranCareer?: import("../data/veteran").VeteranProgress;
+  carrierJamAvailable?: boolean;
   lockdownPlansAvailable?: boolean;
   masteryPath?: MasteryPath;
   records: Record<string, { missionId: string; completed: boolean; clearCount: number; lastClearedAt: number; failCount: number; challengeCount?: number; lastClearCycle: number | null; lastChallengeCycle: number | null; advancedClearCount?: number; lastAdvancedCycle?: number | null; squadIds?: string[] }>;
@@ -92,6 +93,12 @@ function parseFieldContext(raw: unknown): FieldContext | undefined {
   const value = raw as FieldContext;
   const contracts = value.fieldContractsVersion === 1 && value.reportVersion === 3 && ["rend", "reach-rend"].includes(value.fieldRend!);
   if ((value.fieldContractsVersion != null || value.fieldRend != null) && !contracts) return undefined;
+  if (value.replayChallenge != null || value.reportVersion === 7) {
+    return value.replayChallenge === "carrier-jam-v1" && value.reportVersion === 7 &&
+      Number.isInteger(value.cycleId) && Number.isInteger(value.pressure) && value.pressure >= 0 && value.pressure <= 3 &&
+      ["standard", "south"].includes(value.approach) && value.directiveTier === "standard" &&
+      !value.masteryChallenge && !value.veteranChallenge && !value.lockdownPlan ? {...value} : undefined;
+  }
   if (value.reportVersion === 6) {
     return value.veteranChallenge === "pack-extraction-v1" && value.masteryChallenge == null && value.lockdownPlan == null && value.progressionVersion === 2 && Number.isInteger(value.cycleId) && value.pressure === 2 && ["standard","south"].includes(value.approach) && value.directiveTier === "advanced" && value.directiveSet === "pursuit" ? {...value} : undefined;
   }
@@ -115,6 +122,11 @@ function parseFieldResult(raw: unknown): FieldResult | null {
   if (typeof value.runId !== "string" || typeof value.missionId !== "string" || typeof value.victory !== "boolean" || typeof value.challengeSuccess !== "boolean" || typeof value.regionalApplied !== "boolean") return null;
   if (![value.cycleId, value.challengeBonus, value.progressEarned, value.progressBefore, value.progressAfter, value.rankBefore, value.rankAfter, value.pressureBefore, value.pressureAfter, value.recordedAt].every(Number.isInteger)) return null;
   if (!Array.isArray(value.unlockedApproaches) || !value.unlockedApproaches.every((v) => v === "standard" || v === "south")) return null;
+  if (value.replayChallenge != null || value.recoveryRoute != null) {
+    if (value.replayChallenge !== "carrier-jam-v1" || !value.runId.startsWith("field_recover_v1_") ||
+        value.missionId !== "field-relay-recovery" || value.progressEarned !== 0 || value.challengeBonus !== 0 ||
+        (value.victory ? !["paired","carrier-down"].includes(value.recoveryRoute!) : value.recoveryRoute != null)) return null;
+  }
   if (value.veteranChallenge != null && (value.veteranChallenge !== "pack-extraction-v1" || value.missionId !== "field-relay-recovery" || value.masteryChallenge != null || value.progressEarned !== 0 || value.challengeBonus !== 0)) return null;
   if (value.lockdownPlan != null && (value.masteryChallenge !== MASTERY_CHALLENGE || !["anchor", "crosslink"].includes(value.lockdownPlan))) return null;
   if (value.firstLockdownClear != null && (!parseFirstLockdownClear(value.firstLockdownClear) || value.masteryChallenge !== MASTERY_CHALLENGE)) return null;
@@ -306,6 +318,7 @@ function parseState(raw: unknown): FoundationProgressionState | null {
       state.fieldOps.veteranProgressionAvailable = true;
       state.fieldOps.veteranCareer = veteran;
     }
+    if (field.carrierJamAvailable === true) state.fieldOps.carrierJamAvailable = true;
     if (field.lockdownPlansAvailable === true) state.fieldOps.lockdownPlansAvailable = true;
     if (field.masteryPath != null) {
       const path = field.masteryPath as MasteryPath;
@@ -466,6 +479,8 @@ function parseOperations(raw: unknown): Record<string, OperationProgressionState
         ? activeValue.squadIds as string[]
         : [];
             const fieldContext = parseFieldContext(activeValue.fieldContext);
+      if (fieldContext?.replayChallenge && (activeValue.missionId !== "field-relay-recovery" ||
+          typeof activeValue.runId !== "string" || !activeValue.runId.startsWith("field_recover_v1_"))) return null;
       if (activeValue.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && activeValue.missionId !== 'field-relay-hold') || (fieldContext.veteranChallenge && activeValue.missionId !== 'field-relay-recovery'))) return null;
       const contract = parseRunRulesContract(activeValue.rulesContract);
       if (contract && (contract.missionId !== activeValue.missionId ||
@@ -566,7 +581,7 @@ export async function startOperationMission(
   expectedRevision: number,
   missionId: string,
   squadIds?: string[],
-  fieldOptions?: { fieldContractsVersion?: 1; cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
+  fieldOptions?: { replayChallenge?: "carrier-jam-v1"; fieldContractsVersion?: 1; cycleId: number; approach: DeploymentApproach; reportVersion?: number; directiveTier?: DirectiveTier; masteryChallenge?: typeof MASTERY_CHALLENGE; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: import("../data/fieldOps").LockdownPlan },
   rulesetVersion?: string,
   chapterMode = false,
   chapterIntelVersion?: 1,
@@ -589,6 +604,9 @@ export async function startOperationMission(
     : [];
   const fieldContext = parseFieldContext(value.fieldContext);
   if (value.fieldContext != null && (!fieldContext || (fieldContext.masteryChallenge && missionId !== 'field-relay-hold') || (fieldContext.veteranChallenge && missionId !== 'field-relay-recovery'))) throw new FoundationProgressionError("invalid_progression_response");
+  if (fieldContext?.replayChallenge !== fieldOptions?.replayChallenge ||
+      (fieldContext?.replayChallenge && (missionId !== "field-relay-recovery" || !value.runId.startsWith("field_recover_v1_"))))
+    throw new FoundationProgressionError("invalid_progression_response");
   if (fieldOptions?.veteranChallenge && fieldContext?.veteranChallenge !== fieldOptions.veteranChallenge) throw new FoundationProgressionError("invalid_progression_response");
   if (fieldOptions?.lockdownPlan && fieldContext?.lockdownPlan !== fieldOptions.lockdownPlan) throw new FoundationProgressionError("invalid_progression_response");
   if (fieldOptions?.masteryChallenge && fieldContext?.masteryChallenge !== fieldOptions.masteryChallenge) throw new FoundationProgressionError("invalid_progression_response");

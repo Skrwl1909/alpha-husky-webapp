@@ -181,6 +181,7 @@ export interface Cell {
 }
 
 export interface RecoverObjective {
+  jammerId?: string;
   squadExtractionRadius?: number;
   type: "RECOVER";
   terminal: Cell;

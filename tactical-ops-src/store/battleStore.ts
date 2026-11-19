@@ -123,6 +123,7 @@ interface UiBattle {
   selectedDirectiveTier: DirectiveTier;
   selectedLockdownPlan: import("../data/fieldOps").LockdownPlan;
   selectLockdownPlan: (plan: import("../data/fieldOps").LockdownPlan) => void;
+  selectedCarrierJam: boolean;
   selectedVeteranChallenge: boolean;
   openVeteranBrief: (entry?: "squad") => void;
   selectedMasteryChallenge: "relay-lockdown-v1" | null;
@@ -202,7 +203,7 @@ interface Store extends UiBattle {
   saveChapterResult: () => Promise<void>;
   chooseDoctrine: () => Promise<void>;
   openChapterBrief: (entry?: "squad") => void;
-  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1", entry?: "alpha-a2" | "squad") => void;
+  openOperationBrief: (missionId: string, masteryChallenge?: "relay-lockdown-v1", entry?: "alpha-a2" | "squad", carrierJam?: boolean) => void;
   briefEntry: "alpha-a2" | "squad" | null;
   activeRulesetVersion: string | null;
   backToHub: () => void;
@@ -825,6 +826,7 @@ export const useBattleStore = create<Store>((set, get) => {
     selectedApproach: "standard",
     selectedDirectiveTier: "standard",
     selectedLockdownPlan: "anchor",
+    selectedCarrierJam: false,
     selectedVeteranChallenge: false,
     selectedMasteryChallenge: null,
     currentFieldContext: null,
@@ -982,7 +984,7 @@ export const useBattleStore = create<Store>((set, get) => {
     },
     selectDirectiveTier: (tier) => {
       const current = get();
-      if (current.selectedMasteryChallenge) return;
+      if (current.selectedMasteryChallenge || current.selectedCarrierJam) return;
       if (current.screen !== "brief" || current.busy || current.progressionCommitPending || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP" || !current.progression?.fieldOps?.commander?.unlockedDirectiveTiers?.includes(tier)) return;
       set({ selectedDirectiveTier: tier });
     },
@@ -1017,7 +1019,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({progressionError:"Saved chapter run could not be restored. Refresh Tactical Ops."});return;
       }
       const currentSquad=active?.squadIds||["alpha","ally-02","ally-03"];
-      set({screen:"brief",briefEntry:entry ?? null,chapterMode:true,selectedMasteryChallenge:null,selectedMissionId:missionId,selectedSquadIds:currentSquad,
+      set({screen:"brief",briefEntry:entry ?? null,chapterMode:true,selectedCarrierJam:false,selectedMasteryChallenge:null,selectedMissionId:missionId,selectedSquadIds:currentSquad,
         selectedApproach:active?.fieldContext?.approach||"standard",
         selectedDirectiveTier:active?.fieldContext?.directiveTier||"standard",
         currentCampaignContext:null,chapterResult:null,campaignResult:null,fieldResult:null,fieldMilestone:null,progressionError:null});
@@ -1149,7 +1151,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (trials.activeRun && trials.activeRun.level !== level) { set({progressionError:"Finish the accepted Trial first."}); return; }
       if (!trials.activeRun && (s.progression?.fieldOps?.activeMissionRun || s.progression?.chapterActiveMission || Object.values(s.progression?.operations || {}).some(op => op.activeMissionRun))) {set({progressionError:"Finish the accepted operation before starting a Trial."});return;}
       const squad = trials.activeRun?.squadIds || ["alpha","ally-02","ally-03"];
-      set({screen:"brief",selectedTrialLevel:level,selectedMissionId:"field-relay-hold",selectedSquadIds:[...squad],selectedApproach:"standard",selectedMasteryChallenge:null,selectedVeteranChallenge:false,chapterMode:false,fieldResult:null,fieldMilestone:null,trialResult:null,progressionError:null,briefEntry:null});
+      set({screen:"brief",selectedTrialLevel:level,selectedMissionId:"field-relay-hold",selectedSquadIds:[...squad],selectedApproach:"standard",selectedMasteryChallenge:null,selectedVeteranChallenge:false,selectedCarrierJam:false,chapterMode:false,fieldResult:null,fieldMilestone:null,trialResult:null,progressionError:null,briefEntry:null});
     },
     openBrief: () => {
       const current = get();
@@ -1164,13 +1166,15 @@ export const useBattleStore = create<Store>((set, get) => {
       get().openOperationBrief("field-relay-recovery", undefined, entry);
       set({selectedVeteranChallenge:true,selectedMasteryChallenge:null,screen:"brief",selectedMissionId:"field-relay-recovery",selectedDirectiveTier:"advanced",selectedSquadIds:["alpha","ally-02","ally-03"]});
     },
-    openOperationBrief: (missionId, masteryChallenge, entry) => {
+    openOperationBrief: (missionId, masteryChallenge, entry, carrierJam = false) => {
       const current = get();
       if (current.progression?.signalTrials?.activeRun) {set({progressionError:"Finish the accepted Signal Trial first."});return;}
       const mission = getMissionDef(missionId);
       if (masteryChallenge && (missionId !== "field-relay-hold" || current.progression?.fieldOps?.masteryPath?.unlockedChallenge !== masteryChallenge)) return;
+      if (carrierJam && (missionId !== "field-relay-recovery" || !current.progression?.fieldOps?.carrierJamAvailable ||
+          current.progression.fieldOps.activeMissionRun || !current.progression.vnextStartAvailable)) return;
       const firstUpgradeSupply = current.progression?.fieldOps?.firstUpgradeSupplyMissionId === missionId;
-      if (mission?.activity === "FIELD_OP" && !masteryChallenge && !firstUpgradeSupply && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && !(current.selectedVeteranChallenge && missionId==="field-relay-recovery" && (current.progression?.fieldOps?.commander?.rank||0)>=4) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
+      if (mission?.activity === "FIELD_OP" && !masteryChallenge && !carrierJam && !firstUpgradeSupply && !current.progression?.fieldOps?.board?.activeMissionIds.includes(missionId) && !(current.selectedVeteranChallenge && missionId==="field-relay-recovery" && (current.progression?.fieldOps?.commander?.rank||0)>=4) && current.progression?.fieldOps?.activeMissionRun?.missionId !== missionId) {
         set({ screen: "war-table", progressionError: "That Field Op is no longer active. Choose one of the current three missions.", selectedMissionId: null });
         return;
       }
@@ -1181,7 +1185,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (masteryChallenge && active && active.fieldContext?.masteryChallenge !== masteryChallenge) {
         set({ progressionError: "Finish your accepted Field Op before starting Relay Lockdown." }); return;
       }
-      set({ selectedVeteranChallenge: active?.fieldContext?.veteranChallenge === "pack-extraction-v1", selectedLockdownPlan: active?.fieldContext?.lockdownPlan || "anchor", selectedMasteryChallenge: active?.missionId === missionId ? active.fieldContext?.masteryChallenge || null : masteryChallenge || null });
+      set({ selectedCarrierJam: carrierJam || (active?.missionId === missionId && !!active?.fieldContext?.replayChallenge), selectedVeteranChallenge: active?.fieldContext?.veteranChallenge === "pack-extraction-v1", selectedLockdownPlan: active?.fieldContext?.lockdownPlan || "anchor", selectedMasteryChallenge: active?.missionId === missionId ? active.fieldContext?.masteryChallenge || null : masteryChallenge || null });
       const savedSquad = active?.missionId === missionId ? active.squadIds : current.progression?.fieldOps?.records[missionId]?.squadIds;
       const resumePet = isRecoverAuthorityRun(active?.runId) ? active?.combatProfileV2?.pet : current.progression?.equippedPet;
       const commanderSquad = savedSquad && commanderSpawnsForSquad(savedSquad, resumePet)
@@ -1211,6 +1215,7 @@ export const useBattleStore = create<Store>((set, get) => {
         queue: [],
         identity: identityCache(resolvePlayerIdentity()),
         selectedMissionId: null,
+        selectedCarrierJam: false,
         missionFirstClear: null,
         selectedSquadIds: [],
       });
@@ -1270,11 +1275,12 @@ export const useBattleStore = create<Store>((set, get) => {
                 mission.missionId,
                 squadIds,
                 mission.activity === "FIELD_OP" ? {
-                  ...(!persisted.chapterMode && !persisted.selectedMasteryChallenge && !persisted.selectedVeteranChallenge &&
+                  ...(!persisted.chapterMode && !persisted.selectedMasteryChallenge && !persisted.selectedVeteranChallenge && !persisted.selectedCarrierJam &&
                     (existing?.fieldContext?.fieldContractsVersion === 1 || (!existing && requestedRuleset && persisted.progression.fieldOps?.fieldContracts?.enabled))
                     ? { fieldContractsVersion: 1 as const } : {}),
                   cycleId: persisted.progression.fieldOps!.board!.cycleId, approach: persisted.selectedApproach,
-                  ...(persisted.selectedVeteranChallenge ? {reportVersion:6,directiveTier:"advanced" as const,veteranChallenge:"pack-extraction-v1" as const} : persisted.selectedMasteryChallenge ? { reportVersion: persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.reportVersion || (persisted.progression.fieldOps?.lockdownPlansAvailable ? 5 : 4), directiveTier: "advanced" as const, masteryChallenge: persisted.selectedMasteryChallenge,
+                  ...(persisted.selectedCarrierJam ? {reportVersion:7, directiveTier:"standard" as const, replayChallenge:"carrier-jam-v1" as const}
+                    : persisted.selectedVeteranChallenge ? {reportVersion:6,directiveTier:"advanced" as const,veteranChallenge:"pack-extraction-v1" as const} : persisted.selectedMasteryChallenge ? { reportVersion: persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.reportVersion || (persisted.progression.fieldOps?.lockdownPlansAvailable ? 5 : 4), directiveTier: "advanced" as const, masteryChallenge: persisted.selectedMasteryChallenge,
                     ...(persisted.progression.fieldOps?.activeMissionRun?.fieldContext?.lockdownPlan ? { lockdownPlan: persisted.progression.fieldOps.activeMissionRun.fieldContext.lockdownPlan } : !persisted.progression.fieldOps?.activeMissionRun && persisted.progression.fieldOps?.lockdownPlansAvailable ? { lockdownPlan: persisted.selectedLockdownPlan } : {}) }
                     : persisted.progression.fieldOps!.board!.reportVersion === 3 ? { reportVersion: 3, directiveTier: persisted.selectedDirectiveTier } : {}) } : undefined,
                 requestedRuleset,

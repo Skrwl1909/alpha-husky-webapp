@@ -373,6 +373,14 @@ export function missionForContext(mission: MissionDef, context?: Partial<FieldCo
       spawns:[{...mission.spawns![0],c:6,r:0},{...mission.spawns![1],c:4,r:0},{...mission.spawns![2],c:5,r:1}],
       squadHint:"Pursue north under the marksman's TARGET LOCK, or anchor the exit while the squad controls the courier. TARGET LOCK tracks its marked ally: break firing range, close inside minimum range, interrupt, or protect. A one-cell sidestep alone does not cancel it."};
   }
+  if (context?.replayChallenge === "carrier-jam-v1" && context.reportVersion === 7) {
+    if (mission.missionId !== "field-relay-recovery") throw Error("invalid_replay_mission");
+    return { ...mission, name: "Relay Recovery · Carrier Jam", challenge: undefined,
+      briefCopy: "Recover on an even round. While the Hound Marksman lives, the operator needs a standing teammate one orthogonal tile away.",
+      squadHint: "Pursuer gives CNC extra shot range to hunt the marksman. Sentinel adds protection when SHADOW uses PACK SUPPORT beside the runner.",
+      objective: {type: "RECOVER", terminal: mission.terminal!, completed: false, jammerId: "h2"},
+    };
+  }
   if (context?.reportVersion === 6 && context.veteranChallenge === "pack-extraction-v1") {
     if (mission.missionId !== "field-relay-recovery") throw Error("invalid_veteran_mission");
     return {...mission,name:"VETERAN · PACK EXTRACTION",briefCopy:"Bring all three squad members within 2 orthogonal cells of the relay, then RECOVER on an even round by round 6. A lone runner cannot extract the pack. No progression or currency rewards.",

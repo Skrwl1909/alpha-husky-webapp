@@ -6,6 +6,17 @@ export function recoverSignalOpen(state: BattleState): boolean {
   return !every || state.round % every === 0;
 }
 
+/** The authority and the HUD inspect the same accepted positions. */
+export function jammerRoute(state: BattleState): "carrier-down" | "paired" | null {
+  const objective = state.objective;
+  if (objective?.type !== "RECOVER" || !objective.jammerId) return null;
+  if (state.units.find(unit => unit.id === objective.jammerId)?.defeated) return "carrier-down";
+  const actor = state.units.find(unit => unit.id === state.activeId);
+  if (!actor || actor.team !== "ally" || actor.defeated) return null;
+  return state.units.some(unit => unit.team === "ally" && !unit.defeated &&
+    Math.abs(unit.c - actor.c) + Math.abs(unit.r - actor.r) === 1) ? "paired" : null;
+}
+
 export function supportCooldownExtra(directive: MissionDirective | null | undefined, unit: Pick<CombatUnit, "team">, skill: SkillDef): number {
   if (skill.ignoreDisruption) return 0;
   return unit.team === "ally" && skill.effects.some((e) => e.kind === "heal" || (e.kind === "status" && ["SELF", "ALLY_SINGLE", "ALLY_AOE"].includes(skill.targetType)))
