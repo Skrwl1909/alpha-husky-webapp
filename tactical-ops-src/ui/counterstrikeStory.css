@@ -333,5 +333,10 @@
   #tacticalOpsRoot .t-counterstrike-intel-status { margin: 6px 0 8px; }
   #tacticalOpsRoot .t-counterstrike-intel-status span { padding: 4px 7px; font-size: 9px; }
   #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions .t-btn { min-height: 40px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions {
+    position: sticky; bottom: 5px; z-index: 4;
+    padding: 5px; border: 1px solid #396b7a8f;
+    background: #071722f2; box-shadow: 0 -8px 20px #02080dcc;
+  }
   #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions .t-btn { min-height: 45px; }
 }

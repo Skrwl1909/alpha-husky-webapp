@@ -63,8 +63,9 @@ try{
  const desktopBrief=desktop.getByRole("region",{name:"False Relay mission brief"});
  const desktopDeploy=desktop.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true});
  const desktopFirstCTA=await desktopDeploy.boundingBox();
- assert(desktopFirstCTA&&desktopFirstCTA.y>=0&&desktopFirstCTA.y+desktopFirstCTA.height<=450,"DEPLOY immediately visible in compact Telegram Desktop briefing");
  await desktop.screenshot({path:out+"/294-desktop-brief.png"});
+ assert(desktopFirstCTA&&desktopFirstCTA.y>=0&&desktopFirstCTA.y+desktopFirstCTA.height<=450,
+  "DEPLOY immediately visible in compact Telegram Desktop briefing: "+JSON.stringify(desktopFirstCTA));
  const desktopScroll=await desktopBrief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
  if(desktopScroll.content>desktopScroll.client+20){
   await desktopBrief.hover({position:{x:Math.min(140,await desktopBrief.evaluate(el=>el.clientWidth-20)),y:Math.min(225,desktopScroll.client-20)}});

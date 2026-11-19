@@ -363,11 +363,11 @@ const counterstrikeStoryActivationBlobs = Object.freeze({
 const counterstrikeBriefV2Blobs = Object.freeze({
  'docs/TACTICAL_COUNTERSTRIKE_STORY_LITE_V1.md': 'edd92c333f5aa4cad414ad57123037e1f6817957',
  'js/boot_loaders.js': 'e05be73cfd92ab08d0234cf0f949a80affdd0bfc',
- 'js/tactical_ops.js': '0c09f626cce5a18d93d18a393f5ad82c592ddcb3',
+ 'js/tactical_ops.js': 'b1f951d62b6689b208d39ff683dad3795225e9f8',
  'tactical-ops-src/ui/Counterstrike.tsx': 'df6b0d3ba3704ddd67849e77c051fdab6d804448',
- 'tactical-ops-src/ui/counterstrikeStory.css': '475c0c514da8e47e042cfea71ea011d67adba572',
+ 'tactical-ops-src/ui/counterstrikeStory.css': '21039d5656a554b19221bce99d003c0c00a3c03f',
  'tactical-ops-src/version.ts': 'c739cd6ca1c27772e473ef1fa81424db6ac591bd',
- 'tools/verify_tactical_counterstrike_browser.mjs': '4c2da59791db18a34168958cd3f7c0887ca23fbb',
+ 'tools/verify_tactical_counterstrike_browser.mjs': '1235e1fd3e1159be35d06eac6457b4ae11e70205',
  'tools/verify_tactical_counterstrike_story_lite.mjs': 'b50c05c08cab54d3ff7a0c8a23ac7027d73a7b93',
 });
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
