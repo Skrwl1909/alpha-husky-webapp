@@ -48,7 +48,7 @@ try {
  assert(brief.includes('GET TO THE RELAY. USE RECOVER.'),"clear first-read goal");
  assert(brief.includes('FULL RECOVER RULES'),"precise rules stay available");
  assert(brief.includes('mission?.directive?.recoverEveryRounds'),"do not invent a fixed timing");
- assert(brief.includes('const quickRecover = recoverBrief && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);'),"special Recover modes not overwritten");
+ assert(brief.includes('const quickRecover = recoverBrief && !selectedCarrierJam && !(mission?.objective?.type === "RECOVER" && mission.objective.squadExtractionRadius != null);'),"special Recover modes not overwritten");
  assert(brief.includes('data-opportunity-status={veteranBrief.status}'),"Veteran status still server-owned");
  assert(brief.includes('primaryPurpose.resume ? "ACCEPTED OPERATION" : "NEXT OPERATION"'),"War Table speaks clearly");
  assert(battle.includes('acceptedWindow?.delayed && activeHound'),"no claimed battlefield advantage without engine timing");

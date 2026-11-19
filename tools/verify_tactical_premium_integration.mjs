@@ -377,7 +377,7 @@ const carrierJamBlobs = Object.freeze({
  'tactical-ops-src/combat/battle.ts': '689451cffec7a3f03a8658499e7b7412c9b2edd6',
  'tactical-ops-src/combat/missionRules.ts': 'cc07009c65e3fb5152982a63d253af6936c1e83b',
  'tactical-ops-src/combat/recoverAuthority.ts': 'd12a72a93ed771f6a3734dd8953a997a37a1b577',
- 'tactical-ops-src/combat/types.ts': '758d3d517f74f22303d171f89bc0afc88ecf2200',
+ 'tactical-ops-src/combat/types.ts': '50496d46ab66ab2c0b3ea8de654dfa6b271cfa6d',
  'tactical-ops-src/data/fieldOps.ts': '98531b6f265cbcd17af91eb28fac5a8d6340e209',
  'tactical-ops-src/data/operations.ts': 'c2159cbf71cc6bf6ade759a312f99b3d8d052d4b',
  'tactical-ops-src/host/foundationProgression.ts': '2744806b2e928c0880f6e5e92c39441a94a80e4c',
@@ -388,6 +388,7 @@ const carrierJamBlobs = Object.freeze({
  'tactical-ops-src/version.ts': 'e1c578b68aa8ab5fec70dc17e850d9d39c92e4c9',
  'tools/build_tactical_m2_workers.mjs': '9dc126e606b8244d1c88403cf519361362cadf42',
  'tools/verify_tactical_carrier_jam.mjs': '1767b7df821fd568332f6d50f18f7c6da062a150',
+ 'tools/verify_tactical_player_voice_v1.mjs': '5615d349d2f8a5cc2b620122ff93cce88e7549da',
 });
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
 const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs };
@@ -399,7 +400,10 @@ for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
-const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
+// types.ts has mixed line endings in Git. The platform clean filter changes its blob.
+const workingBlob = path => path === 'tactical-ops-src/combat/types.ts'
+ ? git('hash-object', '--no-filters', path).trim()
+ : git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', alphaSkillTreeBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || alphaSkillTreePath(path), 'unreviewed Alpha Skill Tree path: ' + path);
