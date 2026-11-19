@@ -4,6 +4,7 @@ on:
     paths:
       - 'tactical-ops-src/**'
       - 'js/tactical_ops.js'
+      - 'images/tactical_ops/presentation/false_relay_mission_keyart_v1.webp'
       - 'tools/*counterstrike*'
       - '.github/workflows/tactical-counterstrike.yml'
 permissions:
@@ -26,6 +27,8 @@ jobs:
           node tools/verify_tactical_counterstrike.mjs
           node tools/build_tactical_counterstrike.mjs
           node tools/verify_tactical_counterstrike_workers.mjs
+      - name: Tactical Story Lite V1 narrative safety and asset checks
+        run: node tools/verify_tactical_counterstrike_story_lite.mjs
       - name: Production bundle parity
         run: |
           npm run build:tactical-ops

@@ -328,15 +328,33 @@ const counterstrikeBlobs = Object.freeze({
  'tools/verify_tactical_counterstrike_browser.mjs': '1fd9f322f89ccf1808c7ffb685a00282682bfd54',
  'tools/verify_tactical_counterstrike_workers.mjs': '9f32b3423836421e6adb28eb1ebea6727f898c9b',
 });
+// Counterstrike Story Lite V1 (#315): exact reviewed presentation-only delta.
+// Preserve the historical Counterstrike source pins above unchanged. Any
+// further edits to these files require a new review and fresh blob approval.
+const counterstrikeStoryLiteBlobs = Object.freeze({
+ '.github/workflows/tactical-counterstrike.yml': 'a1a7efb1ef9b6a47595e6f8a50ca8ecbdf1d5ce5',
+ 'docs/TACTICAL_COUNTERSTRIKE_STORY_LITE_V1.md': '3dfe5b38ab02e35564ccc8a7c85ab563662ac71c',
+ 'images/tactical_ops/presentation/false_relay_mission_keyart_v1.webp': '51a2c1a60593787af1e994e5f9c7c187ca59083c',
+ 'js/boot_loaders.js': 'b6cdb7408946b38bed28793029950d4b510b41cd',
+ 'js/tactical_ops.js': '7742f0b9609862cd3d699e43c7dc773bd991994e',
+ 'tactical-ops-src/styles.ts': '128365051d8e3fb02ffd350e1aa482b0514c94cf',
+ 'tactical-ops-src/ui/Counterstrike.tsx': 'fe73e4214675ce5cbfeb2a3d0f9d055a8b9cb535',
+ 'tactical-ops-src/ui/CounterstrikeStory.tsx': '2e02cba8ce252b04815537419751754934897ea6',
+ 'tactical-ops-src/ui/counterstrikeStory.css': '5bdcfd46406eb675709401b69a2257fe753564db',
+ 'tactical-ops-src/ui/counterstrikeStoryModel.ts': '6996f148d4e3b626a1bcb7d8d3955e7a22f4a537',
+ 'tactical-ops-src/version.ts': '39f82c3f7fe543cdc23c0c4c19fe6f20287ca76a',
+ 'tools/verify_tactical_counterstrike_browser.mjs': 'c1f62789b1e80880bd6a55af1d870c3b90bfdcc1',
+ 'tools/verify_tactical_counterstrike_story_lite.mjs': 'f86533c88267580d13d9eb15584252c9e8255d7d',
+});
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs };
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');

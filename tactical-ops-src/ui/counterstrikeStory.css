@@ -1,0 +1,147 @@
+/* Tactical Story Lite / False Relay. All selectors scoped to Tactical Ops. */
+#tacticalOpsRoot .t-false-relay-brief-plate {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start;
+  justify-content: flex-end; isolation: isolate; overflow: hidden;
+  min-height: 176px; gap: 8px; padding: 18px; margin: 0 0 16px;
+  border: 1px solid rgba(125, 204, 222, .32); background: #09151b;
+}
+#tacticalOpsRoot .t-false-relay-brief-plate::after {
+  content: ""; position: absolute; z-index: -1; inset: 0;
+  background: linear-gradient(90deg, rgba(2,9,14,.94), rgba(2,9,14,.31) 85%),
+    linear-gradient(0deg, #040b12 0%, transparent 65%);
+}
+#tacticalOpsRoot .t-false-relay-brief-plate img {
+  position: absolute; z-index: -2; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 28%; filter: saturate(.75) brightness(.78);
+}
+#tacticalOpsRoot .t-false-relay-brief-plate > div { display: grid; gap: 4px; text-shadow: 0 2px 14px #000; }
+#tacticalOpsRoot .t-false-relay-brief-plate span { color: #9cdae6; letter-spacing: .16em; font-size: 9px; }
+#tacticalOpsRoot .t-false-relay-brief-plate strong { color: #f0ebe2; letter-spacing: .13em; font-size: clamp(16px, 4vw, 23px); }
+#tacticalOpsRoot .t-false-relay-replay { min-height: 36px; padding: 0 12px; font-size: 10px; letter-spacing: .1em; }
+
+#tacticalOpsRoot .t-false-relay-intro {
+  position: absolute; inset: 0; z-index: 75; isolation: isolate; overflow: hidden;
+  background: #071018; color: #f0eae1; font-family: var(--t-font-sans, system-ui, sans-serif);
+}
+#tacticalOpsRoot .t-false-relay-intro > img.t-false-relay-art {
+  position: absolute; z-index: -5; inset: -3%; width: 106%; height: 106%;
+  object-fit: cover; object-position: 50% 38%; filter: saturate(.72) contrast(1.05) brightness(.8);
+  animation: tFalseRelayCamera 3.2s cubic-bezier(.18,.45,.23,1) both;
+}
+#tacticalOpsRoot .t-false-relay-vignette {
+  position: absolute; z-index: -4; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(3,9,14,.60), transparent 24%, transparent 38%, rgba(2,7,12,.28) 60%, rgba(1,6,11,.98) 100%),
+    linear-gradient(90deg, rgba(1,8,14,.2), transparent 27%, transparent 78%, rgba(1,8,14,.13));
+}
+#tacticalOpsRoot .t-false-relay-amber, #tacticalOpsRoot .t-false-relay-cyan {
+  position: absolute; z-index: -2; pointer-events: none; aspect-ratio: 1; border-radius: 50%; mix-blend-mode: screen;
+}
+#tacticalOpsRoot .t-false-relay-amber {
+  top: 6.4%; left: 49%; width: 17%;
+  background: radial-gradient(circle, rgba(255,188,96,.67), rgba(255,149,49,.19) 16%, transparent 68%);
+  filter: blur(2px); animation: tFalseRelayPulse 2.6s ease-in-out .7s both;
+}
+#tacticalOpsRoot .t-false-relay-cyan {
+  top: 45%; left: 64%; width: 26%;
+  background: radial-gradient(circle, rgba(123,239,248,.34), rgba(51,154,181,.06) 26%, transparent 66%);
+  filter: blur(8px); animation: tFalseRelayPulse 2.1s ease-in-out 1.05s both;
+}
+#tacticalOpsRoot .t-false-relay-scan {
+  position: absolute; z-index: -1; left: 0; right: 0; height: 21%; top: -25%; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(122,220,236,.04) 70%, rgba(153,229,243,.14) 97%, transparent);
+  animation: tFalseRelayScan .95s ease-out 1.5s both;
+}
+#tacticalOpsRoot .t-false-relay-top {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2; padding: max(16px, env(safe-area-inset-top)) 19px 0;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+}
+#tacticalOpsRoot .t-false-relay-top > div { display: grid; gap: 4px; }
+#tacticalOpsRoot .t-false-relay-top strong { font-size: 11px; letter-spacing: .21em; }
+#tacticalOpsRoot .t-false-relay-top span { color: #93b6c3; font-size: 8px; letter-spacing: .2em; }
+#tacticalOpsRoot .t-false-relay-top button {
+  min-width: 76px; min-height: 42px; border: 1px solid rgba(190,229,236,.36); border-radius: 2px;
+  color: #f5f0e9; background: rgba(4,16,24,.7); font-size: 11px; font-weight: 800; letter-spacing: .14em;
+}
+#tacticalOpsRoot .t-false-relay-copy {
+  position: absolute; z-index: 2; bottom: max(20px, env(safe-area-inset-bottom)); left: 0; right: 0;
+  display: flex; flex-direction: column; gap: 0; padding: 0 clamp(19px, 6vw, 31px);
+  text-shadow: 0 2px 18px #030a10;
+}
+#tacticalOpsRoot .t-false-relay-label { color: #9ad9e6; font-size: 9px; font-weight: 800; letter-spacing: .2em; animation: tFalseRelayReveal .45s ease-out .58s both; }
+#tacticalOpsRoot .t-false-relay-copy h2 { margin: 12px 0 0; color: #f3efe6; font-size: clamp(25px, 7vw, 38px); line-height: .96; letter-spacing: .015em; animation: tFalseRelayReveal .47s ease-out .9s both; }
+#tacticalOpsRoot .t-false-relay-subtitle { margin: 7px 0 0; color: #efb572; font-weight: 800; font-size: 12px; letter-spacing: .18em; animation: tFalseRelayReveal .47s ease-out .9s both; }
+#tacticalOpsRoot .t-false-relay-transmission {
+  display: grid; gap: 7px; padding: 12px 13px; margin-top: 18px;
+  border-left: 2px solid #93d0df; background: linear-gradient(90deg, rgba(17,48,61,.82), rgba(8,25,35,.51));
+  animation: tFalseRelayReveal .45s ease-out 1.5s both;
+}
+#tacticalOpsRoot .t-false-relay-transmission small { color: #9bcddc; letter-spacing: .15em; font-size: 9px; }
+#tacticalOpsRoot .t-false-relay-transmission strong { color: #f1f4ee; letter-spacing: .05em; font-size: 13px; }
+#tacticalOpsRoot .t-false-relay-transmission span { color: #a7c0c5; font-size: 9px; letter-spacing: .09em; }
+#tacticalOpsRoot .t-false-relay-objective {
+  display: grid; gap: 5px; padding: 13px 0 14px; border-bottom: 1px solid rgba(154,210,225,.31);
+  animation: tFalseRelayReveal .4s ease-out 2.15s both;
+}
+#tacticalOpsRoot .t-false-relay-objective span { color: #8eb3bf; font-size: 9px; font-weight: 800; letter-spacing: .19em; }
+#tacticalOpsRoot .t-false-relay-objective strong { font-size: 13px; letter-spacing: .07em; }
+#tacticalOpsRoot .t-false-relay-objective small { color: #c4d3d5; font-size: 10px; }
+#tacticalOpsRoot .t-false-relay-foot { margin: 13px 0 0; color: #8daab2; font-size: 9px; letter-spacing: .10em; animation: tFalseRelayReveal .4s ease-out 2.7s both; }
+
+#tacticalOpsRoot .t-false-relay-hound-cue {
+  position: absolute; top: 58px; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right));
+  z-index: 12; display: grid; gap: 4px; padding: 12px 15px; pointer-events: none;
+  border: 1px solid rgba(243,174,100,.62); border-left: 3px solid #f2b26a;
+  background: linear-gradient(110deg, rgba(34,25,21,.96), rgba(9,23,29,.93));
+  box-shadow: 0 9px 30px rgba(0,0,0,.56); animation: tFalseRelayHound 1.15s ease both;
+}
+#tacticalOpsRoot .t-false-relay-hound-cue span { color: #e5ad77; font-size: 9px; letter-spacing: .15em; }
+#tacticalOpsRoot .t-false-relay-hound-cue strong { font-size: 12px; letter-spacing: .06em; }
+#tacticalOpsRoot .t-false-relay-hound-cue small { color: #b7cbd0; font-size: 9px; }
+
+#tacticalOpsRoot .t-false-relay-aftermath {
+  position: relative; isolation: isolate; overflow: hidden; min-height: 188px; padding: 20px;
+  display: flex; align-items: flex-end; margin-bottom: 15px; border: 1px solid rgba(146,213,223,.28);
+  background: #0b1720;
+}
+#tacticalOpsRoot .t-false-relay-aftermath > img {
+  position: absolute; z-index: -3; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: center 38%; filter: brightness(.62) saturate(.75);
+  animation: tFalseRelayAftermath 2.3s ease-out both;
+}
+#tacticalOpsRoot .t-false-relay-aftermath::after {
+  content: ""; position: absolute; z-index: -2; inset: 0;
+  background: linear-gradient(0deg, rgba(4,13,20,.97), rgba(4,13,20,.33) 86%);
+}
+#tacticalOpsRoot .t-false-relay-aftermath.is-lost > img { filter: brightness(.47) saturate(.44) sepia(.25); }
+#tacticalOpsRoot .t-false-relay-aftermath-copy { display: grid; gap: 7px; animation: tFalseRelayReveal .6s ease-out .35s both; }
+#tacticalOpsRoot .t-false-relay-aftermath-copy span { color: #a3dce8; font-size: 9px; letter-spacing: .16em; }
+#tacticalOpsRoot .t-false-relay-aftermath-copy strong { color: #f0ede5; font-size: clamp(21px, 6vw, 29px); letter-spacing: .13em; }
+#tacticalOpsRoot .t-false-relay-aftermath-copy small { color: #e1bb8a; font-size: 9px; letter-spacing: .10em; }
+
+@keyframes tFalseRelayCamera { from { transform: translateY(1.6%) scale(1); filter: brightness(.57) saturate(.56); } to { transform: translateY(-1.4%) scale(1.055); filter: brightness(.80) saturate(.75); } }
+@keyframes tFalseRelayPulse { 0% { opacity: 0; } 35% { opacity: .26; } 60% { opacity: .68; } 100% { opacity: .34; } }
+@keyframes tFalseRelayScan { 0% { top: -25%; opacity: 0; } 20% { opacity: .65; } 100% { top: 76%; opacity: 0; } }
+@keyframes tFalseRelayReveal { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes tFalseRelayHound { 0% { opacity: 0; transform: translateY(-9px); } 16%,78% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-4px); } }
+@keyframes tFalseRelayAftermath { from { transform: scale(1.03); } to { transform: scale(1.085); } }
+
+@media (max-width: 360px) {
+  #tacticalOpsRoot .t-false-relay-top { padding-left: 14px; padding-right: 14px; }
+  #tacticalOpsRoot .t-false-relay-copy { padding-left: 18px; padding-right: 18px; }
+  #tacticalOpsRoot .t-false-relay-transmission { margin-top: 12px; padding: 10px; }
+  #tacticalOpsRoot .t-false-relay-transmission strong { font-size: 11px; }
+  #tacticalOpsRoot .t-false-relay-objective { padding: 10px 0; }
+  #tacticalOpsRoot .t-false-relay-foot { margin-top: 8px; }
+}
+@media (max-height: 620px) {
+  #tacticalOpsRoot .t-false-relay-copy { bottom: 12px; }
+  #tacticalOpsRoot .t-false-relay-copy h2 { margin-top: 7px; }
+  #tacticalOpsRoot .t-false-relay-transmission { gap: 4px; margin-top: 8px; padding: 8px 11px; }
+  #tacticalOpsRoot .t-false-relay-objective { padding: 7px 0; }
+  #tacticalOpsRoot .t-false-relay-foot { margin-top: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #tacticalOpsRoot .t-false-relay-intro *,
+  #tacticalOpsRoot .t-false-relay-hound-cue,
+  #tacticalOpsRoot .t-false-relay-aftermath * { animation: none !important; transition: none !important; }
+}

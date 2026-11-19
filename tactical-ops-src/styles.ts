@@ -12,4 +12,5 @@ import COMMAND_DECK_CSS from "./ui/commandDeck.css?raw";
 import OVERHEAD_PROJECTION_CSS from "./ui/overheadProjection.css?raw";
 import HOUND_DIRECTIONAL_CSS from "./ui/houndDirectional.css?raw";
 import LAST_HOWL_CSS from "./ui/lastHowl.css?raw";
-export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + SIGNAL_ATLAS_PREMIUM_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS + "\n" + COMMAND_DECK_CSS + "\n" + OVERHEAD_PROJECTION_CSS + "\n" + HOUND_DIRECTIONAL_CSS + "\n" + LAST_HOWL_CSS;
+import COUNTERSTRIKE_STORY_CSS from "./ui/counterstrikeStory.css?raw";
+export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + SIGNAL_ATLAS_PREMIUM_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS + "\n" + COMMAND_DECK_CSS + "\n" + OVERHEAD_PROJECTION_CSS + "\n" + HOUND_DIRECTIONAL_CSS + "\n" + LAST_HOWL_CSS + "\n" + COUNTERSTRIKE_STORY_CSS;
