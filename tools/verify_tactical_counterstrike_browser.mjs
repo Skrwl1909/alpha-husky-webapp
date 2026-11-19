@@ -6,6 +6,7 @@ const {chromium}=await import("playwright");
 const providedApi=process.env.COUNTERSTRIKE_API;
 let api=providedApi;
 const entry=String.raw`
+window.__AH_TACTICAL_STORY_LITE_V1__=true; // Test-only opt-in; production defaults OFF.
 window.apiPost=async(path,body={})=>{
  const response=await fetch(path,{method:"POST",headers:{"Content-Type":"application/json","X-Synthetic-Auth":"fixture"},body:JSON.stringify(body)});
  const data=await response.json();
@@ -30,6 +31,21 @@ const browser=await chromium.launch({headless:true,executablePath:process.env.CH
 const errors=[],rows=[];
 const out=providedApi?"artifacts/counterstrike/private-browser":"artifacts/counterstrike/browser";mkdirSync(out,{recursive:true});
 try{
+ const cinematic=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,reducedMotion:"no-preference"});
+ cinematic.on("pageerror",e=>errors.push(e.message));
+ await cinematic.goto(api+"/counterstrike-fixture");
+ await cinematic.getByRole("button",{name:"VIEW FALSE RELAY BRIEF",exact:true}).click();
+ await cinematic.locator('[data-story-intro="playing"]').waitFor();
+ assert(await cinematic.locator(".t-false-relay-art").evaluate(img=>img.complete&&img.naturalWidth>0),"story key art loaded");
+ await cinematic.getByRole("button",{name:"Skip False Relay introduction"}).click();
+ assert.equal(await cinematic.locator('[data-story-intro="playing"]').count(),0);
+ await cinematic.getByRole("button",{name:"REPLAY TRANSMISSION"}).click();
+ await cinematic.locator('[data-story-intro="playing"]').waitFor();
+ await cinematic.getByRole("button",{name:"Skip False Relay introduction"}).click();
+ await cinematic.getByRole("button",{name:"BACK TO WAR TABLE"}).click();
+ await cinematic.getByRole("button",{name:"VIEW FALSE RELAY BRIEF",exact:true}).click();
+ assert.equal(await cinematic.locator('[data-story-intro="playing"]').count(),0,"repeat brief never forces intro");
+ await cinematic.close();
  for(const width of [320,390,430]){
   const consumed=width===390;
   await fetch(api+"/fixture/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consumed})});
@@ -39,6 +55,8 @@ try{
   await page.getByRole("button",{name:"VIEW FALSE RELAY BRIEF",exact:true}).click();
   const brief=page.getByRole("region",{name:"False Relay mission brief"});
   await page.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true}).waitFor();
+  assert.equal(await page.locator('[data-story-intro="playing"]').count(),0,"reduced-motion keeps brief accessible");
+  assert.equal(await page.locator(".t-false-relay-brief-plate").count(),1);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:out+"/"+width+"-brief.png"});
   await page.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true}).click();
@@ -46,6 +64,17 @@ try{
   const slot={"alpha-strike":"A1","alpha-rend":"A2","alpha-howl":"A3","u02-shot":"A1","u02-burst":"A2","u02-suppress":"A3","u03-tap":"A1","u03-mend":"A2","u03-pack":"A3"};
   async function ready(){await page.locator(".t-actions .t-act:not(:disabled)").first().waitFor();}
   await ready();
+  const monitorWaves=()=>page.evaluate(()=>{
+   window.__storyWaves=JSON.parse(sessionStorage.getItem("counterstrike-fixture-waves")||"[]");
+   new MutationObserver(()=>{
+    for(const node of document.querySelectorAll("[data-hound-wave]")){
+     const wave=Number(node.getAttribute("data-hound-wave"));
+     if(!window.__storyWaves.includes(wave))window.__storyWaves.push(wave);
+    }
+    sessionStorage.setItem("counterstrike-fixture-waves",JSON.stringify(window.__storyWaves));
+   }).observe(document.body,{childList:true,subtree:true});
+  });
+  await monitorWaves();
   assert((await page.getByRole("status",{name:"False Relay signal"}).innerText()).includes(consumed?"rounds 3 and 5":"rounds 4 and 6"));
   for(let i=0;i<commands.length;i++){
    const cmd=commands[i];
@@ -59,11 +88,14 @@ try{
    if(i===8){
     await page.reload();
     await page.getByRole("button",{name:"RESUME FALSE RELAY",exact:true}).click();
-    await page.getByRole("button",{name:"RESUME ACCEPTED RUN",exact:true}).click();await ready();
+    await page.getByRole("button",{name:"RESUME ACCEPTED RUN",exact:true}).click();await ready();await monitorWaves();
    }
    if(i===12)await page.screenshot({path:out+"/"+width+"-battle.png"});
   }
   await page.getByRole("region",{name:"False Relay aftermath"}).waitFor();
+  assert.deepEqual((await page.evaluate(()=>window.__storyWaves)).sort(),[1,2],"cues follow both confirmed arrivals");
+  assert.equal(await page.locator('[data-story-aftermath="victory"]').count(),1);
+  assert.match(await page.locator('[data-story-aftermath="victory"]').innerText(),/SIGNAL HELD/);
   assert.match(await page.getByRole("region",{name:"False Relay aftermath"}).innerText(),/Server recorded victory/);
   assert.equal(await page.getByRole("button",{name:/NEXT AVAILABLE/}).count(),1);
   await page.screenshot({path:out+"/"+width+"-aftermath.png"});

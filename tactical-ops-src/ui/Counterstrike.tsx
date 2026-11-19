@@ -1,6 +1,7 @@
 import {useBattleStore} from "../store/battleStore";
 import {COUNTERSTRIKE_MISSION} from "../data/counterstrike";
 import {getMissionDef} from "../data/operations";
+import {CounterstrikeStoryIntro,CounterstrikeStoryHoundCue,CounterstrikeStoryAftermath} from "./CounterstrikeStory";
 
 export function CounterstrikeCard({archive=false}:{archive?:boolean}){
  const summary=useBattleStore(s=>s.progression?.counterstrike);
@@ -27,7 +28,7 @@ export function CounterstrikeBrief(){
  const pet=useBattleStore(s=>s.progression?.equippedPet);
  const toggle=useBattleStore(s=>s.toggleCommanderTeammate),deploy=useBattleStore(s=>s.deployCounterstrike),back=useBattleStore(s=>s.backToHub);
  return <div className="t-body t-scroll" aria-label="False Relay mission brief">
-  <section className="t-panel"><span className="t-kicker">THE CHAIN · RECOVERED SIGNAL</span>
+  <section className="t-panel"><CounterstrikeStoryIntro resuming={!!summary?.activeRunId}/><span className="t-kicker">THE CHAIN · RECOVERED SIGNAL</span>
    <h1 className="t-title">{COUNTERSTRIKE_MISSION.name}</h1><p>{COUNTERSTRIKE_MISSION.briefCopy}</p>
    <h2 className="t-title">Secure the transmission</h2><p>{COUNTERSTRIKE_MISSION.directive?.copy} Failure leaves the site unsecured. You can retry.</p>
    <p>{summary?.activeRunId && summary.intelStatus==="APPLIED"?"This accepted run already has RECON Intel recorded. Its HOUND entries remain frozen at rounds 4 and 6.":summary?.intelStatus==="APPLIED"?"RECON Intel is available for the next accepted deployment. HOUND entries shift from rounds 3/5 to 4/6.":
@@ -45,9 +46,9 @@ export function CounterstrikeBrief(){
 export function CounterstrikeSignal(){
  const radio=useBattleStore(s=>s.counterstrikeRadio),key=useBattleStore(s=>s.currentRunKey);
  if(!key?.startsWith("counterstrike_v1_"))return null;
- return <div className="t-panel" role="status" aria-label="False Relay signal" style={{margin:0,padding:"6px 12px",fontSize:11}}>
+ return <><CounterstrikeStoryHoundCue radio={radio} runId={key}/><div className="t-panel" role="status" aria-label="False Relay signal" style={{margin:0,padding:"6px 12px",fontSize:11}}>
   {radio.map(line=><p key={line} style={{margin:"2px 0"}}>{line}</p>)}
- </div>;
+ </div></>;
 }
 
 export function CounterstrikeResults(){
@@ -55,6 +56,7 @@ export function CounterstrikeResults(){
  const open=useBattleStore(s=>s.openCounterstrikeBrief),next=useBattleStore(s=>s.openOperationBrief),back=useBattleStore(s=>s.backToHub);
  const nextMission=summary?.nextMissionId?getMissionDef(summary.nextMissionId):null;
  return <div className="t-body t-scroll"><section className="t-panel" aria-label="False Relay aftermath">
+  <CounterstrikeStoryAftermath result={result}/>
   <h1 className="t-title">{result?.victory?"FALSE RELAY SECURED":"FALSE RELAY UNSECURED"}</h1>
   <p>{result?"Server recorded "+(result.victory?"victory":"defeat")+" after "+result.rounds+" rounds. "+result.control+"/5 control checkpoints.":"Reconnect to reload the authoritative operation result."}</p>
   <p>{result?.intelStatus==="APPLIED"?"RECON timing delayed this run's HOUND reinforcements. Intel remains consumed.":
