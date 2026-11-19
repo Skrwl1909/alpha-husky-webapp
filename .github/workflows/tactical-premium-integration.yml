@@ -23,6 +23,12 @@ jobs:
           node-version: '22'
       - run: npm install --no-audit --no-fund --package-lock=false
       - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Next target, frozen STRIKE reach and mobile brief
+        run: |
+          node tools/verify_tactical_strike_opportunity.mjs
+          node tools/verify_tactical_loadout_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
       - name: Carrier Jam routes and extraction rules
         run: node tools/verify_tactical_carrier_jam.mjs
       - name: Preserve both source PRs and compiled features
