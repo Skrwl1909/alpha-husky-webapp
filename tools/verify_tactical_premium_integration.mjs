@@ -358,15 +358,27 @@ const counterstrikeStoryActivationBlobs = Object.freeze({
  'tools/verify_tactical_counterstrike_browser.mjs': 'cda76357945f5b8c28dc96112ee05e0fb371433d',
  'tools/verify_tactical_counterstrike_story_lite.mjs': '80bddf998b49c30ca0422f7f87969a73365db540',
 });
+// False Relay Briefing V2: compact player decision and optional full Intel.
+// No combat, progression or server authority sources are part of this delta.
+const counterstrikeBriefV2Blobs = Object.freeze({
+ 'docs/TACTICAL_COUNTERSTRIKE_STORY_LITE_V1.md': 'edd92c333f5aa4cad414ad57123037e1f6817957',
+ 'js/boot_loaders.js': 'e05be73cfd92ab08d0234cf0f949a80affdd0bfc',
+ 'js/tactical_ops.js': 'b8a29d1e8c93448c80fd4354b62a067bfc668ef1',
+ 'tactical-ops-src/ui/Counterstrike.tsx': 'df6b0d3ba3704ddd67849e77c051fdab6d804448',
+ 'tactical-ops-src/ui/counterstrikeStory.css': '1458898b08d758287b384efb4cb9655d0b007b8a',
+ 'tactical-ops-src/version.ts': 'c739cd6ca1c27772e473ef1fa81424db6ac591bd',
+ 'tools/verify_tactical_counterstrike_browser.mjs': '19319b3094304b692ba8319e470733e4b5296374',
+ 'tools/verify_tactical_counterstrike_story_lite.mjs': 'b50c05c08cab54d3ff7a0c8a23ac7027d73a7b93',
+});
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs };
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 const workingBlob = path => git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');

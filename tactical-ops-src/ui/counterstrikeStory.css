@@ -216,3 +216,130 @@
   #tacticalOpsRoot .t-counterstrike-content { padding: 15px 13px; }
   #tacticalOpsRoot .t-counterstrike-content > .t-title { font-size: 24px; }
 }
+
+/* False Relay Briefing V2: cinematic first, then one readable decision. Detailed
+   mechanics remain available but never separate the squad from DEPLOY. */
+#tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-content {
+  background: linear-gradient(155deg, #0b1721f5, #070c13f7 62%);
+  border-color: #5677856b;
+}
+#tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate {
+  flex-direction: row; align-items: flex-end; justify-content: space-between;
+  min-height: 112px; gap: 10px; margin-bottom: 11px; padding: 12px;
+}
+#tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate > div { min-width: 0; }
+#tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate strong {
+  font-size: clamp(13px, 3.6vw, 20px); line-height: 1.05;
+}
+#tacticalOpsRoot .t-counterstrike-brief .t-false-relay-replay {
+  flex: 0 0 auto; max-width: 44%; min-height: 35px;
+  padding: 5px 9px; font-size: 9px; line-height: 1.2; white-space: normal;
+}
+#tacticalOpsRoot .t-counterstrike-identity .t-kicker {
+  display: block; margin-bottom: 3px; font-size: 9px; letter-spacing: .15em;
+}
+#tacticalOpsRoot .t-counterstrike-identity .t-title {
+  margin: 0 0 6px; font-size: clamp(19px, 4.2vw, 27px);
+  line-height: 1.08; letter-spacing: .035em; overflow-wrap: anywhere;
+}
+#tacticalOpsRoot .t-counterstrike-identity p {
+  margin: 0 0 11px; color: #becdd4; font-size: 12px;
+  line-height: 1.4; overflow-wrap: anywhere;
+}
+#tacticalOpsRoot .t-counterstrike-objective {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  gap: 3px 10px; align-items: center; padding: 10px 11px;
+  border: 1px solid #5b8e9b82; border-left: 3px solid #75d8ec;
+  background: linear-gradient(100deg, #132e3cbb, #0a1c27a8);
+}
+#tacticalOpsRoot .t-counterstrike-objective > div { display: grid; gap: 2px; }
+#tacticalOpsRoot .t-counterstrike-objective > div span,
+#tacticalOpsRoot .t-counterstrike-deadline { font-size: 9px; font-weight: 800; letter-spacing: .11em; }
+#tacticalOpsRoot .t-counterstrike-objective > div span { color: #92bfcd; }
+#tacticalOpsRoot .t-counterstrike-objective > div strong { font-size: 16px; letter-spacing: .085em; }
+#tacticalOpsRoot .t-counterstrike-objective > p {
+  grid-column: 1; margin: 0; color: #cfdee5; font-size: 11px; line-height: 1.35;
+}
+#tacticalOpsRoot .t-counterstrike-objective > p strong { color: #f2f8f9; }
+#tacticalOpsRoot .t-counterstrike-deadline {
+  grid-column: 2; grid-row: 1 / 3; justify-self: end;
+  width: 62px; padding: 8px 5px; text-align: center; line-height: 1.35;
+  color: #f2c99f; border: 1px solid #c58e595c; background: #36251b77;
+}
+#tacticalOpsRoot .t-counterstrike-intel-status {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 9px 0 12px;
+}
+#tacticalOpsRoot .t-counterstrike-intel-status span {
+  padding: 6px 9px; font-size: 10px; font-weight: 800;
+  letter-spacing: .08em; color: #a7deec;
+  background: #10303e96; border: 1px solid #5b9caa66;
+}
+#tacticalOpsRoot .t-counterstrike-intel-status span:last-child {
+  color: #e9c29a; background: #36251b69; border-color: #ad795569;
+}
+#tacticalOpsRoot .t-counterstrike-squad-heading {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 8px; color: #dcecf1; font-size: 10px; letter-spacing: .13em;
+}
+#tacticalOpsRoot .t-counterstrike-squad-heading span { color: #7faebe; font-size: 9px; }
+#tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px; margin: 6px 0 8px;
+}
+#tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions .t-btn {
+  width: 100%; min-height: 44px; padding: 7px 4px;
+  font-size: 10px; line-height: 1.16; letter-spacing: .035em;
+  overflow-wrap: anywhere;
+}
+#tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions {
+  display: block; margin-top: 0;
+}
+#tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions .t-btn {
+  min-height: 49px; font-size: 12px; font-weight: 900;
+  letter-spacing: .12em; border-color: #69d4f4;
+  box-shadow: inset 0 1px 0 #b9efff29, 0 0 18px #2cb5ea1b;
+}
+#tacticalOpsRoot .t-counterstrike-more-intel {
+  margin-top: 11px; color: #b6cfda; border: 1px solid #34526277;
+  background: #0717229c;
+}
+#tacticalOpsRoot .t-counterstrike-more-intel summary {
+  display: flex; align-items: center; justify-content: space-between;
+  min-height: 39px; padding: 8px 11px; cursor: pointer;
+  color: #c2e1ea; font-size: 10px; font-weight: 800;
+  letter-spacing: .12em; list-style: none;
+}
+#tacticalOpsRoot .t-counterstrike-more-intel summary::-webkit-details-marker { display: none; }
+#tacticalOpsRoot .t-counterstrike-more-intel summary span { color: #779cab; font-size: 9px; letter-spacing: .07em; }
+#tacticalOpsRoot .t-counterstrike-more-intel summary::after { content: "+"; color: #7cdeec; font-size: 16px; }
+#tacticalOpsRoot .t-counterstrike-more-intel[open] summary::after { content: "−"; }
+#tacticalOpsRoot .t-counterstrike-more-intel > div { border-top: 1px solid #34526277; padding: 8px 12px; }
+#tacticalOpsRoot .t-counterstrike-more-intel p {
+  margin: 0 0 10px; font-size: 11px; line-height: 1.5;
+}
+#tacticalOpsRoot .t-counterstrike-more-intel p:last-child { margin-bottom: 0; }
+#tacticalOpsRoot .t-counterstrike-back {
+  width: 100%; min-height: 38px; margin-top: 8px; font-size: 10px;
+  letter-spacing: .1em; opacity: .78;
+}
+@media (max-height: 540px) and (pointer: fine) {
+  #tacticalOpsRoot .t-counterstrike-brief { padding-top: max(62px, calc(var(--t-safe-top, 0px) + 14px), calc(var(--ah-chrome-top, 0px) + 14px)); }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-content { padding: 10px; }
+  /* The player already saw the full-screen cinematic. Keep just a slim
+     illustrated replay strip so squad selection and DEPLOY never overlap. */
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate {
+    min-height: 42px; padding: 5px 7px; margin-bottom: 4px;
+  }
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate > div { gap: 0; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate span { display: none; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate strong { font-size: 10px; letter-spacing: .08em; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-replay { min-height: 29px; padding: 3px 6px; font-size: 8px; }
+  #tacticalOpsRoot .t-counterstrike-identity .t-kicker { font-size: 8px; }
+  #tacticalOpsRoot .t-counterstrike-identity .t-title { font-size: 18px; margin-bottom: 5px; }
+  #tacticalOpsRoot .t-counterstrike-identity p { font-size: 11px; line-height: 1.3; margin-bottom: 7px; }
+  #tacticalOpsRoot .t-counterstrike-objective { padding: 6px 8px; }
+  #tacticalOpsRoot .t-counterstrike-intel-status { margin: 4px 0 5px; }
+  #tacticalOpsRoot .t-counterstrike-intel-status span { padding: 4px 7px; font-size: 9px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions .t-btn { min-height: 40px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions .t-btn { min-height: 44px; }
+}

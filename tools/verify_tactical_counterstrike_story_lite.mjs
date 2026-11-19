@@ -57,6 +57,13 @@ try {
   assert.match(css, /max-height: 620px/);
   assert.match(css, /\.t-counterstrike-page\s*\{[^}]*overflow-y:\s*auto/s, "False Relay brief must scroll in a short desktop window");
   assert.match(css, /\.t-counterstrike-actions\s*\{/, "Deploy and Results CTAs have a responsive action group");
+  assert.match(css, /max-height:\s*540px/, "short Telegram Desktop has a compact briefing layout");
+  const counterstrikeSource = readFileSync("tactical-ops-src/ui/Counterstrike.tsx", "utf8");
+  const briefSource = counterstrikeSource.split("export function CounterstrikeBrief(){")[1]?.split("export function CounterstrikeSignal(){")[0] || "";
+  assert.match(briefSource, /t-counterstrike-objective/, "compact briefing has one prominent objective");
+  assert.match(briefSource, /t-counterstrike-intel-status/, "Intel timings are still sourced from the accepted run summary");
+  assert.match(briefSource, /<details className="t-counterstrike-more-intel"/, "advanced tactical rules remain optional");
+  assert(briefSource.indexOf("t-counterstrike-deploy-actions") < briefSource.indexOf("<details className="), "DEPLOY precedes secondary reading");
   const loader = readFileSync("js/boot_loaders.js", "utf8");
   assert.match(loader, /if \(global\.__AH_TACTICAL_STORY_LITE_V1__ === undefined\)\s*\{\s*global\.__AH_TACTICAL_STORY_LITE_V1__ = true;/,
     "host defaults visual story ON but preserves explicit false");
