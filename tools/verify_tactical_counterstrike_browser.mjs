@@ -56,8 +56,9 @@ try{
  const desktopBrief=desktop.getByRole("region",{name:"False Relay mission brief"});
  const desktopScroll=await desktopBrief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
  assert(desktopScroll.content>desktopScroll.client+100,"short desktop False Relay brief must be scrollable");
+ await desktopBrief.hover({position:{x:Math.min(140,await desktopBrief.evaluate(el=>el.clientWidth-20)),y:Math.min(225,desktopScroll.client-20)}});
  await desktop.mouse.wheel(0,1600);
- assert(await desktopBrief.evaluate(el=>el.scrollTop)>100,"wheel scroll reaches lower mission content");
+ await desktop.waitForFunction(()=>document.querySelector(".t-counterstrike-brief")?.scrollTop>100,null,{timeout:5000});
  const desktopDeploy=desktop.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true});
  await desktopDeploy.scrollIntoViewIfNeeded();
  const desktopCTA=await desktopDeploy.boundingBox();
