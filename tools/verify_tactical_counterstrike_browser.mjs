@@ -66,6 +66,9 @@ try{
  await desktop.screenshot({path:out+"/294-desktop-brief.png"});
  assert(desktopFirstCTA&&desktopFirstCTA.y>=0&&desktopFirstCTA.y+desktopFirstCTA.height<=450,
   "DEPLOY immediately visible in compact Telegram Desktop briefing: "+JSON.stringify(desktopFirstCTA));
+ const desktopSquad=await desktopBrief.locator(".t-counterstrike-companions").boundingBox();
+ assert(desktopSquad&&desktopSquad.y>=0&&desktopSquad.y+desktopSquad.height<desktopFirstCTA.y,
+  "all squad choices must be visible above DEPLOY without an overlapping sticky overlay: "+JSON.stringify({desktopSquad,desktopFirstCTA}));
  const desktopScroll=await desktopBrief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
  if(desktopScroll.content>desktopScroll.client+20){
   await desktopBrief.hover({position:{x:Math.min(140,await desktopBrief.evaluate(el=>el.clientWidth-20)),y:Math.min(225,desktopScroll.client-20)}});
