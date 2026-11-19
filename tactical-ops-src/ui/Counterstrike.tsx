@@ -27,20 +27,41 @@ export function CounterstrikeBrief(){
  const selected=useBattleStore(s=>s.selectedSquadIds);
  const pet=useBattleStore(s=>s.progression?.equippedPet);
  const toggle=useBattleStore(s=>s.toggleCommanderTeammate),deploy=useBattleStore(s=>s.deployCounterstrike),back=useBattleStore(s=>s.backToHub);
+ const reconApplied=summary?.intelStatus==="APPLIED";
+ const reconLabel=reconApplied?(summary?.activeRunId?"RECON APPLIED":"RECON READY"):
+  summary?.intelStatus==="PREVIOUSLY_CONSUMED"?"RECON SPENT":"NO RECON";
+ const houndRounds=reconApplied?"R4 / R6":"R3 / R5";
  return <div className="t-body t-scroll t-counterstrike-page t-counterstrike-brief" role="region" aria-label="False Relay mission brief">
-  <section className="t-panel t-counterstrike-content"><CounterstrikeStoryIntro resuming={!!summary?.activeRunId}/><span className="t-kicker">THE CHAIN · RECOVERED SIGNAL</span>
-   <h1 className="t-title">{COUNTERSTRIKE_MISSION.name}</h1><p>{COUNTERSTRIKE_MISSION.briefCopy}</p>
-   <h2 className="t-title">Secure the transmission</h2><p>{COUNTERSTRIKE_MISSION.directive?.copy} Failure leaves the site unsecured. You can retry.</p>
-   <p>{summary?.activeRunId && summary.intelStatus==="APPLIED"?"This accepted run already has RECON Intel recorded. Its HOUND entries remain frozen at rounds 4 and 6.":summary?.intelStatus==="APPLIED"?"RECON Intel is available for the next accepted deployment. HOUND entries shift from rounds 3/5 to 4/6.":
-    summary?.intelStatus==="PREVIOUSLY_CONSUMED"?"RECON Intel was consumed in an earlier accepted run. This operation uses the baseline HOUND entries at rounds 3/5.":"Baseline HOUND entries arrive in rounds 3 and 5."}</p>
-   <p>Take control early and screen both eastern approaches, or disrupt the patrol before moving a vulnerable teammate onto the relay. A quick patrol kill still leaves five consecutive control checkpoints.</p>
+  <section className="t-panel t-counterstrike-content"><CounterstrikeStoryIntro resuming={!!summary?.activeRunId}/>
+   <div className="t-counterstrike-identity">
+    <span className="t-kicker">THE CHAIN · RECOVERED SIGNAL</span>
+    <h1 className="t-title">{COUNTERSTRIKE_MISSION.name}</h1>
+    <p>Recovered SIGNAL COURIER transmission. HOUND patrols closing in. Source unknown.</p>
+   </div>
+   <div className="t-counterstrike-objective" aria-label="Primary mission objective">
+    <div><span>PRIMARY OBJECTIVE</span><strong>CAPTURE &amp; HOLD</strong></div>
+    <p>Hold the exact relay tile for <strong>5 consecutive round changes</strong>.</p>
+    <span className="t-counterstrike-deadline">ROUND 12 DEADLINE</span>
+   </div>
+   <div className="t-counterstrike-intel-status" role="status" aria-label="Counterstrike deployment intel">
+    <span>{reconLabel}</span><span>HOUND · {houndRounds}</span>
+   </div>
+   <div className="t-counterstrike-squad-heading"><strong>YOUR SQUAD</strong><span>{selected.length}/3 SELECTED</span></div>
    <div className="t-counterstrike-companions" role="group" aria-label="False Relay companions">{[["ally-02","CNC"],["ally-03","SHADOW"],...(pet?[["pet:"+pet.id,pet.name]]:[])].map(([id,name])=>
     <button key={id} className="t-btn" disabled={busy||!!summary?.activeRunId} aria-pressed={selected.includes(id)} onClick={()=>toggle(id)}>{name}</button>)}</div>
    {error?<p role="alert">{error}</p>:null}
-   <div className="t-counterstrike-actions">
+   {summary?.blocked?<p role="alert">Finish the accepted operation already in progress before deploying.</p>:null}
+   <div className="t-counterstrike-actions t-counterstrike-deploy-actions">
     <button className="t-btn t-btn-primary" disabled={busy||summary?.blocked||selected.length!==3} onClick={()=>void deploy()}>{busy?"ACCEPTING OPERATION…":summary?.activeRunId?"RESUME ACCEPTED RUN":"DEPLOY FALSE RELAY"}</button>
-    <button className="t-btn" disabled={busy} onClick={back}>BACK TO WAR TABLE</button>
    </div>
+   <details className="t-counterstrike-more-intel"><summary>TACTICAL INTEL <span>RULES &amp; APPROACH</span></summary>
+    <div>
+     <p>{COUNTERSTRIKE_MISSION.directive?.copy} Failure leaves the site unsecured. You can retry.</p>
+     <p>Screen both eastern approaches or disrupt the patrol before moving a vulnerable teammate onto the relay. A quick patrol kill never skips the five control checkpoints.</p>
+     <p>{reconApplied?"RECON timing shifts HOUND reinforcement entries from rounds 3/5 to 4/6.":"HOUND reinforcements enter on rounds 3 and 5. RECON has no delay available for this run."} Accepted runs keep their deployment Intel conditions on resume.</p>
+    </div>
+   </details>
+   <button className="t-btn t-counterstrike-back" disabled={busy} onClick={back}>BACK TO WAR TABLE</button>
   </section>
  </div>;
 }

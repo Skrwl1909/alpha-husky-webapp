@@ -39,6 +39,13 @@ try{
  assert(await cinematic.locator(".t-false-relay-art").evaluate(img=>img.complete&&img.naturalWidth>0),"story key art loaded");
  await cinematic.getByRole("button",{name:"Skip False Relay introduction"}).click();
  assert.equal(await cinematic.locator('[data-story-intro="playing"]').count(),0);
+ const cinematicBrief=cinematic.getByRole("region",{name:"False Relay mission brief"});
+ assert.match(await cinematicBrief.innerText(),/CAPTURE & HOLD/,"compact brief leads with objective");
+ const tacticalIntel=cinematicBrief.locator("details.t-counterstrike-more-intel");
+ assert.equal(await tacticalIntel.evaluate(el=>el.open),false,"advanced tactical guidance defaults collapsed");
+ await tacticalIntel.locator("summary").click();
+ assert.match(await tacticalIntel.innerText(),/Adjacent HOUND units contest control/,"full server rules remain discoverable");
+ await tacticalIntel.locator("summary").click();
  await cinematic.getByRole("button",{name:"REPLAY TRANSMISSION"}).click();
  await cinematic.locator('[data-story-intro="playing"]').waitFor();
  await cinematic.getByRole("button",{name:"Skip False Relay introduction"}).click();
@@ -46,27 +53,30 @@ try{
  await cinematic.getByRole("button",{name:"VIEW FALSE RELAY BRIEF",exact:true}).click();
  assert.equal(await cinematic.locator('[data-story-intro="playing"]').count(),0,"repeat brief never forces intro");
  await cinematic.close();
- // Telegram Desktop can present the Mini App in a ~300x450 window. Exercise
- // a real scroll and click; dispatchEvent would hide the inaccessible CTA bug.
+ // Telegram Desktop can present the Mini App in a ~300x450 window. DEPLOY
+ // must be visible as the first decision without reading the optional Intel.
  await fetch(api+"/fixture/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({consumed:false})});
  const desktop=await browser.newPage({viewport:{width:294,height:450},reducedMotion:"reduce"});
  desktop.on("pageerror",e=>errors.push(e.message));
  await desktop.goto(api+"/counterstrike-fixture");
  await desktop.getByRole("button",{name:"VIEW FALSE RELAY BRIEF",exact:true}).click();
  const desktopBrief=desktop.getByRole("region",{name:"False Relay mission brief"});
- const desktopScroll=await desktopBrief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
- assert(desktopScroll.content>desktopScroll.client+100,"short desktop False Relay brief must be scrollable");
- await desktopBrief.hover({position:{x:Math.min(140,await desktopBrief.evaluate(el=>el.clientWidth-20)),y:Math.min(225,desktopScroll.client-20)}});
- await desktop.mouse.wheel(0,1600);
- await desktop.waitForFunction(()=>document.querySelector(".t-counterstrike-brief")?.scrollTop>100,null,{timeout:5000});
  const desktopDeploy=desktop.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true});
+ const desktopFirstCTA=await desktopDeploy.boundingBox();
+ assert(desktopFirstCTA&&desktopFirstCTA.y>=0&&desktopFirstCTA.y+desktopFirstCTA.height<=450,"DEPLOY immediately visible in compact Telegram Desktop briefing");
+ await desktop.screenshot({path:out+"/294-desktop-brief.png"});
+ const desktopScroll=await desktopBrief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
+ if(desktopScroll.content>desktopScroll.client+20){
+  await desktopBrief.hover({position:{x:Math.min(140,await desktopBrief.evaluate(el=>el.clientWidth-20)),y:Math.min(225,desktopScroll.client-20)}});
+  await desktop.mouse.wheel(0,1600);
+  await desktop.waitForFunction(()=>document.querySelector(".t-counterstrike-brief")?.scrollTop>0,null,{timeout:5000});
+ }
  await desktopDeploy.scrollIntoViewIfNeeded();
  const desktopCTA=await desktopDeploy.boundingBox();
  assert(desktopCTA&&desktopCTA.y>=0&&desktopCTA.y+desktopCTA.height<=450,"DEPLOY visible inside short desktop window");
- await desktop.screenshot({path:out+"/294-desktop-brief.png"});
  await desktopDeploy.click();
  await desktop.locator(".t-battle").waitFor();
- rows.push({width:294,height:450,desktop:true,scrollable:true,deployClick:true});
+ rows.push({width:294,height:450,desktop:true,firstViewportDeploy:true,scrollable:desktopScroll.content>desktopScroll.client,deployClick:true});
  await desktop.close();
  for(const width of [320,390,430]){
   const consumed=width===390;
@@ -83,7 +93,10 @@ try{
   // naturalWidth can precede async image decode/paint in narrow Chromium windows.
   await page.locator(".t-false-relay-brief-plate img").evaluate(async art=>{await art.decode();await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});
   const briefMetrics=await brief.evaluate(el=>({client:el.clientHeight,content:el.scrollHeight}));
-  assert(briefMetrics.content>briefMetrics.client,"mobile False Relay brief must be vertically scrollable");
+  const mobileDeploy=await page.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true}).boundingBox();
+  assert(briefMetrics.content>briefMetrics.client||(mobileDeploy&&mobileDeploy.y+mobileDeploy.height<= (width===320?568:844)),"mobile brief either fits or scrolls to DEPLOY");
+  const intelText=await page.getByRole("status",{name:"Counterstrike deployment intel"}).innerText();
+  assert.match(intelText,consumed?/RECON SPENT[\s\S]*R3 \/ R5/:/RECON READY[\s\S]*R4 \/ R6/);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:out+"/"+width+"-brief.png"});
   await page.getByRole("button",{name:"DEPLOY FALSE RELAY",exact:true}).click();

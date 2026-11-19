@@ -1,12 +1,12 @@
 # ALPHA HUSKY — COUNTERSTRIKE / TACTICAL STORY LITE V1
 
-Status: **PR #315 MERGED; activation/layout follow-up enables host default ON, pending its separate frontend release and device QA**.
+Status: **PR #315 Story Lite and PR #316 activation/layout MERGED. False Relay Briefing V2 is a Counterstrike-only UX follow-up.**
 
 ## Player journey
 
 1. The existing War Table / GHOST SIGNAL RECON 3/3 and Broken Signal server eligibility remain authoritative. No new unlocks.
 2. On the first eligible mission brief opened in this browser tab, show the 3.2-second key-art transmission (SKIP always available). Reduced-motion viewers go directly to the regular brief with a static art plate. A resumed accepted run never forces the intro.
-3. On completion or SKIP, the existing squad picker, Intel explanation and `DEPLOY FALSE RELAY` button remain untouched. Starting a battle still requires the existing authenticated backend acceptance.
+3. On completion or SKIP, show a compact decision briefing: one recovered-transmission sentence, the exact five-round-change hold goal, round-12 deadline, authoritative RECON/HOUND timing badges, the existing three-unit picker and `DEPLOY FALSE RELAY`. Detailed contest, reset, approach and retry rules remain available under a collapsed `TACTICAL INTEL` disclosure. Starting a battle still requires authenticated backend acceptance; no server values or squad authority are changed.
 4. During battle, a 1.15-second HOUND cue is shown **only for a newly observed server-authored radio string**: `HOUND reinforcement 1 entered. Relay approach under pressure.` or `HOUND reinforcement 2 entered. Relay approach under pressure.`. On reload, the already loaded radio transcript is used as baseline, so no historical arrival is re-announced.
 5. Results have an approximately two-second cosmetic art reveal, only for a `SERVER_COMMAND_WORKER`-verified False Relay result. Victory: `SIGNAL HELD` / `SOURCE UNKNOWN`. Defeat: `POSITION LOST`. The regular outcome, Intel accounting and next CTA remain intact.
 
@@ -33,7 +33,7 @@ window.__AH_TACTICAL_STORY_LITE_V1__ = true; // now the boot-loader default
 
 For an immediate host-side visual rollback, set `window.__AH_TACTICAL_STORY_LITE_V1__ = false` **before** opening Tactical Ops (or before the boot loader). Explicit `false` is respected. This switch is visual only; it has no authority to accept commands, modify Intel, finish runs or pay rewards.
 
-Counterstrike briefing and Results now use dedicated scrolling containers and Telegram chrome clearance. This addresses short Telegram Desktop windows and top/bottom mobile navigation overlays without changing other missions.
+Counterstrike briefing and Results now use dedicated scrolling containers and Telegram chrome clearance. Briefing V2 reduces repeated prose and presents the primary CTA before optional Intel and the secondary War Table action. On a 294×450 Telegram Desktop window, deployment should be visible without scrolling; details may still scroll. This does not affect other missions or Results.
 
 The private backend flag `TACTICAL_COUNTERSTRIKE_V1` is separate. The owner reported production installation and a first verified False Relay clear after explicitly waiving the unavailable VPS staging test gate. That waiver is not a staging GO and must not be described as such. Frontend deployment and real-device visual QA remain separate acceptance steps.
 
@@ -54,8 +54,8 @@ The final `git diff` parity check is meant **after committing the generated bund
 CHROMIUM_EXECUTABLE=/usr/bin/google-chrome node tools/verify_tactical_counterstrike_browser.mjs
 ```
 
-Complete device QA on 320/390/430 CSS px, including short 320×568 screens, Telegram WebView, Android Chrome and iPhone Safari. Verify SKIP/REPLAY, intro once per tab, resume without forced repeat, both HOUND arrival timings (3/5 vs 4/6), victory/defeat, refresh during accepted runs, no duplicate Pack Comms, and source unknown wording.
+Complete device QA on 294×450 Desktop and 320/390/430 CSS px, including short 320×568 screens, Telegram WebView, Android Chrome and iPhone Safari. Verify first-viewport DEPLOY, collapsed and expanded Tactical Intel, source-unknown wording, SKIP/REPLAY, intro once per tab, resume without forced repeat, both HOUND arrival timings (3/5 vs 4/6), victory/defeat, refresh during accepted runs and no duplicate Pack Comms.
 
 ## Release boundary
 
-This is one Counterstrike-only vertical slice, not a global Tactical Ops theme. Merge/release this activation follow-up through normal frontend CI, visually verify desktop and mobile before calling it accepted, and use the host-side `false` rollback for visual regressions. A longer cinematic remains optional Lore Archive material, not mandatory gameplay.
+This is one Counterstrike-only vertical slice, not a global Tactical Ops theme. Briefing V2 must pass frontend CI and real-device review; the existing Story Lite `false` switch is a **visual** rollback and does not revert the new briefing layout. A longer cinematic remains optional Lore Archive material, not mandatory gameplay.
