@@ -55,6 +55,11 @@ try {
   assert.match(css, /prefers-reduced-motion/);
   assert.match(css, /max-width: 360px/);
   assert.match(css, /max-height: 620px/);
+  assert.match(css, /\.t-counterstrike-page\s*\{[^}]*overflow-y:\s*auto/s, "False Relay brief must scroll in a short desktop window");
+  assert.match(css, /\.t-counterstrike-actions\s*\{/, "Deploy and Results CTAs have a responsive action group");
+  const loader = readFileSync("js/boot_loaders.js", "utf8");
+  assert.match(loader, /if \(global\.__AH_TACTICAL_STORY_LITE_V1__ === undefined\)\s*\{\s*global\.__AH_TACTICAL_STORY_LITE_V1__ = true;/,
+    "host defaults visual story ON but preserves explicit false");
   console.log("PASS COUNTERSTRIKE STORY LITE — flag, canon, authority, intro, resume, aftermath, art, motion");
 } finally {
   delete globalThis.window;

@@ -1,6 +1,6 @@
 # ALPHA HUSKY — COUNTERSTRIKE / TACTICAL STORY LITE V1
 
-Status: **IMPLEMENTED IN FRONTEND SOURCE — DEFAULT OFF / NOT DEPLOYED**.
+Status: **PR #315 MERGED; activation/layout follow-up enables host default ON, pending its separate frontend release and device QA**.
 
 ## Player journey
 
@@ -23,17 +23,19 @@ The source of the SIGNAL COURIER transmission, HOUND allegiance and Fracture cau
 - `tools/verify_tactical_counterstrike_story_lite.mjs` — static/SSR narrative and authority gates.
 - `tools/verify_tactical_counterstrike_browser.mjs` — extended optional visual E2E on 320/390/430, including disabled motion, first-play SKIP/REPLAY, two server HOUND waves and recorded victory.
 
-## Activation (after gameplay staging has passed)
+## Activation and rollback
 
-The frontend **does not turn on by itself**. Set this boolean on the hosting page **before** `js/tactical_ops.js` loads:
+The Counterstrike Story Lite activation follow-up sets this boolean in `js/boot_loaders.js` **before** `js/tactical_ops.js` loads, when the host has not provided an explicit choice:
 
 ```js
-window.__AH_TACTICAL_STORY_LITE_V1__ = true;
+window.__AH_TACTICAL_STORY_LITE_V1__ = true; // now the boot-loader default
 ```
 
-If unset/false, Counterstrike renders exactly its existing brief, radio transcript and Results screen. This opt-in is visual only; it has no authority to accept commands, modify Intel, finish runs or pay rewards.
+For an immediate host-side visual rollback, set `window.__AH_TACTICAL_STORY_LITE_V1__ = false` **before** opening Tactical Ops (or before the boot loader). Explicit `false` is respected. This switch is visual only; it has no authority to accept commands, modify Intel, finish runs or pay rewards.
 
-The approved private backend gate `TACTICAL_COUNTERSTRIKE_V1` is separate and must be completed first. **Do not enable Story Lite to work around missing `STAGING_RESULTS.json`, 23/23 test evidence, release hash parity or a production HOLD.**
+Counterstrike briefing and Results now use dedicated scrolling containers and Telegram chrome clearance. This addresses short Telegram Desktop windows and top/bottom mobile navigation overlays without changing other missions.
+
+The private backend flag `TACTICAL_COUNTERSTRIKE_V1` is separate. The owner reported production installation and a first verified False Relay clear after explicitly waiving the unavailable VPS staging test gate. That waiver is not a staging GO and must not be described as such. Frontend deployment and real-device visual QA remain separate acceptance steps.
 
 ## Verification commands
 
@@ -56,4 +58,4 @@ Complete device QA on 320/390/430 CSS px, including short 320×568 screens, Tele
 
 ## Release boundary
 
-This is one Counterstrike-only vertical slice, not a global Tactical Ops theme. Keep production off until the separate backend staging gate is GO, current-head CI is green and mobile visual QA passes. A longer cinematic remains optional Lore Archive material, not mandatory gameplay.
+This is one Counterstrike-only vertical slice, not a global Tactical Ops theme. Merge/release this activation follow-up through normal frontend CI, visually verify desktop and mobile before calling it accepted, and use the host-side `false` rollback for visual regressions. A longer cinematic remains optional Lore Archive material, not mandatory gameplay.
