@@ -7,7 +7,7 @@ import type { FieldResult, LockdownPlan } from '../data/fieldOps';
 import { missionRewardTruth, nextFieldMission } from './missionPurpose';
 import { parseVeteranOpportunity } from '../data/progressionOpportunity';
 
-export type PurposeAction = { missionId: string; title: string; reason: string; tier: 'standard' | 'advanced'; resume: boolean; chapter?: boolean; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: LockdownPlan; masteryChallenge?: 'relay-lockdown-v1' };
+export type PurposeAction = { missionId: string; title: string; reason: string; tier: 'standard' | 'advanced'; resume: boolean; practice?: boolean; chapter?: boolean; veteranChallenge?: "pack-extraction-v1"; lockdownPlan?: LockdownPlan; masteryChallenge?: 'relay-lockdown-v1' };
 export function nextFieldContract(field?: FieldOpsProgression) {
   if (!field?.fieldContracts?.enabled || !field.board || field.board.nextRotationAt * 1000 <= Date.now()) return null;
   if (field.board.reportVersion !== 3) return null;
@@ -92,7 +92,7 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       const lockdown = { ...action('field-relay-hold', recorded ? 'RELAY LOCKDOWN · COMPLETED' : 'RELAY MASTERY · 1/1', f.lockdownPlansAvailable ? 'Choose Anchor to defend one tile with slower support, or Crosslink to rotate north, east, then south with normal support. Optional practice; no currency or progression rewards.' : recorded
         ? 'Your first recorded Relay Lockdown clear is saved permanently. Try another holder or squad for optional practice; no further unlock or reward is promised.'
         : canRecord ? 'Relay Mastery recorded. Win Relay Lockdown to save its first completion: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.'
-        : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge };
+        : 'Relay Mastery recorded. Relay Lockdown is available for optional practice: hold the exact relay tile while nearby enemies contest it, with a deadline and slower support. No currency or progression rewards.', 'advanced'), masteryChallenge: f.masteryPath.unlockedChallenge, practice: recorded || !canRecord };
       // An already recorded, reward-free challenge must not displace eligible rotation progress.
       // Preserve the finished challenge as a legal optional route when no accepted run exists.
       if (recorded) candidates.push(lockdown);
@@ -122,9 +122,9 @@ export function commandPurpose(p: FoundationProgressionState | null | undefined)
       if (!primary) {
         const next = nextFieldMission(f);
         const known = b.activeMissionIds.every(id => !!f.records[id]);
-        if (next.missionId) primary = action(next.missionId, known ? 'PRACTICE WITH YOUR SQUAD' : 'REVIEW FIELD CONDITIONS', known
+        if (next.missionId) primary = { ...action(next.missionId, known ? 'PRACTICE WITH YOUR SQUAD' : 'REVIEW FIELD CONDITIONS', known
           ? `Current clear and challenge goals are recorded${f.commander?.unlockedDirectiveTiers?.includes('advanced') ? ', including Advanced' : ''}. Try another squad or route for practice; no new rotation bonus or rank is promised.`
-          : 'Progression eligibility is unavailable. Refresh the War Table or review this mission for practice; no new progress is promised.');
+          : 'Progression eligibility is unavailable. Refresh the War Table or review this mission for practice; no new progress is promised.'), practice: true };
       }
     }
   }

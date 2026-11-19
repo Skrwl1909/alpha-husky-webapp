@@ -1,4 +1,6 @@
 import type { BattleEvent, BattleState, CombatUnit } from "../combat/types";
+import { chebyshev } from "../combat/movement";
+import { getSkill } from "../data/skills";
 import type { MissionDef } from "../data/operations";
 import { canonicalGrowthSkillId, WIDE_LUNGE } from "../data/playerGrowth";
 
@@ -37,6 +39,12 @@ export function recordS3Skill(
   let buildMoment: string | undefined;
   if (actor.defId === "alpha" && canonical === "alpha-strike" && rank > 0) {
     buildMoment = events.find(event => event.type === "info" && event.buildEvidence?.includes("beyond the unranked range"))?.buildEvidence;
+    // Earlier pinned workers provide damage frames without the newer evidence annotation.
+    const target = before.units.find(unit => unit.id === targetId && unit.team === "enemy");
+    if (!buildMoment && target && chebyshev(actor, target) > getSkill("alpha-strike").maxRange &&
+        events.some(event => event.type === "damage" && event.unitId === target.id && (event.amount ?? 0) > 0)) {
+      buildMoment = `STRIKE R${rank} hit ${target.name} from ${chebyshev(actor, target)} tiles away. R0 requires adjacency.`;
+    }
   } else if (actor.defId === "ally-02" && canonical === "u02-suppress" && interrupted) {
     buildMoment = "CNC PRESSURE canceled a locked enemy intent.";
   } else if (actor.defId === "ally-02" && canonical === "u02-burst" && actor.growth?.lungeDoctrine === WIDE_LUNGE) {

@@ -279,7 +279,13 @@ function WarTable() {
   const nextContract = nextFieldContract(field);
   const purposeRoute = commandPurpose(progression);
   const primaryPurpose = purposeRoute.primary;
-  const nextUpgrade = primaryPurpose?.resume ? null : availableAtlasUpgrade(progression);
+  const practiceOnly = !primaryPurpose || primaryPurpose.practice;
+  const counter = progression?.counterstrike;
+  const counterTarget = counter?.activeRunId || (!primaryPurpose?.resume && counter?.available && !counter.blocked && !counter.firstClear);
+  const trialLevel = trials?.enabled ? trials.activeRun?.level ?? (practiceOnly && trials.highestCleared < 6 ? trials.highestCleared + 1 : null) : null;
+  const chapterTarget = practiceOnly && progression?.tacticalChapter?.status === "AVAILABLE";
+  const nextUpgrade = practiceOnly ? availableAtlasUpgrade(progression) : null;
+  const carrierPractice = practiceOnly && field?.carrierJamAvailable && progression?.vnextStartAvailable;
   const veteranView = veteranOpportunityView(field);
   const openPurpose = openPurposeBrief;
   const campaignCareer = tacticalCareerTruth(progression);
@@ -396,9 +402,17 @@ function WarTable() {
           ))}
         </nav>
         {deckTab === "command" ? <div className="t-command-pane t-cdv2-overview" aria-label="Command overview">
-        <CounterstrikeCard />
-        {progression?.lastHowl?.status === "ACTIVE" ? <LastHowlCard /> : null}
-        {nextUpgrade ? <section className="t-panel t-command-order t-cdv2-build-card" aria-label="Next target">
+        {progression?.lastHowl?.status === "ACTIVE" ? <LastHowlCard /> :
+         counter?.activeRunId ? <CounterstrikeCard /> :
+         trialLevel !== null && (trials?.activeRun || !counterTarget) ? <section className="t-panel t-command-order" aria-label="Next target">
+           <span className="t-kicker">NEXT TARGET</span><h2>Signal Trial {trialLevel}</h2>
+           <p>{trials?.activeRun ? "Continue the accepted relay defense." : "Clear the next level of relay pressure."}</p>
+           <button className="t-btn t-btn-primary" disabled={loading} onClick={() => openTrialBrief(trialLevel)}>{trials?.activeRun ? "RESUME TRIAL" : "VIEW TRIAL"}</button>
+         </section> : counterTarget ? <CounterstrikeCard /> : chapterTarget ? <section className="t-panel t-command-order" aria-label="Next target">
+           <span className="t-kicker">NEXT TARGET</span><h2>Ghost Signal</h2>
+           <p>Review the RECON doctrine to begin its campaign chapter.</p>
+           <button className="t-btn t-btn-primary" disabled={loading} onClick={() => setDeckTab("missions")}>REVIEW DOCTRINE</button>
+         </section> : nextUpgrade ? <section className="t-panel t-command-order t-cdv2-build-card" aria-label="Next target">
           <div className="t-cdv2-build-icon" aria-hidden="true"><img src={tacticalActionImageForSkill(nextUpgrade.skillId) || ""} alt="" decoding="async" onError={e=>{e.currentTarget.hidden=true;}} /></div>
           <div className="t-cdv2-build-copy">
             <div className="t-kicker">NEXT BUILD DECISION · SIGNAL ATLAS</div>
@@ -412,6 +426,10 @@ function WarTable() {
             setDeckTab("squad");
           }}>INSPECT UPGRADE <ChevronRight className="t-ico" /></button>
           <p className="t-cdv2-build-advice">Review the effect before spending a point. Recorded upgrades apply to your next accepted deployment.</p>
+        </section> : carrierPractice ? <section className="t-panel t-command-order" aria-label="Next target">
+          <span className="t-kicker">NEXT TARGET</span><h2>Carrier Jam</h2>
+          <p>Extract in formation or eliminate the carrier. Recorded practice earns no progression credit.</p>
+          <button className="t-btn t-btn-primary" disabled={loading} onClick={() => openOperationBrief("field-relay-recovery", undefined, undefined, true)}>VIEW PRACTICE BRIEF</button>
         </section> : recommendedMission && primaryPurpose ? (() => {
           const visual = missionPresentation(recommendedMission);
           const contract = !primaryPurpose.resume && primaryPurpose.title === nextContract?.title ? nextContract : null;
@@ -444,6 +462,7 @@ function WarTable() {
             </div>
           </section>;
         })() : <p role="status">Refresh to see available operations.</p>}
+        {!counterTarget || progression?.lastHowl?.status === "ACTIVE" ? <CounterstrikeCard /> : null}
         {progression?.lastHowl?.status !== "ACTIVE" ? <LastHowlCard /> : null}
         <section className="t-command-progress t-cdv2-command-status" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
           <div className="t-cdv2-commander-seal" aria-hidden="true">{commanderRank || "—"}</div>
@@ -483,7 +502,7 @@ function WarTable() {
             </div>
           </div>
         </section>
-        {trials?.enabled ? <section className="t-panel t-field-contract" aria-label="Signal Trials" data-signal-trials="true">
+        {trials?.enabled && trialLevel === null ? <section className="t-panel t-field-contract" aria-label="Signal Trials" data-signal-trials="true">
           <div className="t-kicker">SIGNAL TRIALS · RELAY PRESSURE</div>
           <h2 className="t-title">{trials.highestCleared}/6 LEVELS CLEARED</h2>
           <p>Hold the relay under pressure. Contest → Flank → Reposition. Each level changes the tactical decision; no extra currency or rewards.</p>
@@ -792,7 +811,7 @@ function Brief() {
   const baseMission = selectedTrialLevel!==null ? relayPressureMission(selectedTrialLevel,signalTrialRevision(selectedTrialLevel,progression?.signalTrials)) : getMissionDef(selectedMissionId);
   const campaignMission = baseMission?.operationId === DEAD_RELAY.operationId;
   const trialRun = selectedTrialLevel!==null ? progression?.signalTrials?.activeRun : null;
-  const savedRun = selectedTrialLevel!==null ? null : chapterMode ? chapterActive : campaignMission ? campaignRun : field?.activeMissionRun;
+  const savedRun = selectedTrialLevel!==null ? null : chapterMode ? chapterActive : campaignMission ? campaignRun : baseMission?.operationId === BROKEN_SIGNAL.operationId ? progression?.operations?.[BROKEN_SIGNAL.operationId]?.activeMissionRun : field?.activeMissionRun;
   const briefPane = useRef<HTMLDivElement>(null);
   useEffect(()=>{if(selectedMissionId==="field-relay-intercept" && savedRun?.runId){setBriefTab("mission");briefPane.current?.scrollTo({top:0});}},[selectedMissionId,savedRun?.runId]);
   const resuming = selectedTrialLevel!==null ? trialRun?.level===selectedTrialLevel : savedRun?.missionId === selectedMissionId && savedRun.squadIds.join(",") === selectedSquadIds.join(",") && (savedRun.fieldContext?.approach || "standard") === selectedApproach && (savedRun.fieldContext?.directiveTier || "standard") === selectedDirectiveTier;
@@ -836,6 +855,9 @@ function Brief() {
   const allies = alliedBriefDefs(spawns).map(def => applyIdentityToAlpha(def, identity));
   // Render the exact server-accepted roster and skills, including any immutable run snapshot.
   const previewGrowth = resuming ? acceptedBuild?.playerGrowth : playerGrowth;
+  const strikeRun = trialRun?.level === selectedTrialLevel ? trialRun : savedRun?.missionId === selectedMissionId ? savedRun : null;
+  const alphaBuild = growthHero(strikeRun ? strikeRun.playerGrowth : playerGrowth, "alpha");
+  const strike = resolveGrowthSkill(getSkill("alpha-strike"), alphaBuild);
   const frozenPet = resuming ? acceptedBuild?.combatProfileV2?.pet : null;
   const loadoutSpawns = briefTab === "loadout" && mission
     ? missionSpawnsForSquad(mission, selectedSquadIds, frozenPet || equippedPet, selectedApproach)
@@ -949,6 +971,8 @@ function Brief() {
             {fieldOp && !chapterMode && !selectedVeteranChallenge && !selectedCarrierJam && mission?.missionId === "field-relay-recovery" &&
               field?.carrierJamAvailable && progression?.vnextStartAvailable && !savedRun ?
               <button type="button" className="t-btn" disabled={busy} onClick={() => useBattleStore.getState().openOperationBrief(mission.missionId, undefined, undefined, true)}>Try Carrier Jam</button> : null}
+            {mission && alphaBuild && allies.some(ally => ally.defId === "alpha" && ally.skillIds.includes("alpha-strike")) ?
+              <p className="t-brief-purpose-meta" data-strike-preview>{strikeRun ? "Accepted build" : "Current build"} · STRIKE R{alphaBuild.ranks["alpha-strike"] ?? 0} · {strike.maxRange === 1 ? "Attack an adjacent enemy." : `Attack from up to ${strike.maxRange} tiles away. R0 requires adjacency.`}</p> : null}
             {selectedCarrierJam ? <p className="t-brief-purpose-meta">{mission?.squadHint} Recorded practice · no rewards.</p> : null}
             {quickRecover ? <p className="t-brief-purpose-meta">Get within range (normally 1 tile). {mission?.directive?.recoverEveryRounds ? `Signal opens every ${mission.directive.recoverEveryRounds} rounds. ` : ""}Recover before acting.</p> : null}
             {selectedTrialLevel!==null ? <p className="t-brief-purpose-meta"><b>TACTICAL HINT:</b> {mission?.squadHint} {trialRun?"This accepted run restarts at round 1 with the frozen squad.":""}</p> : null}
@@ -1434,8 +1458,8 @@ function Results() {
         <MasteryFeedback changes={recordedFieldResult.masteryChanges} victory={recordedFieldResult.victory} />
         {progression?.playerGrowth && results.victory && progression.playerGrowth.earnedPoints > progression.playerGrowth.spentPoints ? <p>{progression.playerGrowth.earnedPoints - progression.playerGrowth.spentPoints} SKILL POINTS AVAILABLE · Total unspent balance, not points earned this run. Open the War Table Skillbook to spend them.</p> : null}
       </details> : null}
+      {buildProof}
       <details className="t-detail"><summary>Combat report · this device</summary>
-        {buildProof}
         <PlayerIdentityCard />
         <dl className="t-stats"><div><dt>Turns</dt><dd>{results.turns}</dd></div><div><dt>Eliminated</dt><dd>{results.hostilesEliminated}</dd></div><div><dt>Squad standing</dt><dd>{results.squadStanding} / {results.squadDeployed}</dd></div><div><dt>Damage taken</dt><dd>{results.damageTaken}</dd></div></dl>
         <p>Challenge objective: {mission.challenge?.label || "No optional challenge"}</p>
