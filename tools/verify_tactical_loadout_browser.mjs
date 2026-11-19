@@ -82,6 +82,31 @@ try {
     await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/loadout-test`);
     const tabs = page.getByLabel('Mission preparation sections');
     const openLoadout = () => tabs.getByRole('button', { name: /LOADOUT/ }).tap();
+    await page.evaluate(() => fixture.store.setState(s => ({screen:'war-table', progression:{...s.progression,
+      playerGrowth:{version:1,revision:10,earnedPoints:2,spentPoints:0,heroes:['alpha','ally-02','ally-03'].map(heroId=>({heroId,discipline:null,ranks:{}}))}}})));
+    const target = page.getByRole('region', { name: 'Recommended next operation' });
+    assert.equal(await target.locator('button').count(), 1);
+    assert.equal(await page.getByRole('button', {name:'INSPECT UPGRADE'}).count(), 0);
+    await target.locator('button').tap();
+    const preview = page.locator('[data-strike-preview]');
+    assert.match(await preview.innerText(), /STRIKE R0.*adjacent/);
+    assert(await preview.evaluate(el => el.getBoundingClientRect().right <= innerWidth));
+    for (const rank of [1,2]) {
+      await page.evaluate(rank => fixture.store.setState(s => ({progression:{...s.progression, playerGrowth:{
+        ...s.progression.playerGrowth, heroes:s.progression.playerGrowth.heroes.map(hero=>hero.heroId==='alpha'
+          ? {...hero,discipline:'vanguard',ranks:{'alpha-strike':rank}} : hero)}}})),rank);
+      assert.match(await preview.innerText(), new RegExp('STRIKE R'+rank+'.*'+(rank+1)+' tiles'));
+    }
+    await page.evaluate(() => fixture.store.setState(s => {
+      const op = s.progression.operations['dead-relay'];
+      const run = {missionId:s.selectedMissionId,runId:'accepted-before-upgrade',squadIds:s.selectedSquadIds,
+        playerGrowth:{version:1,revision:7,heroes:[{heroId:'alpha',discipline:'vanguard',ranks:{'alpha-strike':1}}]}};
+      return {progression:{...s.progression,operations:{...s.progression.operations,'dead-relay':{...op,activeMissionRun:run}}}};
+    }));
+    assert.match(await preview.innerText(), /Accepted build.*STRIKE R1.*2 tiles/);
+    await page.evaluate(() => fixture.store.setState(s => ({progression:{...s.progression,playerGrowth:undefined,
+      operations:{...s.progression.operations,'dead-relay':{...s.progression.operations['dead-relay'],activeMissionRun:null}}}})));
+    await page.evaluate(() => fixture.store.setState({selectedSquadIds:['alpha','ally-02','pet:qa-pet']}));
     await openLoadout();
 
     const panel = page.getByLabel('Deployed squad and abilities');

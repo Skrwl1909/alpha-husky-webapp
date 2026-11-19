@@ -13,8 +13,8 @@ const entry=`
 const params=new URLSearchParams(location.search),version=Number(params.get('growth')||1);
 let canonical={version:1,foundationStage:'completed',completed:true,revision:10,activeRunId:null,
  lastCompletedRunId:'synthetic-foundation',updatedAt:1800000000,
- operations:{'broken-signal':{status:'active',missions:{'broken-signal-breach':'available',
- 'broken-signal-recover':'locked','broken-signal-commander':'locked'},activeMissionRun:null,lastCompletedMissionRunId:null}},
+ operations:{'broken-signal':{status:'cleared',missions:{'broken-signal-breach':'cleared',
+ 'broken-signal-recover':'cleared','broken-signal-commander':'cleared'},activeMissionRun:null,lastCompletedMissionRunId:null}},
  playerGrowth:{version,earnedPoints:6,spentPoints:0,claimedFirstClears:['broken-signal-breach','broken-signal-recover',
  'broken-signal-commander','dead-relay-courier','dead-relay-hold','dead-relay-guardian'],
  heroes:['alpha','ally-02','ally-03'].map(heroId=>({heroId,discipline:null,ranks:{},respecUsed:false}))},
