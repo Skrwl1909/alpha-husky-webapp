@@ -10,6 +10,8 @@ import { recordedImpact } from "./afterActionImpact";
 import { CommanderPortrait } from "./PlayerIdentity";
 import { tacticalActionImageForSkill } from "./tacticalActionIcons";
 import { getHost, type ForgeUpgrade } from "../host/bridge";
+import { TacticalLootReveal, TacticalHonorsCollection } from "./TacticalLootHonors";
+import { parseLootHonors } from "../data/lootHonors";
 
 function LegacyRewardReveal({milestone}:{milestone:FieldLegacyMilestone|null}) {
   if (!milestone || milestone.status==="UNAVAILABLE") return null;
@@ -90,6 +92,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
   reachRendNext?: string;
   actions: ReactNode; children: ReactNode;
 }) {
+  const enhanced = parseLootHonors(receipt?.lootAndHonors,receipt?.runId??null,receipt?.missionId??null,receipt?.victory===true);
   const award = receipt?.victory ? receipt.contractAward : undefined;
   const reachReward = award?.reward === "reach-rend";
   const rewardIcon = reachReward ? tacticalActionImageForSkill("alpha-reach-rend") : null;
@@ -146,7 +149,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         <p>{receipt ? "Receipt-confirmed progress below." : pending ? "Waiting for confirmation. Earnings are not confirmed yet." : "Earnings are not confirmed. Retry saving this result."}</p></div>
     </div>
     {state === "failed" ? <p className="t-fr-error" role="alert">{error}</p> : null}
-    {receipt ? <section className="t-fr-consequence" aria-label="Character payout">
+    {receipt && enhanced.state !== "confirmed" ? <section className="t-fr-consequence" aria-label="Character payout">
       <span className="t-kicker">{payout ? "CONFIRMED PAYOUT" : tacticalOnly ? "TACTICAL RESULT" : "CHARACTER PAYOUT"}</span>
       {payout ? <div className="t-fr-payout-grid" aria-label="Receipt-confirmed rewards">
         <div className="t-fr-reward-unit" data-reward="exp">
@@ -161,7 +164,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         : <p>{tacticalOnly
           ? "No EXP or Bones awarded for this result." : "Character payout amounts are unavailable."}</p>}
     </section> : null}
-    {receipt?.firstUpgradeScrapGranted === 8 ? <section className="t-fr-consequence" aria-label="Confirmed First Upgrade Supply">
+    {enhanced.state === "confirmed" ? <TacticalLootReveal result={enhanced}/> : null}
+    {enhanced.state === "replayed" ? <TacticalLootReveal result={enhanced}/> : null}
+    {enhanced.state !== "confirmed" && receipt?.firstUpgradeScrapGranted === 8 ? <section className="t-fr-consequence" aria-label="Confirmed First Upgrade Supply">
       <span className="t-kicker">FIRST UPGRADE SUPPLY</span>
       <strong>+8 SCRAP</strong>
       <p>Rustfang Fangs · ★2 in Forge.</p>
@@ -219,6 +224,8 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         {receipt.masteryChanges?.map(change => <p className="t-fr-delta" key={change.unitId}><strong>{masteryDef(change.unitId)?.name || change.unitId}</strong> {change.gained > 0 ? `+${change.gained} Mastery earned` : "No new Mastery earned"} · Foundation {change.progress}/8{change.beforeStage !== change.stage ? ` · Stage ${change.beforeStage} → ${change.stage}` : ""}{change.veteran && (change.veteran.unlocked || change.veteran.after > change.veteran.before) ? ` · Veteran ${change.veteran.before} → ${change.veteran.after}/12 · ${change.veteran.unlocked ? "New option unlocked" : veteranReceiptReason(change.veteran.reason)}` : ""}</p>)}
       </section>
     </details> : null}
+    <TacticalHonorsCollection />
+    <TacticalHonorsCollection />
     <div className="t-fr-details">{children}</div>
   </div>;
 }
@@ -236,6 +243,7 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, mi
   kind: "lockdown" | "extraction"; nextObjective?: string; actions: ReactNode; children: ReactNode;
 }) {
   const state = receipt ? "confirmed" : pending ? "pending" : error ? "failed" : "unrecorded";
+  const enhanced = parseLootHonors(receipt?.lootAndHonors,receipt?.runId??null,receipt?.missionId??null,receipt?.victory===true);
   const lockdown = kind === "lockdown";
   const savedLockdownCompletion = lockdown && Boolean(receipt?.firstLockdownClear);
   const newLockdownMilestone = savedLockdownCompletion && receipt?.lockdownFirstClear === true;
@@ -266,6 +274,7 @@ export function SpecialFieldOpResults({ victory, missionName, plate, receipt, mi
           "Optional Veteran practice accepted. No currency, Commander, Veteran or Pack Mastery progress."}</p>
       </section>
       {receipt.victory ? <LegacyRewardReveal milestone={milestone} /> : null}
+      <TacticalLootReveal result={enhanced}/>
       <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{nextObjective ? <p>{nextObjective}</p> : null}</div>
     </> : null}
     <div className="t-brief-actions t-result-actions">{actions}</div>
