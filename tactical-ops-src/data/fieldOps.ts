@@ -79,6 +79,8 @@ export interface FieldResult {
   runId: string;
   missionId: string;
   victory: boolean;
+  /** Optional future backend confirmation; never produced by the client. */
+  lootAndHonors?: unknown;
   cycleId: number;
   challengeSuccess: boolean;
   challengeBonus: number;
