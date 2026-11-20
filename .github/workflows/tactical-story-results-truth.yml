@@ -1,0 +1,43 @@
+name: Tactical Story Results · Server Truth + Mobile QA
+on:
+  pull_request:
+    paths:
+      - "tactical-ops-src/**"
+      - "tools/verify_tactical_story_results_*.mjs"
+      - ".github/workflows/tactical-story-results-truth.yml"
+      - "js/tactical_ops.js"
+permissions:
+  contents: read
+jobs:
+  story-results:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund --package-lock=false
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Real store and host-parser save contract
+        run: node tools/verify_tactical_story_results_transactions.mjs
+      - name: Existing return decision and results regressions
+        run: |
+          node tools/verify_tactical_purpose_return.mjs
+          node tools/verify_tactical_s3_after_action.mjs
+          node tools/verify_tactical_ops_failure_recording.mjs
+      - name: Compile canonical production runtime
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+      - name: Premium mobile Results acceptance
+        run: node tools/verify_tactical_story_results_visual.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: story-results-mobile
+          path: artifacts/story-results/
+          if-no-files-found: ignore

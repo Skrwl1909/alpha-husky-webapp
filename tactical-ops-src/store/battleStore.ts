@@ -118,6 +118,8 @@ interface UiBattle {
   foundationCompleted: boolean;
   selectedMissionId: string | null;
   missionFirstClear: boolean | null;
+  /** Run-specific server proof; never use battle victory as a saved reward receipt. */
+  storySave: { runId: string; missionId: string; firstClear: boolean } | null;
   selectedSquadIds: string[];
   selectedApproach: DeploymentApproach;
   selectedDirectiveTier: DirectiveTier;
@@ -822,6 +824,7 @@ export const useBattleStore = create<Store>((set, get) => {
     foundationCompleted: false,
     selectedMissionId: null,
     missionFirstClear: null,
+    storySave: null,
     selectedSquadIds: [],
     selectedApproach: "standard",
     selectedDirectiveTier: "standard",
@@ -1195,6 +1198,11 @@ export const useBattleStore = create<Store>((set, get) => {
     backToHub: () => {
       const current = get();
       if (current.progressionCommitPending) return;
+      if (current.screen === "results" && current.battle.outcome === "victory" &&
+          getMissionDef(current.selectedMissionId)?.operationId === "broken-signal" && current.foundationCompleted &&
+          (current.storySave?.runId !== current.currentRunKey || current.storySave?.missionId !== current.selectedMissionId)) {
+        current.continueOnboarding(); return;
+      }
       if(current.screen==="results"&&current.selectedTrialLevel != null&&!current.trialResult){void current.saveTrialResult();return;}
       if(current.screen==="results"&&current.chapterMode&&!current.chapterResult){void current.saveChapterResult();return;}
       if (!current.chapterMode && current.screen === "results" && getMissionDef(current.selectedMissionId)?.activity === "FIELD_OP" && !current.fieldResult) { void current.saveFieldResult(); return; }
@@ -1612,6 +1620,10 @@ export const useBattleStore = create<Store>((set, get) => {
     replay: () => {
       const current = get();
       if (current.progressionCommitPending) return;
+      if (current.screen === "results" && current.foundationCompleted &&
+          getMissionDef(current.selectedMissionId)?.operationId === "broken-signal") {
+        current.continueOnboarding(true); return;
+      }
       if(current.selectedTrialLevel != null){
         if(current.screen==="results"&&!current.trialResult){void current.saveTrialResult();return;}
         const level=current.selectedTrialLevel;
@@ -1663,41 +1675,50 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       if (s.battle.outcome !== "victory") return;
       if (s.foundationCompleted && s.selectedMissionId) {
-        if (s.progressionCommitPending || !s.currentRunKey || !s.progression) return;
+        if (!s.currentRunKey || !s.progression || s.progressionCommitPending) return;
+        const runId = s.currentRunKey;
+        const missionId = s.selectedMissionId;
+        // The first tap commits the result. Only a server-confirmed second tap navigates.
+        if (s.storySave?.runId === runId && s.storySave.missionId === missionId) {
+          get().backToHub();
+          if (replayAfter) get().openOperationBrief(missionId);
+          return;
+        }
         const requestId = s.continueRequestId || createFoundationRequestId("mission-continue");
         set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
         void (async () => {
+          const accepted = (state: FoundationProgressionState) =>
+            state.operations?.["broken-signal"]?.lastCompletedMissionRunId === runId &&
+            state.operations["broken-signal"].missions[missionId] === "cleared";
           try {
             const committed = await continueOperationMission(
               requestId,
-              s.progression.revision,
-              s.currentRunKey as string,
-              s.selectedMissionId === "broken-signal-breach" && s.battle.routingTraceAcquired,
+              s.progression!.revision,
+              runId,
+              missionId === "broken-signal-breach" && s.battle.routingTraceAcquired,
               undefined, undefined, s.activeRulesetVersion || undefined,
             );
+            if (get().currentRunKey !== runId) return;
             applyCanonicalProgression(committed.state);
-            runGen++;
+            if (!accepted(committed.state)) {
+              set({ progressionCommitPending: false, progressionError: "Save not confirmed. Try again." });
+              return;
+            }
             sfx("ui");
-            set({
-              screen: "war-table",
-              battle: emptyBattle(),
-              banner: null,
-              ticker: null,
-              busy: false,
-              floats: [],
-              queue: [],
-              currentRunKey: null,
-              continueRequestId: null,
-              missionFirstClear: getMissionDef(s.selectedMissionId)?.activity === "FIELD_OP" ? null : committed.firstClear,
-              selectedMissionId: null,
-              selectedSquadIds: [],
-            });
-            if (replayAfter === true && s.selectedMissionId) get().openOperationBrief(s.selectedMissionId);
+            set({ storySave: { runId, missionId, firstClear: committed.firstClear },
+              missionFirstClear: committed.firstClear, progressionCommitPending: false, progressionError: null });
           } catch (error) {
-            const reason = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
+            if (get().currentRunKey !== runId) return;
             const canonical = error instanceof FoundationProgressionError ? error.state : null;
-            if (canonical) applyCanonicalProgression(canonical);
-            set({ progressionCommitPending: false, progressionError: reason });
+            if (canonical) {
+              applyCanonicalProgression(canonical);
+              if (accepted(canonical)) {
+                set({ storySave: { runId, missionId, firstClear: false },
+                  progressionCommitPending: false, progressionError: null });
+                return;
+              }
+            }
+            set({ progressionCommitPending: false, progressionError: "Save failed. Try again." });
           }
         })();
         return;

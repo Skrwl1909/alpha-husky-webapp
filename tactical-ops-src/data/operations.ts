@@ -157,7 +157,7 @@ export const MISSION_DEFS: Record<string, MissionDef> = {
     objectiveType: "BOSS",
     squadCap: 3,
     briefCopy: "Break the commander signal. Control the HOUND pressure or find an opening to defeat the BRUTE LEADER.",
-    resultsCopy: "Continue to save: OPERATION 01 — BROKEN SIGNAL CLEARED · ARCHIVE ENTRY RECORDED · NEXT OPERATION SLOT OPENED. No Operation assigned.",
+    resultsCopy: "SIGNAL COMMANDER DOWN.",
     executable: true,
     spawns: BROKEN_SIGNAL_COMMANDER_SPAWNS,
   },

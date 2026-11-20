@@ -390,15 +390,32 @@ const carrierJamBlobs = Object.freeze({
  'tools/verify_tactical_carrier_jam.mjs': '1767b7df821fd568332f6d50f18f7c6da062a150',
  'tools/verify_tactical_player_voice_v1.mjs': '5615d349d2f8a5cc2b620122ff93cce88e7549da',
 });
+// Operation 01 Results Truth: exact reviewed Git blob identities, never a wildcard.
+const reviewedStoryResultsBlobs = Object.freeze({
+  ".github/workflows/tactical-story-results-truth.yml": "c850d5c06065664bce9ba5f7b37b930f1fb80d72",
+  "js/boot_loaders.js": "3cc58834930cb4998c140c677463d35cc64ddf7c",
+  "js/tactical_ops.js": "a99392d4878d3f795272f327bc0b3c674df1df1a",
+  "package.json": "6867a505997a3a4065c65c3aafe5b261a97f6893",
+  "tactical-ops-src/data/operations.ts": "f4246ad23fa9bc359463159145d8f885dfddaa68",
+  "tactical-ops-src/store/battleStore.ts": "cfeed36c2a6b35673d55d80d6f5fbc695ea16a39",
+  "tactical-ops-src/styles.ts": "bc5098a49a42e4437b682028e1f337950a9520e9",
+  "tactical-ops-src/ui/App.tsx": "1cfb86a086213cfcab0153e3297f6c4c8c732111",
+  "tactical-ops-src/ui/storyResult.css": "f81c001e6916a61df6ca972016a7c3e489a135a5",
+  "tactical-ops-src/ui/storyResultTruth.ts": "e125b2c2c0f837de30d92ec5aa7997c90c5339ad",
+  "tactical-ops-src/ui/StoryResultView.tsx": "9f1ddf6216fec944427bc99d72c69e272ef4dbe8",
+  "tactical-ops-src/version.ts": "d52c079a91c7da7ebc3b051ecfb1e1471ac4dc94",
+  "tools/verify_tactical_story_results_transactions.mjs": "1ac052e87e61f61a40a372e2e4c523482ff10f5c",
+  "tools/verify_tactical_story_results_visual.mjs": "acefd76aa16f2c06889cad0a0b059559e93886b0",
+});
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs };
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 // types.ts has mixed line endings in Git. The platform clean filter changes its blob.
 const workingBlob = path => path === 'tactical-ops-src/combat/types.ts'
@@ -703,6 +720,13 @@ const approvedCurrentBlobs=Object.freeze({
   ...Object.fromEntries(Object.entries(alphaCommandDeckV2Blobs).filter(([path]) =>
     !Object.hasOwn(lastHowlBlobs, path) && !Object.hasOwn(approvedM2Blobs, path) &&
     !Object.hasOwn(approvedSignalAtlasPremiumBlobs, path))),
+  // Git clean filters may normalize source on checkout; pin canonical committed
+  // blobs and separately compare the exact working-tree bytes in legacy checks.
+  ...Object.fromEntries(Object.entries(reviewedStoryResultsBlobs).map(([path,sha]) => {
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+      'unreviewed story-results canonical blob: '+path);
+    return [path,sourceBlob(readFileSync(path))];
+  })),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
@@ -1364,6 +1388,7 @@ const rcContractPaths=new Set([
  'tactical-ops-src/combat/intentContract.ts',
  'tactical-ops-src/host/foundationProgression.ts',
  ...Object.keys(approvedOverheadBlobs),
+ ...Object.keys(reviewedStoryResultsBlobs),
 ]);
 for(const path of git('diff','--name-only','--no-renames',mergedBaseline,overheadMerge,'--','index.html','js','tactical-ops-src').trim().split('\n').filter(Boolean)){
  assert(rcContractPaths.has(path),`unreviewed production change since merged baseline: ${path}`);
