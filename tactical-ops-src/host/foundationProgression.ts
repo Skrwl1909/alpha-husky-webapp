@@ -210,6 +210,7 @@ export interface CampaignReport {
 }
 
 export interface CampaignResult extends CampaignReport {
+  lootAndHonors?: unknown;
   missionId: string;
   runId: string;
   intelEarned: boolean;
@@ -446,7 +447,7 @@ function parseCampaignResult(raw: unknown): CampaignResult | null {
   const v = raw as Record<string, unknown>;
   if (typeof v.victory !== "boolean" || typeof v.objectiveComplete !== "boolean" || typeof v.missionId !== "string" || typeof v.runId !== "string" || typeof v.intelEarned !== "boolean") return null;
   if (![v.turns, v.squadStanding, v.squadDeployed].every(Number.isInteger)) return null;
-  return { victory: v.victory, objectiveComplete: v.objectiveComplete, turns: Number(v.turns), squadStanding: Number(v.squadStanding), squadDeployed: Number(v.squadDeployed), missionId: v.missionId, runId: v.runId, intelEarned: v.intelEarned, ...(typeof v.failureReason === "string" ? { failureReason: v.failureReason } : {}) };
+  return { victory: v.victory, objectiveComplete: v.objectiveComplete, turns: Number(v.turns), squadStanding: Number(v.squadStanding), squadDeployed: Number(v.squadDeployed), missionId: v.missionId, runId: v.runId, intelEarned: v.intelEarned, ...(v.lootAndHonors !== undefined ? {lootAndHonors:v.lootAndHonors} : {}), ...(typeof v.failureReason === "string" ? { failureReason: v.failureReason } : {}) };
 }
 
 function parseMissionCombatProfileV3(run: Record<string, unknown>, contract: RunRulesContract | null) {
@@ -663,7 +664,7 @@ export async function continueOperationMission(
   campaignReport?: CampaignReport,
   rulesetVersion?: string,
   chapterMode = false,
-): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
+): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null; lootAndHonors?: unknown }> {
   const result = !chapterMode && isRecoverAuthorityRun(runId) ? {} : {
     completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true,
     routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}),
@@ -682,7 +683,8 @@ export async function continueOperationMission(
   const fieldMilestone=fieldResult ? parseFieldLegacyMilestone(response.rewardMilestone,fieldResult.runId,fieldResult.missionId,fieldResult.victory) : null;
   return { state: responseState(response), firstClear: response.firstClear === true,
     fieldResult, fieldMilestone,
-    campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
+    campaignResult: parseCampaignResult(response.campaignResult), chapterResult,
+    ...(response.lootAndHonors != null ? {lootAndHonors:response.lootAndHonors} : {}) };
 }
 
 /** Trial starts and settlements use separate endpoints; never route through Field Ops receipts. */
