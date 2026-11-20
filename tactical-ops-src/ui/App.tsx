@@ -3,6 +3,8 @@ import {COUNTERSTRIKE_ID} from "../data/counterstrike";
 import { getHost } from "../host/bridge";
 import { LastHowlCard, LastHowlResults } from "./LastHowl";
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
+import { StoryResultView } from "./StoryResultView";
+import { storyResultTruth } from "./storyResultTruth";
 import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { FIELD_HONOR, missionContract, REACH_REND_TRADEOFF, withFieldRend } from "../data/fieldContracts";
 import { commandPurpose, fieldResultPurpose, nextFieldContract, type PurposeAction } from "./returnPurpose";
@@ -324,7 +326,7 @@ function WarTable() {
   const currentDirective = field?.board?.reportVersion === 3 ? directiveSetLabel(field.board.directiveSet) : null;
   const deadRelayNextMissionId = deadRelay?.activeMissionRun?.missionId || DEAD_RELAY.orderedMissionIds.find((id) => deadRelay?.missions[id] === "available") || null;
   const firstClearMessage = operation?.status === "cleared"
-    ? deadRelay ? "BROKEN SIGNAL COMPLETE · OPERATION 02 THE DEAD RELAY NOW AVAILABLE" : "BROKEN SIGNAL COMPLETE · FIELD OPS NOW DRIVE YOUR TACTICAL PROGRESSION"
+    ? deadRelay?.missions["dead-relay-courier"] === "available" ? "BROKEN SIGNAL CLEARED · OP 02 READY" : "BROKEN SIGNAL CLEARED"
     : operation?.missions["broken-signal-recover"] === "cleared"
       ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
       : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
@@ -1301,6 +1303,7 @@ function Results() {
   const onboardingStageId = useBattleStore((s) => s.onboardingStageId);
   const selectedMissionId = useBattleStore((s) => s.selectedMissionId);
   const foundationCompleted = useBattleStore((s) => s.foundationCompleted);
+  const storySave = useBattleStore((s) => s.storySave);
   const progression = useBattleStore((s) => s.progression);
   const progressionCommitPending = useBattleStore((s) => s.progressionCommitPending);
   const progressionError = useBattleStore((s) => s.progressionError);
@@ -1397,6 +1400,28 @@ function Results() {
   const sessionVictory = (onboardingEnabled && !foundationCompleted && results.victory) || operationVictory;
   const hasNext = sessionVictory && encounter.next != null;
   const isFirstClear = operationVictory && progression?.operations?.[mission?.operationId || BROKEN_SIGNAL.operationId]?.missions[mission?.missionId || ""] === "available";
+  if (operationVictory && !chapterMode && mission?.operationId === BROKEN_SIGNAL.operationId) {
+    const truth = storyResultTruth(progression, storySave, currentRunKey, selectedMissionId, progressionCommitPending, progressionError);
+    const purpose = truth.confirmed ? commandPurpose(progression).primary : null;
+    const nextMission = purpose ? getMissionDef(purpose.missionId)?.name || purpose.missionId : null;
+    return <StoryResultView
+      title={mission.objectiveType === "BOSS" ? "COMMANDER DOWN" : mission.objectiveType === "RECOVER" ? "SIGNAL RECOVERED" : "BREACH CLEARED"}
+      mission={mission.name} art={PRESENTATION.resultsPlate}
+      phase={truth.phase} op02Ready={truth.op02Ready} op02Cleared={truth.op02Cleared}
+      nextMission={nextMission} turns={results.turns}
+      squadStanding={results.squadStanding} squadDeployed={results.squadDeployed}
+      onAction={() => {
+        const current = useBattleStore.getState();
+        if (current.progressionCommitPending || current.screen !== "results") return;
+        const confirmed = storyResultTruth(current.progression,current.storySave,current.currentRunKey,current.selectedMissionId,false,null).confirmed;
+        current.continueOnboarding();
+        if (confirmed && useBattleStore.getState().screen === "war-table") {
+          const next = commandPurpose(useBattleStore.getState().progression).primary;
+          if (next) openPurposeBrief(next);
+        }
+      }}
+    />;
+  }
   if (resultFieldContext?.replayChallenge || recordedFieldResult?.replayChallenge) {
     const verified = recordedFieldResult?.replayChallenge === "carrier-jam-v1" ? recordedFieldResult : null;
     const paired = verified?.recoveryRoute === "paired";
