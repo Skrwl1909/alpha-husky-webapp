@@ -55,7 +55,7 @@ store.setState({saveFieldResult:async()=>{window.fixture.calls.push('save');}});
 `;
 let entry=scope.entry+extra;
 if(phase==='before')entry=entry.replaceAll('/tactical-ops-src/','/artifacts/baseline/tactical-ops-src/');
-if(production)entry='const store=window.__tactical;window.TacticalOps.init({onboarding:"off"});await window.TacticalOps.open();'+scope.entry.slice(scope.entry.indexOf('const params')).replace(/createRoot\(document.getElementById\('mount'\)\).render\(React.createElement\(TacticalApp\)\);/,'')+extra;
+if(production)entry='window.HomeNav={openInventory:()=>{window.__inventoryNavCalls=(window.__inventoryNavCalls||0)+1;}};const store=window.__tactical;window.TacticalOps.init({onboarding:"off"});await window.TacticalOps.open();'+scope.entry.slice(scope.entry.indexOf('const params')).replace(/createRoot\(document.getElementById\('mount'\)\).render\(React.createElement\(TacticalApp\)\);/,'')+extra;
 const server=await createServer({configFile:false,cacheDir:`node_modules/.vite-fr-${phase}`,optimizeDeps:{include:['react','react-dom/client','react/jsx-dev-runtime','lucide-react','zustand']},server:{host:'127.0.0.1',port:0,watch:{ignored:['**/artifacts/**']}},plugins:[{name:'results-fixture',configureServer(s){s.middlewares.use((req,res,next)=>{
  if(req.url==='/results-bundle.js'){res.setHeader('Content-Type','application/javascript; charset=utf-8');res.end(readFileSync(phase==='before'?'artifacts/baseline/tactical_ops.js':'js/tactical_ops.js'));return;}
  if(req.url==='/results-forge.js'){res.setHeader('Content-Type','application/javascript; charset=utf-8');res.end(readFileSync('js/forge.js'));return;}
@@ -192,6 +192,10 @@ try{
      assert.deepEqual(await page.evaluate(()=>fixture.forgeRequests),[]);
     }else{
      assert.match(await payout.innerText(),/CONFIRMED PAYOUT[\s\S]*\+8[\s\S]*EXP[\s\S]*\+16[\s\S]*Bones/);
+     assert(await upgrade.evaluate(el=>{
+      const impact=document.querySelector('.t-fr-impact');
+      return impact ? Boolean(el.compareDocumentPosition(impact)&Node.DOCUMENT_POSITION_FOLLOWING) : true;
+     }),'next Forge upgrade belongs before world-impact details');
      assert.equal(await payout.locator('.t-fr-reward-unit').count(),2,'two receipt-confirmed reward units');
      assert.equal(await payout.locator('[data-reward=exp]').count(),1);
      assert.equal(await payout.locator('[data-reward=bones]').count(),1);
@@ -214,12 +218,14 @@ try{
       if(scenario==='payout-missing'){
        assert.match(await upgrade.innerText(),/Scrap\s+4 \/ 8[\s\S]*Missing 4/);
         assert.equal(await upgrade.getByRole("button",{name:/salvage/i}).count(),0);
+       assert.equal(await upgrade.getByRole('button',{name:'Check inventory'}).count(),1,'missing Scrap links to actual Inventory');
        await upgrade.getByRole('button',{name:'View upgrade in Forge'}).click();
        await page.locator('.ah-stage-name').getByText('Target Gear',{exact:true}).waitFor();
        assert.equal(await page.locator('#tacticalOpsRoot').getAttribute('data-open'),'0');
       }else{
        assert.match(await upgrade.innerText(),/Scrap\s+8 \/ 8/);
        assert.doesNotMatch(await upgrade.innerText(),/Missing/);
+       assert.equal(await upgrade.getByRole('button',{name:'Check inventory'}).count(),0,'fully funded item does not show salvage detour');
        await page.locator('[data-next-decision=primary]').click();
        assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief');
       }
@@ -232,6 +238,13 @@ try{
     }
     cases.push({scenario});
    }
+   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=payout-missing`);
+   const inventoryLink=page.getByLabel('Next Forge upgrade',{exact:true}).getByRole('button',{name:'Check inventory'});
+   await inventoryLink.waitFor();
+   await inventoryLink.click();
+   assert.equal(await page.evaluate(()=>window.__inventoryNavCalls),1,'missing materials open the host Inventory route');
+   assert.equal(await page.locator('#tacticalOpsRoot').getAttribute('data-open'),'0','results close before Inventory opens');
+   cases.push({scenario:'payout-missing-inventory-route'});
   }
  }
  for(const scenario of ['campaign','chapter','lockdown','lockdown-pending','extraction','extraction-pending']){

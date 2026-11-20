@@ -407,15 +407,26 @@ const reviewedStoryResultsBlobs = Object.freeze({
   "tools/verify_tactical_story_results_transactions.mjs": "1ac052e87e61f61a40a372e2e4c523482ff10f5c",
   "tools/verify_tactical_story_results_visual.mjs": "acefd76aa16f2c06889cad0a0b059559e93886b0",
 });
+// Reward Loop P2 frontend closure: exact reviewed sources, generated bundle and
+// regression fixtures. Old feature approvals stay immutable.
+const reviewedRewardLoopFrontendBlobs = Object.freeze({
+  "js/boot_loaders.js": "cf62ce434f615fede89eaf2c23c74f31a6b2515e",
+  "js/tactical_ops.js": "0af377a225ca8012651ec1d54154a8c6cb44b04d",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "506a45987174544e0b24556f4d6327e3bce35122",
+  "tactical-ops-src/ui/fieldOpResults.css": "3be4d2f388831e70d333ae0b892ddbbe044e3674",
+  "tactical-ops-src/version.ts": "b7280623d1c80e40698cf586e4a8cba72202292d",
+  "tools/verify_field_op_results_premium.mjs": "112b6e90bac0453ecd65a26d94a3046acc907324",
+  "tools/verify_reward_loop_p2_material_route.mjs": "f6bff897b1316e8f72ec26dfff74e1c1d96d8127",
+});
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs };
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeStoryActivationBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path) || Object.hasOwn(reviewedRewardLoopFrontendBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 // types.ts has mixed line endings in Git. The platform clean filter changes its blob.
 const workingBlob = path => path === 'tactical-ops-src/combat/types.ts'
@@ -722,9 +733,15 @@ const approvedCurrentBlobs=Object.freeze({
     !Object.hasOwn(approvedSignalAtlasPremiumBlobs, path))),
   // Git clean filters may normalize source on checkout; pin canonical committed
   // blobs and separately compare the exact working-tree bytes in legacy checks.
-  ...Object.fromEntries(Object.entries(reviewedStoryResultsBlobs).map(([path,sha]) => {
+  ...Object.fromEntries(Object.entries(reviewedStoryResultsBlobs).filter(([path]) =>
+    !Object.hasOwn(reviewedRewardLoopFrontendBlobs,path)).map(([path,sha]) => {
     assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
       'unreviewed story-results canonical blob: '+path);
+    return [path,sourceBlob(readFileSync(path))];
+  })),
+  ...Object.fromEntries(Object.entries(reviewedRewardLoopFrontendBlobs).map(([path,sha]) => {
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+      'unreviewed reward-loop canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
 });

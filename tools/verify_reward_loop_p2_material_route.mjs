@@ -11,6 +11,10 @@ const forge = readFileSync("js/forge.js","utf8");
 
 assert.match(results,/receipt\?\.victory/);
 assert.match(results,/payout && !pending \? <NextForgeUpgrade/);
+assert(results.indexOf('<NextForgeUpgrade key={payout.runId} />') < results.indexOf('<LegacyRewardReveal milestone={milestone} />'),
+  'next upgrade must follow confirmed payout, before historical Legacy details');
+assert(results.indexOf('<NextForgeUpgrade key={payout.runId} />') < results.indexOf('className="t-fr-consequence t-fr-impact"'),
+  'next upgrade must precede the world impact panel on mobile');
 assert.doesNotMatch(results,/CHECK SALVAGE IN INVENTORY|row\.source/);
 assert.match(results,/receipt\?\.firstUpgradeScrapGranted === 8/);
 assert.match(decision,/NEXT: RELAY RECOVERY/);
@@ -18,6 +22,9 @@ assert.match(purpose,/firstUpgradeSupplyMissionId !== "field-relay-recovery"/);
 assert.match(results,/UPGRADE IN FORGE/);
 assert.match(results,/VIEW UPGRADE IN FORGE/);
 assert.match(results,/forge\.nextUpgrade\(\)/);
+assert.match(results,/missingMaterials\.some\(row => row\.label === "Scrap" \|\| row\.label === "Rune Dust"\)/);
+assert.match(results,/\{inspectInventory \? <button type="button" className="t-fr-forge-inventory" onClick=\{inspectInventory\}/);
+assert.match(results,/One-time grant on record · \+0 Scrap this run\./);
 assert.match(bridge,/openInventory\?: \(\) => void/);
 assert.match(bootstrap,/typeof homeNav\?\.openInventory/);
 assert.match(bootstrap,/typeof inventory\?\.open/);

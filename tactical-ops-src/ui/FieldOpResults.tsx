@@ -16,13 +16,13 @@ function LegacyRewardReveal({milestone}:{milestone:FieldLegacyMilestone|null}) {
   if (milestone.kind==="FIRST_RECOVERY_SUPPLY") return milestone.status==="AWARDED"
     ? <section className="t-fr-consequence t-fr-legacy" data-legacy="first-awarded" aria-label="Confirmed First Recovery Supply">
         <span className="t-kicker">FIELD LEGACY · FIRST RECOVERY</span>
-        <strong>+12 SCRAP EARNED</strong>
-        <p>First Recovery Supply saved. Open Forge to use your new materials.</p>
+        <strong>+12 SCRAP</strong>
+        <p>Saved · Ready for Forge.</p>
       </section>
     : <section className="t-fr-consequence t-fr-legacy t-fr-legacy-history" data-legacy="first-previously-awarded" aria-label="First Recovery Supply previously awarded">
         <span className="t-kicker">FIELD LEGACY</span>
-        <strong>First Recovery Supply already claimed</strong>
-        <p>Your one-time Scrap was awarded earlier. No extra Scrap this battle.</p>
+        <strong>SUPPLY ALREADY CLAIMED</strong>
+        <p>One-time grant on record · +0 Scrap this run.</p>
       </section>;
   const {record,status}=milestone;
   return <section className="t-fr-consequence t-fr-legacy" data-legacy={status==="AWARDED"?"veteran-awarded":status==="IMPROVED"?"veteran-improved":"veteran-record"} aria-label="Confirmed Veteran Service Distinction">
@@ -49,9 +49,12 @@ function NextForgeUpgrade() {
   const rows = upgrade && typeof upgrade === "object" ? upgrade.rows : [];
   const materialsKnown = rows.length > 0;
   const materialsReady = materialsKnown && rows.every(row => row.missing <= 0);
+  const missingMaterials = materialsKnown ? rows.filter(row => row.missing > 0) : [];
+  const inspectInventory = missingMaterials.some(row => row.label === "Scrap" || row.label === "Rune Dust")
+    ? getHost().openInventory : undefined;
   return <section className="t-fr-consequence t-fr-forge" aria-label="Next Forge upgrade"
     data-materials={materialsKnown ? (materialsReady ? "ready" : "needed") : "unknown"}>
-    <span className="t-kicker">NEXT FORGE UPGRADE</span>
+    <span className="t-kicker">NEXT UPGRADE</span>
     {forge && upgrade && typeof upgrade === "object" ? <>
       <div className="t-fr-forge-head">
         <span className="t-fr-forge-symbol" data-rarity={upgrade.rarity || "common"} aria-hidden="true">
@@ -62,7 +65,7 @@ function NextForgeUpgrade() {
         </span>
         <div className="t-fr-forge-identity">
           <strong>{upgrade.name} · ★{upgrade.stars}</strong>
-          <span className="t-fr-forge-readiness">{materialsKnown ? (materialsReady ? "MATERIALS READY" : "MATERIALS NEEDED") : "CHECK MATERIALS IN FORGE"}</span>
+          <span className="t-fr-forge-readiness">{materialsKnown ? (materialsReady ? "READY TO UPGRADE" : "MATERIALS MISSING") : "CHECK MATERIALS IN FORGE"}</span>
         </div>
       </div>
       <ul>{upgrade.rows.map(row => <li key={row.label} data-ready={row.missing <= 0 ? "yes" : "no"}>
@@ -70,6 +73,7 @@ function NextForgeUpgrade() {
         {row.missing > 0 ? <small>Missing {row.missing.toLocaleString()}</small> : null}
       </li>)}</ul>
       <button type="button" className="t-btn" onClick={() => forge.openUpgrade(upgrade.key)}>{materialsReady ? "UPGRADE IN FORGE" : "VIEW UPGRADE IN FORGE"}</button>
+      {inspectInventory ? <button type="button" className="t-fr-forge-inventory" onClick={inspectInventory}>CHECK INVENTORY <ArrowRight aria-hidden="true" /></button> : null}
     </> : <p role="status">{!forge || upgrade === "unavailable" ? "Forge details are unavailable. You can still choose your next operation."
       : upgrade === null ? "No equipped upgrade could be confirmed."
       : "Checking equipped gear and materials…"}</p>}
@@ -157,12 +161,13 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         : <p>{tacticalOnly
           ? "No EXP or Bones awarded for this result." : "Character payout amounts are unavailable."}</p>}
     </section> : null}
-    {receipt?.victory ? <LegacyRewardReveal milestone={milestone} /> : null}
     {receipt?.firstUpgradeScrapGranted === 8 ? <section className="t-fr-consequence" aria-label="Confirmed First Upgrade Supply">
       <span className="t-kicker">FIRST UPGRADE SUPPLY</span>
       <strong>+8 SCRAP</strong>
-      <p>Use your Scrap in Forge to upgrade Rustfang Fangs.</p>
+      <p>Rustfang Fangs · ★2 in Forge.</p>
     </section> : null}
+    {payout && !pending ? <NextForgeUpgrade key={payout.runId} /> : null}
+    {receipt?.victory ? <LegacyRewardReveal milestone={milestone} /> : null}
     {award && !reachReward ? <section className="t-fr-consequence t-field-contract" aria-label="Confirmed field contract">
       <div className="t-kicker">{contractName(award.id)} completed · {award.count}/3</div>
       <strong className={majorUnlock ? "t-fr-major-unlock" : undefined}>{award.reward === "field-tested" ? `Field Honor earned · ${FIELD_HONOR}` : "One more contract unlocks Reach Rend"}</strong>
@@ -183,7 +188,6 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         </div> : null}
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}
-    {payout && !pending ? <NextForgeUpgrade key={payout.runId} /> : null}
     {receipt && !reachReward ? <div className="t-fr-next"><span className="t-kicker">WHAT’S NEXT</span>{nextObjective ? <p>{nextObjective}</p> : null}</div> : null}
     {!reachReward ? primaryAction : null}
     {receipt ? <details className="t-fr-ledger">
