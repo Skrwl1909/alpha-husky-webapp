@@ -33,6 +33,7 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),false,"Horizontal overflow");
     assert.equal(await page.getByText("OP 02 READY").count(),phase === "saved" ? 1:0,"No premature OP 02 badge");
     assert.equal(await page.getByText("VICTORY SAVED").count(),phase === "saved" ? 1:0,"Only confirmed save may claim victory saved");
+    assert(!/\\b(XP|BONES|SCRAP)\\b/i.test(await page.locator("body").innerText()),"No unverified economy rewards");
     await page.screenshot({path:`artifacts/story-results/${phase}-${width}.png`,fullPage:true});
     await page.close();
   }

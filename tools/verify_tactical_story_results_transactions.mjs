@@ -92,6 +92,18 @@ try {
   assert.equal(store.getState().storySave, null, "Another run cannot confirm this victory");
   assert.equal(store.getState().screen, "results");
   assert.equal(store.getState().progressionCommitPending, false);
+  reset(); mode = "pending";
+  store.getState().backToHub();
+  assert.equal(store.getState().screen, "results", "Hub exit cannot abandon an uncommitted victory");
+  assert.equal(requests.length, 1, "Hub exit should request the same authoritative save");
+  mode = "success"; release(); await flush();
+  assert.equal(store.getState().storySave?.runId, runId);
+  reset(); mode = "pending";
+  store.getState().replay();
+  assert.equal(store.getState().screen, "results", "Replay cannot discard an uncommitted victory");
+  assert.equal(requests.length, 1);
+  mode = "success"; release(); await flush();
+  assert.equal(store.getState().storySave?.runId, runId);
   const locked = storyResultTruth({ ...seed(), operations: {
     ...seed().operations, "dead-relay": { status: "active", missions: { "dead-relay-courier": "locked" } },
   } }, { runId, missionId, firstClear: true }, runId, missionId, false, null);
