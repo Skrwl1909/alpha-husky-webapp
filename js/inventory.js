@@ -2161,7 +2161,8 @@ async use(key) {
     const apiPost = window.S?.apiPost || window.apiPost;
 
     try {
-      const res = await apiPost("/webapp/inventory/upgrade", { slot: s });
+      const operation = { slot: s, run_id: this._mkRunId("w_inv_upgrade") };
+      const res = await apiPost("/webapp/inventory/upgrade", operation);
       if (res.ok) {
         Telegram.WebApp.HapticFeedback?.notificationOccurred?.("success");
         if (res.message) Telegram.WebApp.showAlert(res.message);
