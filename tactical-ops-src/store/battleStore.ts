@@ -119,7 +119,7 @@ interface UiBattle {
   selectedMissionId: string | null;
   missionFirstClear: boolean | null;
   /** Run-specific server proof; never use battle victory as a saved reward receipt. */
-  storySave: { runId: string; missionId: string; firstClear: boolean } | null;
+  storySave: { runId: string; missionId: string; firstClear: boolean; lootAndHonors?: unknown } | null;
   selectedSquadIds: string[];
   selectedApproach: DeploymentApproach;
   selectedDirectiveTier: DirectiveTier;
@@ -1098,7 +1098,7 @@ export const useBattleStore = create<Store>((set, get) => {
         if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey || committed.fieldResult.missionId !== current.selectedMissionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         if (committed.state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(committed.state);
-        set({ fieldResult: committed.fieldResult, fieldMilestone: committed.fieldMilestone, progressionCommitPending: false });
+        set({ fieldResult: { ...committed.fieldResult, ...(committed.lootAndHonors != null ? {lootAndHonors:committed.lootAndHonors} : {}) }, fieldMilestone: committed.fieldMilestone, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
@@ -1130,7 +1130,7 @@ export const useBattleStore = create<Store>((set, get) => {
         if (!response.campaignResult || response.campaignResult.runId !== current.currentRunKey || response.campaignResult.missionId !== mission.missionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         applyCanonicalProgression(response.state);
-        set({ campaignResult: response.campaignResult, progressionCommitPending: false });
+        set({ campaignResult: { ...response.campaignResult, ...(response.lootAndHonors != null ? {lootAndHonors:response.lootAndHonors} : {}) }, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
@@ -1705,7 +1705,7 @@ export const useBattleStore = create<Store>((set, get) => {
               return;
             }
             sfx("ui");
-            set({ storySave: { runId, missionId, firstClear: committed.firstClear },
+            set({ storySave: { runId, missionId, firstClear: committed.firstClear, ...(committed.lootAndHonors != null ? {lootAndHonors:committed.lootAndHonors} : {}) },
               missionFirstClear: committed.firstClear, progressionCommitPending: false, progressionError: null });
           } catch (error) {
             if (get().currentRunKey !== runId) return;
