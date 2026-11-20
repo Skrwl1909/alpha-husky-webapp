@@ -419,14 +419,28 @@ const reviewedRewardLoopFrontendBlobs = Object.freeze({
   "tools/verify_reward_loop_p2_material_route.mjs": "f6bff897b1316e8f72ec26dfff74e1c1d96d8127",
 });
 const counterstrikeHistoricalPaths = new Set(["js/boot_loaders.js", "js/tactical_ops.js", "tactical-ops-src/combat/recoverAuthority.ts", "tactical-ops-src/data/operations.ts", "tactical-ops-src/data/packMastery.ts", "tactical-ops-src/host/foundationProgression.ts", "tactical-ops-src/store/battleStore.ts", "tactical-ops-src/ui/App.tsx", "tactical-ops-src/ui/Battle.tsx", "tactical-ops-src/ui/signalAtlas/model.ts", "tactical-ops-src/version.ts"]);
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs };
+// Last Howl supply: exact reviewed leaves. Inventory is the already merged P0 #322.
+const reviewedLastHowlRewardsBlobs = Object.freeze({
+  "js/boot_loaders.js": "dfdf509bcb19afbdbd8c0fc464e1a6f64386aaed",
+  "js/tactical_ops.js": "b968459edb9a8eb11e7bd198a7c31ffd6255ea66",
+  "tactical-ops-src/ui/LastHowl.tsx": "70b9cc3f942c78a82448e756e308a45dc2ec3477",
+  "tactical-ops-src/ui/lastHowl.css": "ed1d3d2a9a8557057bae1a1b45d0f72751a604a0",
+  "tactical-ops-src/ui/lastHowlRewards.tsx": "acef4478927e47118f8d26de3ba5ecd68eca5988",
+  "tactical-ops-src/version.ts": "19baa1d3de69eacfc83a2446bd4b859cc9c4191f",
+  "tools/verify_tactical_last_howl_browser.mjs": "25bf9939148e072e51771cfe575e0c2dbf7feedc",
+  "tools/verify_tactical_last_howl_rewards.mjs": "f3c827a1ad64366ebb08fa94fea896721a2c3a68",
+  ".github/workflows/tactical-last-howl-rewards.yml": "e0c09357a10871aa057637ce3be17eb202319f31",
+  "js/inventory.js": "d9ca447b07f27c2587fe73673ef125652b64ca88"
+});
+
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs, ...reviewedLastHowlRewardsBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path) || Object.hasOwn(reviewedRewardLoopFrontendBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path) || Object.hasOwn(reviewedRewardLoopFrontendBlobs, path) || Object.hasOwn(reviewedLastHowlRewardsBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 // types.ts has mixed line endings in Git. The platform clean filter changes its blob.
 const workingBlob = path => path === 'tactical-ops-src/combat/types.ts'
@@ -522,6 +536,10 @@ for (const path of git('diff','--name-only','--no-renames',lastHowlBase,m2Base).
   Object.hasOwn(approvedEnemyPoseAssets, path), 'unreviewed Last Howl path: ' + path);
 }
 function readFileSync(path, encoding) {
+ // These UI leaves were introduced after lastHowlBase. Their live bytes are
+ // checked against reviewedLastHowlRewardsBlobs; gameplay baselines stay frozen.
+ if (['tactical-ops-src/ui/LastHowl.tsx','tactical-ops-src/ui/lastHowl.css',
+      'tools/verify_tactical_last_howl_browser.mjs'].includes(path)) return readLocalFile(path,encoding);
  const baseline = Object.hasOwn(lastHowlBlobs, path) ? lastHowlBase : Object.hasOwn(approvedM2Blobs, path) ? m2Base :
   Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase :
   Object.hasOwn(bloodScentBlobs, path) ? bloodScentBase :
@@ -734,14 +752,19 @@ const approvedCurrentBlobs=Object.freeze({
   // Git clean filters may normalize source on checkout; pin canonical committed
   // blobs and separately compare the exact working-tree bytes in legacy checks.
   ...Object.fromEntries(Object.entries(reviewedStoryResultsBlobs).filter(([path]) =>
-    !Object.hasOwn(reviewedRewardLoopFrontendBlobs,path)).map(([path,sha]) => {
+    !Object.hasOwn(reviewedRewardLoopFrontendBlobs,path) && !Object.hasOwn(reviewedLastHowlRewardsBlobs,path)).map(([path,sha]) => {
     assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
       'unreviewed story-results canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
-  ...Object.fromEntries(Object.entries(reviewedRewardLoopFrontendBlobs).map(([path,sha]) => {
+  ...Object.fromEntries(Object.entries(reviewedRewardLoopFrontendBlobs).filter(([path]) => !Object.hasOwn(reviewedLastHowlRewardsBlobs,path)).map(([path,sha]) => {
     assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
       'unreviewed reward-loop canonical blob: '+path);
+    return [path,sourceBlob(readFileSync(path))];
+  })),
+  ...Object.fromEntries(Object.entries(reviewedLastHowlRewardsBlobs).map(([path,sha]) => {
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+      'unreviewed Last Howl rewards canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
 });

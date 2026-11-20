@@ -3,6 +3,7 @@ import type { LastHowlScore, LastHowlView } from "../combat/lastHowlAuthority";
 import { getHost } from "../host/bridge";
 import { useBattleStore } from "../store/battleStore";
 import { buildIdentity } from "./skillEffectView";
+import { LastHowlRewards } from "./lastHowlRewards";
 
 function PersonalBest({ best }: { best: LastHowlScore | null }) {
   return <p>PERSONAL BEST {best ? `· ${best.completedWaves} WAVES · ${best.kills} KILLS` : "· —"}</p>;
@@ -25,7 +26,7 @@ export function LastHowlCard() {
       <div className="t-cdv2-operation-record" aria-label="Personal best">
         <span><small>BEST WAVES</small><strong>{summary.best?.completedWaves ?? "—"}</strong></span>
         <span><small>BEST KILLS</small><strong>{summary.best?.kills ?? "—"}</strong></span>
-        <span className="t-cdv2-record-badge">{active ? "IN PROGRESS" : "NO REWARD RUN"}</span>
+        <span className="t-cdv2-record-badge">{active ? "IN PROGRESS" : (summary as { rewardsVersion?: number }).rewardsVersion === 1 ? "WEEKLY SUPPLY" : "ENDLESS RUN"}</span>
       </div>
       <p className="t-cdv2-build-note">{active ? "Resume with the build saved at deployment." : "New deployment · uses your current saved skills."}</p>
     </div>
@@ -89,7 +90,7 @@ export function LastHowlResults({ view }: { view: LastHowlView }) {
     </dl>
     {view.newRecord ? <strong>NEW RECORD</strong> : null}
     <PersonalBest best={view.best} />
-    <p>No rewards for Last Howl runs.</p>
+    <LastHowlRewards value={(view as unknown as { rewards?: unknown }).rewards} runId={view.runId} waves={view.completedWaves} abandoned={view.status === "ABANDONED"} />
     {error ? <p role="alert">{error}</p> : null}
     <div className="t-last-howl-actions">
       <button type="button" className="t-btn t-btn-primary" disabled={busy} onClick={() => void open("start", view.runId)}>TRY AGAIN</button>
