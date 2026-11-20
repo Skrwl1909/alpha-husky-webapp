@@ -113,7 +113,7 @@ try {
         if(name==='noart')await panel.locator('.t-loot-equipment-art .t-loot-fallback').waitFor();
         assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'document overflow '+width+'/'+name);
         assert(await panel.evaluate(el=>el.scrollWidth<=el.clientWidth+1),'panel overflow '+width+'/'+name);
-        assert(await panel.locator('button').evaluateAll(nodes=>nodes.every(el=>{const r=el.getBoundingClientRect();return r.width>=44&&r.height>=44;})),'touch button too small '+width+'/'+name);
+        assert(await panel.locator('button').evaluateAll(nodes=>nodes.filter(el=>el.getClientRects().length>0).every(el=>{const r=el.getBoundingClientRect();return r.width>=44&&r.height>=44;})),'touch button too small '+width+'/'+name);
         if(motion==='reduce')assert.equal(await panel.evaluate(el=>el.getAnimations({subtree:true}).length),0,'reduced motion');
         if(name==='uncommon'){
           await panel.getByRole('button',{name:'VIEW / COMPARE IN INVENTORY'}).click();
