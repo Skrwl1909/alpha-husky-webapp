@@ -720,7 +720,13 @@ const approvedCurrentBlobs=Object.freeze({
   ...Object.fromEntries(Object.entries(alphaCommandDeckV2Blobs).filter(([path]) =>
     !Object.hasOwn(lastHowlBlobs, path) && !Object.hasOwn(approvedM2Blobs, path) &&
     !Object.hasOwn(approvedSignalAtlasPremiumBlobs, path))),
-  ...reviewedStoryResultsBlobs,
+  // Git clean filters may normalize source on checkout; pin canonical committed
+  // blobs and separately compare the exact working-tree bytes in legacy checks.
+  ...Object.fromEntries(Object.entries(reviewedStoryResultsBlobs).map(([path,sha]) => {
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+      'unreviewed story-results canonical blob: '+path);
+    return [path,sourceBlob(readFileSync(path))];
+  })),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
