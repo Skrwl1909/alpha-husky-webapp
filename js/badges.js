@@ -55,6 +55,17 @@
     ownedTags: [],
     ownedAuras: [],
   };
+  // Art fallback only for badge rows provided by /webapp/badges/state. NEVER grants or registers ownership.
+  const TACTICAL_HONOR_ART = Object.freeze({
+    tops_first_contact: "assets/tactical-honors/tops_first_contact.svg",
+    tops_field_hunter: "assets/tactical-honors/tops_field_hunter.svg",
+    tops_battle_hardened: "assets/tactical-honors/tops_battle_hardened.svg",
+    tops_signal_reaper: "assets/tactical-honors/tops_signal_reaper.svg",
+    tops_fracture_veteran: "assets/tactical-honors/tops_fracture_veteran.svg",
+    tops_warborn_alpha: "assets/tactical-honors/tops_warborn_alpha.svg",
+    tops_commander_slayer: "assets/tactical-honors/tops_commander_slayer.svg",
+    tops_no_one_left_behind: "assets/tactical-honors/tops_no_one_left_behind.svg",
+  });
   const MAX_FEATURED_BADGES = 3;
   const INVALID_TITLE_VALUES = new Set(["", "NO TITLE", "NO ACTIVE TITLE"]);
   const TITLE_SOURCE_CLASS = {
@@ -1771,9 +1782,9 @@
       name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
       icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
       icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
-      iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
+      iconUrl: (typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "") || TACTICAL_HONOR_ART[String(raw?.key || "").trim().toLowerCase()] || "",
       icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
-      emblemUrl: typeof raw?.emblemUrl === "string" ? raw.emblemUrl.trim() : "",
+      emblemUrl: (typeof raw?.emblemUrl === "string" ? raw.emblemUrl.trim() : "") || TACTICAL_HONOR_ART[String(raw?.key || "").trim().toLowerCase()] || "",
       emblem_url: typeof raw?.emblem_url === "string" ? raw.emblem_url.trim() : "",
       frameUrl: typeof raw?.frameUrl === "string" ? raw.frameUrl.trim() : "",
       frame_url: typeof raw?.frame_url === "string" ? raw.frame_url.trim() : "",
