@@ -119,6 +119,7 @@ try {
           await panel.getByRole('button',{name:'VIEW / COMPARE IN INVENTORY'}).click();
           assert.equal(await page.evaluate(()=>window.__actions.inventory),1);
         }
+        if(motion==='no-preference'&&name==='legendary')await panel.locator('.t-loot-equipment').evaluate(el=>Promise.all(el.getAnimations({subtree:true}).map(a=>a.finished.catch(()=>{}))));
         if(motion==='no-preference'&&['currency','uncommon','rare','legendary','badge','frame','aura','title','skin','empty'].includes(name))
           await page.screenshot({path:'artifacts/tactical-loot-honors/'+width+'-'+name+'.png'});
         if(motion==='no-preference'&&name==='currency'){
