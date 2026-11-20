@@ -184,7 +184,7 @@ try {
     await page.keyboard.press("s");
     const results = page.locator(".t-last-howl-results");
     await results.waitFor();
-    assert.match(await results.innerText(), /WAVES CLEARED\s*4[\s\S]*NEW RECORD[\s\S]*No rewards/);
+    assert.match(await results.innerText(), /WAVES CLEARED\s*4[\s\S]*NEW RECORD[\s\S]*NO REWARDS RECORDED/);
     assert(await results.evaluate(node => node.scrollWidth <= node.clientWidth + 1));
     await results.getByRole("button", { name: "UPGRADE IN FORGE" }).click();
     assert(await page.evaluate(() => window.forgeOpened));
