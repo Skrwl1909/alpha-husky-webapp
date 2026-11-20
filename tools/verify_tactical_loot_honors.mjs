@@ -77,7 +77,8 @@ try {
   ].join('\n').replace('__FIXTURES__',JSON.stringify(fixtures));
   server.middlewares.use('/loot-fixture',async (_req,res)=>{
     res.setHeader('Content-Type','text/html;charset=utf-8');
-    const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;color:#e7f4f5}#qa-label{position:fixed;top:0;left:0;padding:4px;background:#081019;color:white;font:10px monospace;z-index:10000;pointer-events:none}#tacticalOpsRoot{position:relative;display:block;width:100%;min-height:100vh;padding:22px 5px;box-sizing:border-box}#test-results{margin:0 auto;max-width:880px;max-height:calc(100vh - 40px);overflow-y:auto}</style></head><body><div id="qa-label">SYNTHETIC QA · NO LIVE PLAYER</div><div id="tacticalOpsRoot"><div id="mount"></div></div><script type="module">'+entry+'</script></body></html>');
+    const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;color:#e7f4f5}#qa-label{position:fixed;top:0;left:0;padding:4px;background:#081019;color:white;font:10px monospace;z-index:10000;pointer-events:none}#tacticalOpsRoot{position:relative;display:block;width:100%;min-height:100vh;padding:22px 5px;box-sizing:border-box}#test-results{margin:0 auto;max-width:880px;max-height:calc(100vh - 40px);overflow-y:auto}</style></head><body><div id="qa-label">SYNTHETIC QA · NO LIVE PLAYER</div><div id="tacticalOpsRoot"><div id="mount"></div></div><script type="module">'+entry+'</script></body></html>';
+    res.end(await server.transformIndexHtml('/loot-fixture',html));
   });
   await server.listen();
   const {chromium}=await import(process.env.PLAYWRIGHT_MODULE||'playwright');
