@@ -9007,7 +9007,7 @@ body.ah-perf-lite #tacticalOpsRoot .t-cosmetic-sweep {opacity:0;animation:none;}
 }
 @media(min-width:720px){
  #tacticalOpsRoot .t-honors-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
- #tacticalOpsRoot .t-loot-items,#tacticalOpsRoot .t-loot-unlocks{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #tacticalOpsRoot .t-loot-items,#tacticalOpsRoot .t-loot-unlocks{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
 }
 @media(prefers-reduced-motion:no-preference){
  #tacticalOpsRoot .t-loot-reveal[data-reveal=legendary] .t-loot-equipment[data-rarity=legendary]{animation:t-loot-reveal-in .55s ease-out both}
