@@ -9,11 +9,15 @@ const currencyIcons = { exp:Zap, bones:Bone, scrap:Hammer, rune_dust:Gem };
 const labels: Record<PrestigeGrant["type"],string> = { badge:"BADGE UNLOCKED", frame:"FRAME UNLOCKED", skin:"SKIN UNLOCKED", title:"TITLE UNLOCKED", aura:"AURA UNLOCKED" };
 
 function Artwork({src, fallback}:{src?:string; fallback?:HonorDefinition}) {
-  const [failed,setFailed] = useState(false);
-  const path = src || fallback?.image;
-  useEffect(()=>setFailed(false),[path]);
-  return path && !failed ? <img className="t-loot-art" src={path} alt="" loading="lazy" decoding="async"
-    onError={(_event:SyntheticEvent<HTMLImageElement>)=>setFailed(true)} /> :
+  const [failures,setFailures] = useState(0);
+  const original = src || fallback?.image;
+  useEffect(()=>setFailures(0),[original]);
+  // Keep the SVG V1 as a rendering fallback if a V2 image is not deployed yet.
+  const path = failures === 1 && original?.startsWith("assets/tactical-honors/v2/512px/")
+    ? original.replace("assets/tactical-honors/v2/512px/", "assets/tactical-honors/").replace(/\.webp$/, ".svg") : original;
+  const show = path && (failures === 0 || (failures === 1 && path !== original));
+  return show ? <img className="t-loot-art" src={path} alt="" loading="lazy" decoding="async"
+    onError={(_event:SyntheticEvent<HTMLImageElement>)=>setFailures(n=>n+1)} /> :
     <Shield className="t-loot-fallback" aria-hidden="true" />;
 }
 function Stats({drop}:{drop:EquipmentGrant}) {
@@ -53,7 +57,7 @@ function PrestigeCard({grant}:{grant:PrestigeGrant}) {
   const canOpen = inBadgeWall ? Boolean(openBadges) : Boolean(openProfile);
   const openCollection = () => { if (inBadgeWall) openBadges?.(grant.type === "badge" ? grant.id : undefined); else openProfile?.(); };
   return <article className="t-loot-prestige" data-rarity={grant.rarity} aria-label={labels[grant.type]+": "+grant.name}>
-    <div className="t-loot-prestige-art"><Artwork src={grant.imageUrl} fallback={definition} /></div>
+    <div className="t-loot-prestige-art"><Artwork src={definition?.image || grant.imageUrl} fallback={definition} /></div>
     <div className="t-loot-prestige-copy"><span className="t-loot-rarity">{labels[grant.type]}</span>
       <h3>{grant.name}</h3><small>{grant.rarity.toUpperCase()} · Permanently recorded by the server</small>
       {canOpen ? <button type="button" className="t-btn" onClick={openCollection}>VIEW COLLECTION <ArrowRight aria-hidden="true"/></button> : null}

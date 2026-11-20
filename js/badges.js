@@ -57,14 +57,14 @@
   };
   // Art fallback only for badge rows provided by /webapp/badges/state. NEVER grants or registers ownership.
   const TACTICAL_HONOR_ART = Object.freeze({
-    tops_first_contact: "assets/tactical-honors/tops_first_contact.svg",
-    tops_field_hunter: "assets/tactical-honors/tops_field_hunter.svg",
-    tops_battle_hardened: "assets/tactical-honors/tops_battle_hardened.svg",
-    tops_signal_reaper: "assets/tactical-honors/tops_signal_reaper.svg",
-    tops_fracture_veteran: "assets/tactical-honors/tops_fracture_veteran.svg",
-    tops_warborn_alpha: "assets/tactical-honors/tops_warborn_alpha.svg",
-    tops_commander_slayer: "assets/tactical-honors/tops_commander_slayer.svg",
-    tops_no_one_left_behind: "assets/tactical-honors/tops_no_one_left_behind.svg",
+    tops_first_contact: "assets/tactical-honors/v2/512px/tops_first_contact.webp",
+    tops_field_hunter: "assets/tactical-honors/v2/512px/tops_field_hunter.webp",
+    tops_battle_hardened: "assets/tactical-honors/v2/512px/tops_battle_hardened.webp",
+    tops_signal_reaper: "assets/tactical-honors/v2/512px/tops_signal_reaper.webp",
+    tops_fracture_veteran: "assets/tactical-honors/v2/512px/tops_fracture_veteran.webp",
+    tops_warborn_alpha: "assets/tactical-honors/v2/512px/tops_warborn_alpha.webp",
+    tops_commander_slayer: "assets/tactical-honors/v2/512px/tops_commander_slayer.webp",
+    tops_no_one_left_behind: "assets/tactical-honors/v2/512px/tops_no_one_left_behind.webp",
   });
   const MAX_FEATURED_BADGES = 3;
   const INVALID_TITLE_VALUES = new Set(["", "NO TITLE", "NO ACTIVE TITLE"]);
