@@ -378,6 +378,15 @@
 #tacticalOpsRoot .t-field-results .t-fr-forge li small{margin-top:2px;font-size:10px}
 #tacticalOpsRoot .t-field-results .t-fr-forge li[data-ready=yes] b{color:#bcecd5}
 #tacticalOpsRoot .t-field-results .t-fr-forge .t-btn{width:100%;min-height:44px;margin-top:7px;border-color:#a89b7a7a}
+#tacticalOpsRoot .t-field-results .t-fr-forge-inventory{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;
+  margin-top:6px;border:1px solid #789aa26b;border-radius:3px;
+  background:transparent;color:#c6e3e5;font:800 11px/1.3 var(--t-font-sans);
+  letter-spacing:.12em;cursor:pointer;
+}
+#tacticalOpsRoot .t-field-results .t-fr-forge-inventory svg{width:15px;height:15px}
+#tacticalOpsRoot .t-field-results .t-fr-forge-inventory:focus-visible{outline:2px solid #b6f5ef;outline-offset:2px}
+#tacticalOpsRoot .t-field-results .t-fr-forge-inventory:active{background:#24414a}
 #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-next{margin-top:8px;padding:0 2px}
 #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-result-actions{margin-top:7px;padding-bottom:7px}
 #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-result-actions .t-btn-primary{
