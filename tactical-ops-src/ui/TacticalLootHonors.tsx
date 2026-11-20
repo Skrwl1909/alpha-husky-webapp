@@ -49,12 +49,14 @@ function PrestigeCard({grant}:{grant:PrestigeGrant}) {
   const definition = tacticalHonor(grant.id);
   const openBadges = getHost().openBadges;
   const openProfile = getHost().openProfile;
-  const go = grant.type === "badge" || grant.type === "title" || grant.type === "aura" ? openBadges : openProfile;
+  const inBadgeWall = grant.type === "badge" || grant.type === "title" || grant.type === "aura";
+  const canOpen = inBadgeWall ? Boolean(openBadges) : Boolean(openProfile);
+  const openCollection = () => { if (inBadgeWall) openBadges?.(grant.type === "badge" ? grant.id : undefined); else openProfile?.(); };
   return <article className="t-loot-prestige" data-rarity={grant.rarity} aria-label={labels[grant.type]+": "+grant.name}>
     <div className="t-loot-prestige-art"><Artwork src={grant.imageUrl} fallback={definition} /></div>
     <div className="t-loot-prestige-copy"><span className="t-loot-rarity">{labels[grant.type]}</span>
       <h3>{grant.name}</h3><small>{grant.rarity.toUpperCase()} · Permanently recorded by the server</small>
-      {go ? <button type="button" className="t-btn" onClick={()=>go(grant.type === "badge" ? grant.id : undefined)}>VIEW COLLECTION <ArrowRight aria-hidden="true"/></button> : null}
+      {canOpen ? <button type="button" className="t-btn" onClick={openCollection}>VIEW COLLECTION <ArrowRight aria-hidden="true"/></button> : null}
     </div>
   </article>;
 }
