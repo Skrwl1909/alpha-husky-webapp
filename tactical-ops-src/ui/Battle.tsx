@@ -955,8 +955,7 @@ export function BattleScreen() {
         </div>
       </div>
       <div className="t-action-feedback" role="status" aria-live="polite" aria-atomic="true">
-        {busy ? "Action pending — awaiting confirmed combat state…" : presentation.targeting
-          ? "AIMING: select a highlighted target · Esc or Cancel to exit"
+        {busy ? "Resolving action…" : presentation.targeting ? null
           : ticker && /not accepted|not confirmed|unavailable|cancelled|not legal|cannot act|not available|cooling down|Choose a highlighted|rejected/i.test(ticker) ? ticker : null}
       </div>
       <footer className={`t-dock${objective?.type === "RECOVER" && !objective.completed ? " has-recovery" : ""}`}>
