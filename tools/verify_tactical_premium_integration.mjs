@@ -433,19 +433,89 @@ const reviewedLastHowlRewardsBlobs = Object.freeze({
   "js/inventory.js": "d9ca447b07f27c2587fe73673ef125652b64ca88"
 });
 
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs, ...reviewedLastHowlRewardsBlobs };
+const approvedScopedIntegrationBlobs = Object.freeze({
+  ".github/workflows/tactical-combat-ux-reliability-v1.yml": "687e4826ed30e24fc6cfa9fadd5b657ecf85f0c5",
+  ".github/workflows/tactical-field-settlement-recovery-p0.yml": "fb05b173db51b8ec17a04499c287e931021df4a8",
+  ".github/workflows/tactical-loot-honors-v1.yml": "f43c1c9e3830bb17a5c1630bf7de158fb2fac6db",
+  "assets/tactical-honors/tops_battle_hardened.svg": "d6a5b119bf185387076306346c208b0e55dd79ca",
+  "assets/tactical-honors/tops_broken_signal_frame.svg": "872fc693ee8a74f9afeeddf037dcdd7ef66bfe15",
+  "assets/tactical-honors/tops_commander_slayer.svg": "802464fb8cc5e756ac4f1ba91afc94a3e3917f36",
+  "assets/tactical-honors/tops_field_hunter.svg": "50391ae3bb5896669ad94f585e600ed9b9cecb5a",
+  "assets/tactical-honors/tops_first_contact.svg": "8dfff8dd8b6bb0dfd21826d6f482016e98695b73",
+  "assets/tactical-honors/tops_fracture_vanguard_frame.svg": "741432173975257ca34067c34d19989fea646e5a",
+  "assets/tactical-honors/tops_fracture_veteran.svg": "ea5d2dd55824861cd6db7f8125949b74a538b6bd",
+  "assets/tactical-honors/tops_no_one_left_behind.svg": "3b765fb62ea2de1be38a27f25704d16ee11e95f3",
+  "assets/tactical-honors/tops_signal_reaper.svg": "1d9df3fbafccdacfeed2c8c2451e7632d739f115",
+  "assets/tactical-honors/tops_warborn_alpha.svg": "61932aafdb879a47844a42a765f45a82a42b122b",
+  "assets/tactical-honors/v2/1024px/tops_battle_hardened.webp": "961c0cedf8e84faf71d2cf63a24cff64aa3dde5c",
+  "assets/tactical-honors/v2/1024px/tops_broken_signal_frame.webp": "765ac6a1bb78c4d3a02e1a823fe8f7e6a3fc0488",
+  "assets/tactical-honors/v2/1024px/tops_commander_slayer.webp": "fe6a5e34c9f7b3b5d1154009ae1c12641912376b",
+  "assets/tactical-honors/v2/1024px/tops_field_hunter.webp": "c0c3204ec54566afaccf1d916fb4537d2230368e",
+  "assets/tactical-honors/v2/1024px/tops_first_contact.webp": "aac0e9333b9789471e9e2a79f8a44a300f547940",
+  "assets/tactical-honors/v2/1024px/tops_fracture_vanguard_frame.webp": "c7ae0323d1e57d58b505e3db19aaad11285af102",
+  "assets/tactical-honors/v2/1024px/tops_fracture_veteran.webp": "287e5209507e9df1ad90b51c4d73e92c0f9456ce",
+  "assets/tactical-honors/v2/1024px/tops_no_one_left_behind.webp": "4b73304e484d6350651b1be25f8d33fc07bd356c",
+  "assets/tactical-honors/v2/1024px/tops_signal_reaper.webp": "fee22b3e173b7caf01487b52ef553660f35b82d5",
+  "assets/tactical-honors/v2/1024px/tops_warborn_alpha.webp": "554b4f6f563f4eb4a59ad94cd5e577560e6d0556",
+  "assets/tactical-honors/v2/512px/tops_battle_hardened.webp": "3a637718b5bcaf61e485be8d828fa4d2e37920ee",
+  "assets/tactical-honors/v2/512px/tops_broken_signal_frame.webp": "d380fc8ce8ba5b31fd411e2c66b0cdb02239038a",
+  "assets/tactical-honors/v2/512px/tops_commander_slayer.webp": "22fcdc385125eda2dd2da0d74fca657a20fd2ea3",
+  "assets/tactical-honors/v2/512px/tops_field_hunter.webp": "da4bc4b426c7936e663f666525e6f8c8ffc5160d",
+  "assets/tactical-honors/v2/512px/tops_first_contact.webp": "b627a1a665b6207f88f3f940fbb56e332169a4e9",
+  "assets/tactical-honors/v2/512px/tops_fracture_vanguard_frame.webp": "3f567efd841fef542fd2dce0991b5a2176109d09",
+  "assets/tactical-honors/v2/512px/tops_fracture_veteran.webp": "a97a3a768af69a87d676b58231fade9586bb4c56",
+  "assets/tactical-honors/v2/512px/tops_no_one_left_behind.webp": "16cb5d9e9a4a1cf1b85bdd69a7c72ad525ce0bdf",
+  "assets/tactical-honors/v2/512px/tops_signal_reaper.webp": "d1b01246321857481679adde4d889c26bb2df881",
+  "assets/tactical-honors/v2/512px/tops_warborn_alpha.webp": "57c9ae5dc1134326977c6b871b199419283c1714",
+  "assets/tactical-honors/v2/README.md": "992385f62c594553bf3789ad0f585ab087c45c49",
+  "docs/TACTICAL_LOOT_HONORS_BACKEND_HANDOFF.md": "c5ebf6a8941c71188121c716c1125d7ba7e0b5c5",
+  "js/badges.js": "af5f059d43b69bcbf1dcdfc8eb8b86310d819605",
+  "js/boot_loaders.js": "0b6ecd60ec7437ce096bd9b7d435f22c2782dc0a",
+  "js/tactical_ops.js": "e55a239d099ad4e852dc6f62f5573d5bc593f366",
+  "tactical-ops-src/data/fieldOps.ts": "6cde0050b396c93649b8cf3f796ab205d4f6c459",
+  "tactical-ops-src/data/lootHonors.ts": "3c73b25e00591ef7b920f45321b7636bf98ada44",
+  "tactical-ops-src/data/tacticalHonors.ts": "7966f339a9e98dd2ad09e2f06785e827d95991de",
+  "tactical-ops-src/host/bootstrap.ts": "1be9a84e0743f9ca825d9bd31da4d65ad750a5b7",
+  "tactical-ops-src/host/bridge.ts": "47a0f20a83e7506b8522df308f3d9ea2b472cb5a",
+  "tactical-ops-src/host/foundationProgression.ts": "2200ceb00d8e3d1b82ab7ab7c654f50db806ef7c",
+  "tactical-ops-src/store/battleStore.ts": "21f0c5727c640f71460914e1926ba9133b8dc977",
+  "tactical-ops-src/styles.ts": "ea6c75314f8f8b930834d8998403287b1831eba6",
+  "tactical-ops-src/tactical.css": "91efe1056c6f3de5a9b23f8c455364bd2fd0b11a",
+  "tactical-ops-src/ui/App.tsx": "48b46e47458c8d2a421b60a0f408e6839d3aef3a",
+  "tactical-ops-src/ui/Battle.tsx": "6d5b95d33bdbcee4b88573c6d57c7cdc19a4fee8",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "c9ff99aaf7fc1fcd0dea5fe1cb060eea004c4222",
+  "tactical-ops-src/ui/StoryResultView.tsx": "3301f4948cd9b8b0c1d92f2fecc0f4a8ed540dbe",
+  "tactical-ops-src/ui/TacticalLootHonors.tsx": "db1586f6c0c64959bbd40623f75deab75c496a0f",
+  "tactical-ops-src/ui/counterstrikeStory.css": "c6ed0a6220d939a0cd01620c24e74e9bfea51f0c",
+  "tactical-ops-src/ui/storyResultTruth.ts": "fc15174222e8735e334067287134de6799742a1f",
+  "tactical-ops-src/ui/tacticalLootHonors.css": "11f9084cbaccbf2c77f7bd23b47d4273dcae92fd",
+  "tactical-ops-src/version.ts": "c3d0874093ecab48a49866d839d1b7154d2080b3",
+  "tools/verify_tactical_battlefield_p5_browser.mjs": "6037eadcce3573f8ef75a70dc13d1c9f6a00d80b",
+  "tools/verify_tactical_combat_ux_reliability_v1.mjs": "398a09fbf6a3763f1b689c9ae7e8bd8c0d1d11eb",
+  "tools/verify_tactical_field_settlement_recovery_p0.mjs": "79b6d4c926f6c8532d458033160df9c505a34e48",
+  "tools/verify_tactical_intercept_browser.mjs": "d4861839bffe50dc0b73c9965e5e7b2166b16469",
+  "tools/verify_tactical_loot_honors.mjs": "ff4f3035afcd358fac9246a2b2b794b307a9ad24",
+  "tools/verify_tactical_s3_after_action.mjs": "b6e83e820c33a3f8d47672be0840da7f7dea2c96",
+  "tools/verify_tactical_verified_online_transport.mjs": "7bc053fb452cf4dab1399cd4e1a35e4539d5a1d8",
+});
+const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs, ...reviewedLastHowlRewardsBlobs, ...approvedScopedIntegrationBlobs };
 const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', alphaArtKitBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path) || Object.hasOwn(reviewedRewardLoopFrontendBlobs, path) || Object.hasOwn(reviewedLastHowlRewardsBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
+ assert(path === provenanceVerifier || Object.hasOwn(alphaArtKitBlobs, path) || Object.hasOwn(alphaImmersiveV11Blobs, path) || Object.hasOwn(alphaTelegramSafeBlobs, path) || Object.hasOwn(alphaLastHowlHudBlobs, path) || Object.hasOwn(alphaAtlasModalBlobs, path) || Object.hasOwn(alphaCommandDeckV2Blobs, path) || Object.hasOwn(bloodScentBlobs, path) || Object.hasOwn(packLinkBlobs, path) || Object.hasOwn(counterstrikeBlobs, path) || Object.hasOwn(counterstrikeStoryLiteBlobs, path) || Object.hasOwn(counterstrikeBriefV2Blobs, path) || Object.hasOwn(carrierJamBlobs, path) || Object.hasOwn(reviewedStoryResultsBlobs, path) || Object.hasOwn(reviewedRewardLoopFrontendBlobs, path) || Object.hasOwn(reviewedLastHowlRewardsBlobs, path) || Object.hasOwn(approvedScopedIntegrationBlobs, path), 'unreviewed Alpha Art Kit path: ' + path);
 }
 // types.ts has mixed line endings in Git. The platform clean filter changes its blob.
 const workingBlob = path => path === 'tactical-ops-src/combat/types.ts'
  ? git('hash-object', '--no-filters', path).trim()
  : git('-c', 'core.safecrlf=false', 'hash-object', '--path='+path, path).trim();
+// Exact committed and working-tree identities: no wildcard path approvals.
+for (const [path, sha] of Object.entries(approvedScopedIntegrationBlobs)) {
+ assert.equal(git('rev-parse', 'HEAD:' + path).trim(), sha, 'unreviewed scoped integration commit: ' + path);
+ assert.equal(workingBlob(path), sha, 'unreviewed scoped integration working copy: ' + path);
+}
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', alphaSkillTreeBase).trim().split('\n').filter(Boolean)) {
  assert(path === provenanceVerifier || alphaSkillTreePath(path), 'unreviewed Alpha Skill Tree path: ' + path);
@@ -722,6 +792,7 @@ for (const [path, expected] of Object.entries(approvedDefeatedTileHitboxBlobs)) 
   'unreviewed defeated-tile mainline source: ' + path);
 }
 const approvedCurrentBlobs=Object.freeze({
+  ...approvedScopedIntegrationBlobs,
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
   ...approvedFoundationBridgeV1Blobs,
