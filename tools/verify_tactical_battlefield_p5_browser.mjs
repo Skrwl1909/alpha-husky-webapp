@@ -39,7 +39,10 @@ try{
  await page.evaluate(()=>fixture.confirmedCast('alpha','alpha-strike','enemy'));results.push({label:'fx-frame-sample',timing:await frames()});await shot('390-confirmed-hit');
  await load(320,568,'threat=1',false,true);await shot('320-reduced-threat');
  // Input baseline: every existing control remains routed through the real store.
- await load();await page.locator('.t-act').first().click();await shot('390-target');results.push(await measure('target-mode'));
+ await load();await page.locator('.t-act').first().click();
+  assert.equal(await page.locator('.t-action-feedback').isVisible(), false, 'Target assist must not be covered by redundant aiming feedback');
+  assert(await page.getByRole('group',{name:'Large legal target buttons'}).getByRole('button').count()>0);
+  await shot('390-target');results.push(await measure('target-mode'));
  await page.keyboard.press('Escape');assert.equal(await page.evaluate(()=>fixture.store.getState().battle.mode),'selected');
  await page.locator('.t-status').click();await page.locator('.t-obj-chip').click();results.push(await measure('expanded-hud'));await shot('390-expanded-hud');
  }
