@@ -792,7 +792,6 @@ for (const [path, expected] of Object.entries(approvedDefeatedTileHitboxBlobs)) 
   'unreviewed defeated-tile mainline source: ' + path);
 }
 const approvedCurrentBlobs=Object.freeze({
-  ...approvedScopedIntegrationBlobs,
   ...approvedForgePreviewBlobs,
   ...approvedFieldLegacyV1Blobs,
   ...approvedFoundationBridgeV1Blobs,
@@ -838,6 +837,7 @@ const approvedCurrentBlobs=Object.freeze({
       'unreviewed Last Howl rewards canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
+  ...approvedScopedIntegrationBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
