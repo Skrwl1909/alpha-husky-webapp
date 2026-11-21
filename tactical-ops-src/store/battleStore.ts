@@ -144,6 +144,18 @@ interface UiBattle {
   shadowSavePending: boolean;
 }
 
+/** Human guidance only for reason codes emitted by the existing combat engine. */
+export function skillFailureGuidance(reason?: string): string {
+  switch (reason) {
+    case "no-actor": return "This unit cannot act now. Select an available ally.";
+    case "unknown-skill": return "This skill is not available to the active unit.";
+    case "cooldown": return "Skill is cooling down. Choose a ready action.";
+    case "need-target": return "Choose a highlighted legal target, or cancel aiming.";
+    case "invalid-target": return "Target is not legal for this skill. Choose a highlighted target or cancel.";
+    default: return "Action was not accepted. Check the board and try again.";
+  }
+}
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     if (typeof requestAnimationFrame === "undefined") {
@@ -413,7 +425,7 @@ export const useBattleStore = create<Store>((set, get) => {
     const { lastHowl: view, busy, screen, identity } = get();
     if (screen !== "battle" || busy || view?.status !== "ACTIVE") return;
     const g = ++runGen;
-    set({ busy: true, progressionError: null });
+    set({ busy: true, progressionError: null, ticker: "Confirming action…" });
     let accepted: LastHowlView;
     try {
       accepted = await requestLastHowl("command", { runId: view.runId, expectedRevision: view.revision, token: view.token, command });
@@ -445,7 +457,7 @@ export const useBattleStore = create<Store>((set, get) => {
       for (const frame of accepted.frames ?? []) frame.events.forEach(showBloodScent);
     }
     if (accepted.revision === view.revision && accepted.status === "ACTIVE") {
-      set({ progressionError: "Action not confirmed. Check the board and try again." });
+      set({ progressionError: "Action not confirmed. Check the board and try again.", ticker: "Action rejected or not recorded. Check legal targets and retry." });
     }
   };
 
@@ -516,7 +528,9 @@ export const useBattleStore = create<Store>((set, get) => {
     set({ battle, queue: refreshQueue(battle), threats: accepted.threats });
     if (await finishIfNeeded(g)) return;
     const actor = activeUnit(battle);
-    set({ busy: false, ticker: actor ? `${actor.name}  ·  ${actor.hasMoved ? "act" : "move or act"}` : null });
+    set({ busy: false, ticker: accepted.revision === view.revision
+      ? "Action not confirmed. Check legal actions and try again."
+      : actor ? `${actor.name}  ·  ${actor.hasMoved ? "act" : "move or act"}` : null });
   };
 
   const continueLoop = async (g: number) => {
@@ -1434,7 +1448,7 @@ export const useBattleStore = create<Store>((set, get) => {
         return;
       }
       if (battle.mode === "targeting") {
-        set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
+        set({ battle: { ...battle, mode: "selected", actionSkillId: null }, ticker: "Targeting cancelled." });
         return;
       }
       const actor = activeUnit(battle);
@@ -1469,7 +1483,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ busy: true, attackingId: actor.id, lastActionSkillId: skillId });
         const res = trySkill(battle, skillId);
         if (!res.ok) {
-          set({ busy: false, attackingId: null, ticker: `${actor.name}  ·  no target in range` });
+          set({ busy: false, attackingId: null, ticker: skillFailureGuidance(res.reason) });
           return;
         }
         const evidence = recordS3Skill(get().s3CombatProof, actor, skillId, undefined, res.events, false, battle);
@@ -1508,7 +1522,7 @@ export const useBattleStore = create<Store>((set, get) => {
       set({ busy: true, attackingId: actor.id, lastActionSkillId: selectedSkillId });
       const res = trySkill(battle, selectedSkillId, id);
       if (!res.ok) {
-        set({ busy: false, attackingId: null });
+        set({ busy: false, attackingId: null, ticker: skillFailureGuidance(res.reason) });
         return;
       }
       const interrupt = TACTICAL_VNEXT_ENABLED
@@ -1600,11 +1614,14 @@ export const useBattleStore = create<Store>((set, get) => {
       const { battle, busy } = get();
       if (busy) return;
       const actor = activeUnit(battle);
-      if (!actor || actor.team !== "ally" || actor.hasActed) return;
+      if (!actor || actor.team !== "ally" || actor.hasActed) {
+        set({ ticker: "Skip unavailable. Wait for an active ally who has not acted." });
+        return;
+      }
       if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skip" }); return; }
       const g = ++runGen;
       const res = trySkip(battle);
-      if (!res.ok) return;
+      if (!res.ok) { set({ ticker: "Skip not accepted. This unit may have already acted; check whose turn it is." }); return; }
       set({ battle: res.state, busy: true, ticker: res.events[0]?.text ?? null });
       void afterPlayerAction(g);
     },
