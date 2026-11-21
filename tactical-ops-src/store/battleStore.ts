@@ -421,10 +421,16 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
+  const latencyDev = import.meta.env.DEV;
+  const combatStamp = () => typeof performance !== "undefined" ? performance.now() : Date.now();
+  const reportLatency = (mode: string, command: string, requestMs: number, framesMs: number, totalMs: number) => {
+    if (latencyDev) console.info("[Tactical UX latency]", { mode, command, requestMs: Math.round(requestMs), framesMs: Math.round(framesMs), totalMs: Math.round(totalMs) });
+  };
   const submitLastHowl = async (command: RecoverCommand | { type: "abandon" }) => {
     const { lastHowl: view, busy, screen, identity } = get();
     if (screen !== "battle" || busy || view?.status !== "ACTIVE") return;
     const g = ++runGen;
+    const startedAt = combatStamp();
     set({ busy: true, progressionError: null, ticker: "Confirming action…" });
     let accepted: LastHowlView;
     try {
@@ -441,6 +447,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
     }
     if (g !== runGen) return;
+    const receivedAt = combatStamp();
     // Use the existing effects for confirmed actions only. The current board
     // is always replaced by the final authoritative view after these frames.
     const reducedMotion = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -453,6 +460,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (g !== runGen) return;
     }
     acceptLastHowl(accepted);
+    reportLatency("last-howl", command.type, receivedAt - startedAt, combatStamp() - receivedAt, combatStamp() - startedAt);
     if (reducedMotion) {
       for (const frame of accepted.frames ?? []) frame.events.forEach(showBloodScent);
     }
@@ -469,6 +477,7 @@ export const useBattleStore = create<Store>((set, get) => {
     const view = recoverView;
     if (current.screen !== "battle" || current.busy || !view || view.runId !== current.currentRunKey) return;
     const g = ++runGen;
+    const startedAt = combatStamp();
     set({ busy: true, ticker: "Confirming action…" });
     let accepted: RecoverView;
     try {
@@ -486,6 +495,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
     }
     if (g !== runGen) return;
+    const receivedAt = combatStamp();
     recoverView = accepted;
     if(accepted.counterstrike)set({counterstrikeRadio:accepted.counterstrike.radio,counterstrikeResult:accepted.counterstrike.result});
     for (const frame of accepted.frames ?? []) {
@@ -526,11 +536,15 @@ export const useBattleStore = create<Store>((set, get) => {
     }
     const battle = recoverDisplay(accepted.battle, current.identity);
     set({ battle, queue: refreshQueue(battle), threats: accepted.threats });
-    if (await finishIfNeeded(g)) return;
+    if (await finishIfNeeded(g)) {
+      reportLatency("recover", command.type, receivedAt - startedAt, combatStamp() - receivedAt, combatStamp() - startedAt);
+      return;
+    }
     const actor = activeUnit(battle);
     set({ busy: false, ticker: accepted.revision === view.revision
       ? "Action not confirmed. Check legal actions and try again."
       : actor ? `${actor.name}  ·  ${actor.hasMoved ? "act" : "move or act"}` : null });
+    reportLatency("recover", command.type, receivedAt - startedAt, combatStamp() - receivedAt, combatStamp() - startedAt);
   };
 
   const continueLoop = async (g: number) => {
