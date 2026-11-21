@@ -848,8 +848,17 @@ const approvedCurrentBlobs=Object.freeze({
       'unreviewed Last Howl rewards canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
-  // Live integration blobs are pinned separately against HEAD and working copy;
-  // do not override the legacy test's intentionally historical source snapshots.
+  // Legacy readFileSync() substitutes frozen Git snapshots for some paths.
+  // Only expose current scoped SHAs where that reader actually returns live
+  // checkout bytes; historical paths keep their existing approval hash.
+  ...Object.fromEntries(Object.entries(approvedScopedCurrentTextBlobs).filter(([path]) =>
+    ['tactical-ops-src/ui/LastHowl.tsx', 'tactical-ops-src/ui/lastHowl.css',
+     'tools/verify_tactical_last_howl_browser.mjs'].includes(path) ||
+    !(Object.hasOwn(lastHowlBlobs,path) || Object.hasOwn(approvedM2Blobs,path) ||
+      Object.hasOwn(approvedSignalAtlasPremiumBlobs,path) || Object.hasOwn(bloodScentBlobs,path) ||
+      Object.hasOwn(packLinkBlobs,path) || counterstrikeHistoricalPaths.has(path) ||
+      Object.hasOwn(carrierJamBlobs,path))
+  )),
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
