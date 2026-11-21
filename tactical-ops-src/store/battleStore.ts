@@ -1530,6 +1530,11 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy || battle.mode !== "targeting" || !battle.actionSkillId) return;
       const actor = activeUnit(battle);
       if (!actor || actor.hasActed) return;
+      const selected = resolveGrowthSkill(getSkill(battle.actionSkillId), actor.growth);
+      if (!validTargetIds(battle.units, actor, selected).includes(id)) {
+        set({ ticker: skillFailureGuidance("invalid-target") });
+        return;
+      }
       if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
       const g = ++runGen;
       const selectedSkillId = battle.actionSkillId;
