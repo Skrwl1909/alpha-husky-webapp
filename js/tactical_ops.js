@@ -8911,6 +8911,16 @@ body.ah-perf-lite #tacticalOpsRoot .t-cosmetic-sweep {opacity:0;animation:none;}
   #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions .t-btn { min-height: 44px; }
 }
 
+/* Ultra-compact desktop Mini App viewport: keep full 44px deploy touch target
+   visible without hiding the accepted objective, squad or safe top chrome. */
+@media (max-height: 480px) and (pointer: fine) {
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate { min-height: 34px; margin-bottom: 2px; padding-block: 3px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-identity p { margin-bottom: 3px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-identity .t-title { margin-bottom: 2px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-intel-status { margin: 2px 0 3px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions { margin: 3px 0 4px; }
+}
+
 .t-story-result-root{position:relative;display:grid;place-items:center;padding:22px 12px;background:#050b12;overflow:auto}
 .t-story-result-shade{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 52% 18%,rgba(43,103,119,.25),transparent 58%),linear-gradient(145deg,rgba(14,38,50,.45),transparent 60%)}
 .t-story-result-card{position:relative;width:min(100%,530px);overflow:hidden;border:1px solid rgba(119,196,207,.29);border-radius:19px;background:linear-gradient(160deg,#12212c,#081119 78%);box-shadow:0 18px 70px rgba(0,0,0,.59),inset 0 1px rgba(225,253,255,.13);color:#edf8fb}
