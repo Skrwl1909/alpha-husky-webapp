@@ -488,7 +488,7 @@ export const useBattleStore = create<Store>((set, get) => {
     } catch {
       // A lost response can hide a committed action. Reload its revision before accepting more input.
       try {
-        accepted = await loadRecoverBattle(view.runId);
+        accepted = await loadRecoverBattle(view.runId, current.selectedMissionId ?? undefined);
       } catch {
         if (g === runGen) {
           get().backToHub();
@@ -1371,7 +1371,7 @@ export const useBattleStore = create<Store>((set, get) => {
                 ((started.run.missionId === "field-relay-intercept" || started.run.missionId === "broken-signal-commander") &&
                   started.run.rulesContract?.rulesetVersion === TACTICAL_VNEXT_RULESET));
               // Fail closed: an accepted verified encounter must never fall back to local combat.
-              const authoritative = requiresVerifiedOnline ? await loadRecoverBattle(started.run.runId) : undefined;
+              const authoritative = requiresVerifiedOnline ? await loadRecoverBattle(started.run.runId, started.run.missionId) : undefined;
               if (g !== runGen) return;
               beginBattle(
                 g,
