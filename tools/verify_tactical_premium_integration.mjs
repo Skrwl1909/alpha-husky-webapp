@@ -498,6 +498,11 @@ const approvedScopedIntegrationBlobs = Object.freeze({
   "tools/verify_tactical_s3_after_action.mjs": "b6e83e820c33a3f8d47672be0840da7f7dea2c96",
   "tools/verify_tactical_verified_online_transport.mjs": "7bc053fb452cf4dab1399cd4e1a35e4539d5a1d8",
 });
+// Legacy sourceBlob() expects UTF-8 text; binary WebP assets are checked
+// using Git object hashes in the scoped integration identity pass above.
+const approvedScopedCurrentTextBlobs = Object.fromEntries(
+ Object.entries(approvedScopedIntegrationBlobs).filter(([path]) => !/\.(?:webp|png|jpg|jpeg|gif)$/i.test(path))
+);
 const historicalAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs, ...reviewedLastHowlRewardsBlobs };
 const currentAlphaSkillTreeBlobs = { ...historicalAlphaSkillTreeBlobs, ...approvedScopedIntegrationBlobs };
 // Historical ownership must not change when a later integration updates a path.
@@ -825,21 +830,21 @@ const approvedCurrentBlobs=Object.freeze({
   // blobs and separately compare the exact working-tree bytes in legacy checks.
   ...Object.fromEntries(Object.entries(reviewedStoryResultsBlobs).filter(([path]) =>
     !Object.hasOwn(reviewedRewardLoopFrontendBlobs,path) && !Object.hasOwn(reviewedLastHowlRewardsBlobs,path)).map(([path,sha]) => {
-    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),approvedScopedIntegrationBlobs[path] ?? sha,
       'unreviewed story-results canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
   ...Object.fromEntries(Object.entries(reviewedRewardLoopFrontendBlobs).filter(([path]) => !Object.hasOwn(reviewedLastHowlRewardsBlobs,path)).map(([path,sha]) => {
-    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),approvedScopedIntegrationBlobs[path] ?? sha,
       'unreviewed reward-loop canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
   ...Object.fromEntries(Object.entries(reviewedLastHowlRewardsBlobs).map(([path,sha]) => {
-    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),sha,
+    assert.equal(git('-c','core.safecrlf=false','hash-object','--path='+path,path).trim(),approvedScopedIntegrationBlobs[path] ?? sha,
       'unreviewed Last Howl rewards canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
-  ...approvedScopedIntegrationBlobs,
+  ...approvedScopedCurrentTextBlobs,
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
