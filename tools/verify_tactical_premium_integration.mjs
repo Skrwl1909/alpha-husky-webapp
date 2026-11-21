@@ -498,8 +498,10 @@ const approvedScopedIntegrationBlobs = Object.freeze({
   "tools/verify_tactical_s3_after_action.mjs": "b6e83e820c33a3f8d47672be0840da7f7dea2c96",
   "tools/verify_tactical_verified_online_transport.mjs": "7bc053fb452cf4dab1399cd4e1a35e4539d5a1d8",
 });
-const currentAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs, ...reviewedLastHowlRewardsBlobs, ...approvedScopedIntegrationBlobs };
-const alphaSkillTreePath = path => Object.hasOwn(currentAlphaSkillTreeBlobs, path);
+const historicalAlphaSkillTreeBlobs = { ...alphaSkillTreeBlobs, ...alphaArtKitBlobs, ...alphaImmersiveV11Blobs, ...alphaTelegramSafeBlobs, ...alphaLastHowlHudBlobs, ...alphaAtlasModalBlobs, ...alphaCommandDeckV2Blobs, ...bloodScentBlobs, ...packLinkBlobs, ...counterstrikeBlobs, ...counterstrikeStoryLiteBlobs, ...counterstrikeStoryActivationBlobs, ...counterstrikeBriefV2Blobs, ...carrierJamBlobs, ...reviewedStoryResultsBlobs, ...reviewedRewardLoopFrontendBlobs, ...reviewedLastHowlRewardsBlobs };
+const currentAlphaSkillTreeBlobs = { ...historicalAlphaSkillTreeBlobs, ...approvedScopedIntegrationBlobs };
+// Historical ownership must not change when a later integration updates a path.
+const alphaSkillTreePath = path => Object.hasOwn(historicalAlphaSkillTreeBlobs, path);
 git('merge-base', '--is-ancestor', alphaArtKitBase, 'HEAD');
 for (const [path, expected] of Object.entries(alphaSkillTreeBlobs)) {
  assert.equal(git('rev-parse', `${alphaArtKitBase}:${path}`).trim(), expected, 'unreviewed pre-kit Alpha Skill Tree source: ' + path);
@@ -518,7 +520,7 @@ for (const [path, sha] of Object.entries(approvedScopedIntegrationBlobs)) {
 }
 git('merge-base', '--is-ancestor', alphaSkillTreeBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', alphaSkillTreeBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || alphaSkillTreePath(path), 'unreviewed Alpha Skill Tree path: ' + path);
+ assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedScopedIntegrationBlobs,path), 'unreviewed Alpha Skill Tree path: ' + path);
 }
 for (const [path, expected] of Object.entries(currentAlphaSkillTreeBlobs)) {
  assert.equal(workingBlob(path), expected, 'unreviewed working Alpha Skill Tree source: ' + path);
