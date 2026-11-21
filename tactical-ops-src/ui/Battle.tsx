@@ -8,7 +8,7 @@ import { relayPressureMission } from "../data/relayPressure";
 import { signalTrialRevision } from "../data/signalTrials";
 import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Profiler, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, LogOut, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow } from "../store/battleStore";
 import { fieldPercent, cellKey, chebyshev } from "../combat/movement";
@@ -699,6 +699,9 @@ export function BattleScreen() {
   }, [presentation.targeting, busy, cancel]);
 
   return (
+    <Profiler id="TacticalCombat" onRender={(_, phase, duration) => {
+      if (import.meta.env.DEV) console.info("[Tactical UX render]", { phase, reactRenderMs: Math.round(duration * 10) / 10 });
+    }}>
     <div
       className={`t-battle${training ? " is-foundation-training" : ""}${BATTLEFIELD_VNEXT_PREVIEW ? " battlefield-vnext-preview" : ""}${focusPresentation ? ` is-focusing focus-${focusPresentation.targetClass} effect-${focusPresentation.effectClass}` : ""}`}
       data-projection="relay-overhead-v1"
@@ -988,5 +991,6 @@ export function BattleScreen() {
         </button>
       </footer>
     </div>
+    </Profiler>
   );
 }
