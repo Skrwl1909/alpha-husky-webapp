@@ -43,7 +43,7 @@ try {
   if(mode==='tracking'){
    assert.match(await page.locator('.t-command-cue').innerText(),/TRACKING LOCK/);assert.doesNotMatch(await page.locator('.t-command-cue').innerText(),/Move off marked cells/);
    const marker=page.locator('.t-threat-tile-v2').first(),before=await marker.getAttribute('style');
-   await page.getByRole('button',{name:'Move to 3,1',exact:true}).dispatchEvent('pointerdown',{pointerType:'touch',bubbles:true});
+   await page.getByRole('button',{name:'Move to 3,1',exact:true}).click();
    assert.equal(await page.evaluate(()=>fixture.store.getState().battle.units.find(u=>u.id==='alpha').c),3);
    assert.notEqual(await marker.getAttribute('style'),before,'tracking marker must follow the same moved ally');
    assert.equal(await page.evaluate(()=>fixture.store.getState().threats[0].targetUnitId),'alpha');assert.equal(await page.locator('.t-threat-tile-v2').count(),1);
