@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install build dependencies
+        run: npm install --no-audit --no-fund
       - name: Focused interaction contracts
         run: node --test tools/verify_tactical_combat_ux_reliability_v1.mjs
       - name: Existing targeting and HUD regressions
@@ -27,8 +29,6 @@ jobs:
           node tools/verify_tactical_ops_ios_field_hud.mjs
           node tools/verify_tactical_contact_sync.mjs
           node tools/verify_tactical_ops_action_icons.mjs
-      - name: Install build dependencies
-        run: npm install --no-audit --no-fund
       - name: Build canonical runtime
         run: npm run build:tactical-ops
       - name: Check bundle syntax
