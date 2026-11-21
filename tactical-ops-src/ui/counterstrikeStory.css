@@ -343,3 +343,13 @@
   #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions .t-btn { min-height: 40px; }
   #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-deploy-actions .t-btn { min-height: 44px; }
 }
+
+/* Ultra-compact desktop Mini App viewport: keep full 44px deploy touch target
+   visible without hiding the accepted objective, squad or safe top chrome. */
+@media (max-height: 480px) and (pointer: fine) {
+  #tacticalOpsRoot .t-counterstrike-brief .t-false-relay-brief-plate { min-height: 34px; margin-bottom: 2px; padding-block: 3px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-identity p { margin-bottom: 3px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-identity .t-title { margin-bottom: 2px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-intel-status { margin: 2px 0 3px; }
+  #tacticalOpsRoot .t-counterstrike-brief .t-counterstrike-companions { margin: 3px 0 4px; }
+}
