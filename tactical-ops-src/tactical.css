@@ -5549,6 +5549,6 @@ body.ah-perf-lite #tacticalOpsRoot .t-cosmetic-sweep {opacity:0;animation:none;}
 #tacticalOpsRoot .t-battle :is(.t-token,.t-token *,.t-float,.t-float *,.t-choreo-travel,.t-choreo-travel *,.t-hold-cell,.t-last-howl-entry,.t-threat-tethers,.t-move-trace) {pointer-events:none}
 #tacticalOpsRoot .t-battle .t-unit-hit {touch-action:manipulation;cursor:pointer}
 #tacticalOpsRoot .t-battle .t-unit-hit.is-legal-target {z-index:36}
-#tacticalOpsRoot .t-action-feedback {font:600 11px/15px var(--t-font-sans);color:#e5eff4;text-align:center;min-height:0;padding:0 8px;pointer-events:none}
+#tacticalOpsRoot .t-action-feedback {position:absolute;z-index:37;bottom:74px;left:8px;right:8px;max-height:44px;overflow:hidden;font:600 11px/15px var(--t-font-sans);color:#e5eff4;text-align:center;padding:3px 8px;pointer-events:none;text-shadow:0 1px 3px #06111b;background:rgba(6,18,28,.84)}
 #tacticalOpsRoot .t-action-feedback:empty {display:none}
 #tacticalOpsRoot .t-battle .t-skip:disabled {cursor:not-allowed}
