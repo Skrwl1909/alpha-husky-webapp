@@ -623,9 +623,12 @@ export function isRecoverAuthorityRun(runId: string | null | undefined): boolean
   return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith("field_verified_v1_") || runId.startsWith("mission_verified_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
 }
 
-async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>) {
+async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>, objectiveHint?: "RECOVER" | "INTERCEPT" | "BOSS" | "HOLD") {
   const isCounterstrike=runId.startsWith(COUNTERSTRIKE_PREFIX);
-  const expectedObjective = isCounterstrike ? "HOLD" : runId.startsWith("field_verified_v1_") ? "INTERCEPT" : runId.startsWith("mission_verified_v1_") ? "BOSS" : "RECOVER";
+  const expectedObjective = isCounterstrike ? "HOLD" : runId.startsWith("field_verified_v1_") ? "INTERCEPT" : runId.startsWith("mission_verified_v1_") ? "BOSS" : runId.startsWith("field_recover_v1_") ? "RECOVER" : objectiveHint;
+  // Legacy accepted VNext Intercept/Commander run IDs are not self-describing.
+  // Require the caller's accepted mission/saved server view; never infer proof from the local battle.
+  if (!expectedObjective) throw new FoundationProgressionError("invalid_progression_response");
   const response = await request("/webapp/tactical-foundation/"+(isCounterstrike?"counterstrike":"recover")+"/"+path, { runId, ...body });
   const view = response.recover as RecoverView | undefined;
   if (view?.runId !== runId || !Number.isSafeInteger(view.revision) || typeof view.token !== "string" ||
@@ -644,12 +647,15 @@ export async function startCounterstrike(requestId:string,expectedRevision:numbe
   return {state:responseState(response),view};
 }
 
-export function loadRecoverBattle(runId: string) {
-  return recoverRequest("state", runId, {});
+export function loadRecoverBattle(runId: string, missionId?: string) {
+  const objectiveHint = missionId === "field-relay-intercept" ? "INTERCEPT" :
+    missionId === "broken-signal-commander" ? "BOSS" :
+    missionId === "field-relay-recovery" ? "RECOVER" : undefined;
+  return recoverRequest("state", runId, {}, objectiveHint);
 }
 
 export async function sendRecoverCommand(view: RecoverView, command: RecoverCommand) {
-  const next = await recoverRequest("command", view.runId, { ...(view.runId.startsWith(COUNTERSTRIKE_PREFIX)?{requestId:createFoundationRequestId("counterstrike-command")} : {}), expectedRevision: view.revision, token: view.token, command });
+  const next = await recoverRequest("command", view.runId, { ...(view.runId.startsWith(COUNTERSTRIKE_PREFIX)?{requestId:createFoundationRequestId("counterstrike-command")} : {}), expectedRevision: view.revision, token: view.token, command }, view.battle.objective?.type);
   if (next.revision !== view.revision + 1 || !Array.isArray(next.frames)) {
     throw new FoundationProgressionError("invalid_progression_response");
   }
