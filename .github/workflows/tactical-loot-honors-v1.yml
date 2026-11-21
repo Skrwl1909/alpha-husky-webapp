@@ -8,6 +8,7 @@ on:
       - 'js/boot_loaders.js'
       - 'js/tactical_ops.js'
       - 'tools/verify_tactical_loot_honors.mjs'
+      - 'tools/verify_tactical_verified_online_transport.mjs'
       - '.github/workflows/tactical-loot-honors-v1.yml'
   workflow_dispatch:
 permissions:
@@ -32,6 +33,8 @@ jobs:
         run: npm run build:tactical-ops
       - name: Loot & Honors receipt and Chromium verification
         run: node tools/verify_tactical_loot_honors.mjs
+      - name: Verified online Intercept and Commander transport regression
+        run: node tools/verify_tactical_verified_online_transport.mjs
       - name: Existing story results transaction regression
         run: node tools/verify_tactical_story_results_transactions.mjs
       - name: Existing Last Howl results regression
