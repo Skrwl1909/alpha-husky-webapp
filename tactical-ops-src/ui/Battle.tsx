@@ -322,11 +322,10 @@ function Token({
         data-unit-id={unit.id}
         style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(unit.r, GRID_COLS, GRID_ROWS) } as CSSProperties}
         aria-label={`${unit.name}. ${hp}/${unit.maxHp} HP${targeting && validTarget ? ". Legal target" : ""}`}
-        onClick={e => { if (e.detail !== 0) return; if (targeting && validTarget) selectTarget(unit.id); else inspectUnit(unit.id); }}
-        onPointerDown={(e) => {
+        onClick={(e) => {
           e.stopPropagation();
           unlockAudio();
-          if (targeting && validTarget) selectTarget(unit.id);
+          if (targeting) selectTarget(unit.id);
           else inspectUnit(unit.id);
         }}
       /> : null}
@@ -644,6 +643,7 @@ export function BattleScreen() {
   const impactId = useBattleStore((s) => s.impactId);
   const impactKey = useBattleStore((s) => s.impactKey);
   const muted = useBattleStore((s) => s.muted);
+  const ticker = useBattleStore((s) => s.ticker);
   const busy = useBattleStore((s) => s.busy);
   const selectCell = useBattleStore((s) => s.selectCell);
   const skipTurn = useBattleStore((s) => s.skipTurn);
@@ -687,6 +687,16 @@ export function BattleScreen() {
   const allyTurn = presentation.interactive;
   const impact = units.find((u) => u.id === impactId);
   const impactPos = impact ? fieldPercent(impact.c, impact.r) : null;
+  useEffect(() => {
+    if (!presentation.targeting || busy) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      cancel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [presentation.targeting, busy, cancel]);
 
   return (
     <div
@@ -803,8 +813,7 @@ export function BattleScreen() {
                 data-threatened={presentation.danger.has(key) || undefined}
                 style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(r, GRID_COLS, GRID_ROWS) } as CSSProperties}
                 aria-label={`Move to ${c},${r}${presentation.danger.has(key) ? ". Threatened cell" : ""}`}
-                onClick={e => { if (e.detail === 0) selectCell(c, r); }}
-                onPointerDown={(e) => {
+                onClick={(e) => {
                   e.stopPropagation();
                   unlockAudio();
                   selectCell(c, r);
@@ -942,6 +951,11 @@ export function BattleScreen() {
           ) : null}
         </div>
       </div>
+      <div className="t-action-feedback" role="status" aria-live="polite" aria-atomic="true">
+        {busy ? "Action pending — awaiting confirmed combat state…" : presentation.targeting
+          ? "AIMING: select a highlighted target · Esc or Cancel to exit"
+          : ticker && /not accepted|not confirmed|unavailable|cancelled|not legal|cannot act|not available|cooling down|Choose a highlighted|rejected/i.test(ticker) ? ticker : null}
+      </div>
       <footer className={`t-dock${objective?.type === "RECOVER" && !objective.completed ? " has-recovery" : ""}`}>
         <button
           type="button"
@@ -963,6 +977,7 @@ export function BattleScreen() {
           type="button"
           className="t-btn t-skip"
           disabled={!allyTurn}
+          aria-label={busy ? "Skip pending: waiting for confirmed action" : allyTurn ? "Skip active ally turn" : "Skip unavailable during enemy or pending turn"}
           onClick={() => {
             unlockAudio();
             skipTurn();
