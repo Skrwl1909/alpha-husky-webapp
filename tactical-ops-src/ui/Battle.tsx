@@ -8,7 +8,7 @@ import { relayPressureMission } from "../data/relayPressure";
 import { signalTrialRevision } from "../data/signalTrials";
 import { resolveCurrentEncounter } from "../data/onboarding";
 import { foundationBattleGuidance } from "./playerGuidance";
-import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { Axe, ChevronsRight, Crosshair, HeartPulse, LogOut, PawPrint, Shield, Slash, Swords, Target, Volume2, VolumeX } from "lucide-react";
 import { useBattleStore, moveCellsNow } from "../store/battleStore";
 import { fieldPercent, cellKey, chebyshev } from "../combat/movement";
