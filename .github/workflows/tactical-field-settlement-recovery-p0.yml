@@ -6,6 +6,8 @@ on:
   pull_request:
     branches:
       - main
+permissions:
+  contents: write
 jobs:
   settlement-recovery:
     if: github.event_name == 'push' || github.head_ref == 'fix/tactical-field-result-settlement-recovery-p0-20261121'
@@ -27,3 +29,15 @@ jobs:
         run: npm run build:tactical-ops
       - name: Check generated runtime syntax
         run: node --check js/tactical_ops.js
+      - name: Synchronize generated bundles on isolated branch
+        if: github.event_name == 'push'
+        run: |
+          if git diff --quiet -- js/tactical_ops.js js/boot_loaders.js; then
+            echo "Generated bundles already synchronized."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tactical_ops.js js/boot_loaders.js
+          git commit -m "build(tactical): sync settlement recovery runtime [skip ci]"
+          git push origin HEAD:fix/tactical-field-result-settlement-recovery-p0-20261121
