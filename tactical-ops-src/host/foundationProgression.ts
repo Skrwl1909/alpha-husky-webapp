@@ -623,9 +623,9 @@ export function isRecoverAuthorityRun(runId: string | null | undefined): boolean
   return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith("field_verified_v1_") || runId.startsWith("mission_verified_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
 }
 
-async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>, objectiveHint?: "RECOVER" | "INTERCEPT" | "BOSS" | "HOLD") {
+async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>, objectiveHint?: string) {
   const isCounterstrike=runId.startsWith(COUNTERSTRIKE_PREFIX);
-  const expectedObjective = isCounterstrike ? "HOLD" : runId.startsWith("field_verified_v1_") ? "INTERCEPT" : runId.startsWith("mission_verified_v1_") ? "BOSS" : runId.startsWith("field_recover_v1_") ? "RECOVER" : objectiveHint;
+  const expectedObjective = isCounterstrike ? "HOLD" : runId.startsWith("field_verified_v1_") ? "INTERCEPT" : runId.startsWith("mission_verified_v1_") ? "BOSS" : runId.startsWith("field_recover_v1_") ? "RECOVER" : (objectiveHint && ["RECOVER", "INTERCEPT", "BOSS", "HOLD"].includes(objectiveHint) ? objectiveHint : undefined);
   // Legacy accepted VNext Intercept/Commander run IDs are not self-describing.
   // Require the caller's accepted mission/saved server view; never infer proof from the local battle.
   if (!expectedObjective) throw new FoundationProgressionError("invalid_progression_response");
