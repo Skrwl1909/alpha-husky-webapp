@@ -1,0 +1,29 @@
+name: Tactical Field Settlement Recovery P0
+on:
+  push:
+    branches:
+      - fix/tactical-field-result-settlement-recovery-p0-20261121
+  pull_request:
+    branches:
+      - main
+jobs:
+  settlement-recovery:
+    if: github.event_name == 'push' || github.head_ref == 'fix/tactical-field-result-settlement-recovery-p0-20261121'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Verify field settlement recovery
+        run: node tools/verify_tactical_field_settlement_recovery_p0.mjs
+      - name: Verify existing result protections
+        run: |
+          node tools/verify_tactical_story_results_transactions.mjs
+          node --test tools/verify_tactical_ops_failure_recording.mjs
+      - name: Build tactical runtime
+        run: npm run build:tactical-ops
+      - name: Check generated runtime syntax
+        run: node --check js/tactical_ops.js
