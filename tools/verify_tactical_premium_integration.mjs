@@ -1048,13 +1048,13 @@ for(const [path,expected] of Object.entries(approvedVictoryV2Blobs)){
 }
 for(const changedPath of git('diff','--name-only','--no-renames',victoryV2Base,lastHowlBase,'--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedScopedIntegrationBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs','unreviewed Victory V2 path: '+changedPath);
 }
 git('merge-base','--is-ancestor',recoverAuthorityBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',recoverAuthorityBase,lastHowlBase,'--',
  '.github/workflows','index.html','package.json','js','tactical-ops-src','images/tactical_ops','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedScopedIntegrationBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed RECOVER Authority path: '+changedPath);
 }
@@ -1067,7 +1067,7 @@ for(const [path,expected] of Object.entries(approvedFirstPlayableBridgeBlobs)){
 }
 for(const changedPath of git('diff','--name-only','--no-renames',rewardExperienceBase,lastHowlBase,'--',
  '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedScopedIntegrationBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Reward Experience path: '+changedPath);
 }
@@ -1083,7 +1083,7 @@ const nextDecisionHistoricSource=path=>git('show',`${nextDecisionBase}:${path}`)
 git('merge-base','--is-ancestor',nextDecisionBase,'HEAD');
 for(const changedPath of git('diff','--name-only','--no-renames',nextDecisionBase,lastHowlBase,'--',
   '.github/workflows','index.html','js','tactical-ops-src','tools').trim().split('\n').filter(Boolean)){
- assert(Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
+ assert(Object.hasOwn(approvedScopedIntegrationBlobs,changedPath)||Object.hasOwn(nextDecisionApproved,changedPath)||Object.hasOwn(approvedSignalTrialsBlobs,changedPath)||Object.hasOwn(approvedBrowserEntryMainBlobs,changedPath)||Object.hasOwn(approvedFirstPlayableBridgeBlobs,changedPath)||Object.hasOwn(approvedRewardExperienceBlobs,changedPath)||Object.hasOwn(approvedRecoverAuthorityBlobs,changedPath)||Object.hasOwn(approvedVictoryV2Blobs,changedPath)||Object.hasOwn(approvedVictoryArtKitV1Blobs,changedPath)||(Object.hasOwn(approvedGearV31Blobs,changedPath)||Object.hasOwn(approvedCurrentBlobs,changedPath))||((Object.hasOwn(approvedWarTableV2Blobs,changedPath)||Object.hasOwn(approvedWarTableAssetBlobs,changedPath))||Object.hasOwn(approvedIdentityV2Blobs,changedPath))||generated.has(changedPath)||
   changedPath==='tools/verify_tactical_premium_integration.mjs',
   'unreviewed Next Decision path: '+changedPath);
 }
