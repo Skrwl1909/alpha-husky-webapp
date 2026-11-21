@@ -593,7 +593,7 @@ export async function startOperationMission(
     { requestId, expectedRevision, missionId, ...(missionRevision ? {missionRevision} : {}), ...(masteryVersion ? {masteryVersion} : {}), ...(squadIds ? { squadIds } : {}),
       ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}),
       ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}),
-      ...(!chapterMode && missionId === "field-relay-recovery" ? {recoverAuthorityVersion: 1} : {}) });
+      ...(!chapterMode && (missionId === "field-relay-recovery" || ((missionId === "field-relay-intercept" || missionId === "broken-signal-commander") && rulesetVersion === TACTICAL_VNEXT_RULESET)) ? {recoverAuthorityVersion: 1} : {}) });
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
@@ -620,15 +620,16 @@ export async function startOperationMission(
 }
 
 export function isRecoverAuthorityRun(runId: string | null | undefined): boolean {
-  return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
+  return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith("field_verified_v1_") || runId.startsWith("mission_verified_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
 }
 
 async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>) {
   const isCounterstrike=runId.startsWith(COUNTERSTRIKE_PREFIX);
+  const expectedObjective = isCounterstrike ? "HOLD" : runId.startsWith("field_verified_v1_") ? "INTERCEPT" : runId.startsWith("mission_verified_v1_") ? "BOSS" : "RECOVER";
   const response = await request("/webapp/tactical-foundation/"+(isCounterstrike?"counterstrike":"recover")+"/"+path, { runId, ...body });
   const view = response.recover as RecoverView | undefined;
   if (view?.runId !== runId || !Number.isSafeInteger(view.revision) || typeof view.token !== "string" ||
-      view.battle?.objective?.type !== (isCounterstrike?"HOLD":"RECOVER") || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
+      view.battle?.objective?.type !== expectedObjective || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
     throw new FoundationProgressionError("invalid_progression_response");
   }
   return view;
@@ -664,8 +665,9 @@ export async function continueOperationMission(
   campaignReport?: CampaignReport,
   rulesetVersion?: string,
   chapterMode = false,
+  verifiedOnlineTransport = false,
 ): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null; lootAndHonors?: unknown }> {
-  const result = !chapterMode && isRecoverAuthorityRun(runId) ? {} : {
+  const result = !chapterMode && (isRecoverAuthorityRun(runId) || verifiedOnlineTransport) ? {} : {
     completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true,
     routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}),
   };

@@ -144,6 +144,18 @@ interface UiBattle {
   shadowSavePending: boolean;
 }
 
+/** Human guidance only for reason codes emitted by the existing combat engine. */
+export function skillFailureGuidance(reason?: string): string {
+  switch (reason) {
+    case "no-actor": return "This unit cannot act now. Select an available ally.";
+    case "unknown-skill": return "This skill is not available to the active unit.";
+    case "cooldown": return "Skill is cooling down. Choose a ready action.";
+    case "need-target": return "Choose a highlighted legal target, or cancel aiming.";
+    case "invalid-target": return "Target is not legal for this skill. Choose a highlighted target or cancel.";
+    default: return "Action was not accepted. Check the board and try again.";
+  }
+}
+
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     if (typeof requestAnimationFrame === "undefined") {
@@ -385,6 +397,9 @@ export const useBattleStore = create<Store>((set, get) => {
 
   let threatCycle: ThreatCycle = emptyThreatCycle();
   let recoverView: RecoverView | null = null;
+  // Resumed VNext Intercept/Commander runs can retain a legacy ID after explicit online reattachment.
+  const isOnlineAuthorityRun = (runId: string | null | undefined): boolean =>
+    isRecoverAuthorityRun(runId) || (typeof runId === "string" && recoverView?.runId === runId);
 
   const recoverDisplay = (battle: BattleState, identity: PlayerIdentity): BattleState => ({
     ...battle,
@@ -409,11 +424,17 @@ export const useBattleStore = create<Store>((set, get) => {
     });
   };
 
+  const latencyDev = import.meta.env.DEV;
+  const combatStamp = () => typeof performance !== "undefined" ? performance.now() : Date.now();
+  const reportLatency = (mode: string, command: string, requestMs: number, framesMs: number, totalMs: number) => {
+    if (latencyDev) console.info("[Tactical UX latency]", { mode, command, requestMs: Math.round(requestMs), framesMs: Math.round(framesMs), totalMs: Math.round(totalMs) });
+  };
   const submitLastHowl = async (command: RecoverCommand | { type: "abandon" }) => {
     const { lastHowl: view, busy, screen, identity } = get();
     if (screen !== "battle" || busy || view?.status !== "ACTIVE") return;
     const g = ++runGen;
-    set({ busy: true, progressionError: null });
+    const startedAt = combatStamp();
+    set({ busy: true, progressionError: null, ticker: "Confirming action…" });
     let accepted: LastHowlView;
     try {
       accepted = await requestLastHowl("command", { runId: view.runId, expectedRevision: view.revision, token: view.token, command });
@@ -429,6 +450,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
     }
     if (g !== runGen) return;
+    const receivedAt = combatStamp();
     // Use the existing effects for confirmed actions only. The current board
     // is always replaced by the final authoritative view after these frames.
     const reducedMotion = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -441,11 +463,12 @@ export const useBattleStore = create<Store>((set, get) => {
       if (g !== runGen) return;
     }
     acceptLastHowl(accepted);
+    reportLatency("last-howl", command.type, receivedAt - startedAt, combatStamp() - receivedAt, combatStamp() - startedAt);
     if (reducedMotion) {
       for (const frame of accepted.frames ?? []) frame.events.forEach(showBloodScent);
     }
     if (accepted.revision === view.revision && accepted.status === "ACTIVE") {
-      set({ progressionError: "Action not confirmed. Check the board and try again." });
+      set({ progressionError: "Action not confirmed. Check the board and try again.", ticker: "Action rejected or not recorded. Check legal targets and retry." });
     }
   };
 
@@ -457,6 +480,7 @@ export const useBattleStore = create<Store>((set, get) => {
     const view = recoverView;
     if (current.screen !== "battle" || current.busy || !view || view.runId !== current.currentRunKey) return;
     const g = ++runGen;
+    const startedAt = combatStamp();
     set({ busy: true, ticker: "Confirming action…" });
     let accepted: RecoverView;
     try {
@@ -474,6 +498,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
     }
     if (g !== runGen) return;
+    const receivedAt = combatStamp();
     recoverView = accepted;
     if(accepted.counterstrike)set({counterstrikeRadio:accepted.counterstrike.radio,counterstrikeResult:accepted.counterstrike.result});
     for (const frame of accepted.frames ?? []) {
@@ -514,9 +539,15 @@ export const useBattleStore = create<Store>((set, get) => {
     }
     const battle = recoverDisplay(accepted.battle, current.identity);
     set({ battle, queue: refreshQueue(battle), threats: accepted.threats });
-    if (await finishIfNeeded(g)) return;
+    if (await finishIfNeeded(g)) {
+      reportLatency("recover", command.type, receivedAt - startedAt, combatStamp() - receivedAt, combatStamp() - startedAt);
+      return;
+    }
     const actor = activeUnit(battle);
-    set({ busy: false, ticker: actor ? `${actor.name}  ·  ${actor.hasMoved ? "act" : "move or act"}` : null });
+    set({ busy: false, ticker: accepted.revision === view.revision
+      ? "Action not confirmed. Check legal actions and try again."
+      : actor ? `${actor.name}  ·  ${actor.hasMoved ? "act" : "move or act"}` : null });
+    reportLatency("recover", command.type, receivedAt - startedAt, combatStamp() - receivedAt, combatStamp() - startedAt);
   };
 
   const continueLoop = async (g: number) => {
@@ -1084,7 +1115,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const current = get();
       if (current.chapterMode || current.screen !== "results" || current.progressionCommitPending || !current.currentRunKey || !current.progression || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
       if (current.fieldResult?.runId === current.currentRunKey && current.fieldResult.missionId === current.selectedMissionId) return;
-      const authoritative = isRecoverAuthorityRun(current.currentRunKey);
+      const authoritative = isOnlineAuthorityRun(current.currentRunKey);
       const report = authoritative ? null : fieldReport(current.battle);
       if (!authoritative && !report) return;
       if (report && current.currentFieldContext?.fieldContractsVersion) report.fieldContractsVersion = current.currentFieldContext.fieldContractsVersion;
@@ -1094,18 +1125,41 @@ export const useBattleStore = create<Store>((set, get) => {
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
-        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report ?? undefined, undefined, current.activeRulesetVersion || undefined);
+        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report ?? undefined, undefined, current.activeRulesetVersion || undefined, false, authoritative);
         if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey || committed.fieldResult.missionId !== current.selectedMissionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         if (committed.state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(committed.state);
         set({ fieldResult: { ...committed.fieldResult, ...(committed.lootAndHonors != null ? {lootAndHonors:committed.lootAndHonors} : {}) }, fieldMilestone: committed.fieldMilestone, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
+        const code = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
-        if (canonical) applyCanonicalProgression(canonical);
-        const recovered = canonical?.fieldOps?.lastResult;
-        if (recovered?.runId === current.currentRunKey && recovered.missionId === current.selectedMissionId) set({ fieldResult: recovered, fieldMilestone: null, progressionError: null, progressionCommitPending: false });
-        else set({ progressionCommitPending: false, progressionError: "Result could not be recorded. Retry saving before returning or replaying." });
+        // A response can be lost after the server has durably settled the run.
+        // Recover a receipt from fresh, authenticated state before offering another POST.
+        // Never treat a cleared record or a local victory as reward authority.
+        let latest = canonical;
+        if (latest?.fieldOps?.lastResult?.runId !== current.currentRunKey ||
+            latest.fieldOps.lastResult.missionId !== current.selectedMissionId) {
+          try {
+            const refreshed = await loadFoundationProgression();
+            if (get().currentRunKey !== current.currentRunKey) return;
+            if (!latest || refreshed.revision >= latest.revision) latest = refreshed;
+          } catch {
+            // Keep the original error and requestId if state recovery is unavailable.
+          }
+        }
+        if (get().currentRunKey !== current.currentRunKey) return;
+        if (latest && latest.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(latest);
+        const receipt = latest?.fieldOps?.lastResult;
+        if (receipt?.runId === current.currentRunKey && receipt.missionId === current.selectedMissionId) {
+          set({ fieldResult: receipt, fieldMilestone: null, progressionError: null, progressionCommitPending: false });
+          return;
+        }
+        const recordedWithoutReceipt = latest?.fieldOps?.lastCompletedMissionRunId === current.currentRunKey;
+        const failure = recordedWithoutReceipt
+          ? "The server recorded this run, but its result receipt could not be verified. Refresh Tactical Ops to reconcile before retrying."
+          : "Result not confirmed (" + code + "). Retry saving before returning or replaying.";
+        set({ progressionCommitPending: false, progressionError: failure });
       }
     },
     saveCampaignResult: async () => {
@@ -1313,7 +1367,11 @@ export const useBattleStore = create<Store>((set, get) => {
               const runPet = frozenPet ? { id: frozenPet.id, name: frozenPet.name, img: frozenPet.img } : started.state.equippedPet;
               const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, runPet, started.run.fieldContext?.approach);
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
-              const authoritative = isRecoverAuthorityRun(started.run.runId) ? await loadRecoverBattle(started.run.runId) : undefined;
+              const requiresVerifiedOnline = !persisted.chapterMode && (isRecoverAuthorityRun(started.run.runId) ||
+                ((started.run.missionId === "field-relay-intercept" || started.run.missionId === "broken-signal-commander") &&
+                  started.run.rulesContract?.rulesetVersion === TACTICAL_VNEXT_RULESET));
+              // Fail closed: an accepted verified encounter must never fall back to local combat.
+              const authoritative = requiresVerifiedOnline ? await loadRecoverBattle(started.run.runId) : undefined;
               if (g !== runGen) return;
               beginBattle(
                 g,
@@ -1434,12 +1492,12 @@ export const useBattleStore = create<Store>((set, get) => {
         return;
       }
       if (battle.mode === "targeting") {
-        set({ battle: { ...battle, mode: "selected", actionSkillId: null } });
+        set({ battle: { ...battle, mode: "selected", actionSkillId: null }, ticker: "Targeting cancelled." });
         return;
       }
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasMoved || actor.hasActed) return;
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "move", c, r }); return; }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "move", c, r }); return; }
       const res = tryMove(battle, c, r);
       if (!res.ok) return;
       sfx("move");
@@ -1464,12 +1522,12 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       sfx("select");
       if (!skillNeedsTargetPick(skill)) {
-        if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId }); return; }
+        if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId }); return; }
         const g = ++runGen;
         set({ busy: true, attackingId: actor.id, lastActionSkillId: skillId });
         const res = trySkill(battle, skillId);
         if (!res.ok) {
-          set({ busy: false, attackingId: null, ticker: `${actor.name}  ·  no target in range` });
+          set({ busy: false, attackingId: null, ticker: skillFailureGuidance(res.reason) });
           return;
         }
         const evidence = recordS3Skill(get().s3CombatProof, actor, skillId, undefined, res.events, false, battle);
@@ -1491,9 +1549,7 @@ export const useBattleStore = create<Store>((set, get) => {
         battle: { ...battle, mode: "targeting", actionSkillId: skillId, inspectId: null },
         ticker:
           targets.length === 0
-            ? skill.maxRange <= 1
-              ? `${actor.name}  ·  melee — move adjacent`
-              : `${actor.name}  ·  no target in range`
+            ? "No legal target for this skill. Reposition or cancel aiming."
             : skill.desc,
       });
     },
@@ -1502,13 +1558,18 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy || battle.mode !== "targeting" || !battle.actionSkillId) return;
       const actor = activeUnit(battle);
       if (!actor || actor.hasActed) return;
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
+      const selected = resolveGrowthSkill(getSkill(battle.actionSkillId), actor.growth);
+      if (!validTargetIds(battle.units, actor, selected).includes(id)) {
+        set({ ticker: skillFailureGuidance("invalid-target") });
+        return;
+      }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
       const g = ++runGen;
       const selectedSkillId = battle.actionSkillId;
       set({ busy: true, attackingId: actor.id, lastActionSkillId: selectedSkillId });
       const res = trySkill(battle, selectedSkillId, id);
       if (!res.ok) {
-        set({ busy: false, attackingId: null });
+        set({ busy: false, attackingId: null, ticker: skillFailureGuidance(res.reason) });
         return;
       }
       const interrupt = TACTICAL_VNEXT_ENABLED
@@ -1542,7 +1603,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy) return;
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "recover" }); return; }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "recover" }); return; }
       const res = tryRecover(battle);
       if (!res.ok) {
         set({ ticker: `${actor.name}  ·  move adjacent to the relay terminal` });
@@ -1600,11 +1661,14 @@ export const useBattleStore = create<Store>((set, get) => {
       const { battle, busy } = get();
       if (busy) return;
       const actor = activeUnit(battle);
-      if (!actor || actor.team !== "ally" || actor.hasActed) return;
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skip" }); return; }
+      if (!actor || actor.team !== "ally" || actor.hasActed) {
+        set({ ticker: "Skip unavailable. Wait for an active ally who has not acted." });
+        return;
+      }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skip" }); return; }
       const g = ++runGen;
       const res = trySkip(battle);
-      if (!res.ok) return;
+      if (!res.ok) { set({ ticker: "Skip not accepted. This unit may have already acted; check whose turn it is." }); return; }
       set({ battle: res.state, busy: true, ticker: res.events[0]?.text ?? null });
       void afterPlayerAction(g);
     },
@@ -1696,7 +1760,7 @@ export const useBattleStore = create<Store>((set, get) => {
               s.progression!.revision,
               runId,
               missionId === "broken-signal-breach" && s.battle.routingTraceAcquired,
-              undefined, undefined, s.activeRulesetVersion || undefined,
+              undefined, undefined, s.activeRulesetVersion || undefined, false, isOnlineAuthorityRun(runId),
             );
             if (get().currentRunKey !== runId) return;
             applyCanonicalProgression(committed.state);
