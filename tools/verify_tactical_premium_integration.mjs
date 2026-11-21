@@ -599,7 +599,8 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  // their original LF-normalization policy (notably tactical.css is CRLF).
  const rawSource = Object.hasOwn(approvedM2Blobs, path) ? git('show', `${m2Base}:${path}`) :
   Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? git('show', `${signalAtlasPremiumBase}:${path}`) :
-  alphaSkillTreePath(path) ? git('show', `${alphaSkillTreeBase}:${path}`) : readLocalFile(path, 'utf8');
+  alphaSkillTreePath(path) ? git('show', `${alphaSkillTreeBase}:${path}`) :
+  (Object.hasOwn(lastHowlBlobs,path) && Object.hasOwn(approvedScopedIntegrationBlobs,path)) ? git('show', `${lastHowlV1Release}:${path}`) : readLocalFile(path, 'utf8');
  const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
   Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) || Object.hasOwn(approvedMasteryEffectBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
  assert.equal(sourceBlob(source), expected, 'unreviewed Last Howl source: ' + path);
