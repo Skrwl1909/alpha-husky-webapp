@@ -1519,9 +1519,7 @@ export const useBattleStore = create<Store>((set, get) => {
         battle: { ...battle, mode: "targeting", actionSkillId: skillId, inspectId: null },
         ticker:
           targets.length === 0
-            ? skill.maxRange <= 1
-              ? `${actor.name}  ·  melee — move adjacent`
-              : `${actor.name}  ·  no target in range`
+            ? "No legal target for this skill. Reposition or cancel aiming."
             : skill.desc,
       });
     },
