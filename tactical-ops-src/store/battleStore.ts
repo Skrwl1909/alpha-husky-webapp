@@ -1129,11 +1129,34 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ fieldResult: committed.fieldResult, fieldMilestone: committed.fieldMilestone, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
+        const code = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
-        if (canonical) applyCanonicalProgression(canonical);
-        const recovered = canonical?.fieldOps?.lastResult;
-        if (recovered?.runId === current.currentRunKey && recovered.missionId === current.selectedMissionId) set({ fieldResult: recovered, fieldMilestone: null, progressionError: null, progressionCommitPending: false });
-        else set({ progressionCommitPending: false, progressionError: "Result could not be recorded. Retry saving before returning or replaying." });
+        // A response can be lost after the server has durably settled the run.
+        // Recover a receipt from fresh, authenticated state before offering another POST.
+        // Never treat a cleared record or a local victory as reward authority.
+        let latest = canonical;
+        if (latest?.fieldOps?.lastResult?.runId !== current.currentRunKey ||
+            latest.fieldOps.lastResult.missionId !== current.selectedMissionId) {
+          try {
+            const refreshed = await loadFoundationProgression();
+            if (get().currentRunKey !== current.currentRunKey) return;
+            if (!latest || refreshed.revision >= latest.revision) latest = refreshed;
+          } catch {
+            // Keep the original error and requestId if state recovery is unavailable.
+          }
+        }
+        if (get().currentRunKey !== current.currentRunKey) return;
+        if (latest && latest.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(latest);
+        const receipt = latest?.fieldOps?.lastResult;
+        if (receipt?.runId === current.currentRunKey && receipt.missionId === current.selectedMissionId) {
+          set({ fieldResult: receipt, fieldMilestone: null, progressionError: null, progressionCommitPending: false });
+          return;
+        }
+        const recordedWithoutReceipt = latest?.fieldOps?.lastCompletedMissionRunId === current.currentRunKey;
+        const failure = recordedWithoutReceipt
+          ? "The server recorded this run, but its result receipt could not be verified. Refresh Tactical Ops to reconcile before retrying."
+          : "Result not confirmed (" + code + "). Retry saving before returning or replaying.";
+        set({ progressionCommitPending: false, progressionError: failure });
       }
     },
     saveCampaignResult: async () => {
