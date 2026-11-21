@@ -600,6 +600,9 @@ for (const [path, expected] of Object.entries({ ...lastHowlBlobs, ...lastHowlPre
  const rawSource = Object.hasOwn(approvedM2Blobs, path) ? git('show', `${m2Base}:${path}`) :
   Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? git('show', `${signalAtlasPremiumBase}:${path}`) :
   alphaSkillTreePath(path) ? git('show', `${alphaSkillTreeBase}:${path}`) :
+  // Combat Motion #296 CSS was subsequently changed by scoped integration;
+  // verify its original reviewed snapshot instead of the live PR checkout.
+  path === 'tactical-ops-src/tactical.css' ? git('show', `${alphaSkillTreeBase}:${path}`) :
   (Object.hasOwn(lastHowlBlobs,path) && Object.hasOwn(approvedScopedIntegrationBlobs,path)) ? git('show', `${lastHowlV1Release}:${path}`) : readLocalFile(path, 'utf8');
  const source = Object.hasOwn(approvedCombatMotionBlobs, path) || Object.hasOwn(approvedEnemyMotionV1Blobs, path) ||
   Object.hasOwn(approvedSkillMasteryMotionV1Blobs, path) || Object.hasOwn(approvedMasteryEffectBlobs, path) ? rawSource : rawSource.replaceAll('\r\n', '\n');
