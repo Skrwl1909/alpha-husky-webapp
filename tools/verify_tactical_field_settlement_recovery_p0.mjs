@@ -12,8 +12,8 @@ const vite = await createServer({
 
 try {
   const { useBattleStore } = await vite.ssrLoadModule("/tactical-ops-src/store/battleStore.ts");
-  const runId = "field_recover_v1_settlement_fixture";
-  const missionId = "field-relay-recovery";
+  const runId = "field_relay_intercept_settlement_fixture";
+  const missionId = "field-relay-intercept";
   const receipt = {
     runId, missionId, victory: true, cycleId: 7,
     challengeSuccess: false, challengeBonus: 0, progressEarned: 1,
@@ -42,7 +42,7 @@ try {
     continueRequestId: null, fieldResult: null, fieldMilestone: null, chapterMode: false,
     selectedTrialLevel: null, currentFieldContext: null, activeRulesetVersion: null,
     battle: { ...useBattleStore.getState().battle, outcome:"victory", results:{
-      turns:4, squadStanding:3, squadDeployed:3,
+      victory:true, objectiveComplete:true, turns:4, squadStanding:3, squadDeployed:3,
     } },
   });
   let postMode = "lost", stateMode = "saved", posts = [], reads = 0;
