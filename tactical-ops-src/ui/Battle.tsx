@@ -977,7 +977,7 @@ export function BattleScreen() {
           type="button"
           className="t-btn t-skip"
           disabled={!allyTurn}
-          aria-label={busy ? "Skip pending: waiting for confirmed action" : allyTurn ? "Skip active ally turn" : "Skip unavailable during enemy or pending turn"}
+          title={busy ? "Waiting for confirmed action" : allyTurn ? "Skip active ally turn" : "Skip unavailable during enemy or pending turn"}
           onClick={() => {
             unlockAudio();
             skipTurn();
