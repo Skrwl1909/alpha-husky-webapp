@@ -535,7 +535,7 @@ git('merge-base', '--is-ancestor', signalAtlasPremiumBase, 'HEAD');
 git('merge-base', '--is-ancestor', signalAtlasEntryBase, 'HEAD');
 git('merge-base', '--is-ancestor', signalAtlasFidelityBase, 'HEAD');
 for (const path of git('diff', '--name-only', '--no-renames', m2Base).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed M2 descendant path: ' + path);
+ assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedScopedIntegrationBlobs,path) || Object.hasOwn(approvedM2Blobs, path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed M2 descendant path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedM2Blobs)) {
  const baseline = Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) ? signalAtlasPremiumBase : Object.hasOwn(approvedSignalAtlasFidelityBlobs, path) ? signalAtlasFidelityBase : alphaSkillTreePath(path) ? alphaSkillTreeBase : 'HEAD';
@@ -544,7 +544,7 @@ for (const [path, expected] of Object.entries(approvedM2Blobs)) {
  assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), current, 'unreviewed working M2 descendant: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasPremiumBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
+ assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedScopedIntegrationBlobs,path) || Object.hasOwn(approvedSignalAtlasPremiumBlobs, path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Premium path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSignalAtlasPremiumBlobs)) {
  const baseline = Object.hasOwn(approvedSignalAtlasEntryBlobs, path) ? signalAtlasEntryBase : alphaSkillTreePath(path) ? alphaSkillTreeBase : 'HEAD';
@@ -552,7 +552,7 @@ for (const [path, expected] of Object.entries(approvedSignalAtlasPremiumBlobs)) 
  assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), currentAlphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? approvedSignalAtlasEntryBlobs[path] ?? expected, 'unreviewed working Signal Atlas Premium source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasEntryBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Entry path: ' + path);
+ assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedScopedIntegrationBlobs,path) || Object.hasOwn(approvedSignalAtlasEntryBlobs, path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Entry path: ' + path);
 }
 for (const [path, expected] of Object.entries(approvedSignalAtlasEntryBlobs)) {
  const historicRef = Object.hasOwn(approvedSignalAtlasFidelityBlobs, path) ? signalAtlasFidelityBase : alphaSkillTreePath(path) ? alphaSkillTreeBase : 'HEAD';
@@ -560,7 +560,7 @@ for (const [path, expected] of Object.entries(approvedSignalAtlasEntryBlobs)) {
  assert.equal(git('-c', 'core.safecrlf=false', 'hash-object', `--path=${path}`, path).trim(), currentAlphaSkillTreeBlobs[path] ?? approvedSignalAtlasFidelityBlobs[path] ?? expected, 'unreviewed working Signal Atlas Entry source: ' + path);
 }
 for (const path of git('diff', '--name-only', '--no-renames', signalAtlasFidelityBase).trim().split('\n').filter(Boolean)) {
- assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Fidelity path: ' + path);
+ assert(path === provenanceVerifier || alphaSkillTreePath(path) || Object.hasOwn(approvedScopedIntegrationBlobs,path) || Object.hasOwn(approvedSignalAtlasFidelityBlobs, path), 'unreviewed Signal Atlas Fidelity path: ' + path);
 }
 for (const [path, sha] of Object.entries(approvedSignalAtlasFidelityBlobs)) {
  const previous = approvedSignalAtlasEntryBlobs[path] ?? approvedSignalAtlasPremiumBlobs[path] ?? approvedM2Blobs[path];
