@@ -119,7 +119,7 @@ interface UiBattle {
   selectedMissionId: string | null;
   missionFirstClear: boolean | null;
   /** Run-specific server proof; never use battle victory as a saved reward receipt. */
-  storySave: { runId: string; missionId: string; firstClear: boolean } | null;
+  storySave: { runId: string; missionId: string; firstClear: boolean; lootAndHonors?: unknown } | null;
   selectedSquadIds: string[];
   selectedApproach: DeploymentApproach;
   selectedDirectiveTier: DirectiveTier;
@@ -397,6 +397,9 @@ export const useBattleStore = create<Store>((set, get) => {
 
   let threatCycle: ThreatCycle = emptyThreatCycle();
   let recoverView: RecoverView | null = null;
+  // Resumed VNext Intercept/Commander runs can retain a legacy ID after explicit online reattachment.
+  const isOnlineAuthorityRun = (runId: string | null | undefined): boolean =>
+    isRecoverAuthorityRun(runId) || (typeof runId === "string" && recoverView?.runId === runId);
 
   const recoverDisplay = (battle: BattleState, identity: PlayerIdentity): BattleState => ({
     ...battle,
@@ -485,7 +488,7 @@ export const useBattleStore = create<Store>((set, get) => {
     } catch {
       // A lost response can hide a committed action. Reload its revision before accepting more input.
       try {
-        accepted = await loadRecoverBattle(view.runId);
+        accepted = await loadRecoverBattle(view.runId, current.selectedMissionId ?? undefined);
       } catch {
         if (g === runGen) {
           get().backToHub();
@@ -1112,7 +1115,7 @@ export const useBattleStore = create<Store>((set, get) => {
       const current = get();
       if (current.chapterMode || current.screen !== "results" || current.progressionCommitPending || !current.currentRunKey || !current.progression || getMissionDef(current.selectedMissionId)?.activity !== "FIELD_OP") return;
       if (current.fieldResult?.runId === current.currentRunKey && current.fieldResult.missionId === current.selectedMissionId) return;
-      const authoritative = isRecoverAuthorityRun(current.currentRunKey);
+      const authoritative = isOnlineAuthorityRun(current.currentRunKey);
       const report = authoritative ? null : fieldReport(current.battle);
       if (!authoritative && !report) return;
       if (report && current.currentFieldContext?.fieldContractsVersion) report.fieldContractsVersion = current.currentFieldContext.fieldContractsVersion;
@@ -1122,11 +1125,11 @@ export const useBattleStore = create<Store>((set, get) => {
       const requestId = current.continueRequestId || createFoundationRequestId("mission-continue");
       set({ progressionCommitPending: true, progressionError: null, continueRequestId: requestId });
       try {
-        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report ?? undefined, undefined, current.activeRulesetVersion || undefined);
+        const committed = await continueOperationMission(requestId, current.progression.revision, current.currentRunKey, false, report ?? undefined, undefined, current.activeRulesetVersion || undefined, false, authoritative);
         if (!committed.fieldResult || committed.fieldResult.runId !== current.currentRunKey || committed.fieldResult.missionId !== current.selectedMissionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         if (committed.state.revision >= (get().progression?.revision ?? 0)) applyCanonicalProgression(committed.state);
-        set({ fieldResult: committed.fieldResult, fieldMilestone: committed.fieldMilestone, progressionCommitPending: false });
+        set({ fieldResult: { ...committed.fieldResult, ...(committed.lootAndHonors != null ? {lootAndHonors:committed.lootAndHonors} : {}) }, fieldMilestone: committed.fieldMilestone, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
         const code = error instanceof FoundationProgressionError ? error.code : "progression_request_failed";
@@ -1181,7 +1184,7 @@ export const useBattleStore = create<Store>((set, get) => {
         if (!response.campaignResult || response.campaignResult.runId !== current.currentRunKey || response.campaignResult.missionId !== mission.missionId) throw new FoundationProgressionError("invalid_progression_response");
         if (get().currentRunKey !== current.currentRunKey) return;
         applyCanonicalProgression(response.state);
-        set({ campaignResult: response.campaignResult, progressionCommitPending: false });
+        set({ campaignResult: { ...response.campaignResult, ...(response.lootAndHonors != null ? {lootAndHonors:response.lootAndHonors} : {}) }, progressionCommitPending: false });
       } catch (error) {
         if (get().currentRunKey !== current.currentRunKey) return;
         const canonical = error instanceof FoundationProgressionError ? error.state : null;
@@ -1364,7 +1367,11 @@ export const useBattleStore = create<Store>((set, get) => {
               const runPet = frozenPet ? { id: frozenPet.id, name: frozenPet.name, img: frozenPet.img } : started.state.equippedPet;
               const canonicalSpawns = missionSpawnsForSquad(acceptedMission, started.run.squadIds, runPet, started.run.fieldContext?.approach);
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
-              const authoritative = isRecoverAuthorityRun(started.run.runId) ? await loadRecoverBattle(started.run.runId) : undefined;
+              const requiresVerifiedOnline = !persisted.chapterMode && (isRecoverAuthorityRun(started.run.runId) ||
+                ((started.run.missionId === "field-relay-intercept" || started.run.missionId === "broken-signal-commander") &&
+                  started.run.rulesContract?.rulesetVersion === TACTICAL_VNEXT_RULESET));
+              // Fail closed: an accepted verified encounter must never fall back to local combat.
+              const authoritative = requiresVerifiedOnline ? await loadRecoverBattle(started.run.runId, started.run.missionId) : undefined;
               if (g !== runGen) return;
               beginBattle(
                 g,
@@ -1490,7 +1497,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasMoved || actor.hasActed) return;
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "move", c, r }); return; }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "move", c, r }); return; }
       const res = tryMove(battle, c, r);
       if (!res.ok) return;
       sfx("move");
@@ -1515,7 +1522,7 @@ export const useBattleStore = create<Store>((set, get) => {
       }
       sfx("select");
       if (!skillNeedsTargetPick(skill)) {
-        if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId }); return; }
+        if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId }); return; }
         const g = ++runGen;
         set({ busy: true, attackingId: actor.id, lastActionSkillId: skillId });
         const res = trySkill(battle, skillId);
@@ -1556,7 +1563,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ ticker: skillFailureGuidance("invalid-target") });
         return;
       }
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skill", skillId: battle.actionSkillId, targetId: id }); return; }
       const g = ++runGen;
       const selectedSkillId = battle.actionSkillId;
       set({ busy: true, attackingId: actor.id, lastActionSkillId: selectedSkillId });
@@ -1596,7 +1603,7 @@ export const useBattleStore = create<Store>((set, get) => {
       if (busy) return;
       const actor = activeUnit(battle);
       if (!actor || actor.team !== "ally" || actor.hasActed || actor.defeated) return;
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "recover" }); return; }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "recover" }); return; }
       const res = tryRecover(battle);
       if (!res.ok) {
         set({ ticker: `${actor.name}  ·  move adjacent to the relay terminal` });
@@ -1658,7 +1665,7 @@ export const useBattleStore = create<Store>((set, get) => {
         set({ ticker: "Skip unavailable. Wait for an active ally who has not acted." });
         return;
       }
-      if (get().lastHowl || isRecoverAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skip" }); return; }
+      if (get().lastHowl || isOnlineAuthorityRun(get().currentRunKey)) { void submitAuthority({ type: "skip" }); return; }
       const g = ++runGen;
       const res = trySkip(battle);
       if (!res.ok) { set({ ticker: "Skip not accepted. This unit may have already acted; check whose turn it is." }); return; }
@@ -1753,7 +1760,7 @@ export const useBattleStore = create<Store>((set, get) => {
               s.progression!.revision,
               runId,
               missionId === "broken-signal-breach" && s.battle.routingTraceAcquired,
-              undefined, undefined, s.activeRulesetVersion || undefined,
+              undefined, undefined, s.activeRulesetVersion || undefined, false, isOnlineAuthorityRun(runId),
             );
             if (get().currentRunKey !== runId) return;
             applyCanonicalProgression(committed.state);
@@ -1762,7 +1769,7 @@ export const useBattleStore = create<Store>((set, get) => {
               return;
             }
             sfx("ui");
-            set({ storySave: { runId, missionId, firstClear: committed.firstClear },
+            set({ storySave: { runId, missionId, firstClear: committed.firstClear, ...(committed.lootAndHonors != null ? {lootAndHonors:committed.lootAndHonors} : {}) },
               missionFirstClear: committed.firstClear, progressionCommitPending: false, progressionError: null });
           } catch (error) {
             if (get().currentRunKey !== runId) return;

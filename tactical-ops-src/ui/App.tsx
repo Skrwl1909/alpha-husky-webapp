@@ -4,6 +4,8 @@ import { getHost } from "../host/bridge";
 import { LastHowlCard, LastHowlResults } from "./LastHowl";
 import { FieldOpResults, SpecialFieldOpResults } from "./FieldOpResults";
 import { StoryResultView } from "./StoryResultView";
+import { TacticalLootReveal, TacticalHonorsCollection } from "./TacticalLootHonors";
+import { parseLootHonors } from "../data/lootHonors";
 import { storyResultTruth } from "./storyResultTruth";
 import { VETERAN_TARGET, veteranRequirement } from "../data/veteran";
 import { FIELD_HONOR, missionContract, REACH_REND_TRADEOFF, withFieldRend } from "../data/fieldContracts";
@@ -447,6 +449,7 @@ function WarTable() {
           </section>;
         })() : <p role="status">Refresh to see available operations.</p>}
         {progression?.lastHowl?.status !== "ACTIVE" ? <LastHowlCard /> : null}
+        <TacticalHonorsCollection />
         <section className="t-command-progress t-cdv2-command-status" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
           <div className="t-cdv2-commander-seal" aria-hidden="true">{commanderRank || "—"}</div>
           <div className="t-cdv2-commander-info"><span className="t-kicker">COMMANDER STATUS · SERVICE RECORD</span>
@@ -1407,6 +1410,7 @@ function Results() {
     return <StoryResultView
       title={mission.objectiveType === "BOSS" ? "COMMANDER DOWN" : mission.objectiveType === "RECOVER" ? "SIGNAL RECOVERED" : "BREACH CLEARED"}
       mission={mission.name} art={PRESENTATION.resultsPlate}
+      lootAndHonors={storySave?.lootAndHonors} runId={currentRunKey} missionId={selectedMissionId}
       phase={truth.phase} op02Ready={truth.op02Ready} op02Cleared={truth.op02Cleared}
       nextMission={nextMission} turns={results.turns}
       squadStanding={results.squadStanding} squadDeployed={results.squadDeployed}
@@ -1552,6 +1556,7 @@ function Results() {
           </div> : null}
 
           {!chapterMode && fieldOp ? <details className="t-detail"><summary>Challenge objective</summary><p>{mission.challenge?.label}</p></details> : null}
+          {campaignConfirmed ? <TacticalLootReveal result={parseLootHonors(campaignConfirmed.lootAndHonors,campaignConfirmed.runId,campaignConfirmed.missionId,campaignConfirmed.victory)} /> : null}
           {campaignConfirmed ? <section className="t-campaign-result-impact" role="status">
             <span className="t-kicker">WHAT CHANGED</span>
             <strong>{s3Proof?.label || (recordedCampaignResult?.victory ? "VICTORY SAVED" : "DEFEAT SAVED")}</strong>

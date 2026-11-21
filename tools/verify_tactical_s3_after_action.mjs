@@ -11,7 +11,7 @@ try {
   assert.equal(matchingAfterActionReceipt(receipt, receipt.runId, receipt.missionId),receipt,"matching receipt remains available");
   const store = readFileSync("tactical-ops-src/store/battleStore.ts","utf8");
   assert(store.includes("committed.fieldResult.missionId !== current.selectedMissionId"),"Field receipt mission must match before commit");
-  assert(store.includes("recovered.missionId === current.selectedMissionId"),"Recovered Field receipt mission must match");
+  assert(/(?:recovered|receipt)\.missionId === current\.selectedMissionId/.test(store) && store.includes("const refreshed = await loadFoundationProgression()"),"Recovered Field receipt mission must match after authenticated state refresh");
   assert(store.includes("response.campaignResult.missionId !== mission.missionId"),"Campaign receipt mission must match before commit");
   assert(store.includes("current.campaignResult.missionId === mission.missionId"),"Campaign retry guard must compare mission too");
   assert(store.includes("s.fieldResult.missionId !== s.selectedMissionId") && store.includes("s.campaignResult.missionId !== s.selectedMissionId"),"Cannot continue with wrong-mission receipt");

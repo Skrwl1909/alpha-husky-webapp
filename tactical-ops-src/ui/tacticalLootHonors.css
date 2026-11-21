@@ -1,0 +1,84 @@
+/* Tactical Loot & Honors: Fracture-forged materials, accessible at 320–1280px. */
+#tacticalOpsRoot .t-loot-reveal,#tacticalOpsRoot .t-honors-collection{--loot-border:#547680;background:linear-gradient(145deg,#142631,#08151e 73%);border:1px solid #607c835c;border-radius:7px;min-width:0;color:#e7f4f5}
+#tacticalOpsRoot .t-loot-reveal{margin:14px 0 10px;padding:14px;overflow:hidden;isolation:isolate}
+#tacticalOpsRoot .t-loot-reveal[data-reveal=rare]{border-color:#6195c5a8;background:linear-gradient(130deg,#20394c,#0c1a27 73%)}
+#tacticalOpsRoot .t-loot-reveal[data-reveal=legendary]{border-color:#d1a65bb8;background:radial-gradient(ellipse at 88% 0%,#74502c68,transparent 66%),linear-gradient(140deg,#30271f,#0c1720 72%)}
+#tacticalOpsRoot .t-loot-heading{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #aac0bf3b}
+#tacticalOpsRoot .t-loot-heading>svg{width:25px;height:25px;color:#9dccd5;flex-shrink:0}
+#tacticalOpsRoot .t-loot-reveal[data-reveal=legendary] .t-loot-heading>svg{color:#f0c98a}
+#tacticalOpsRoot .t-loot-heading span,#tacticalOpsRoot .t-loot-rarity{display:block;font:700 10px/1.4 var(--t-font-sans);letter-spacing:.13em;color:#a8cbd0}
+#tacticalOpsRoot .t-loot-heading h2{font:800 21px/1.05 var(--t-font-display);letter-spacing:.06em;margin:2px 0 0;color:#f2f7f6}
+#tacticalOpsRoot .t-loot-currencies{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin-top:10px}
+#tacticalOpsRoot .t-loot-currency{border:1px solid #a3bbbc36;background:#10232a;padding:9px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
+#tacticalOpsRoot .t-loot-currency svg{width:18px;height:18px;color:#b2dfe0}
+#tacticalOpsRoot .t-loot-currency strong{font:800 18px/1 var(--t-font-display);font-variant-numeric:tabular-nums}
+#tacticalOpsRoot .t-loot-currency small{font-size:10px;color:#b5cdd1}
+#tacticalOpsRoot .t-loot-items,#tacticalOpsRoot .t-loot-unlocks{display:grid;gap:10px;margin-top:12px;min-width:0}
+#tacticalOpsRoot .t-loot-equipment,#tacticalOpsRoot .t-loot-prestige{--drop:#849da4;position:relative;display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid var(--drop);background:linear-gradient(115deg,#283740,#101c26 70%);min-width:0;border-radius:4px;box-shadow:inset 3px 0 0 var(--drop)}
+#tacticalOpsRoot [data-rarity=common]{--drop:#849aa4}
+#tacticalOpsRoot [data-rarity=uncommon]{--drop:#68bfa6}
+#tacticalOpsRoot [data-rarity=rare]{--drop:#6baceb}
+#tacticalOpsRoot [data-rarity=epic]{--drop:#b593ed}
+#tacticalOpsRoot [data-rarity=legendary]{--drop:#e6b467}
+#tacticalOpsRoot .t-loot-equipment[data-rarity=legendary],#tacticalOpsRoot .t-loot-prestige[data-rarity=legendary]{background:radial-gradient(ellipse at 0 0,#9f703548,transparent 70%),linear-gradient(140deg,#322921,#171e24);box-shadow:inset 4px 0 0 var(--drop),0 0 22px #a67c4429}
+#tacticalOpsRoot .t-loot-equipment[data-rarity=epic]{background:linear-gradient(130deg,#312543,#101b28)}
+#tacticalOpsRoot .t-loot-equipment-art,#tacticalOpsRoot .t-loot-prestige-art{display:grid;place-items:center;position:relative;flex:0 0 78px;width:78px;height:88px;min-width:0;background:radial-gradient(ellipse,#314957,#0a1520);border:1px solid color-mix(in srgb,var(--drop),transparent 30%);overflow:hidden}
+#tacticalOpsRoot .t-loot-prestige-art{height:90px}
+#tacticalOpsRoot .t-loot-art{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 7px #0009)}
+#tacticalOpsRoot .t-loot-fallback{width:40px;height:40px;color:var(--drop);stroke-width:1.5}
+#tacticalOpsRoot .t-loot-quantity{position:absolute;right:5px;bottom:3px;padding:2px 5px;background:#08131bcf;color:#e7f7f7;font-size:10px;border:1px solid #93afb34a}
+#tacticalOpsRoot .t-loot-equipment-copy,#tacticalOpsRoot .t-loot-prestige-copy{flex:1;min-width:0;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-loot-equipment .t-loot-rarity,#tacticalOpsRoot .t-loot-prestige .t-loot-rarity{color:var(--drop)}
+#tacticalOpsRoot .t-loot-equipment h3,#tacticalOpsRoot .t-loot-prestige h3{font:800 clamp(17px,4.5vw,24px)/1.08 var(--t-font-display);color:#f1f6f7;margin:4px 0 10px}
+#tacticalOpsRoot .t-loot-equipment .t-btn,#tacticalOpsRoot .t-loot-prestige .t-btn,#tacticalOpsRoot .t-honors-collection>.t-btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;width:100%;padding:9px 6px;margin-top:10px;text-align:center;font-size:10px;white-space:normal}
+#tacticalOpsRoot .t-loot-equipment .t-btn>svg,#tacticalOpsRoot .t-loot-prestige .t-btn>svg,#tacticalOpsRoot .t-honors-collection>.t-btn svg{width:14px;height:14px;flex-shrink:0}
+#tacticalOpsRoot .t-loot-stats{margin:5px 0 7px;display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:5px}
+#tacticalOpsRoot .t-loot-stats>div{display:flex;flex-wrap:wrap;align-items:center;gap:3px 5px;padding:5px;border:1px solid #9db5bd33}
+#tacticalOpsRoot .t-loot-stats dt{flex-basis:100%;font-size:9px;color:#adc2cc}
+#tacticalOpsRoot .t-loot-stats dd{margin:0;color:#edf5f9;font:800 12px/1.2 var(--t-font-display)}
+#tacticalOpsRoot .t-loot-stats dd[data-delta]{color:#b8cbcf;font-size:10px}
+#tacticalOpsRoot .t-loot-stats dd[data-delta=up]{color:#95e6bd}
+#tacticalOpsRoot .t-loot-stats dd[data-delta=down]{color:#f3a6a0}
+#tacticalOpsRoot .t-loot-stats p{grid-column:1/-1;margin:3px 0;font-size:10px}
+#tacticalOpsRoot .t-loot-prestige-copy small,#tacticalOpsRoot .t-loot-receipt{display:block;font-size:10px;line-height:1.4;color:#b9c9d0}
+#tacticalOpsRoot .t-loot-receipt{margin-top:11px;overflow-wrap:anywhere;opacity:.8}
+#tacticalOpsRoot .t-loot-replayed{padding:10px;border-left:2px solid #789ca4;background:#172833;color:#bdcbd1;font-size:11px}
+#tacticalOpsRoot .t-honors-collection{margin:12px 0;padding:12px}
+#tacticalOpsRoot .t-honors-collection>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font:800 15px/1.2 var(--t-font-display);letter-spacing:.08em}
+#tacticalOpsRoot .t-honors-collection>summary::-webkit-details-marker{display:none}
+#tacticalOpsRoot .t-honors-collection>summary>svg{width:20px;height:20px;color:#d1b078;flex-shrink:0}
+#tacticalOpsRoot .t-honors-collection>summary>span{margin-left:auto;color:#9ab7c2;font:700 9px/1.4 var(--t-font-sans);text-align:right;letter-spacing:0}
+#tacticalOpsRoot .t-honors-intro{color:#b6c8cf;font-size:11px;line-height:1.5;margin:10px 0}
+#tacticalOpsRoot .t-honors-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:12px 0}
+#tacticalOpsRoot .t-honors-tile{--drop:#849da4;display:flex;flex-direction:column;min-width:0;background:#0c1a23;border:1px solid #7b949a55;border-top:2px solid var(--drop);padding:10px;gap:8px}
+#tacticalOpsRoot .t-honors-image{position:relative;display:grid;place-items:center;width:100%;height:105px}
+#tacticalOpsRoot .t-honors-image .t-loot-art{height:100%;max-width:126px}
+#tacticalOpsRoot .t-honors-tile[data-owned=no] .t-loot-art{filter:grayscale(.8) brightness(.55)}
+#tacticalOpsRoot .t-honors-lock{position:absolute;right:0;bottom:0;width:18px;height:18px;color:#a7bdc7;filter:drop-shadow(0 1px 3px #000)}
+#tacticalOpsRoot .t-honors-copy{min-width:0;overflow-wrap:anywhere}
+#tacticalOpsRoot .t-honors-copy>span{display:block;font:700 9px/1.25 var(--t-font-sans);color:var(--drop);letter-spacing:.12em}
+#tacticalOpsRoot .t-honors-copy h3{margin:5px 0 3px;font:800 16px/1.06 var(--t-font-display);color:#edf6f7}
+#tacticalOpsRoot .t-honors-copy p{margin:0 0 5px;font-size:11px;line-height:1.4;color:#d4e0e1}
+#tacticalOpsRoot .t-honors-copy small{display:block;font-size:10px;line-height:1.4;color:#b7c5ca}
+#tacticalOpsRoot .t-honors-copy progress{display:block;max-width:100%;width:100%;height:5px;margin:6px 0}
+#tacticalOpsRoot .t-honors-frames-heading{display:flex;align-items:center;gap:7px;font:800 13px/1.3 var(--t-font-display);color:#d2e0e5}
+#tacticalOpsRoot .t-honors-frames-heading svg{width:18px;height:18px;color:#85bdd2}
+@media(max-width:350px){
+ #tacticalOpsRoot .t-loot-reveal{padding:9px}
+ #tacticalOpsRoot .t-loot-equipment,#tacticalOpsRoot .t-loot-prestige{padding:8px;gap:8px}
+ #tacticalOpsRoot .t-loot-equipment-art,#tacticalOpsRoot .t-loot-prestige-art{flex-basis:60px;width:60px;height:71px}
+ #tacticalOpsRoot .t-honors-collection{padding:9px}
+ #tacticalOpsRoot .t-honors-tile{padding:7px}
+ #tacticalOpsRoot .t-honors-image{height:82px}
+}
+@media(min-width:720px){
+ #tacticalOpsRoot .t-honors-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+ #tacticalOpsRoot .t-loot-items,#tacticalOpsRoot .t-loot-unlocks{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
+}
+@media(prefers-reduced-motion:no-preference){
+ #tacticalOpsRoot .t-loot-reveal[data-reveal=legendary] .t-loot-equipment[data-rarity=legendary]{animation:t-loot-reveal-in .55s ease-out both}
+}
+@keyframes t-loot-reveal-in{from{opacity:.4;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){
+ #tacticalOpsRoot .t-loot-reveal *,#tacticalOpsRoot .t-honors-collection *{animation:none!important;transition:none!important}
+}

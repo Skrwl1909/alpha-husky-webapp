@@ -1,3 +1,5 @@
+import { TacticalLootReveal } from "./TacticalLootHonors";
+import { parseLootHonors } from "../data/lootHonors";
 type StoryResultViewProps = {
   title: string;
   mission: string;
@@ -10,13 +12,17 @@ type StoryResultViewProps = {
   squadStanding: number;
   squadDeployed: number;
   onAction: () => void;
+  lootAndHonors?: unknown;
+  runId?: string | null;
+  missionId?: string | null;
 };
 
 export function StoryResultView({
   title, mission, art, phase, op02Ready, op02Cleared, nextMission,
-  turns, squadStanding, squadDeployed, onAction,
+  turns, squadStanding, squadDeployed, onAction, lootAndHonors, runId, missionId,
 }: StoryResultViewProps) {
   const confirmed = phase === "saved";
+  const rewards = parseLootHonors(lootAndHonors,runId??null,missionId??null,confirmed);
   const status = confirmed ? "VICTORY SAVED" : phase === "saving" ? "SAVING…" :
     phase === "failed" ? "SAVE FAILED" : "READY TO SAVE";
   return <main className="t-fill t-story-result-root" aria-label="Operation result" data-story-save={phase}>
@@ -35,6 +41,7 @@ export function StoryResultView({
           <span className="t-story-result-status-mark" aria-hidden="true">{confirmed ? "✓" : "◆"}</span>
           <span>{status}</span>
         </div>
+        <TacticalLootReveal result={rewards} />
         {op02Ready ? <p className="t-story-result-unlock">{op02Cleared ? "OP 02 CLEARED" : "OP 02 READY"}</p> : null}
         {confirmed && nextMission ? <div className="t-story-result-next"><small>UP NEXT</small><strong>{nextMission}</strong></div> : null}
         <button type="button" className="t-story-result-action" disabled={phase === "saving"} onClick={onAction}>

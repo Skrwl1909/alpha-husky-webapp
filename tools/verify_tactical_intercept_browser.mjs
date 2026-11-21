@@ -10,7 +10,7 @@ const style=document.createElement('style');style.textContent=TACTICAL_CSS;docum
 const mode=new URLSearchParams(location.search).get('mode'),accepted=${JSON.stringify(accepted)},tracking=${JSON.stringify(tracking)};
 const state=structuredClone(accepted.data);state.packMastery=parsePackMastery(state.packMastery);
 withTeammateSidegrades(missionSpawnsForSquad(getMissionDef('field-relay-intercept'),accepted.run.squadIds),{...state,packMastery:parsePackMastery(accepted.run.packMastery)});
-window.calls=[];window.apiPost=async(path,body)=>{window.calls.push({path,body});if(!path.endsWith('/mission/start'))throw Error('unexpected request');return {...structuredClone(accepted),run:{...structuredClone(accepted.run),started:window.calls.length===1&&!state.fieldOps.activeMissionRun}}};
+window.calls=[];window.apiPost=async(path,body)=>{window.calls.push({path,body});if(path.endsWith('/recover/state')){const battle=structuredClone(tracking.state);if(accepted.run.rulesContract.missionRevision!==2&&battle.objective)delete battle.objective.screenedEscape;return {ok:true,recover:{runId:body.runId,revision:0,token:'synthetic_authority',battle,threats:structuredClone(tracking.cycle.pending).map(t=>t.plan),frames:[]}};}if(!path.endsWith('/mission/start'))throw Error('unexpected request');return {...structuredClone(accepted),run:{...structuredClone(accepted.run),started:window.calls.filter(c=>c.path.endsWith('/mission/start')).length===1&&!state.fieldOps.activeMissionRun}}};
 store.setState({screen:'war-table',progression:state,progressionStatus:'ready',foundationCompleted:true,onboardingEnabled:true,progressionCommitPending:false,busy:false,selectedSquadIds:accepted.run.squadIds});
 if(mode==='confirm'||mode==='old-backend'){if(mode==='old-backend'){delete state.fieldOps.interceptRevisionAvailable;delete accepted.data.fieldOps.interceptRevisionAvailable;accepted.run.rulesContract.missionRevision=1;accepted.data.fieldOps.activeMissionRun.rulesContract.missionRevision=1}state.fieldOps.activeMissionRun=null;store.setState({progression:structuredClone(state)});store.getState().openOperationBrief('field-relay-intercept');store.getState().selectDirectiveTier('advanced')}
 if(mode==='resume'){store.getState().openOperationBrief('field-relay-intercept')}
@@ -33,7 +33,7 @@ try {
    assert.equal(await page.evaluate(()=>calls.length),1);await page.screenshot({path:out+'/'+width+'-accepted-review.png',fullPage:true});
    await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).click();await page.locator('.t-battle').waitFor();
    assert.equal(await page.evaluate(()=>fixture.store.getState().battle.objective.screenedEscape),mode==='confirm'?true:undefined);
-   assert.equal(await page.evaluate(()=>fixture.store.getState().currentRunKey),'field_synthetic');assert.equal(await page.evaluate(()=>calls.length),2);
+   assert.equal(await page.evaluate(()=>fixture.store.getState().currentRunKey),'field_synthetic');assert.equal(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/mission/start')).length),2);assert.equal(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/recover/state')).length),1,'VNext Intercept must attach to server authority');
    assert.equal(await page.evaluate(()=>calls[0].body.missionRevision),mode==='confirm'?2:undefined);
   }
   if(mode==='resume')assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/TARGET LOCK follows/);
@@ -43,7 +43,7 @@ try {
   if(mode==='tracking'){
    assert.match(await page.locator('.t-command-cue').innerText(),/TRACKING LOCK/);assert.doesNotMatch(await page.locator('.t-command-cue').innerText(),/Move off marked cells/);
    const marker=page.locator('.t-threat-tile-v2').first(),before=await marker.getAttribute('style');
-   await page.getByRole('button',{name:'Move to 3,1',exact:true}).dispatchEvent('pointerdown',{pointerType:'touch',bubbles:true});
+   await page.getByRole('button',{name:'Move to 3,1',exact:true}).click();
    assert.equal(await page.evaluate(()=>fixture.store.getState().battle.units.find(u=>u.id==='alpha').c),3);
    assert.notEqual(await marker.getAttribute('style'),before,'tracking marker must follow the same moved ally');
    assert.equal(await page.evaluate(()=>fixture.store.getState().threats[0].targetUnitId),'alpha');assert.equal(await page.locator('.t-threat-tile-v2').count(),1);

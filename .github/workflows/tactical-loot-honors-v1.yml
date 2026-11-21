@@ -1,0 +1,59 @@
+name: Tactical Loot & Honors V1
+on:
+  pull_request:
+    paths:
+      - 'tactical-ops-src/**'
+      - 'assets/tactical-honors/**'
+      - 'js/badges.js'
+      - 'js/boot_loaders.js'
+      - 'js/tactical_ops.js'
+      - 'tools/verify_tactical_loot_honors.mjs'
+      - 'tools/verify_tactical_verified_online_transport.mjs'
+      - '.github/workflows/tactical-loot-honors-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: read
+jobs:
+  loot-honors:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+      - run: npm install --no-save --package-lock=false playwright@1.64.1
+      - run: npx playwright install --with-deps chromium
+      - name: Canonical production build
+        run: npm run build:tactical-ops
+      - name: Loot & Honors receipt and Chromium verification
+        run: node tools/verify_tactical_loot_honors.mjs
+      - name: Verified online Intercept and Commander transport regression
+        run: node tools/verify_tactical_verified_online_transport.mjs
+      - name: Existing story results transaction regression
+        run: node tools/verify_tactical_story_results_transactions.mjs
+      - name: Existing Last Howl results regression
+        run: node tools/verify_tactical_last_howl_rewards.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-loot-honors-v1-chromium
+          path: |
+            artifacts/tactical-loot-honors
+            artifacts/last-howl-rewards
+          if-no-files-found: warn
+      - name: Commit generated bundle and cache on same Draft PR branch
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/tactical_ops.js js/boot_loaders.js
+          if ! git diff --cached --quiet; then
+            git commit -m "build(tactical): sync canonical Loot & Honors runtime bundle"
+            git push origin HEAD:"${{ github.head_ref }}"
+          fi

@@ -1,6 +1,6 @@
 import type { FoundationProgressionState } from "../host/foundationProgression";
 
-export type StorySave = { runId: string; missionId: string; firstClear: boolean } | null;
+export type StorySave = { runId: string; missionId: string; firstClear: boolean; lootAndHonors?: unknown } | null;
 
 export function storyResultTruth(
   progression: FoundationProgressionState | null,

@@ -210,6 +210,7 @@ export interface CampaignReport {
 }
 
 export interface CampaignResult extends CampaignReport {
+  lootAndHonors?: unknown;
   missionId: string;
   runId: string;
   intelEarned: boolean;
@@ -446,7 +447,7 @@ function parseCampaignResult(raw: unknown): CampaignResult | null {
   const v = raw as Record<string, unknown>;
   if (typeof v.victory !== "boolean" || typeof v.objectiveComplete !== "boolean" || typeof v.missionId !== "string" || typeof v.runId !== "string" || typeof v.intelEarned !== "boolean") return null;
   if (![v.turns, v.squadStanding, v.squadDeployed].every(Number.isInteger)) return null;
-  return { victory: v.victory, objectiveComplete: v.objectiveComplete, turns: Number(v.turns), squadStanding: Number(v.squadStanding), squadDeployed: Number(v.squadDeployed), missionId: v.missionId, runId: v.runId, intelEarned: v.intelEarned, ...(typeof v.failureReason === "string" ? { failureReason: v.failureReason } : {}) };
+  return { victory: v.victory, objectiveComplete: v.objectiveComplete, turns: Number(v.turns), squadStanding: Number(v.squadStanding), squadDeployed: Number(v.squadDeployed), missionId: v.missionId, runId: v.runId, intelEarned: v.intelEarned, ...(v.lootAndHonors !== undefined ? {lootAndHonors:v.lootAndHonors} : {}), ...(typeof v.failureReason === "string" ? { failureReason: v.failureReason } : {}) };
 }
 
 function parseMissionCombatProfileV3(run: Record<string, unknown>, contract: RunRulesContract | null) {
@@ -592,7 +593,7 @@ export async function startOperationMission(
     { requestId, expectedRevision, missionId, ...(missionRevision ? {missionRevision} : {}), ...(masteryVersion ? {masteryVersion} : {}), ...(squadIds ? { squadIds } : {}),
       ...(fieldOptions ? { fieldOptions } : {}), ...(rulesetVersion ? { rulesetVersion } : {}),
       ...(!chapterMode && chapterIntelVersion ? {chapterIntelVersion} : {}),
-      ...(!chapterMode && missionId === "field-relay-recovery" ? {recoverAuthorityVersion: 1} : {}) });
+      ...(!chapterMode && (missionId === "field-relay-recovery" || ((missionId === "field-relay-intercept" || missionId === "broken-signal-commander") && rulesetVersion === TACTICAL_VNEXT_RULESET)) ? {recoverAuthorityVersion: 1} : {}) });
   const run = response.run;
   if (!run || typeof run !== "object") throw new FoundationProgressionError("invalid_progression_response");
   const value = run as Record<string, unknown>;
@@ -619,15 +620,19 @@ export async function startOperationMission(
 }
 
 export function isRecoverAuthorityRun(runId: string | null | undefined): boolean {
-  return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
+  return typeof runId === "string" && (runId.startsWith("field_recover_v1_") || runId.startsWith("field_verified_v1_") || runId.startsWith("mission_verified_v1_") || runId.startsWith(COUNTERSTRIKE_PREFIX));
 }
 
-async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>) {
+async function recoverRequest(path: "state" | "command", runId: string, body: Record<string, unknown>, objectiveHint?: string) {
   const isCounterstrike=runId.startsWith(COUNTERSTRIKE_PREFIX);
+  const expectedObjective = isCounterstrike ? "HOLD" : runId.startsWith("field_verified_v1_") ? "INTERCEPT" : runId.startsWith("mission_verified_v1_") ? "BOSS" : runId.startsWith("field_recover_v1_") ? "RECOVER" : (objectiveHint && ["RECOVER", "INTERCEPT", "BOSS", "HOLD"].includes(objectiveHint) ? objectiveHint : undefined);
+  // Legacy accepted VNext Intercept/Commander run IDs are not self-describing.
+  // Require the caller's accepted mission/saved server view; never infer proof from the local battle.
+  if (!expectedObjective) throw new FoundationProgressionError("invalid_progression_response");
   const response = await request("/webapp/tactical-foundation/"+(isCounterstrike?"counterstrike":"recover")+"/"+path, { runId, ...body });
   const view = response.recover as RecoverView | undefined;
   if (view?.runId !== runId || !Number.isSafeInteger(view.revision) || typeof view.token !== "string" ||
-      view.battle?.objective?.type !== (isCounterstrike?"HOLD":"RECOVER") || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
+      view.battle?.objective?.type !== expectedObjective || !Array.isArray(view.battle.units) || !Array.isArray(view.threats)) {
     throw new FoundationProgressionError("invalid_progression_response");
   }
   return view;
@@ -642,12 +647,15 @@ export async function startCounterstrike(requestId:string,expectedRevision:numbe
   return {state:responseState(response),view};
 }
 
-export function loadRecoverBattle(runId: string) {
-  return recoverRequest("state", runId, {});
+export function loadRecoverBattle(runId: string, missionId?: string) {
+  const objectiveHint = missionId === "field-relay-intercept" ? "INTERCEPT" :
+    missionId === "broken-signal-commander" ? "BOSS" :
+    missionId === "field-relay-recovery" ? "RECOVER" : undefined;
+  return recoverRequest("state", runId, {}, objectiveHint);
 }
 
 export async function sendRecoverCommand(view: RecoverView, command: RecoverCommand) {
-  const next = await recoverRequest("command", view.runId, { ...(view.runId.startsWith(COUNTERSTRIKE_PREFIX)?{requestId:createFoundationRequestId("counterstrike-command")} : {}), expectedRevision: view.revision, token: view.token, command });
+  const next = await recoverRequest("command", view.runId, { ...(view.runId.startsWith(COUNTERSTRIKE_PREFIX)?{requestId:createFoundationRequestId("counterstrike-command")} : {}), expectedRevision: view.revision, token: view.token, command }, view.battle.objective?.type);
   if (next.revision !== view.revision + 1 || !Array.isArray(next.frames)) {
     throw new FoundationProgressionError("invalid_progression_response");
   }
@@ -663,8 +671,9 @@ export async function continueOperationMission(
   campaignReport?: CampaignReport,
   rulesetVersion?: string,
   chapterMode = false,
-): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null }> {
-  const result = !chapterMode && isRecoverAuthorityRun(runId) ? {} : {
+  verifiedOnlineTransport = false,
+): Promise<{ state: FoundationProgressionState; firstClear: boolean; fieldResult: FieldResult | null; fieldMilestone: FieldLegacyMilestone | null; campaignResult: CampaignResult | null; chapterResult: ChapterResult | null; lootAndHonors?: unknown }> {
+  const result = !chapterMode && (isRecoverAuthorityRun(runId) || verifiedOnlineTransport) ? {} : {
     completionIntent: campaignReport ? campaignReport.victory : fieldReport ? fieldReport.victory : true,
     routingTraceAcquired, ...(fieldReport ? { fieldReport } : {}), ...(campaignReport ? { campaignReport } : {}),
   };
@@ -682,7 +691,8 @@ export async function continueOperationMission(
   const fieldMilestone=fieldResult ? parseFieldLegacyMilestone(response.rewardMilestone,fieldResult.runId,fieldResult.missionId,fieldResult.victory) : null;
   return { state: responseState(response), firstClear: response.firstClear === true,
     fieldResult, fieldMilestone,
-    campaignResult: parseCampaignResult(response.campaignResult), chapterResult };
+    campaignResult: parseCampaignResult(response.campaignResult), chapterResult,
+    ...(response.lootAndHonors != null ? {lootAndHonors:response.lootAndHonors} : {}) };
 }
 
 /** Trial starts and settlements use separate endpoints; never route through Field Ops receipts. */

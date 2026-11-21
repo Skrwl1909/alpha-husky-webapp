@@ -55,6 +55,17 @@
     ownedTags: [],
     ownedAuras: [],
   };
+  // Art fallback only for badge rows provided by /webapp/badges/state. NEVER grants or registers ownership.
+  const TACTICAL_HONOR_ART = Object.freeze({
+    tops_first_contact: "assets/tactical-honors/v2/512px/tops_first_contact.webp",
+    tops_field_hunter: "assets/tactical-honors/v2/512px/tops_field_hunter.webp",
+    tops_battle_hardened: "assets/tactical-honors/v2/512px/tops_battle_hardened.webp",
+    tops_signal_reaper: "assets/tactical-honors/v2/512px/tops_signal_reaper.webp",
+    tops_fracture_veteran: "assets/tactical-honors/v2/512px/tops_fracture_veteran.webp",
+    tops_warborn_alpha: "assets/tactical-honors/v2/512px/tops_warborn_alpha.webp",
+    tops_commander_slayer: "assets/tactical-honors/v2/512px/tops_commander_slayer.webp",
+    tops_no_one_left_behind: "assets/tactical-honors/v2/512px/tops_no_one_left_behind.webp",
+  });
   const MAX_FEATURED_BADGES = 3;
   const INVALID_TITLE_VALUES = new Set(["", "NO TITLE", "NO ACTIVE TITLE"]);
   const TITLE_SOURCE_CLASS = {
@@ -1771,9 +1782,9 @@
       name: String(raw?.name || raw?.key || "Unknown Badge").trim(),
       icon: typeof raw?.icon === "string" ? raw.icon.trim() : "",
       icon_file: typeof raw?.icon_file === "string" ? raw.icon_file.trim() : "",
-      iconUrl: typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "",
+      iconUrl: (typeof raw?.iconUrl === "string" ? raw.iconUrl.trim() : "") || TACTICAL_HONOR_ART[String(raw?.key || "").trim().toLowerCase()] || "",
       icon_url: typeof raw?.icon_url === "string" ? raw.icon_url.trim() : "",
-      emblemUrl: typeof raw?.emblemUrl === "string" ? raw.emblemUrl.trim() : "",
+      emblemUrl: (typeof raw?.emblemUrl === "string" ? raw.emblemUrl.trim() : "") || TACTICAL_HONOR_ART[String(raw?.key || "").trim().toLowerCase()] || "",
       emblem_url: typeof raw?.emblem_url === "string" ? raw.emblem_url.trim() : "",
       frameUrl: typeof raw?.frameUrl === "string" ? raw.frameUrl.trim() : "",
       frame_url: typeof raw?.frame_url === "string" ? raw.frame_url.trim() : "",

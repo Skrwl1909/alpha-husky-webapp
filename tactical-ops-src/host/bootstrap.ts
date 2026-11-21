@@ -420,11 +420,12 @@ export async function open(missionId?: string): Promise<void> {
     useBattleStore.getState().openOperationBrief(missionId);
   }
   const el = ensureRoot();
-  const { FieldRecord: fieldRecord, Forge: forge, HomeNav: homeNav, Inventory: inventory } = window as Window & {
+  const { FieldRecord: fieldRecord, Forge: forge, HomeNav: homeNav, Inventory: inventory, Badges: badges } = window as Window & {
     FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
     Inventory?: { open?: () => Promise<unknown> };
     HomeNav?: { openInventory?: () => unknown; openForge?: () => unknown };
     Forge?: HostBridge["forge"];
+    Badges?: { open?: (badgeKey?: string) => Promise<unknown> };
   };
   setHost({
     requestClose: closeView,
@@ -437,6 +438,15 @@ export async function open(missionId?: string): Promise<void> {
       if (typeof homeNav?.openInventory === "function") void homeNav.openInventory();
       else void inventory?.open?.();
     } : undefined,
+    openBadges: typeof badges?.open === "function" ? (key?: string) => {
+      closeView();
+      void badges.open?.(key);
+    } : undefined,
+    openProfile: fieldRecord?.openSelf ? () => {
+      closeView();
+      void fieldRecord.openSelf?.({ focusService: false });
+    } : undefined,
+    readHonorBadges: M.apiPost ? () => Promise.resolve(M.apiPost!("/webapp/badges/state", {})) : undefined,
     openFieldRecord: fieldRecord?.openSelf ? () => {
       closeView();
       void fieldRecord.openSelf?.({ focusService: true });
