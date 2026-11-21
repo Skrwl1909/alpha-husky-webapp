@@ -33,8 +33,33 @@ jobs:
         run: npm run build:tactical-ops
       - name: Check bundle syntax
         run: node --check js/tactical_ops.js
-      - name: Verify combat regressions
-        run: npm run verify:tactical-ops
+      - name: Verify available combat and progression regressions
+        run: |
+          node tools/verify_tactical_battlefield_p5.mjs
+          node tools/verify_tactical_ops_foundation.mjs
+          node tools/verify_tactical_ops_foundation_persistence.mjs
+          node tools/verify_tactical_ops_operation_breach.mjs
+          node tools/verify_tactical_ops_operation_recover.mjs
+          node tools/verify_tactical_ops_operation_commander.mjs
+          node tools/verify_tactical_ops_commander_squad.mjs
+          node tools/verify_tactical_ops_evergreen.mjs
+          node tools/verify_tactical_mission_clarity.mjs
+          node tools/verify_tactical_contact_sync.mjs
+          node tools/verify_tactical_recover_authority_client.mjs
+          node tools/verify_tactical_last_howl.mjs
+      - name: Install browser runner
+        run: npm install --no-save --package-lock=false playwright@1.64.1
+      - name: Chromium P5 interaction and viewport evidence
+        run: node tools/verify_tactical_battlefield_p5_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - name: Upload browser screenshots and measured checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: combat-ux-reliability-chromium
+          path: artifacts/battlefield-p5/after
+          if-no-files-found: ignore
       - name: Synchronize generated bundles on isolated branch
         if: github.event_name == 'push'
         run: |
