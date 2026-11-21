@@ -848,7 +848,8 @@ const approvedCurrentBlobs=Object.freeze({
       'unreviewed Last Howl rewards canonical blob: '+path);
     return [path,sourceBlob(readFileSync(path))];
   })),
-  ...approvedScopedCurrentTextBlobs,
+  // Live integration blobs are pinned separately against HEAD and working copy;
+  // do not override the legacy test's intentionally historical source snapshots.
 });
 for (const [path,expected] of Object.entries(approvedFieldLegacyV1Blobs)) {
  const source=readFileSync(path,'utf8');
