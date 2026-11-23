@@ -118,7 +118,7 @@ try {
  assert.equal(types.GRID_COLS,10);
  assert.equal(types.GRID_ROWS,7);
  assert.equal(intent.TACTICAL_VNEXT_ENABLED,true);
- for (const missionId of ["field-squad-survival","field-rearguard"]) {
+ for (const missionId of ["field-squad-survival"]) {
   const capability = {reportVersion:3,surviveRevisionAvailable:2,cycleId:1,
    nextRotationAt:2000000000,directiveSet:"pursuit",
    activeMissionIds:[missionId,"field-relay-hold","field-relay-recovery"]};
@@ -138,13 +138,18 @@ try {
   requestMission=missionId;
   requestRevision=2;
   const revised=ops.missionForContext(base,context,2);
-  const duration=missionId==="field-rearguard" ? 5 : 4;
+  const duration=4;
   assert.equal(revised.objective.duration,duration);
   assert.deepEqual(revised.challenge,base.challenge);
-  assert.equal(revised.objective.trackingMarksman,true);
+  // P0 revision 2 is a four-round nearby-patrol Survival, not the old
+  // advanced tracking-marksman variant. Assert the real, threat-bearing changes.
+  assert.equal(revised.objective.trackingMarksman,undefined);
+  assert.equal(revised.spawns.length,4);
+  assert.equal(revised.spawns.find(unit=>unit.id==="h2").unitDef.atk,24);
+  assert.equal(revised.spawns.find(unit=>unit.id==="h4").unitDef.atk,44);
   assert.equal(ops.missionForContext(base,{...context,directiveTier:"standard"},2).objective.trackingMarksman,undefined);
-  assert.equal(ops.missionBattleRules(revised,false,context).reinforcement.triggerRound,duration);
-  assert.equal(ops.missionBattleRules(revised,false,{...context,pressure:2}).reinforcement.triggerRound,duration-1);
+  assert.equal(ops.missionBattleRules(revised,false,context).reinforcement.triggerRound,2);
+  assert.equal(ops.missionBattleRules(revised,false,{...context,pressure:2}).reinforcement.triggerRound,3);
   assert.equal(fieldWindow.currentFieldWindow(missionId,capability,board.region,0,"advanced",true).actualRound,duration);
   acceptedRun={runId:"field-survive",missionId,squadIds:legacy.run.squadIds,
    rulesContract:{...rules,missionId,missionRevision:2},fieldContext:context,combatProfileV3:profile};
@@ -160,5 +165,6 @@ try {
   await assert.rejects(foundation.loadFoundationProgression(),/invalid_progression_response/);
  }
  assert.equal(ops.surviveRevisionForRequest("field-relay-hold",intent.TACTICAL_VNEXT_RULESET,{reportVersion:3,surviveRevisionAvailable:2}),undefined);
+ assert.equal(ops.surviveRevisionForRequest("field-rearguard",intent.TACTICAL_VNEXT_RULESET,{reportVersion:3,surviveRevisionAvailable:2}),undefined,"P0 must not opt Rearguard into ordinary Survival revision 2");
  console.log("PASS: start/resume preserve Legacy and frozen VNext profiles, reject invalid versions and missing/null/malformed V3, 10x7 -> 8x5 -> 10x7");
 } finally {await vite.close();}
