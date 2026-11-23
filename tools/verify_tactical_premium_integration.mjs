@@ -10,6 +10,40 @@ const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
 /**
+ * Tactical Threat & Battlefield Clarity P2: exact presentation-only release,
+ * anchored to the merged Premium Game Feel P1. Historical approvals unchanged.
+ */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.101-threat-clarity-p2")) {
+ const baseline="ef551b991fb2a9f31f6592fc066168dbe2d3445f";
+ const approved=Object.freeze({
+  "js/tactical_ops.js": "17e739c51adf7895b7a5f5317c2c399f2345f086",
+  "js/boot_loaders.js": "5d5fc0fef82bb9c3f854d86028cacadb2ae21697",
+  "tactical-ops-src/ui/Battle.tsx": "5ba7f48c9c04578387c930e4ef1662c54bf675ca",
+  "tactical-ops-src/ui/battlePresentation.ts": "c4db66cffeccfe454212cf59a3439be9eb39012a",
+  "tactical-ops-src/ui/battlefieldClarityP2.css": "a70bb61a6ce5a4dd0983d42093e7b2a86f09fb5d",
+  "tactical-ops-src/styles.ts": "ea140214002bbe4fb6776d9f582d5f12cffc267d",
+  "tactical-ops-src/version.ts": "c015442313fc36aceefb776ecfc78ebc77b3be6a",
+  "tools/verify_tactical_battlefield_p5_browser.mjs": "68a09404aff28aac62d1f8287ce7c1893acccbc5",
+ });
+ const own="tools/verify_tactical_premium_integration.mjs";
+ try { git("cat-file","-e",baseline+"^{commit}"); }
+ catch { execFileSync("git",["fetch","--no-tags","--depth=1","origin",baseline],{stdio:"pipe"}); }
+ const paths=git("diff","--name-only","--no-renames",baseline,"HEAD").trim().split("\n").filter(Boolean);
+ assert.equal(paths.length,Object.keys(approved).length+1,"Unexpected P2 changed file count");
+ for(const p of paths) {
+  assert(p===own || Object.hasOwn(approved,p),"Unreviewed P2 path: "+p);
+  if(p!==own)assert.equal(git("rev-parse","HEAD:"+p).trim(),approved[p],"Unreviewed P2 blob: "+p);
+ }
+ for(const [p,sha] of Object.entries(approved)) {
+  assert(paths.includes(p),"Missing P2 file: "+p);
+  assert.equal(git("rev-parse","HEAD:"+p).trim(),sha,"P2 release fingerprint mismatch: "+p);
+ }
+ assert(paths.includes(own),"Missing P2 integrity check");
+ console.log("PASS Tactical Battlefield Clarity P2 exact provenance from merged P1");
+ process.exit(0);
+}
+
+/**
  * P1: exact approved presentation-only changes relative to merged Survival P0.
  * Keep historical approvals immutable and reject unrelated changes.
  */
