@@ -18,13 +18,13 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
  const baseline="ada1c0891707aa5767e7d161acd152e8c77a73e2";
  const approved=Object.freeze({
   "js/boot_loaders.js": "5aa2526ab7e1fe0e10955b3d87d88d7ce8e119d3",
-  "js/tactical_ops.js": "404064190a8eb6b58e70dd6ba03bdb527d3d3ef0",
+  "js/tactical_ops.js": "edb7e1e706571b7e2398e4d87639c48cada4362d",
   "tactical-ops-src/data/operations.ts": "ff1df14da6082825b25a7870d4d930170ab4a913",
   "tactical-ops-src/host/foundationProgression.ts": "d207887af200e3de056668277d72c853f651ff07",
-  "tactical-ops-src/host/operationAuthority.ts": "b0bef42856452b1a14aa39a79e1248ba5550c151",
+  "tactical-ops-src/host/operationAuthority.ts": "240cbe63b306c72e0b58ddb1a2d4fc452be022ca",
   "tactical-ops-src/store/battleStore.ts": "c41c5cf1c82238fa9f51ea47f7b3270aab828f7f",
   "tactical-ops-src/version.ts": "4502fa361a0deea3c79c6e375b7dc783967c15eb",
-  "tools/verify_tactical_field_settlement_recovery_p0.mjs": "8c74f5eec14faad5f7d85198ad0c02f10e3a825d",
+  "tools/verify_tactical_field_settlement_recovery_p0.mjs": "d136de9ed6415ab87ec1722fc0eb982bd3cbc668",
   "tools/verify_tactical_vnext_run_contract_wire.mjs": "be2238cae53d86a8127152d10dc75ba4498d02a5",
   "tools/verify_tactical_s3_after_action.mjs": "e44d09b01b6f0b57cfd15237350eb72689a1bc55",
   "tools/verify_tactical_ops_failure_recording.mjs": "5a0c8baf368891314af24e5e9a8ac680833316f6",
@@ -36,8 +36,9 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   "tools/simulate_tactical_s2_full_combat.mjs": "98ca8aae49fb283f2157fd9f0b79e3401dbecaa6",
   "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
   "tools/verify_tactical_purpose_return_browser.mjs": "979731bf486530c26d1f06dcd82ed710c6df53d1",
-  "tools/verify_tactical_depth01_browser.mjs": "2a9aa0e24aa3b39d5b9adf00fd062f4e02105e73",
-  ".github/workflows/tactical-release-bundle-sync.yml": "f6a8ea2b57e6d2bb156bc901864bee8464e765b4"
+  "tools/verify_tactical_depth01_browser.mjs": "37f9be11bdb74e43039dc65d049f8c032840600c",
+  ".github/workflows/tactical-release-bundle-sync.yml": "0cd458b3ce839a096751b2fe3f5218206ef9e9c6",
+  ".github/workflows/tactical-field-settlement-recovery-p0.yml": "db5795b99a09c8fecef4c24929781f6e32b2326f"
 });
  const own="tools/verify_tactical_premium_integration.mjs";
  try { git("cat-file","-e",baseline+"^{commit}"); }

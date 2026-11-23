@@ -16,7 +16,7 @@ export function parseAuthority(raw: unknown, runId: string, missionId: string): 
 }
 export function confirmedFieldReceipt(state: any, runId: string, missionId: string) {
   const field=state?.fieldOps, result=field?.lastResult;
-  if (field?.activeMissionRun || field?.lastCompletedMissionRunId!==runId || result?.runId!==runId || result?.missionId!==missionId ||
+  if (field?.activeMissionRun?.runId===runId || field?.lastCompletedMissionRunId!==runId || result?.runId!==runId || result?.missionId!==missionId ||
       result.rewardAmountsAvailable===false || !Number.isSafeInteger(result.xpGranted) || result.xpGranted<0 || !Number.isSafeInteger(result.bonesGranted) || result.bonesGranted<0) return null;
   const receipt=result.settlementReceipt;
   if (receipt && (receipt.version!==1 || receipt.status!=="CONFIRMED" || receipt.runId!==runId || receipt.missionId!==missionId || typeof receipt.receiptId!=="string")) return null;

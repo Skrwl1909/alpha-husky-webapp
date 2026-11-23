@@ -38,6 +38,14 @@ try {
       region: {regionId:"fracture", cycleId:7, pressure:2},
     },
   });
+  const { confirmedFieldReceipt } = await vite.ssrLoadModule("/tactical-ops-src/host/operationAuthority.ts");
+  const priorRecorded=makeState(receipt,true);
+  priorRecorded.fieldOps.activeMissionRun={runId:"new-accepted-run",missionId:"field-squad-survival"};
+  assert.equal(confirmedFieldReceipt(priorRecorded,runId,missionId)?.runId,runId,
+    "A later accepted run must not erase an independently confirmed previous receipt");
+  priorRecorded.fieldOps.activeMissionRun={runId,missionId};
+  assert.equal(confirmedFieldReceipt(priorRecorded,runId,missionId),null,
+    "Same active run cannot claim completion before settlement");
   const reset = () => useBattleStore.setState({
     screen: "results", selectedMissionId: missionId, currentRunKey: runId,
     progression: makeState(), progressionCommitPending: false, progressionError: null,

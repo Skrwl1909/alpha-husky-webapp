@@ -4,6 +4,7 @@ on:
     paths:
       - "tactical-ops-src/version.ts"
       - "tactical-ops-src/store/battleStore.ts"
+      - "tactical-ops-src/host/operationAuthority.ts"
       - ".github/workflows/tactical-release-bundle-sync.yml"
 permissions:
   contents: write

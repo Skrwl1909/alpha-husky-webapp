@@ -10,7 +10,7 @@ permissions:
   contents: write
 jobs:
   settlement-recovery:
-    if: github.event_name == 'push' || github.head_ref == 'fix/tactical-field-result-settlement-recovery-p0-20261121'
+    if: github.event_name == 'push' || github.head_ref == 'fix/tactical-field-result-settlement-recovery-p0-20261121' || github.head_ref == 'fix/tactical-survival-settlement-p0-20261123'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
