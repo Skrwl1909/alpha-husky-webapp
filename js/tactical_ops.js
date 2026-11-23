@@ -8989,7 +8989,7 @@ body.ah-perf-lite #tacticalOpsRoot .t-cosmetic-sweep {opacity:0;animation:none;}
 #tacticalOpsRoot .t-loot-heading span,#tacticalOpsRoot .t-loot-rarity{display:block;font:700 10px/1.4 var(--t-font-sans);letter-spacing:.13em;color:#a8cbd0}
 #tacticalOpsRoot .t-loot-heading h2{font:800 21px/1.05 var(--t-font-display);letter-spacing:.06em;margin:2px 0 0;color:#f2f7f6}
 #tacticalOpsRoot .t-loot-heading>div{min-width:0;flex:1}
-#tacticalOpsRoot .t-loot-skip{flex:none;min-width:44px;min-height:44px;border:1px solid #8babb388;border-radius:3px;background:#122730;color:#d6e7e9;font:700 10px var(--t-font-sans);letter-spacing:.07em;cursor:pointer}
+#tacticalOpsRoot .t-results .t-loot-reveal .t-loot-skip{display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box;flex:0 0 74px;width:74px;min-width:74px;height:48px;min-height:48px;padding:0 7px;border:1px solid #8babb388;border-radius:3px;background:#122730;color:#d6e7e9;font:700 10px var(--t-font-sans);letter-spacing:.07em;cursor:pointer}
 #tacticalOpsRoot .t-loot-skip:focus-visible{outline:2px solid #a7e9f0;outline-offset:2px}
 #tacticalOpsRoot .t-loot-currencies{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin-top:10px}
 #tacticalOpsRoot .t-loot-currency{border:1px solid #a3bbbc36;background:#10232a;padding:9px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
