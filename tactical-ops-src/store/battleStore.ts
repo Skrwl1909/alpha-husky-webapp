@@ -1339,7 +1339,12 @@ export const useBattleStore = create<Store>((set, get) => {
               const canonical=await loadFoundationProgression();
               if(g!==runGen)return;
               applyCanonicalProgression(canonical);
-              if(!authoritySupported(canonical,mission.missionId))throw new FoundationProgressionError("tactical_authority_unavailable",canonical);
+              // Authoritative P0 Field Ops/BOSS must fail closed. Older campaign
+              // missions are intentionally outside the new server transport;
+              // keep their previously accepted legacy battle lifecycle.
+              const needsOnlineAuthority=mission.activity==="FIELD_OP" || !!ONLINE_OBJECTIVE[mission.missionId];
+              if(needsOnlineAuthority&&!authoritySupported(canonical,mission.missionId))
+                throw new FoundationProgressionError("tactical_authority_unavailable",canonical);
               const unresolved=unresolvedOperation(canonical,mission.missionId);
               if(unresolved&&unresolved.missionId!==mission.missionId)throw new FoundationProgressionError("mission_run_active",canonical);
               // Preserve the immutable rules of an accepted legacy run, even after earning RECON Intel.
@@ -1387,8 +1392,11 @@ export const useBattleStore = create<Store>((set, get) => {
               if (!canonicalSpawns) throw new FoundationProgressionError("invalid_progression_response");
               const acceptedOnline=started.run.authority?.transport==="recover"||
                 started.run.rulesContract?.rulesetVersion===TACTICAL_VNEXT_RULESET&&["field-relay-recovery","field-relay-intercept","broken-signal-commander"].includes(started.run.missionId);
-              if(!acceptedOnline)throw new FoundationProgressionError("tactical_authority_unavailable",started.state);
-              const authoritative=await loadRecoverBattle(started.run.runId,started.run.missionId);
+              if(needsOnlineAuthority&&!acceptedOnline)
+                throw new FoundationProgressionError("tactical_authority_unavailable",started.state);
+              const authoritative=acceptedOnline
+                ? await loadRecoverBattle(started.run.runId,started.run.missionId)
+                : undefined;
               if (g !== runGen) return;
               beginBattle(
                 g,

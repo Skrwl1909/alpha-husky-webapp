@@ -22,7 +22,7 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   "tactical-ops-src/data/operations.ts": "ff1df14da6082825b25a7870d4d930170ab4a913",
   "tactical-ops-src/host/foundationProgression.ts": "d207887af200e3de056668277d72c853f651ff07",
   "tactical-ops-src/host/operationAuthority.ts": "b0bef42856452b1a14aa39a79e1248ba5550c151",
-  "tactical-ops-src/store/battleStore.ts": "33ba4174ec982a365d53c4b23ccbd7d75b80c17a",
+  "tactical-ops-src/store/battleStore.ts": "c41c5cf1c82238fa9f51ea47f7b3270aab828f7f",
   "tactical-ops-src/version.ts": "4502fa361a0deea3c79c6e375b7dc783967c15eb",
   "tools/verify_tactical_field_settlement_recovery_p0.mjs": "8c74f5eec14faad5f7d85198ad0c02f10e3a825d",
   "tools/verify_tactical_vnext_run_contract_wire.mjs": "be2238cae53d86a8127152d10dc75ba4498d02a5",
@@ -36,7 +36,8 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   "tools/simulate_tactical_s2_full_combat.mjs": "98ca8aae49fb283f2157fd9f0b79e3401dbecaa6",
   "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
   "tools/verify_tactical_purpose_return_browser.mjs": "979731bf486530c26d1f06dcd82ed710c6df53d1",
-  "tools/verify_tactical_depth01_browser.mjs": "2a9aa0e24aa3b39d5b9adf00fd062f4e02105e73"
+  "tools/verify_tactical_depth01_browser.mjs": "2a9aa0e24aa3b39d5b9adf00fd062f4e02105e73",
+  ".github/workflows/tactical-release-bundle-sync.yml": "f6a8ea2b57e6d2bb156bc901864bee8464e765b4"
 });
  const own="tools/verify_tactical_premium_integration.mjs";
  try { git("cat-file","-e",baseline+"^{commit}"); }
