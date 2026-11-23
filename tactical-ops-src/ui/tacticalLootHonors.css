@@ -2,12 +2,16 @@
 #tacticalOpsRoot .t-loot-reveal,#tacticalOpsRoot .t-honors-collection{--loot-border:#547680;background:linear-gradient(145deg,#142631,#08151e 73%);border:1px solid #607c835c;border-radius:7px;min-width:0;color:#e7f4f5}
 #tacticalOpsRoot .t-loot-reveal{margin:14px 0 10px;padding:14px;overflow:hidden;isolation:isolate}
 #tacticalOpsRoot .t-loot-reveal[data-reveal=rare]{border-color:#6195c5a8;background:linear-gradient(130deg,#20394c,#0c1a27 73%)}
+#tacticalOpsRoot .t-loot-reveal[data-reveal=epic]{border-color:#ab8fd6b8;background:radial-gradient(ellipse at 88% 0%,#654a9b5b,transparent 66%),linear-gradient(140deg,#261f37,#101823 72%)}
 #tacticalOpsRoot .t-loot-reveal[data-reveal=legendary]{border-color:#d1a65bb8;background:radial-gradient(ellipse at 88% 0%,#74502c68,transparent 66%),linear-gradient(140deg,#30271f,#0c1720 72%)}
 #tacticalOpsRoot .t-loot-heading{display:flex;align-items:center;gap:12px;padding-bottom:10px;border-bottom:1px solid #aac0bf3b}
 #tacticalOpsRoot .t-loot-heading>svg{width:25px;height:25px;color:#9dccd5;flex-shrink:0}
 #tacticalOpsRoot .t-loot-reveal[data-reveal=legendary] .t-loot-heading>svg{color:#f0c98a}
 #tacticalOpsRoot .t-loot-heading span,#tacticalOpsRoot .t-loot-rarity{display:block;font:700 10px/1.4 var(--t-font-sans);letter-spacing:.13em;color:#a8cbd0}
 #tacticalOpsRoot .t-loot-heading h2{font:800 21px/1.05 var(--t-font-display);letter-spacing:.06em;margin:2px 0 0;color:#f2f7f6}
+#tacticalOpsRoot .t-loot-heading>div{min-width:0;flex:1}
+#tacticalOpsRoot .t-loot-skip{flex:none;min-width:44px;min-height:44px;border:1px solid #8babb388;border-radius:3px;background:#122730;color:#d6e7e9;font:700 10px var(--t-font-sans);letter-spacing:.07em;cursor:pointer}
+#tacticalOpsRoot .t-loot-skip:focus-visible{outline:2px solid #a7e9f0;outline-offset:2px}
 #tacticalOpsRoot .t-loot-currencies{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:8px;margin-top:10px}
 #tacticalOpsRoot .t-loot-currency{border:1px solid #a3bbbc36;background:#10232a;padding:9px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:0}
 #tacticalOpsRoot .t-loot-currency svg{width:18px;height:18px;color:#b2dfe0}
@@ -41,7 +45,11 @@
 #tacticalOpsRoot .t-loot-stats dd[data-delta=down]{color:#f3a6a0}
 #tacticalOpsRoot .t-loot-stats p{grid-column:1/-1;margin:3px 0;font-size:10px}
 #tacticalOpsRoot .t-loot-prestige-copy small,#tacticalOpsRoot .t-loot-receipt{display:block;font-size:10px;line-height:1.4;color:#b9c9d0}
+#tacticalOpsRoot .t-loot-prestige[data-rarity=legendary] h3{color:#fff0cd;text-shadow:0 1px 12px #f2c2703d}
+#tacticalOpsRoot .t-loot-prestige[data-rarity=epic] h3{color:#eee0ff}
 #tacticalOpsRoot .t-loot-receipt{margin-top:11px;overflow-wrap:anywhere;opacity:.8}
+#tacticalOpsRoot .t-loot-receipt summary{cursor:pointer;min-height:44px;display:flex;align-items:center;list-style-position:inside;font:700 10px var(--t-font-sans);letter-spacing:.08em}
+#tacticalOpsRoot .t-loot-receipt code{display:block;white-space:normal;overflow-wrap:anywhere;font:10px/1.4 monospace;padding:6px 0 12px}
 #tacticalOpsRoot .t-loot-replayed{padding:10px;border-left:2px solid #789ca4;background:#172833;color:#bdcbd1;font-size:11px}
 #tacticalOpsRoot .t-honors-collection{margin:12px 0;padding:12px}
 #tacticalOpsRoot .t-honors-collection>summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none;font:800 15px/1.2 var(--t-font-display);letter-spacing:.08em}
@@ -76,8 +84,14 @@
  #tacticalOpsRoot .t-loot-items,#tacticalOpsRoot .t-loot-unlocks{grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr))}
 }
 @media(prefers-reduced-motion:no-preference){
- #tacticalOpsRoot .t-loot-reveal[data-reveal=legendary] .t-loot-equipment[data-rarity=legendary]{animation:t-loot-reveal-in .55s ease-out both}
+ #tacticalOpsRoot .t-loot-reveal[data-celebrating=yes] .t-loot-heading{animation:t-p1-reward-rise .32s ease-out both}
+ #tacticalOpsRoot .t-loot-reveal[data-celebrating=yes] .t-loot-currencies{animation:t-p1-reward-rise .36s .10s ease-out both}
+ #tacticalOpsRoot .t-loot-reveal[data-celebrating=yes] .t-loot-items{animation:t-p1-reward-rise .42s .20s ease-out both}
+ #tacticalOpsRoot .t-loot-reveal[data-celebrating=yes] .t-loot-unlocks{animation:t-p1-reward-rise .44s .30s ease-out both}
+ #tacticalOpsRoot .t-loot-reveal[data-celebrating=yes] :is(.t-loot-equipment,.t-loot-prestige)[data-rarity=legendary]{animation:t-p1-prestige .68s .35s ease-out both}
 }
+@keyframes t-p1-reward-rise{from{opacity:.65;translate:0 7px}to{opacity:1;translate:0 0}}
+@keyframes t-p1-prestige{0%{filter:brightness(.8);box-shadow:inset 4px 0 0 var(--drop)}55%{filter:brightness(1.15);box-shadow:inset 4px 0 0 var(--drop),0 0 24px #e6b46757}100%{filter:brightness(1);box-shadow:inset 4px 0 0 var(--drop),0 0 22px #a67c4429}}
 @keyframes t-loot-reveal-in{from{opacity:.4;transform:translateY(7px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){
  #tacticalOpsRoot .t-loot-reveal *,#tacticalOpsRoot .t-honors-collection *{animation:none!important;transition:none!important}
