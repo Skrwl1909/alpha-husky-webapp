@@ -424,3 +424,20 @@
 #tacticalOpsRoot .t-field-results .t-fr-legacy small{display:block;margin-top:5px;font-size:10px;color:#b9bdba}
 #tacticalOpsRoot .t-field-results .t-fr-legacy-history{padding:9px 11px;background:transparent;border-color:#78909855}
 #tacticalOpsRoot .t-field-results .t-fr-legacy-history>strong{font-size:13px;color:#cbd9dd}
+
+/* P1: server-confirmed, skippable result beat. Content/CTAs always interactive. */
+#tacticalOpsRoot .t-field-results .t-fr-skip-beat{
+  align-self:flex-start;min-height:44px;min-width:44px;padding:8px 12px;margin:4px 0 0;
+  color:#d6ecf1;background:#102630;border:1px solid #9bbfc17b;border-radius:3px;
+  font:700 10px var(--t-font-sans);letter-spacing:.08em;cursor:pointer
+}
+#tacticalOpsRoot .t-field-results .t-fr-skip-beat:focus-visible{outline:2px solid #b5e8f0;outline-offset:2px}
+@media(prefers-reduced-motion:no-preference){
+ #tacticalOpsRoot .t-field-results[data-confirmed-beat=yes] .t-outcome-hero .t-title{animation:t-p1-win-enter .36s ease-out both}
+ #tacticalOpsRoot .t-field-results[data-confirmed-beat=yes] .t-fr-payout-grid{animation:t-p1-win-enter .40s .11s ease-out both}
+ #tacticalOpsRoot .t-field-results[data-confirmed-beat=yes] .t-fr-impact{animation:t-p1-win-enter .40s .22s ease-out both}
+}
+@keyframes t-p1-win-enter{from{opacity:.68;translate:0 5px}to{opacity:1;translate:0 0}}
+@media(prefers-reduced-motion:reduce){
+ #tacticalOpsRoot .t-field-results[data-confirmed-beat] :is(.t-outcome-hero .t-title,.t-fr-payout-grid,.t-fr-impact){animation:none!important}
+}
