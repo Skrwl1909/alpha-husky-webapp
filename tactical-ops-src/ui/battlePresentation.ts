@@ -51,6 +51,12 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
       return tracked ? {...t,impactTiles:[{c:tracked.c,r:tracked.r}]} : t;
     }) : [];
   const danger = new Set(threats.flatMap(t => t.impactTiles.map(c => cellKey(c.c, c.r))));
+  // Pure projection of accepted telegraphs onto the *current* battlefield.
+  // Never derive new enemy attacks or claim that a previous tracking tile still threatens a moved ally.
+  const threatenedAllies = battle.units.filter(u =>
+    u.team === "ally" && !u.defeated && u.hp > 0 && danger.has(cellKey(u.c, u.r)));
+  const threatenedAllyIds = threatenedAllies.map(u => u.id);
+  const threatenedAllyNames = threatenedAllies.map(u => u.name);
   const targeting = interactive && battle.mode === "targeting" && !!battle.actionSkillId;
   const skills = actor ? availableSkills(battle, actor) : [];
   const skill = skills.find(s => s.id === battle.actionSkillId);
@@ -94,7 +100,7 @@ export function deriveBattlePresentation(input: BattlePresentationInput) {
   if (!threats.length && !targeting && battle.reinforcement?.telegraphed && !battle.reinforcement.spawned && mode === "READ") {
     title = "REINFORCEMENT INBOUND"; detail = "Marked entry · not spawned yet";
   }
-  return { mode, actor, interactive, targeting, targetIds, interruptTargetIds, threats, danger, sources, objective, title, detail, result,
+  return { mode, actor, interactive, targeting, targetIds, interruptTargetIds, threats, danger, threatenedAllyIds, threatenedAllyNames, sources, objective, title, detail, result,
     actions: skills.map(s => ({ id: s.id, reason: !s.ready ? `CD ${s.cd}` : !interactive ? "WAIT" : skillNeedsTargetPick(s) && !s.targets.length ? "NO TARGET" : battle.actionSkillId === s.id && targeting ? "CANCEL" : "READY" })),
     // An existing atlas owns the primary impact. Other layers retain numbers and
     // genuine consequences, without replaying a second burst for the same action.
