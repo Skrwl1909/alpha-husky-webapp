@@ -39,6 +39,8 @@ jobs:
           git add js/tactical_ops.js js/boot_loaders.js
           if ! git diff --cached --quiet; then
             git commit -m 'build(tactical): sync verified P0 bundle after Pack Link fix'
+            git fetch origin "${{ github.head_ref }}"
+            git rebase FETCH_HEAD
             git push origin "HEAD:${{ github.head_ref }}"
           fi
       - name: Verify sealed WebApp and cache are unchanged
