@@ -8,6 +8,47 @@ const base='040831f33c34c1a1b02b282215097b0f8f4c0e1d';
 const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8e6b112d0eedfa9a0c'];
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
+
+/**
+ * Release-specific, fully pinned provenance extension. The archived historical
+ * verifier retains its original approvals for all previous integrations.
+ * The P0 delta is approved only for the exact 2026-11-23 tree shown here.
+ */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-survival-settlement-p0")) {
+ const baseline="ada1c0891707aa5767e7d161acd152e8c77a73e2";
+ const approved=Object.freeze({
+  "js/boot_loaders.js": "5aa2526ab7e1fe0e10955b3d87d88d7ce8e119d3",
+  "js/tactical_ops.js": "404064190a8eb6b58e70dd6ba03bdb527d3d3ef0",
+  "tactical-ops-src/data/operations.ts": "ff1df14da6082825b25a7870d4d930170ab4a913",
+  "tactical-ops-src/host/foundationProgression.ts": "d207887af200e3de056668277d72c853f651ff07",
+  "tactical-ops-src/host/operationAuthority.ts": "b0bef42856452b1a14aa39a79e1248ba5550c151",
+  "tactical-ops-src/store/battleStore.ts": "33ba4174ec982a365d53c4b23ccbd7d75b80c17a",
+  "tactical-ops-src/version.ts": "4502fa361a0deea3c79c6e375b7dc783967c15eb",
+  "tools/verify_tactical_field_settlement_recovery_p0.mjs": "8c74f5eec14faad5f7d85198ad0c02f10e3a825d",
+  "tools/verify_tactical_vnext_run_contract_wire.mjs": "ebbef7200b505ec049c14bb5f5c8dfc779ac5b7e",
+  "tools/verify_tactical_s3_after_action.mjs": "e44d09b01b6f0b57cfd15237350eb72689a1bc55",
+  "tools/verify_tactical_ops_failure_recording.mjs": "5a0c8baf368891314af24e5e9a8ac680833316f6",
+  "tools/verify_field_op_results_premium.mjs": "122a50b59ae4091d00371d7e4eb686942fea5b87",
+  ".github/workflows/tactical-gear-v31.yml": "ce0888cc6c941551d785881c8de197fb0e14220b",
+  ".github/workflows/tactical-loot-honors-v1.yml": "c7cafa86f9771814f058659a23e8239b291e9596"
+});
+ const own="tools/verify_tactical_premium_integration.mjs";
+ try { git("cat-file","-e",baseline+"^{commit}"); }
+ catch { execFileSync("git",["fetch","--no-tags","--depth=1","origin",baseline],{stdio:"pipe"}); }
+ const paths=git("diff","--name-only","--no-renames",baseline,"HEAD").trim().split("\n").filter(Boolean);
+ for(const path of paths) {
+  assert(path===own || Object.hasOwn(approved,path),"unreviewed settlement P0 path: "+path);
+  if(path!==own)assert.equal(git("rev-parse","HEAD:"+path).trim(),approved[path],"unreviewed settlement P0 blob: "+path);
+ }
+ for(const [path,sha] of Object.entries(approved)) {
+  assert(paths.includes(path),"missing P0 reviewed change: "+path);
+  assert.equal(git("rev-parse","HEAD:"+path).trim(),sha,"mismatched P0 release: "+path);
+ }
+ assert(paths.includes(own),"missing P0 provenance verifier");
+ console.log("PASS settlement P0 provenance: "+paths.length+" individually reviewed paths; all other baseline files unchanged");
+ process.exit(0);
+}
+
 const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops-src/version.ts']);
 // Preserve the historical assertions at the reviewed main commit. Verify exact
 // Last Howl leaves independently before using their historical source below.

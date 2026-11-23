@@ -148,8 +148,8 @@ try {
   assert.equal(revised.spawns.find(unit=>unit.id==="h2").unitDef.atk,24);
   assert.equal(revised.spawns.find(unit=>unit.id==="h4").unitDef.atk,44);
   assert.equal(ops.missionForContext(base,{...context,directiveTier:"standard"},2).objective.trackingMarksman,undefined);
-  assert.equal(ops.missionBattleRules(revised,false,context).reinforcement.triggerRound,2);
-  assert.equal(ops.missionBattleRules(revised,false,{...context,pressure:2}).reinforcement.triggerRound,3);
+  assert.equal(ops.missionBattleRules(revised,false,context).reinforcement.triggerRound,3,"reduced pressure delays the round-2 reserve");
+  assert.equal(ops.missionBattleRules(revised,false,{...context,pressure:2}).reinforcement.triggerRound,2,"normal pressure keeps the reserve in round 2");
   assert.equal(fieldWindow.currentFieldWindow(missionId,capability,board.region,0,"advanced",true).actualRound,duration);
   acceptedRun={runId:"field-survive",missionId,squadIds:legacy.run.squadIds,
    rulesContract:{...rules,missionId,missionRevision:2},fieldContext:context,combatProfileV3:profile};
