@@ -82,6 +82,10 @@ window.fixture = { store, apply, async progress(count) {
     progressEarned:0, progressBefore:6, progressAfter:6, rankBefore:2, rankAfter:2, pressureBefore:2, pressureAfter:2,
     regionalApplied:true, unlockedApproaches:[], legacyReport:false, recordedAt:10, xpGranted:8, bonesGranted:16,
     contractAward:duplicate ? undefined : {id:keys[count-1], count, reward:count===2?"reach-rend":count===3?"field-tested":null}};
+  // Mirror the durable server settlement; a matching UI result alone is not authority.
+  field.lastCompletedMissionRunId = "field_real";
+  field.lastResult.settlementReceipt = { version:1, status:"CONFIRMED", runId:"field_real",
+    missionId, receiptId:`field-contract-${count}` };
   await apply();
   store.setState({screen:"results", selectedMissionId:missionId, currentRunKey:match?"field_real":"field_stale",
     fieldResult:store.getState().progression.fieldOps.lastResult,
