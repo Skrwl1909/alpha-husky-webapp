@@ -17,6 +17,7 @@ const fixtures={
   legendary:{...base,equipment:[item('legendary')]},comparison:{...base,equipment:[item('uncommon')]},
   noart:{...base,equipment:[{...item('uncommon'),imageUrl:'assets/equip/does_not_exist.png'}]},
   badge:{...base,unlocks:[prestige('badge','tops_first_contact','First Contact','common')]},
+  legendaryBadge:{...base,receiptId:'receipt_legendary_badge',unlocks:[prestige('badge','tops_no_one_left_behind','No One Left Behind','legendary')]},
   frame:{...base,unlocks:[prestige('frame','tops_broken_signal_frame','Broken Signal Frame')]},
   aura:{...base,unlocks:[prestige('aura','signalborn_aura','Signalborn Aura')]},
   title:{...base,unlocks:[prestige('title','relay_hunter','Relay Hunter')]},
@@ -57,6 +58,9 @@ try {
   assert(!renderToStaticMarkup(React.createElement(StoryResultView,{...props,phase:'saving'})).includes('LOOT &amp; HONORS'));
   assert(renderToStaticMarkup(React.createElement(StoryResultView,{...props,phase:'saved'})).includes('LOOT &amp; HONORS'));
   assert(renderToStaticMarkup(React.createElement(TacticalHonorsCollection)).includes('TACTICAL HONORS'));
+  const resultsSource=readFileSync('tactical-ops-src/ui/FieldOpResults.tsx','utf8');
+  const ordinaryResults=resultsSource.split('export function SpecialFieldOpResults')[0];
+  assert.equal((ordinaryResults.match(/<TacticalHonorsCollection\s*\/>/g)||[]).length,1,'only one ordinary Results honors panel');
   assert(readFileSync('js/tactical_ops.js','utf8').includes('LOOT & HONORS'),'canonical bundle lacks Loot & Honors');
   console.log('PASS 17 malformed or foreign payloads, legacy compatibility, no pending rewards, saved story results');
 
@@ -105,7 +109,16 @@ try {
           assert(await panel.locator('.t-loot-stats').getByText('+1').count()>0);
           assert(await panel.locator('.t-loot-stats').getByText('-1').count()>0);
         }
-        if(name==='legendary')assert.equal(await reveal.getAttribute('data-reveal'),'legendary');
+        if(['legendary','legendaryBadge'].includes(name))assert.equal(await reveal.getAttribute('data-reveal'),'legendary');
+        if(name==='legendaryBadge')assert.equal(await panel.locator('.t-loot-prestige[data-rarity="legendary"]').count(),1);
+        if(present){
+          const details=panel.locator('.t-loot-receipt');
+          assert.equal(await details.count(),1);
+          assert.equal(await details.getAttribute('open'),null,'receipt ID starts collapsed');
+          await details.locator('summary').click();
+          assert.match(await details.innerText(),/SAVED RECEIPT/);
+          await details.locator('summary').click();
+        }
         if(name==='rare')assert.equal(await reveal.getAttribute('data-reveal'),'rare');
         for(const kind of ['badge','frame','aura','title','skin']){
           if(name===kind)assert.equal(await panel.getByText(kind.toUpperCase()+' UNLOCKED').count(),1);
@@ -136,7 +149,7 @@ try {
     }
     assert.deepEqual(errors,[],'page errors');
     await page.close();
-    console.log('PASS '+width+'px, 15 states, responsive controls and reduced-motion');
+    console.log('PASS '+width+'px, receipt-gated states, responsive controls and reduced-motion');
   }
   writeFileSync('artifacts/tactical-loot-honors/evidence.json',JSON.stringify({synthetic:true,browser:'Chromium',scenarios:snapshots},null,2));
 }finally{if(browser)await browser.close();await server.close();}
