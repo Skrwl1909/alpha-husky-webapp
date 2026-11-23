@@ -18,11 +18,11 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
  const baseline="ada1c0891707aa5767e7d161acd152e8c77a73e2";
  const approved=Object.freeze({
   "js/boot_loaders.js": "5aa2526ab7e1fe0e10955b3d87d88d7ce8e119d3",
-  "js/tactical_ops.js": "925f9c88d3838b97001ce575b6de530068f744ea",
+  "js/tactical_ops.js": "5e2fbb754d39714349d4b56885ff0825ef02c80a",
   "tactical-ops-src/data/operations.ts": "ff1df14da6082825b25a7870d4d930170ab4a913",
   "tactical-ops-src/host/foundationProgression.ts": "d207887af200e3de056668277d72c853f651ff07",
   "tactical-ops-src/host/operationAuthority.ts": "240cbe63b306c72e0b58ddb1a2d4fc452be022ca",
-  "tactical-ops-src/store/battleStore.ts": "c41c5cf1c82238fa9f51ea47f7b3270aab828f7f",
+  "tactical-ops-src/store/battleStore.ts": "cf2074116d5fa6023aec1de86cc6cb4b4213cac0",
   "tactical-ops-src/version.ts": "4502fa361a0deea3c79c6e375b7dc783967c15eb",
   "tools/verify_tactical_field_settlement_recovery_p0.mjs": "d136de9ed6415ab87ec1722fc0eb982bd3cbc668",
   "tools/verify_tactical_vnext_run_contract_wire.mjs": "be2238cae53d86a8127152d10dc75ba4498d02a5",
