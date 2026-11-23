@@ -306,7 +306,7 @@ export const useBattleStore = create<Store>((set, get) => {
   };
 
   function showBloodScent(event: BattleEvent) {
-    if (event.type === "status" && event.text === "PACK LINK Ă‚Â· GUARD" && event.buildEvidence?.startsWith("PACK LINK") && event.unitId) {
+    if (event.type === "status" && event.text.startsWith("PACK LINK") && event.buildEvidence?.startsWith("PACK LINK") && event.unitId) {
       pushFloat(event.unitId, event.text, "guard");
     }
     if (event.type !== "ticker" || !event.text?.startsWith("BLOOD SCENT") || event.buildEvidence !== event.text) return;
