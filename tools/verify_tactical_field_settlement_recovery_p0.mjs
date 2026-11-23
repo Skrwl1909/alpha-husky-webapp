@@ -12,7 +12,9 @@ const vite = await createServer({
 
 try {
   const { useBattleStore } = await vite.ssrLoadModule("/tactical-ops-src/store/battleStore.ts");
-  const runId = "field_relay_intercept_settlement_fixture";
+  // This isolated wire fixture starts at an existing online authority identity.
+  // Real plain field_<uuid> initialization/resume is covered by HTTP/store E2E.
+  const runId = "field_verified_v1_settlement_fixture";
   const missionId = "field-relay-intercept";
   const receipt = {
     runId, missionId, victory: true, cycleId: 7,
