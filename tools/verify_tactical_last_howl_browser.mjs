@@ -220,7 +220,7 @@ try {
     await page.getByRole("button",{name:"DEPLOY",exact:true}).click();
     await page.getByRole("button",{name:/^A3 HOWL/}).tap();
     const linkFeedback = page.locator(".t-float").filter({hasText:"PACK LINK"});
-    await linkFeedback.waitFor();
+    try { await linkFeedback.waitFor(); } catch(error) { console.error('PACK_LINK_STATE',await page.evaluate(()=>{const s=fixture.store.getState();return {screen:s.screen,busy:s.busy,floats:s.floats,ticker:s.ticker,lastHowl:s.lastHowl?.status,errors:s.progressionError,frameEvidence:s.lastHowl?.frames?.map(f=>f.events).flat().filter(e=>String(e.text).includes('PACK'))}})); throw error; }
     mkdirSync("artifacts/pack-link",{recursive:true});
     await page.screenshot({path:`artifacts/pack-link/${width}-activation.png`});
     assert.deepEqual(errors, []);
