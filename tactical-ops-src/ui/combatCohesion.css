@@ -325,3 +325,13 @@
   #tacticalOpsRoot .t-choreo-travel .t-motion-actor,
   #tacticalOpsRoot .t-hostile-scene img.t-motion-actor {will-change:auto;}
 }
+
+/* P1 contact polish: only classes emitted from confirmed combat events. No new hit areas. */
+#tacticalOpsRoot .t-battle .t-token.hit-reacting:not(.defeated) img.body{filter:brightness(1.14) drop-shadow(0 0 7px #d3e9f16b)}
+#tacticalOpsRoot .t-battle .t-consequence-guarded{box-shadow:0 2px 0 #b2d8f044 inset,0 0 15px #89b9f02b,0 7px 16px #0009}
+#tacticalOpsRoot .t-battle .t-float.heal{font-weight:800;text-shadow:0 2px 4px #071219,0 0 11px #83f0bf69}
+#tacticalOpsRoot .t-battle .t-impact{filter:drop-shadow(0 0 4px #eddbc187)}
+@media(prefers-reduced-motion:reduce){
+ #tacticalOpsRoot .t-battle .t-token.hit-reacting:not(.defeated) img.body{filter:none}
+ #tacticalOpsRoot .t-battle .t-impact{filter:none}
+}
