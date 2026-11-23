@@ -14,6 +14,9 @@ import { TacticalApp } from "/tactical-ops-src/ui/App.tsx";
 import { useBattleStore as store } from "/tactical-ops-src/store/battleStore.ts";
 import { loadFoundationProgression } from "/tactical-ops-src/host/foundationProgression.ts";
 import { TACTICAL_CSS } from "/tactical-ops-src/styles.ts";
+import { startBattle, trySkill } from "/tactical-ops-src/combat/index.ts";
+import { getMissionDef, missionBattleRules, missionSpawnsForSquad } from "/tactical-ops-src/data/operations.ts";
+import { withFieldRend } from "/tactical-ops-src/data/fieldContracts.ts";
 const style = document.createElement("style");
 style.textContent = TACTICAL_CSS;
 document.head.append(style);
@@ -35,6 +38,27 @@ const projection = count => ({
   selection:"rend", honor:count===3?"field-tested":null,
 });
 window.apiPost = async (path, body) => {
+  if (path.endsWith("/recover/state")) {
+    const run = field.activeMissionRun;
+    const mission = getMissionDef(run.missionId);
+    const rules = missionBattleRules(mission, false, run.fieldContext);
+    const spawns = missionSpawnsForSquad(mission, run.squadIds, null, run.fieldContext.approach);
+    const battle = startBattle(store.getState().identity,
+      withFieldRend(spawns, run.fieldContext.fieldRend),
+      rules.objective, rules.reinforcement, null, rules.directive).state;
+    window.authorityView = {runId:body.runId,revision:0,token:"field-fixture",battle,threats:[]};
+    return {ok:true,data:canonical,recover:window.authorityView};
+  }
+  if (path.endsWith("/recover/command")) {
+    const prior = window.authorityView;
+    const command = body.command;
+    const applied = command.type === "skill"
+      ? trySkill(prior.battle, command.skillId, command.targetId) : {ok:false};
+    if (!applied.ok) throw Error("field_fixture_rejected_command");
+    const frame = {battle:applied.state,threats:[],events:applied.events,skillId:command.skillId};
+    window.authorityView = {...prior,revision:prior.revision+1,battle:applied.state,frames:[frame]};
+    return {ok:true,data:canonical,recover:window.authorityView};
+  }
   if (path.endsWith("/field-rend")) {
     const allow = await new Promise(resolve => { window.finishSave = resolve; });
     if (!allow) return {ok:false, code:"sidegrade_locked"};
@@ -82,6 +106,10 @@ window.fixture = { store, apply, async progress(count) {
     progressEarned:0, progressBefore:6, progressAfter:6, rankBefore:2, rankAfter:2, pressureBefore:2, pressureAfter:2,
     regionalApplied:true, unlockedApproaches:[], legacyReport:false, recordedAt:10, xpGranted:8, bonesGranted:16,
     contractAward:duplicate ? undefined : {id:keys[count-1], count, reward:count===2?"reach-rend":count===3?"field-tested":null}};
+  // Mirror the durable server settlement; a matching UI result alone is not authority.
+  field.lastCompletedMissionRunId = "field_real";
+  field.lastResult.settlementReceipt = { version:1, status:"CONFIRMED", runId:"field_real",
+    missionId, receiptId:"field-contract-"+count };
   await apply();
   store.setState({screen:"results", selectedMissionId:missionId, currentRunKey:match?"field_real":"field_stale",
     fieldResult:store.getState().progression.fieldOps.lastResult,
@@ -140,6 +168,7 @@ try {
     await capture("command");
     await cta.tap();
     const contract = page.getByLabel("Mission contract");
+    if(!(await contract.isVisible()))console.error('FIELD_CONTRACT_BRIEF_STATE',await page.evaluate(()=>{const s=fixture.store.getState();const el=document.querySelector('[aria-label="Mission contract"]');return {screen:s.screen,missionId:s.selectedMissionId,progressionError:s.progressionError,pending:s.progressionCommitPending,contracts:s.progression?.fieldOps?.fieldContracts,active:s.progression?.fieldOps?.activeMissionRun,dom:el?.outerHTML?.slice(0,500),style:el?getComputedStyle(el).display:null}}));
     assert.match(await contract.innerText(),/Rapid Recovery.*round 4/is);
     await fit(contract);
     await page.evaluate(() => fixture.results(1,false));
@@ -231,11 +260,16 @@ try {
         fixture.store.setState({battle:{...battle, activeId:alpha.id, mode:"selected",
           units:battle.units.map(unit => unit.id === alpha.id ? {...unit,c:0,r:0,hasActed:false} :
             unit.id === enemy.id ? {...unit,c:2,r:0} : unit)}});
+        window.authorityView = {...window.authorityView,battle:fixture.store.getState().battle};
         return {id:enemy.id,hp:enemy.hp};
       });
       await page.getByRole("button",{name:/^A2 REACH REND/i}).tap();
+      await page.evaluate(({id}) => fixture.store.getState().selectTarget(id),target);
+      await page.waitForFunction(({id,hp}) => {
+        const enemy = fixture.store.getState().battle.units.find(unit => unit.id === id);
+        return enemy && enemy.hp < hp;
+      }, target);
       const dealt = await page.evaluate(({id,hp}) => {
-        fixture.store.getState().selectTarget(id);
         const enemy = fixture.store.getState().battle.units.find(unit => unit.id === id);
         return {damage:hp-enemy.hp,bleed:enemy.statuses.some(status => status.type === "BLEED")};
       },target);

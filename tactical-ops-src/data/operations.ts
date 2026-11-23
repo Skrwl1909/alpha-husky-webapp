@@ -324,7 +324,7 @@ export function courierTraceHoldVariant(mission: MissionDef, revision: number, c
 export function surviveRevisionForRequest(missionId: string, ruleset: string | undefined,
   board: { reportVersion?: number; surviveRevisionAvailable?: 2 } | undefined,
   active?: { rulesContract?: RunRulesContract | null } | null): 2 | undefined {
-  if (!isSurviveMission(missionId) || ruleset !== TACTICAL_VNEXT_RULESET) return;
+  if (missionId !== "field-squad-survival" || ruleset !== TACTICAL_VNEXT_RULESET) return;
   if (active) return active.rulesContract?.missionId === missionId && active.rulesContract.missionRevision === 2 ? 2 : undefined;
   return board?.reportVersion === 3 && board.surviveRevisionAvailable === 2 ? 2 : undefined;
 }
@@ -336,6 +336,24 @@ function surviveTensionVariant(mission: MissionDef, context: Partial<FieldContex
   const entry = { c: 5, r: north ? 0 : 4 };
   const triggerRound = rearguard ? 4 : 3;
   const advancedMarksman = advanced ? { unitDef: { ...UNIT_DEFS.hostile, atk: 24 } } : {};
+  // Settlement P0 Survival revision 2: nearby patrol and an earlier reserve.
+  // Four rounds, telegraphs, counterplay and casualty rules remain unchanged.
+  if (!rearguard) return {
+    ...mission,
+    briefCopy: "Keep all three allies standing through 4 rounds. Break the nearby patrol's crossfire and protect the flank before the round-2 reserve arrives.",
+    spawns: [
+      { defId: "hostile", id: "h1", c: 4, r: 1 },
+      { defId: "hostile", id: "h2", c: 5, r: 0, unitDef: { ...UNIT_DEFS.hostile, atk: 24 } },
+      { defId: "hostile", id: "h3", c: 4, r: 3 },
+      { defId: "hostile", id: "h4", c: 3, r: 1, unitDef: { ...UNIT_DEFS.hostile, atk: 44 } },
+    ],
+    directive: {
+      type: "REINFORCEMENTS", name: "FLANK REINFORCEMENT",
+      copy: "A HOUND enters the marked flank in round 2, one round later at reduced Signal Pressure. Healing and allied support recharge one personal turn slower.",
+      supportCooldownExtra: 1,
+      reinforcement: { spawn: { defId: "hostile", id: "field-reinforcement", c: 4, r: north ? 0 : 4 }, triggerRound: 2, telegraphed: true, spawned: false, entryMeter: 65 },
+    },
+  };
   return {
     ...mission,
     briefCopy: `Keep all three allies standing for ${rearguard ? 5 : 4} rounds. Break the patrol’s crossfire, then cover the marked flank before the reserve arrives.`,

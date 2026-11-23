@@ -49,6 +49,17 @@ if(scenario==='chapter'){patch.chapterMode=true;patch.chapterResult=null;}
 if(scenario.startsWith('lockdown')){patch.selectedMissionId='field-relay-hold';patch.selectedMasteryChallenge='relay-lockdown-v1';patch.currentFieldContext={masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};patch.fieldResult=scenario==='lockdown-pending'?null:{...r,missionId:'field-relay-hold',masteryChallenge:'relay-lockdown-v1',lockdownPlan:'anchor'};if(scenario==='lockdown-pending')patch.progressionCommitPending=true;}
 if(scenario.startsWith('extraction')){patch.selectedVeteranChallenge=true;patch.currentFieldContext={veteranChallenge:'pack-extraction-v1'};patch.fieldResult=scenario==='extraction-pending'?null:{...r,veteranChallenge:'pack-extraction-v1'};if(scenario==='extraction-pending')patch.progressionCommitPending=true;}
 store.setState(patch);
+// A synthetic recorded result must also carry its canonical persisted marker.
+// The P0 store correctly refuses to navigate on an unproven client-only result.
+const settled=store.getState();
+if(settled.fieldResult?.runId===settled.currentRunKey &&
+   settled.fieldResult?.missionId===settled.selectedMissionId &&
+   settled.fieldResult?.rewardAmountsAvailable!==false &&
+   settled.progression?.fieldOps){
+ const p=settled.progression;
+ store.setState({progression:{...p,fieldOps:{...p.fieldOps,activeMissionRun:null,
+   lastCompletedMissionRunId:settled.currentRunKey,lastResult:settled.fieldResult}}});
+}
 window.fixture.calls=[];
 // Retry is observed locally, without calling a server or modifying persistent state.
 store.setState({saveFieldResult:async()=>{window.fixture.calls.push('save');}});

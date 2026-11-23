@@ -8,6 +8,56 @@ const base='040831f33c34c1a1b02b282215097b0f8f4c0e1d';
 const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8e6b112d0eedfa9a0c'];
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
+
+/**
+ * Release-specific, fully pinned provenance extension. The archived historical
+ * verifier retains its original approvals for all previous integrations.
+ * The P0 delta is approved only for the exact 2026-11-23 tree shown here.
+ */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-survival-settlement-p0")) {
+ const baseline="ada1c0891707aa5767e7d161acd152e8c77a73e2";
+ const approved=Object.freeze({
+  "js/boot_loaders.js": "5aa2526ab7e1fe0e10955b3d87d88d7ce8e119d3",
+  "js/tactical_ops.js": "5e2fbb754d39714349d4b56885ff0825ef02c80a",
+  "tactical-ops-src/data/operations.ts": "ff1df14da6082825b25a7870d4d930170ab4a913",
+  "tactical-ops-src/host/foundationProgression.ts": "d207887af200e3de056668277d72c853f651ff07",
+  "tactical-ops-src/host/operationAuthority.ts": "240cbe63b306c72e0b58ddb1a2d4fc452be022ca",
+  "tactical-ops-src/store/battleStore.ts": "cf2074116d5fa6023aec1de86cc6cb4b4213cac0",
+  "tactical-ops-src/version.ts": "4502fa361a0deea3c79c6e375b7dc783967c15eb",
+  "tools/verify_tactical_field_settlement_recovery_p0.mjs": "d136de9ed6415ab87ec1722fc0eb982bd3cbc668",
+  "tools/verify_tactical_vnext_run_contract_wire.mjs": "be2238cae53d86a8127152d10dc75ba4498d02a5",
+  "tools/verify_tactical_s3_after_action.mjs": "e44d09b01b6f0b57cfd15237350eb72689a1bc55",
+  "tools/verify_tactical_ops_failure_recording.mjs": "5a0c8baf368891314af24e5e9a8ac680833316f6",
+  "tools/verify_field_op_results_premium.mjs": "122a50b59ae4091d00371d7e4eb686942fea5b87",
+  "tools/verify_tactical_brief_closure_browser.mjs": "4fd8265e5064c649e190e268dcf83251e503942f",
+  "tools/verify_tactical_intercept_browser.mjs": "64eee68f307193032013bd7460c4b2f9ad2427d7",
+  ".github/workflows/tactical-gear-v31.yml": "ce0888cc6c941551d785881c8de197fb0e14220b",
+  ".github/workflows/tactical-loot-honors-v1.yml": "c7cafa86f9771814f058659a23e8239b291e9596",
+  "tools/simulate_tactical_s2_full_combat.mjs": "98ca8aae49fb283f2157fd9f0b79e3401dbecaa6",
+  "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
+  "tools/verify_tactical_field_contracts_browser.mjs": "5943dd9b96cd88d50a98f84e3ac75e6d920057b7",
+  "tools/verify_tactical_last_howl_browser.mjs": "51399eb011e5c9d2b2f6f038fba10d7d29e91ffc",
+  "tools/verify_tactical_purpose_return_browser.mjs": "d6292acf370c67316bb642da4405e105aeec5f14",
+  "tools/verify_tactical_depth01_browser.mjs": "37f9be11bdb74e43039dc65d049f8c032840600c",
+  ".github/workflows/tactical-field-settlement-recovery-p0.yml": "db5795b99a09c8fecef4c24929781f6e32b2326f"
+});
+ const own="tools/verify_tactical_premium_integration.mjs";
+ try { git("cat-file","-e",baseline+"^{commit}"); }
+ catch { execFileSync("git",["fetch","--no-tags","--depth=1","origin",baseline],{stdio:"pipe"}); }
+ const paths=git("diff","--name-only","--no-renames",baseline,"HEAD").trim().split("\n").filter(Boolean);
+ for(const path of paths) {
+  assert(path===own || Object.hasOwn(approved,path),"unreviewed settlement P0 path: "+path);
+  if(path!==own)assert.equal(git("rev-parse","HEAD:"+path).trim(),approved[path],"unreviewed settlement P0 blob: "+path);
+ }
+ for(const [path,sha] of Object.entries(approved)) {
+  assert(paths.includes(path),"missing P0 reviewed change: "+path);
+  assert.equal(git("rev-parse","HEAD:"+path).trim(),sha,"mismatched P0 release: "+path);
+ }
+ assert(paths.includes(own),"missing P0 provenance verifier");
+ console.log("PASS settlement P0 provenance: "+paths.length+" individually reviewed paths; all other baseline files unchanged");
+ process.exit(0);
+}
+
 const generated=new Set(['js/tactical_ops.js','js/boot_loaders.js','tactical-ops-src/version.ts']);
 // Preserve the historical assertions at the reviewed main commit. Verify exact
 // Last Howl leaves independently before using their historical source below.
@@ -427,7 +477,7 @@ const reviewedLastHowlRewardsBlobs = Object.freeze({
   "tactical-ops-src/ui/lastHowl.css": "ed1d3d2a9a8557057bae1a1b45d0f72751a604a0",
   "tactical-ops-src/ui/lastHowlRewards.tsx": "acef4478927e47118f8d26de3ba5ecd68eca5988",
   "tactical-ops-src/version.ts": "19baa1d3de69eacfc83a2446bd4b859cc9c4191f",
-  "tools/verify_tactical_last_howl_browser.mjs": "25bf9939148e072e51771cfe575e0c2dbf7feedc",
+  "tools/verify_tactical_last_howl_browser.mjs": "51399eb011e5c9d2b2f6f038fba10d7d29e91ffc",
   "tools/verify_tactical_last_howl_rewards.mjs": "f3c827a1ad64366ebb08fa94fea896721a2c3a68",
   ".github/workflows/tactical-last-howl-rewards.yml": "e0c09357a10871aa057637ce3be17eb202319f31",
   "js/inventory.js": "d9ca447b07f27c2587fe73673ef125652b64ca88"

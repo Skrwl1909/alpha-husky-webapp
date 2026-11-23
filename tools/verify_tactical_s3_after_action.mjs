@@ -10,11 +10,20 @@ try {
   assert.equal(matchingAfterActionReceipt(receipt, receipt.runId, "dead-relay-hold"),null,"wrong mission must not claim a result");
   assert.equal(matchingAfterActionReceipt(receipt, receipt.runId, receipt.missionId),receipt,"matching receipt remains available");
   const store = readFileSync("tactical-ops-src/store/battleStore.ts","utf8");
-  assert(store.includes("committed.fieldResult.missionId !== current.selectedMissionId"),"Field receipt mission must match before commit");
-  assert(/(?:recovered|receipt)\.missionId === current\.selectedMissionId/.test(store) && store.includes("const refreshed = await loadFoundationProgression()"),"Recovered Field receipt mission must match after authenticated state refresh");
+  const authority = readFileSync("tactical-ops-src/host/operationAuthority.ts","utf8");
+  assert(store.includes("confirmedFieldReceipt(current.progression,runId,missionId)") &&
+    store.includes("const result=confirmedFieldReceipt(canonical,runId,missionId)") &&
+    authority.includes("result?.missionId!==missionId"),
+    "Both pre-commit and canonical post-commit Field receipts must match run and mission");
+  assert(store.includes("canonical=await loadFoundationProgression()") &&
+    store.includes("if(canonical&&confirm(canonical))return") &&
+    authority.includes("field?.lastCompletedMissionRunId!==runId"),
+    "Lost-response recovery must refresh authenticated state and match canonical run and mission");
   assert(store.includes("response.campaignResult.missionId !== mission.missionId"),"Campaign receipt mission must match before commit");
   assert(store.includes("current.campaignResult.missionId === mission.missionId"),"Campaign retry guard must compare mission too");
-  assert(store.includes("s.fieldResult.missionId !== s.selectedMissionId") && store.includes("s.campaignResult.missionId !== s.selectedMissionId"),"Cannot continue with wrong-mission receipt");
+  assert(store.includes("confirmedFieldReceipt(s.progression,s.currentRunKey,s.selectedMissionId)") &&
+    store.includes("s.campaignResult.missionId !== s.selectedMissionId"),
+    "Navigation must not accept an unconfirmed or wrong-mission receipt");
   assert.equal(confirmedConsequence(null,null,state),null,"no receipt means no world claim");
   assert.equal(confirmedConsequence({...receipt,regionalApplied:false},null,state),null,"unapplied pressure is not a world change");
   assert.match(confirmedConsequence(receipt,null,state).detail,/3 → 1/);

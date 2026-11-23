@@ -17,7 +17,7 @@ function extractHandler() {
   assert.equal(depth, 0, "Unbalanced handler");
   return source.slice(start + marker.indexOf("async"), pos).replace("async (g: number) =>", "async (g) =>");
 }
-const factory = new Function("get", "set", "getMissionDef", "DEAD_RELAY", "sfx", "wait", "runGen", "return " + extractHandler() + ";");
+const factory = new Function("get", "set", "getMissionDef", "DEAD_RELAY", "sfx", "wait", "runGen", "isOnlineAuthorityRun", "return " + extractHandler() + ";");
 async function finish(missionId, outcome = "defeat", generation = 1, invoked = generation) {
   let saves = 0;
   const state = { screen: "battle", busy: false, selectedMissionId: missionId, battle: { outcome },
@@ -28,7 +28,8 @@ async function finish(missionId, outcome = "defeat", generation = 1, invoked = g
     "broken-signal-breach": { activity: "CANON", operationId: "broken-signal" },
   };
   const handler = factory(() => state, value => Object.assign(state, value),
-    id => defs[id] || null, { operationId: "dead-relay" }, () => {}, async () => {}, generation);
+    id => defs[id] || null, { operationId: "dead-relay" }, () => {}, async () => {}, generation,
+    id => typeof id === "string" && id.startsWith("field_online_"));
   const completed = await handler(invoked);
   return { screen: state.screen, saves, completed };
 }
