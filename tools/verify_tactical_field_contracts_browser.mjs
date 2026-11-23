@@ -85,7 +85,7 @@ window.fixture = { store, apply, async progress(count) {
   // Mirror the durable server settlement; a matching UI result alone is not authority.
   field.lastCompletedMissionRunId = "field_real";
   field.lastResult.settlementReceipt = { version:1, status:"CONFIRMED", runId:"field_real",
-    missionId, receiptId:`field-contract-${count}` };
+    missionId, receiptId:"field-contract-"+count };
   await apply();
   store.setState({screen:"results", selectedMissionId:missionId, currentRunKey:match?"field_real":"field_stale",
     fieldResult:store.getState().progression.fieldOps.lastResult,
