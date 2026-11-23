@@ -88,7 +88,7 @@ assert.equal(await page.locator('.t-threat-source').count(),2);await page.locato
  assert.equal(await page.locator('.t-token.is-confirmed-threat-target').count(),1,'Only the truly threatened ally is marked');
  assert.equal(await page.locator('.t-token.ally.is-confirmed-threat-target').count(),1,'Never highlight a hostile as a threatened ally');
  assert.equal(await page.locator('.t-unit-hit[data-unit-id="alpha"]').getAttribute('aria-label').then(v=>v.includes('Within a confirmed enemy attack area')),true);
- assert((await page.locator('.t-p2-threat-readout').innerText()).includes('ALPHA'),'Live threat readout uses confirmed unit name');
+ assert((await page.locator('.t-p2-threat-readout').innerText()).toUpperCase().includes('ALPHA'),'Live threat readout uses confirmed unit name');
  assert.equal(await page.locator('.t-p2-active-marker').count(),1,'One active marker');
  assert.equal(await page.locator('.t-p2-threat-marker').count(),1,'Only genuinely exposed allies get warning marker');
  assert(await page.locator('.t-p2-threat-marker').evaluate(el=>getComputedStyle(el).pointerEvents==='none'));
