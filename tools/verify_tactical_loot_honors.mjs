@@ -110,7 +110,19 @@ try {
           assert(await panel.locator('.t-loot-stats').getByText('-1').count()>0);
         }
         if(['legendary','legendaryBadge'].includes(name))assert.equal(await reveal.getAttribute('data-reveal'),'legendary');
-        if(name==='legendaryBadge')assert.equal(await panel.locator('.t-loot-prestige[data-rarity="legendary"]').count(),1);
+        if(name==='legendaryBadge'){
+          assert.equal(await panel.locator('.t-loot-prestige[data-rarity="legendary"]').count(),1);
+          if(width===390&&motion==='no-preference'){
+            const skip=panel.getByRole('button',{name:'Skip reward animation'});
+            await skip.waitFor({state:'visible'});
+            assert((await skip.boundingBox()).height>=44,'skip action must be touch-sized');
+            await skip.click();
+            assert.equal(await reveal.getAttribute('data-celebrating'),null,'skip stops presentation immediately');
+            await page.reload();
+            await panel.locator('.t-loot-reveal').waitFor();
+            assert.equal(await panel.getByRole('button',{name:'Skip reward animation'}).count(),0,'same confirmed receipt cannot replay celebration in session');
+          }
+        }
         if(present){
           const details=panel.locator('.t-loot-receipt');
           assert.equal(await details.count(),1);
