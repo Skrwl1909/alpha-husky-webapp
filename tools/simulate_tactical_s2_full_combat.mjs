@@ -331,7 +331,14 @@ try {
         if (row.outcome === "victory") {
           assert.equal(row.rounds,duration+1);
           assert.equal(row.squadStanding,3);
-          assert.equal(row.reinforcementRound,duration - Number(row.pressure >= 2));
+          // P0 tightens ONLY field-squad-survival revision 2: reserve in round
+          // 2 at normal pressure, 3 at reduced pressure. Rearguard
+          // keeps its independent, pre-existing reinforcement schedule.
+          const expectedReserve = row.missionId==="field-squad-survival"
+            ? (row.pressure >= 2 ? 2 : 3)
+            : duration - Number(row.pressure >= 2);
+          assert.equal(row.reinforcementRound,expectedReserve,
+            row.missionId+": preserve the mission-local reinforcement cadence");
         }
       }
     }

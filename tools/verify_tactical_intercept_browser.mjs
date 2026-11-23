@@ -30,15 +30,15 @@ try {
    await page.getByRole('button',{name:'LOCK SQUAD · REVIEW FORMATION',exact:true}).click();await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).waitFor();
    assert.equal(await page.evaluate(()=>fixture.store.getState().screen),'brief','first click must review acceptance before any battle');
    const overview=await page.getByLabel('Mission overview',{exact:true}).innerText();if(mode==='confirm')assert.match(overview,/TARGET LOCK follows/);else assert.doesNotMatch(overview,/Screened courier/);
-   assert.equal(await page.evaluate(()=>calls.length),1);await page.screenshot({path:out+'/'+width+'-accepted-review.png',fullPage:true});
+   assert.equal(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/mission/start')).length),1);await page.screenshot({path:out+'/'+width+'-accepted-review.png',fullPage:true});
    await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).click();await page.locator('.t-battle').waitFor();
    assert.equal(await page.evaluate(()=>fixture.store.getState().battle.objective.screenedEscape),mode==='confirm'?true:undefined);
    assert.equal(await page.evaluate(()=>fixture.store.getState().currentRunKey),'field_synthetic');assert.equal(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/mission/start')).length),2);assert.equal(await page.evaluate(()=>calls.filter(c=>c.path.endsWith('/recover/state')).length),1,'VNext Intercept must attach to server authority');
-   assert.equal(await page.evaluate(()=>calls[0].body.missionRevision),mode==='confirm'?2:undefined);
+   assert.equal(await page.evaluate(()=>calls.find(c=>c.path.endsWith('/mission/start')).body.missionRevision),mode==='confirm'?2:undefined);
   }
   if(mode==='resume')assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/TARGET LOCK follows/);
   if(mode==='legacy'){assert.doesNotMatch(await page.getByLabel('Mission overview',{exact:true}).innerText(),/TRACKING|Screened courier/);await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).click();await page.locator('.t-battle').waitFor();assert.equal(await page.evaluate(()=>fixture.store.getState().battle.objective.screenedEscape),undefined)}
-  if(mode==='rollback'){await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).click();await page.locator('.t-battle').waitFor();assert.equal(await page.evaluate(()=>calls[0].body.missionRevision),2);assert.equal(await page.evaluate(()=>fixture.store.getState().battle.objective.screenedEscape),true)}
+  if(mode==='rollback'){await page.getByRole('button',{name:'DEPLOY SQUAD',exact:true}).click();await page.locator('.t-battle').waitFor();assert.equal(await page.evaluate(()=>calls.find(c=>c.path.endsWith('/mission/start')).body.missionRevision),2);assert.equal(await page.evaluate(()=>fixture.store.getState().battle.objective.screenedEscape),true)}
   if(mode==='old')assert.match(await page.getByLabel('Mission overview',{exact:true}).innerText(),/RECOVER|Recover|relay/);
   if(mode==='tracking'){
    assert.match(await page.locator('.t-command-cue').innerText(),/TRACKING LOCK/);assert.doesNotMatch(await page.locator('.t-command-cue').innerText(),/Move off marked cells/);
