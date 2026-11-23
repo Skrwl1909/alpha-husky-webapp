@@ -1,4 +1,7 @@
 import { useEffect, useState, type SyntheticEvent } from "react";
+
+/** Display-only, best-effort replay protection. Server remains reward authority. */
+const celebratedReceipts = new Set<string>();
 import { ArrowRight, Bone, Hammer, ShieldCheck, Zap, Gem, Award, Frame, Sparkles, LockKeyhole, Shield } from "lucide-react";
 import { getHost } from "../host/bridge";
 import { parseLootHonors, type LootParseResult, type EquipmentGrant, type PrestigeGrant, type CurrencyType } from "../data/lootHonors";
@@ -67,23 +70,44 @@ function PrestigeCard({grant}:{grant:PrestigeGrant}) {
 
 /** Only call this with a matching server-result record, not a local win or a test fixture. */
 export function TacticalLootReveal({result}:{result:LootParseResult}) {
+  const key = result.state === "confirmed" ? `${result.receipt.runId}:${result.receipt.receiptId}` : null;
+  const [celebrating,setCelebrating] = useState(false);
+  useEffect(() => {
+    if (!key) { setCelebrating(false); return; }
+    const storageKey = `alpha-tactical-reward-reveal:${key}`;
+    let previouslySeen = celebratedReceipts.has(key);
+    try { previouslySeen = previouslySeen || window.sessionStorage.getItem(storageKey) === "1"; } catch { /* Storage may be unavailable in embedded WebViews. */ }
+    if (previouslySeen || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      setCelebrating(false);
+      return;
+    }
+    if (celebratedReceipts.size >= 100) celebratedReceipts.clear();
+    celebratedReceipts.add(key);
+    try { window.sessionStorage.setItem(storageKey,"1"); } catch { /* Presentation never depends on storage. */ }
+    setCelebrating(true);
+    const timeout = window.setTimeout(() => setCelebrating(false), 1800);
+    return () => window.clearTimeout(timeout);
+  },[key]);
   if (result.state === "replayed") return <p className="t-loot-replayed" role="status">RECEIPT PREVIOUSLY RECORDED · No new rewards granted.</p>;
   if (result.state !== "confirmed") return null;
   const {currencies,equipment,unlocks,receiptId} = result.receipt;
   const paid = currencies.filter(r=>r.amount>0);
   if (!paid.length && !equipment.length && !unlocks.length)
     return <p className="t-loot-replayed" role="status">NO NEW REWARDS RECORDED FOR THIS VICTORY.</p>;
-  const peak = equipment.some(item=>item.rarity==="legendary") ? "legendary" :
-    equipment.some(item=>item.rarity==="epic" || item.rarity==="rare") ? "rare" : "standard";
-  return <section className="t-loot-reveal" aria-label="Server-confirmed Tactical Loot and Honors" data-reveal={peak} data-receipt-id={receiptId}>
-    <div className="t-loot-heading"><ShieldCheck aria-hidden="true"/><div><span>AFTER ACTION / CONFIRMED</span><h2>LOOT &amp; HONORS</h2></div></div>
+  const awarded = [...equipment,...unlocks];
+  const peak = awarded.some(item=>item.rarity==="legendary") ? "legendary" :
+    awarded.some(item=>item.rarity==="epic") ? "epic" :
+    awarded.some(item=>item.rarity==="rare") ? "rare" : "standard";
+  return <section className="t-loot-reveal" aria-label="Server-confirmed Tactical Loot and Honors" data-reveal={peak} data-celebrating={celebrating ? "yes" : undefined}>
+    <div className="t-loot-heading"><ShieldCheck aria-hidden="true"/><div><span>AFTER ACTION / CONFIRMED</span><h2>LOOT &amp; HONORS</h2></div>
+      {celebrating ? <button type="button" className="t-loot-skip" onClick={() => setCelebrating(false)} aria-label="Skip reward animation">SKIP</button> : null}</div>
     {paid.length ? <div className="t-loot-currencies" aria-label="Confirmed currency rewards">{paid.map(reward=>{
       const Icon = currencyIcons[reward.kind];
       return <div className="t-loot-currency" key={reward.kind}><Icon aria-hidden="true"/><strong>+{reward.amount.toLocaleString()}</strong><small>{currencyLabels[reward.kind]}</small></div>;
     })}</div> : null}
     {equipment.length ? <div className="t-loot-items">{equipment.map(drop=><EquipmentCard key={drop.grantId} drop={drop}/>)}</div> : null}
     {unlocks.length ? <div className="t-loot-unlocks">{unlocks.map(grant=><PrestigeCard key={grant.grantId} grant={grant}/>)}</div> : null}
-    <small className="t-loot-receipt">SAVED RECEIPT · {receiptId}</small>
+    <details className="t-loot-receipt"><summary>RECEIPT DETAILS</summary><code>SAVED RECEIPT · {receiptId}</code></details>
   </section>;
 }
 
