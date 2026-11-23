@@ -150,7 +150,7 @@ try {
   assert.equal(ops.missionForContext(base,{...context,directiveTier:"standard"},2).objective.trackingMarksman,undefined);
   assert.equal(ops.missionBattleRules(revised,false,context).reinforcement.triggerRound,3,"reduced pressure delays the round-2 reserve");
   assert.equal(ops.missionBattleRules(revised,false,{...context,pressure:2}).reinforcement.triggerRound,2,"normal pressure keeps the reserve in round 2");
-  assert.equal(fieldWindow.currentFieldWindow(missionId,capability,board.region,0,"advanced",true).actualRound,duration);
+  assert.equal(fieldWindow.currentFieldWindow(missionId,capability,board.region,0,"advanced",true).actualRound,3,"advanced field window reflects the earlier P0 reinforcement; objective still lasts 4 rounds");
   acceptedRun={runId:"field-survive",missionId,squadIds:legacy.run.squadIds,
    rulesContract:{...rules,missionId,missionRevision:2},fieldContext:context,combatProfileV3:profile};
   const startSurvive=()=>foundation.startOperationMission("survive-start",5,missionId,acceptedRun.squadIds,

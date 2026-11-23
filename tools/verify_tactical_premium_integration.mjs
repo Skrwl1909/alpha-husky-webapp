@@ -25,10 +25,12 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   "tactical-ops-src/store/battleStore.ts": "33ba4174ec982a365d53c4b23ccbd7d75b80c17a",
   "tactical-ops-src/version.ts": "4502fa361a0deea3c79c6e375b7dc783967c15eb",
   "tools/verify_tactical_field_settlement_recovery_p0.mjs": "8c74f5eec14faad5f7d85198ad0c02f10e3a825d",
-  "tools/verify_tactical_vnext_run_contract_wire.mjs": "ebbef7200b505ec049c14bb5f5c8dfc779ac5b7e",
+  "tools/verify_tactical_vnext_run_contract_wire.mjs": "be2238cae53d86a8127152d10dc75ba4498d02a5",
   "tools/verify_tactical_s3_after_action.mjs": "e44d09b01b6f0b57cfd15237350eb72689a1bc55",
   "tools/verify_tactical_ops_failure_recording.mjs": "5a0c8baf368891314af24e5e9a8ac680833316f6",
   "tools/verify_field_op_results_premium.mjs": "122a50b59ae4091d00371d7e4eb686942fea5b87",
+  "tools/verify_tactical_brief_closure_browser.mjs": "4fd8265e5064c649e190e268dcf83251e503942f",
+  "tools/verify_tactical_intercept_browser.mjs": "c465fa063d82399615fa7feefebeba61de597a8e",
   ".github/workflows/tactical-gear-v31.yml": "ce0888cc6c941551d785881c8de197fb0e14220b",
   ".github/workflows/tactical-loot-honors-v1.yml": "c7cafa86f9771814f058659a23e8239b291e9596"
 });

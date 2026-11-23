@@ -14,6 +14,7 @@ if(production){
  entry=entry.slice(entry.indexOf('const params')).replace("createRoot(document.getElementById('mount')).render(React.createElement(TacticalApp));",'');
  entry='const store=window.__tactical;window.TacticalOps.init({onboarding:"off"});await window.TacticalOps.open();'+entry;
 }else if(phase==='before')entry=entry.replaceAll('/tactical-ops-src/','/artifacts/baseline/tactical-ops-src/');
+if(integrated)entry+=`\n// Canonical settlement marker is required before a recorded result can navigate.\nconst settled=store.getState(),p=settled.progression;\nif(p?.fieldOps&&settled.fieldResult)store.setState({progression:{...p,fieldOps:{...p.fieldOps,activeMissionRun:null,lastCompletedMissionRunId:settled.currentRunKey,lastResult:settled.fieldResult}}});`;
 entry+=`\nif(params.get('tier')==='advanced')store.setState({selectedDirectiveTier:'advanced'});
 window.petCalls=[];window.petPresent=true;
 window.PetQuickActions.init({apiPost:async path=>{window.petCalls.push(path);return {ok:true,pets:{activePet:window.petPresent?{id:'qa-pet',name:'QA Pet'}:null,actionCooldowns:{}}}}});`;
