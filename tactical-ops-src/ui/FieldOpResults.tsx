@@ -93,6 +93,19 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
   actions: ReactNode; children: ReactNode;
 }) {
   const enhanced = parseLootHonors(receipt?.lootAndHonors,receipt?.runId??null,receipt?.missionId??null,receipt?.victory===true);
+  const beatKey = receipt && enhanced.state !== "confirmed" ? `${receipt.runId}:${receipt.missionId}` : null;
+  const [confirmedBeat,setConfirmedBeat] = useState(false);
+  useEffect(() => {
+    if (!beatKey || !receipt?.victory) { setConfirmedBeat(false); return; }
+    const key = `alpha-tactical-result-beat:${beatKey}`;
+    let seen = false;
+    try { seen = window.sessionStorage.getItem(key) === "1"; } catch { /* Embedded browser may deny storage. */ }
+    if (seen || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) { setConfirmedBeat(false); return; }
+    try { window.sessionStorage.setItem(key,"1"); } catch { /* Presentation is best effort only. */ }
+    setConfirmedBeat(true);
+    const timer = window.setTimeout(() => setConfirmedBeat(false), 1550);
+    return () => window.clearTimeout(timer);
+  },[beatKey,receipt?.victory]);
   const award = receipt?.victory ? receipt.contractAward : undefined;
   const reachReward = award?.reward === "reach-rend";
   const rewardIcon = reachReward ? tacticalActionImageForSkill("alpha-reach-rend") : null;
@@ -122,7 +135,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
   const majorUnlock = award?.reward === "field-tested" ? `FIELD HONOR · ${FIELD_HONOR}`
     : receipt?.veteranCareer?.unlocked || rankAdvance || masteryMilestone ? achievement : null;
   const primaryAction = <div className="t-brief-actions t-result-actions">{actions}</div>;
-  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={hasProgressionMilestone ? "confirmed" : undefined}>
+  return <div className={`t-modal t-panel t-results t-field-results ${victory ? "is-victory" : "is-failure"}`} data-reach-reward={reachReward || undefined} data-recording={state} data-milestone={hasProgressionMilestone ? "confirmed" : undefined} data-confirmed-beat={confirmedBeat ? "yes" : undefined}>
     {reachReward ? <section className="t-fr-reach-reward" aria-label="Confirmed field contract">
       <div className="t-fr-reward-commander" aria-label="Your equipped Alpha"><CommanderPortrait /></div>
       <div className="t-fr-reward-copy">
@@ -141,6 +154,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
       {victory ? <span className="t-fr-triumph-emblem" aria-hidden="true"><ShieldCheck /></span> : null}
       <div className="t-kicker">{missionName}</div>
       <h2 className="t-title">{victory ? "VICTORY" : "DEFEAT"}</h2>
+      {confirmedBeat ? <button type="button" className="t-fr-skip-beat" onClick={() => setConfirmedBeat(false)} aria-label="Skip victory animation">SKIP ANIMATION</button> : null}
       {!victory ? <p className="t-fr-outcome">{failure}</p> : null}
     </header>}
     <div className="t-fr-record" role="status" aria-live="polite" aria-atomic="true">
