@@ -16,11 +16,11 @@ const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.100-premium-game-feel-p1")) {
  const baseline="4925a8250a03d57353ed8986486a7b5024e111be";
  const approved=Object.freeze({
-  "js/tactical_ops.js": "d8b4711a871d7cbc4128e6b24fb2c5d2de83277e",
+  "js/tactical_ops.js": "d7e8453223e14c895b2be355ee922b03f6886342",
   "js/boot_loaders.js": "e9b5b101e4f456a038573999d36d286ad6bd6cbd",
   "tactical-ops-src/ui/FieldOpResults.tsx": "e3621112d7302e59aee0546c99ec0dd8ea3e12c4",
   "tactical-ops-src/ui/TacticalLootHonors.tsx": "bbbaa48906e39231022c1dd4d4a3272a7c123381",
-  "tactical-ops-src/ui/tacticalLootHonors.css": "375aad9cd7a03f4ed2db12af803297d9de46dfca",
+  "tactical-ops-src/ui/tacticalLootHonors.css": "f3f4ec006bac597b703fc155ab18a86f4507e76a",
   "tactical-ops-src/ui/fieldOpResults.css": "f4c1c148290d1f6f32aab9e844a33632cb7d61d5",
   "tactical-ops-src/ui/combatCohesion.css": "03aea14a6b2e4bc84e225da54f0db5af450c33f6",
   "tactical-ops-src/version.ts": "549dfa6d52d8c068e481295a28569f23ff68b169",
