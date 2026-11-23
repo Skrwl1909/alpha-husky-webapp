@@ -140,6 +140,7 @@ try {
     await capture("command");
     await cta.tap();
     const contract = page.getByLabel("Mission contract");
+    if(await contract.count()===0)console.error('FIELD_CONTRACT_BRIEF_STATE',await page.evaluate(()=>{const s=fixture.store.getState();return {screen:s.screen,missionId:s.selectedMissionId,progressionError:s.progressionError,pending:s.progressionCommitPending,completed:s.progression?.fieldOps?.fieldContracts,active:s.progression?.fieldOps?.activeMissionRun}}));
     assert.match(await contract.innerText(),/Rapid Recovery.*round 4/is);
     await fit(contract);
     await page.evaluate(() => fixture.results(1,false));
