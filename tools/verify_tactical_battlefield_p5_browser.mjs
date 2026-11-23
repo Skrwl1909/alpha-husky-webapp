@@ -71,6 +71,41 @@ async function acceptance(){
  assert(sourceLinks.every(([a,b])=>a!==null&&b!==null),'All tethers use real projected endpoints');
 assert.equal(await page.locator('.t-threat-source').count(),2);await page.locator('.t-act').first().click();assert(await page.locator('.is-legal-target').count());assert.equal(await mode(),'REACT');await exact();
  await page.evaluate(()=>{const s=fixture.store,b=s.getState().battle;s.setState({battle:{...b,units:b.units.map(u=>u.id==='enemy'?{...u,hp:0,defeated:true}:u)}});fixture.prune()});assert.equal(await page.locator('.t-threat-source').count(),1);const left=await page.evaluate(()=>fixture.store.getState().threats[0].id);await page.evaluate(()=>fixture.store.setState({busy:true}));assert.equal(await page.locator('.t-threat-source').count(),1);assert.equal(await page.locator('.is-legal-target').count(),0);await page.evaluate(()=>fixture.resolve());assert.equal(await page.evaluate(()=>fixture.store.getState().threats.some(t=>t.id===left)),false);proof.push('VNext multiple plans: target+hazard coexist, one engine-invalidated, one retained through busy then engine-resolved');
+ // P2: read-only projector highlights precisely the living ally occupying a
+ // server/engine-accepted impact tile, and removes the mark with the plan.
+ await load(390,844,'threat=1');
+ const projection=await page.evaluate(()=>{
+   const s=fixture.store,b=s.getState().battle,t=s.getState().threats[0];
+   const land=t.impactTiles[0],danger=new Set(t.impactTiles.map(c=>c.c+','+c.r));
+   const safe=[];
+   for(let row=0;row<7;row++)for(let col=0;col<10;col++)if(!danger.has(col+','+row))safe.push({c:col,r:row});
+   if(safe.length<2)throw Error('P2 fixture needs safe cells');
+   const units=b.units.map(u=>u.id==='alpha'?{...u,c:land.c,r:land.r}
+     :u.id==='ally-02'?{...u,c:safe[0].c,r:safe[0].r}
+     :u.id==='ally-03'?{...u,c:safe[1].c,r:safe[1].r}:u);
+   s.setState({battle:{...b,units}});return {landing:land};
+ });
+ assert.equal(await page.locator('.t-token.is-confirmed-threat-target').count(),1,'Only the truly threatened ally is marked');
+ assert.equal(await page.locator('.t-token.ally.is-confirmed-threat-target').count(),1,'Never highlight a hostile as a threatened ally');
+ assert.equal(await page.locator('.t-unit-hit[data-unit-id="alpha"]').getAttribute('aria-label').then(v=>v.includes('Within a confirmed enemy attack area')),true);
+ assert((await page.locator('.t-p2-threat-readout').innerText()).toUpperCase().includes('ALPHA'),'Live threat readout uses confirmed unit name');
+ assert.equal(await page.locator('.t-p2-active-marker').count(),1,'One active marker');
+ assert.equal(await page.locator('.t-p2-threat-marker').count(),1,'Only genuinely exposed allies get warning marker');
+ assert(await page.locator('.t-p2-threat-marker').evaluate(el=>getComputedStyle(el).pointerEvents==='none'));
+ assert(await page.locator('.t-p2-active-marker').evaluate(el=>getComputedStyle(el).pointerEvents==='none'));
+ await shot('390-p2-exposed-ally');
+ await page.evaluate(()=>fixture.store.setState({threats:[]}));
+ assert.equal(await page.locator('.t-token.is-confirmed-threat-target').count(),0,'Cleared plan removes threat marker immediately');
+ assert.equal(await page.locator('.t-p2-threat-readout').count(),0,'No invented danger after cancellation');
+ assert.equal(await page.locator('.t-p2-active-marker').count(),1,'Actor focus remains when danger clears');
+ await load(320,568,'v1=1');
+ await page.evaluate(()=>{const s=fixture.store,b=s.getState().battle;s.setState({threats:[{id:'stale',rulesetVersion:'tactical-intent-vnext.0',enemyId:'enemy',impactTiles:[{c:b.units[0].c,r:b.units[0].r}],predictedEffect:'stale'}]})});
+ assert.equal(await page.locator('.t-p2-threat-marker').count(),0,'Legacy run cannot present stale VNext danger');
+ await load(320,568,'threat=1',false,true);
+ assert.equal(await page.locator('.t-threat-tile-v2').first().evaluate(e=>getComputedStyle(e).animationName),'none','No pulsating P2 threat');
+ await page.emulateMedia({forcedColors:'active'});
+ assert(await page.locator('.t-p2-active-marker').count(), 'P2 actor anchor survives forced colors');
+ proof.push('P2 threat projection follows accepted intent and live tiles, clears immediately, no stale V1/false positives');
  // RECOVER keeps its actual signal/window semantics; no artificial readiness.
  await load(320,568,'scene=recover-jammed');const recover=page.getByRole('button',{name:/^Recover/});assert(await recover.isDisabled());const recoveryLabel=await recover.getAttribute('aria-label');assert(recoveryLabel.includes('Opens round 2'),'Exact next recovery window');assert(recoveryLabel.includes('distance 1; range 1'),'Actual recovery distance and range');await shot('320-recover-jammed');
  await page.evaluate(()=>{const s=fixture.store,b=s.getState().battle;s.setState({battle:{...b,round:2}})});assert(await recover.isEnabled());await recover.click();await page.waitForTimeout(50);assert(await page.evaluate(()=>fixture.store.getState().battle.objective.completed));proof.push('RECOVER jammed/open/legal activation');

@@ -169,6 +169,7 @@ function Token({
   interceptTarget = false,
   arriving = false,
   hitReacting = false,
+  threatened = false,
   travelGhost = false,
   shownHp,
   facingTarget,
@@ -187,6 +188,7 @@ function Token({
   interceptTarget?: boolean;
   arriving?: boolean;
   hitReacting?: boolean;
+  threatened?: boolean;
   travelGhost?: boolean;
   shownHp?: number;
   facingTarget?: FacingCell;
@@ -218,6 +220,7 @@ function Token({
     unit.defeated && hp<=0 ? "defeated" : "",
     unit.hasActed ? "acted" : "",
     selected ? "selected active" : "",
+    threatened && !unit.defeated ? "is-confirmed-threat-target" : "",
     inspecting ? "inspect" : "",
     targeting && !validTarget && !selected ? "subdued" : "",
     targeting && validTarget ? "targetable" : "",
@@ -273,6 +276,8 @@ function Token({
         "--motion-recoil-x": `${recoilX}px`, "--motion-recoil-y": `${recoilY}px` } as CSSProperties}
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
+      {selected && !unit.defeated ? <span className="t-p2-active-marker" aria-hidden="true">ACTIVE</span> : null}
+      {threatened && !unit.defeated ? <span className="t-p2-threat-marker" aria-hidden="true">!</span> : null}
       {targeting && validTarget && !unit.defeated ? (
         <span className={`t-target-reticle ${unit.team}`} aria-hidden="true">
           <i /><i /><i /><i />
@@ -321,7 +326,7 @@ function Token({
         disabled={busy}
         data-unit-id={unit.id}
         style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...cellTouchStyle(unit.r, GRID_COLS, GRID_ROWS) } as CSSProperties}
-        aria-label={`${unit.name}. ${hp}/${unit.maxHp} HP${targeting && validTarget ? ". Legal target" : ""}`}
+        aria-label={`${unit.name}. ${hp}/${unit.maxHp} HP${threatened ? ". Within a confirmed enemy attack area" : ""}${targeting && validTarget ? ". Legal target" : ""}`}
         onClick={(e) => {
           e.stopPropagation();
           unlockAudio();
@@ -707,6 +712,7 @@ export function BattleScreen() {
       data-projection="relay-overhead-v1"
       data-impact-kind={impactPresentation?.effectClass || "damage"}
       data-decision={presentation.mode}
+      data-accepted-threats={presentation.threats.length || undefined}
     >
       <CounterstrikeSignal/>
       <header className="t-top t-battle-hud-rail" data-last-howl={lastHowl ? "true" : undefined} aria-label="Battle status and mission">
@@ -729,6 +735,8 @@ export function BattleScreen() {
           <div className="t-vignette" />
           <div className={`t-command-cue${combatMoment ? " t-master-moment-cue" : ""}`} role="status" aria-live="polite" aria-atomic="true">
             <p><strong>{presentation.title}</strong><span>{presentation.detail}</span></p>
+            {presentation.mode === "REACT" && presentation.threatenedAllyNames.length
+              ? <small className="t-p2-threat-readout">AT RISK · {presentation.threatenedAllyNames.join(" / ")}</small> : null}
             {presentation.targeting && aimedEffect ? <small>{[aimedEffect.geometry, ...aimedEffect.effects].join(" · ")}</small> : null}
             {presentation.mode === "REACT" && presentation.result ? <small className="t-command-confirmation">{presentation.result}</small> : null}
           </div>
@@ -843,6 +851,7 @@ export function BattleScreen() {
                   key={u.id}
                   unit={u}
                   selected={u.id === activeId}
+                  threatened={presentation.threatenedAllyIds.includes(u.id)}
                   validTarget={presentation.targetIds.includes(u.id)}
                   targeting={presentation.targeting}
                   attacking={u.id === attackingId || enemyScene?.actorId === u.id}
