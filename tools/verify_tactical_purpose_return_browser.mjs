@@ -91,6 +91,7 @@ try{
      }
      await primary.click();
      const brief=await page.evaluate(()=>{const s=fixture.store.getState();return {screen:s.screen,id:s.selectedMissionId,tier:s.selectedDirectiveTier,squad:s.selectedSquadIds}});
+     if(brief.screen!=='brief')console.error('NEXT_DECISION_STATE',await page.evaluate(()=>{const s=fixture.store.getState();return {screen:s.screen,progressionError:s.progressionError,pending:s.progressionCommitPending,runId:s.currentRunKey,missionId:s.selectedMissionId,receipt:s.progression?.fieldOps?.lastResult,completed:s.progression?.fieldOps?.lastCompletedMissionRunId,fieldResult:s.fieldResult,active:s.progression?.fieldOps?.activeMissionRun}}));
      assert.equal(brief.screen,'brief');
      assert.equal(brief.id,scenario==='resume'?'field-squad-survival':'field-relay-recovery');
      if(scenario==='defeat')assert.equal(brief.tier,'advanced');
