@@ -35,7 +35,8 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   ".github/workflows/tactical-loot-honors-v1.yml": "c7cafa86f9771814f058659a23e8239b291e9596",
   "tools/simulate_tactical_s2_full_combat.mjs": "98ca8aae49fb283f2157fd9f0b79e3401dbecaa6",
   "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
-  "tools/verify_tactical_purpose_return_browser.mjs": "979731bf486530c26d1f06dcd82ed710c6df53d1",
+  "tools/verify_tactical_field_contracts_browser.mjs": "d45d5350a00aab77d364d25bb79ce8edee0bbce8",
+  "tools/verify_tactical_purpose_return_browser.mjs": "b869fdbbe8c32230e21f7ce03c7cc423d2de069a",
   "tools/verify_tactical_depth01_browser.mjs": "37f9be11bdb74e43039dc65d049f8c032840600c",
   ".github/workflows/tactical-field-settlement-recovery-p0.yml": "db5795b99a09c8fecef4c24929781f6e32b2326f"
 });
@@ -475,7 +476,7 @@ const reviewedLastHowlRewardsBlobs = Object.freeze({
   "tactical-ops-src/ui/lastHowl.css": "ed1d3d2a9a8557057bae1a1b45d0f72751a604a0",
   "tactical-ops-src/ui/lastHowlRewards.tsx": "acef4478927e47118f8d26de3ba5ecd68eca5988",
   "tactical-ops-src/version.ts": "19baa1d3de69eacfc83a2446bd4b859cc9c4191f",
-  "tools/verify_tactical_last_howl_browser.mjs": "25bf9939148e072e51771cfe575e0c2dbf7feedc",
+  "tools/verify_tactical_last_howl_browser.mjs": "51399eb011e5c9d2b2f6f038fba10d7d29e91ffc",
   "tools/verify_tactical_last_howl_rewards.mjs": "f3c827a1ad64366ebb08fa94fea896721a2c3a68",
   ".github/workflows/tactical-last-howl-rewards.yml": "e0c09357a10871aa057637ce3be17eb202319f31",
   "js/inventory.js": "d9ca447b07f27c2587fe73673ef125652b64ca88"
