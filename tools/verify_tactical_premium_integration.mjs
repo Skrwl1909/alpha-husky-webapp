@@ -18,7 +18,7 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
  const baseline="ada1c0891707aa5767e7d161acd152e8c77a73e2";
  const approved=Object.freeze({
   "js/boot_loaders.js": "5aa2526ab7e1fe0e10955b3d87d88d7ce8e119d3",
-  "js/tactical_ops.js": "edb7e1e706571b7e2398e4d87639c48cada4362d",
+  "js/tactical_ops.js": "925f9c88d3838b97001ce575b6de530068f744ea",
   "tactical-ops-src/data/operations.ts": "ff1df14da6082825b25a7870d4d930170ab4a913",
   "tactical-ops-src/host/foundationProgression.ts": "d207887af200e3de056668277d72c853f651ff07",
   "tactical-ops-src/host/operationAuthority.ts": "240cbe63b306c72e0b58ddb1a2d4fc452be022ca",
@@ -37,7 +37,6 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
   "tools/verify_tactical_purpose_return_browser.mjs": "979731bf486530c26d1f06dcd82ed710c6df53d1",
   "tools/verify_tactical_depth01_browser.mjs": "37f9be11bdb74e43039dc65d049f8c032840600c",
-  ".github/workflows/tactical-release-bundle-sync.yml": "0cd458b3ce839a096751b2fe3f5218206ef9e9c6",
   ".github/workflows/tactical-field-settlement-recovery-p0.yml": "db5795b99a09c8fecef4c24929781f6e32b2326f"
 });
  const own="tools/verify_tactical_premium_integration.mjs";
