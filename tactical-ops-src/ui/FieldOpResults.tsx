@@ -225,7 +225,6 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
       </section>
     </details> : null}
     <TacticalHonorsCollection />
-    <TacticalHonorsCollection />
     <div className="t-fr-details">{children}</div>
   </div>;
 }
