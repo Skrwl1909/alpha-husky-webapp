@@ -1,0 +1,91 @@
+/* ALPHA HUSKY • Tactical Threat & Battlefield Clarity P2
+ * Read-only projection of server/engine accepted threats; no interactive surfaces.
+ * Existing movement hit regions and legal target reticles always retain priority. */
+#tacticalOpsRoot .t-battle .t-p2-active-marker,
+#tacticalOpsRoot .t-battle .t-p2-threat-marker {
+  position:absolute;pointer-events:none;user-select:none;z-index:8;
+  display:grid;place-items:center;border-radius:3px;font-family:var(--t-font-sans);
+  font-weight:900;text-shadow:0 1px 3px #020b12;
+}
+#tacticalOpsRoot .t-battle .t-p2-active-marker {
+  top:-18px;left:50%;transform:translateX(-50%);
+  padding:2px 5px;min-height:13px;
+  background:#0d2c38;border:1px solid #a5ebf2;color:#e4fbff;
+  box-shadow:0 0 0 1px #071720,0 2px 9px #06141bd8;
+  font-size:9px;line-height:11px;letter-spacing:.04em;
+}
+#tacticalOpsRoot .t-battle .t-p2-threat-marker {
+  top:0;right:6%;width:17px;height:17px;
+  background:#51242b;border:2px solid #ffd6ac;color:#fff2e4;
+  box-shadow:0 0 0 1px #07141c,0 0 9px #ed817064;
+  font-size:12px;line-height:1;
+}
+#tacticalOpsRoot .t-battle .t-token.is-confirmed-threat-target .t-ring {
+  color:#ffdbb6;
+  filter:drop-shadow(0 0 4px #ed896cbb);
+}
+#tacticalOpsRoot .t-battle .t-token.active:not(.is-confirmed-threat-target) .t-ring {
+  color:#b4f5ff;filter:drop-shadow(0 0 6px #8feaf2bc);
+}
+#tacticalOpsRoot .t-battle .t-token.active.is-confirmed-threat-target .t-ring {
+  color:#ffdbb6;filter:drop-shadow(0 0 5px #faaf7dbb);
+}
+/* A calmer threat projector: corner anchors stay visible while reading the board. */
+#tacticalOpsRoot .t-battle .t-threat-tile-v2 {
+  border-color:#f5a296b3;
+  box-shadow:inset 0 0 0 1px #732d2d35;
+  pointer-events:none;
+}
+#tacticalOpsRoot .t-battle .t-threat-tile-v2 .t-threat-corner {
+  border-color:#ffd1b3;
+  filter:none;
+}
+#tacticalOpsRoot .t-battle .t-threat-tether-core {
+  stroke:#ffc5a0;
+  stroke-width:1.4;
+  stroke-dasharray:3 5;
+  animation:none;
+}
+#tacticalOpsRoot .t-battle .t-threat-tether-end {fill:#ffe2b9;opacity:1}
+#tacticalOpsRoot .t-battle .t-threat-tile-v2 {animation:none}
+#tacticalOpsRoot .t-battle .t-target-reticle {z-index:21}
+#tacticalOpsRoot .t-battle .t-p2-threat-readout {
+  display:block;min-width:0;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:#ffddc1;font:800 11px/14px var(--t-font-sans);
+  letter-spacing:.025em;
+}
+#tacticalOpsRoot .t-battle[data-decision="REACT"] .t-command-cue {
+  border-left:3px solid #f0ac85;
+  background:linear-gradient(90deg,rgba(17,26,34,.94),rgba(13,28,38,.68));
+}
+#tacticalOpsRoot .t-battle-hud-rail .t-status:not(.is-expanded) {
+  border-left:3px solid #91deec;
+}
+#tacticalOpsRoot .t-battle-hud-rail .t-obj-chip:not(.is-expanded) {
+  border-left:2px solid #7095a5;
+}
+#tacticalOpsRoot .t-battle .t-p2-active-marker,
+#tacticalOpsRoot .t-battle .t-p2-threat-marker,
+#tacticalOpsRoot .t-battle .t-p2-threat-readout {animation:none;transition:none}
+@media(max-width:430px){
+  #tacticalOpsRoot .t-battle .t-p2-active-marker {top:-15px;font-size:9px;padding-inline:3px}
+  #tacticalOpsRoot .t-battle .t-p2-threat-marker {right:10%;width:16px;height:16px}
+}
+@media(max-height:610px){
+  #tacticalOpsRoot .t-battle .t-p2-threat-readout {font-size:11px;line-height:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  #tacticalOpsRoot .t-battle .t-p2-active-marker,
+  #tacticalOpsRoot .t-battle .t-p2-threat-marker,
+  #tacticalOpsRoot .t-battle .t-threat-tile-v2,
+  #tacticalOpsRoot .t-battle .t-threat-tether-core {animation:none!important;transition:none!important}
+}
+@media(forced-colors:active){
+  #tacticalOpsRoot .t-battle .t-p2-active-marker,
+  #tacticalOpsRoot .t-battle .t-p2-threat-marker {forced-color-adjust:auto;background:Canvas;color:CanvasText;border:2px solid CanvasText;box-shadow:none}
+  #tacticalOpsRoot .t-battle .t-token.is-confirmed-threat-target .t-ring {color:Highlight;filter:none}
+  #tacticalOpsRoot .t-battle .t-threat-tile-v2 {border:2px dashed Highlight;box-shadow:none;background:none}
+  #tacticalOpsRoot .t-battle .t-threat-tether-core {stroke:Highlight}
+  #tacticalOpsRoot .t-battle .t-p2-threat-readout {color:CanvasText}
+}
