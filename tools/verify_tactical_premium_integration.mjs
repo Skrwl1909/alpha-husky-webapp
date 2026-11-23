@@ -35,7 +35,7 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   ".github/workflows/tactical-loot-honors-v1.yml": "c7cafa86f9771814f058659a23e8239b291e9596",
   "tools/simulate_tactical_s2_full_combat.mjs": "98ca8aae49fb283f2157fd9f0b79e3401dbecaa6",
   "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
-  "tools/verify_tactical_field_contracts_browser.mjs": "8a88f44d2bb910e46990c2eedc83a174a7062e61",
+  "tools/verify_tactical_field_contracts_browser.mjs": "5943dd9b96cd88d50a98f84e3ac75e6d920057b7",
   "tools/verify_tactical_last_howl_browser.mjs": "51399eb011e5c9d2b2f6f038fba10d7d29e91ffc",
   "tools/verify_tactical_purpose_return_browser.mjs": "d6292acf370c67316bb642da4405e105aeec5f14",
   "tools/verify_tactical_depth01_browser.mjs": "37f9be11bdb74e43039dc65d049f8c032840600c",
