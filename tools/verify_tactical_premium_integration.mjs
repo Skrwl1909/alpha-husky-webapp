@@ -36,6 +36,7 @@ if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.99-surviv
   "tools/simulate_tactical_s2_full_combat.mjs": "98ca8aae49fb283f2157fd9f0b79e3401dbecaa6",
   "tools/verify_tactical_g3_browser.mjs": "c8b68fbef1b7eb08510d64bb6a14ad3fef301cb0",
   "tools/verify_tactical_field_contracts_browser.mjs": "d45d5350a00aab77d364d25bb79ce8edee0bbce8",
+  "tools/verify_tactical_last_howl_browser.mjs": "51399eb011e5c9d2b2f6f038fba10d7d29e91ffc",
   "tools/verify_tactical_purpose_return_browser.mjs": "b869fdbbe8c32230e21f7ce03c7cc423d2de069a",
   "tools/verify_tactical_depth01_browser.mjs": "37f9be11bdb74e43039dc65d049f8c032840600c",
   ".github/workflows/tactical-field-settlement-recovery-p0.yml": "db5795b99a09c8fecef4c24929781f6e32b2326f"
