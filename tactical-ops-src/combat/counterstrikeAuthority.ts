@@ -1,5 +1,6 @@
 import {advanceToNext,deployHostiles,startBattle} from "./battle";
 import {applyRunCombatProfile} from "./combatProfileV3";
+import {workerProfile,type FrozenPower} from "./frozenPowerWorker";
 import {emptyThreatCycle,interruptLockedThreatAfterControl,markAlliedReaction,pruneInvalidThreats,type ThreatCycle} from "./intentScheduler";
 import {selectAcceptedBattleRules,type BattleState,type BattleEvent} from "./types";
 import {selectAcceptedIntentRules} from "./intentContract";
@@ -10,7 +11,7 @@ import {withTeammateSidegrades} from "../data/shadowSidegrade";
 import {COUNTERSTRIKE_ID,COUNTERSTRIKE_RULESET,COUNTERSTRIKE_MISSION,type CounterstrikeRun} from "../data/counterstrike";
 
 interface Snapshot {battle:BattleState;cycle:ThreatCycle;statusSequence:number;entered:number;radio:string[]}
-export function stepCounterstrike(run:CounterstrikeRun,saved?:Snapshot,command?:RecoverCommand) {
+export function stepCounterstrike(run:CounterstrikeRun,saved?:Snapshot,command?:RecoverCommand,power?:FrozenPower) {
  const contract=run.counterstrikeContract;
  if(run.missionId!==COUNTERSTRIKE_ID || contract?.version!==1 || contract.rulesetVersion!==COUNTERSTRIKE_RULESET ||
    contract.missionRevision!==1 || ![0,1].includes(contract.reinforcementDelay) ||
@@ -22,7 +23,7 @@ export function stepCounterstrike(run:CounterstrikeRun,saved?:Snapshot,command?:
  const spawns=[...squad.slice(0,3).map((u,i)=>({...u,...[{c:2,r:2},{c:1,r:1},{c:1,r:3}][i]})),
   {defId:"hostile",id:"false-relay-patrol-north",c:5,r:1},
   {defId:"hostile",id:"false-relay-patrol-south",c:6,r:3}];
- const roster=applyRunCombatProfile(withTeammateSidegrades(spawns,run as Parameters<typeof withTeammateSidegrades>[1]),run.combatProfileV3,run.combatProfileV2);
+ const roster=applyRunCombatProfile(withTeammateSidegrades(spawns,run as Parameters<typeof withTeammateSidegrades>[1]),workerProfile(run.combatProfileV3,power),run.combatProfileV2);
  if(saved)resetStatusSeq(saved.statusSequence);
  const initial=saved?null:startBattle(null,roster,structuredClone(COUNTERSTRIKE_MISSION.objective!),null,null,structuredClone(COUNTERSTRIKE_MISSION.directive!),run.playerGrowth);
  let battle=saved?.battle??initial!.state, cycle=saved?.cycle??emptyThreatCycle(),entered=saved?.entered??0;

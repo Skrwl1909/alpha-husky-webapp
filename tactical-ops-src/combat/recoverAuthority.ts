@@ -1,5 +1,6 @@
 import { advanceToNext, applyAi, planAi, startBattle, tryMove, tryRecover, trySkill, trySkip } from "./battle";
 import { applyRunCombatProfile } from "./combatProfileV3";
+import { workerProfile, type FrozenPower } from "./frozenPowerWorker";
 import { getStatusSequence, resetStatusSeq } from "./effects";
 import { selectAcceptedIntentRules, TACTICAL_VNEXT_RULESET, type IntentPlan, type RunRulesContract } from "./intentContract";
 import { emptyThreatCycle, interruptLockedThreatAfterControl, markAlliedReaction, pruneInvalidThreats, queueEnemyThreat, resolveEnemyThreat, type ThreatCycle } from "./intentScheduler";
@@ -43,22 +44,25 @@ interface Snapshot {
   statusSequence: number;
 }
 
-function configure(run: Encounter) {
+const POWER_MISSIONS = new Set(["field-relay-recovery","field-relay-hold","field-squad-survival","field-relay-intercept","field-isolated-hold","field-rearguard","broken-signal-commander"]);
+function configure(run: Encounter, power?: FrozenPower) {
   const contract = run.rulesContract;
-  if (run.missionId !== "field-relay-recovery" || contract?.missionId !== run.missionId ||
-      contract.rulesetVersion !== TACTICAL_VNEXT_RULESET || contract.missionRevision !== 1 ||
-      !run.combatProfileV3 || !run.fieldContext) throw Error("invalid_recover_encounter");
+  const commander = run.missionId === "broken-signal-commander";
+  const revisionAllowed = contract?.missionRevision === 1 || (power && contract?.missionRevision === 2 && ["field-relay-intercept","field-squad-survival"].includes(run.missionId) && run.fieldContext?.reportVersion === 3);
+  if ((power ? !POWER_MISSIONS.has(run.missionId) : run.missionId !== "field-relay-recovery") || contract?.missionId !== run.missionId ||
+      contract.rulesetVersion !== TACTICAL_VNEXT_RULESET || !revisionAllowed ||
+      !run.combatProfileV3 || (!commander && !run.fieldContext)) throw Error("invalid_recover_encounter");
   selectAcceptedBattleRules(contract);
   selectAcceptedIntentRules(contract as RunRulesContract);
   const mission = missionForContext(getMissionDef(run.missionId)!, run.fieldContext, contract.missionRevision);
   const pet = run.combatProfileV2?.pet;
-  const spawns = missionSpawnsForSquad(mission, run.squadIds, pet, run.fieldContext.approach);
+  const spawns = missionSpawnsForSquad(mission, run.squadIds, pet, run.fieldContext?.approach);
   if (!spawns || (run.squadIds.some(id => id.startsWith("pet:")) && !pet)) throw Error("invalid_recover_roster");
   // Re-register the frozen mastery skill definitions in a fresh worker before stepping.
   return {
-    spawns: applyRunCombatProfile(withTeammateSidegrades(withFieldRend(spawns, run.fieldContext.fieldRend), run),
-      run.combatProfileV3, run.combatProfileV2),
-    rules: missionBattleRules(mission, false, run.fieldContext),
+    spawns: applyRunCombatProfile(withTeammateSidegrades(withFieldRend(spawns, run.fieldContext?.fieldRend), run),
+      workerProfile(run.combatProfileV3,power), run.combatProfileV2),
+    rules: missionBattleRules(mission, commander && (run as Encounter & {routingTrace?:boolean}).routingTrace === true, run.fieldContext),
   };
 }
 
@@ -103,8 +107,8 @@ export function legalAlliedAction(battle: BattleState, command: RecoverCommand) 
   return action.ok ? { actor, ...action } : null;
 }
 
-export function stepRecover(run: Encounter, saved?: Snapshot, command?: RecoverCommand) {
-  const { spawns, rules } = configure(run);
+export function stepRecover(run: Encounter, saved?: Snapshot, command?: RecoverCommand, power?: FrozenPower) {
+  const { spawns, rules } = configure(run,power);
   const initial = saved ? null : startBattle(null, spawns, rules.objective, rules.reinforcement, null, rules.directive, run.playerGrowth);
   if (saved) resetStatusSeq(saved.statusSequence);
   let battle = saved?.battle ?? initial!.state;
@@ -164,6 +168,8 @@ export function stepRecover(run: Encounter, saved?: Snapshot, command?: RecoverC
   }
   if (report && run.fieldContext?.fieldContractsVersion) report.fieldContractsVersion = run.fieldContext.fieldContractsVersion;
   if (report && run.fieldContext?.veteranChallenge) report.veteranChallenge = run.fieldContext.veteranChallenge;
+  if (power && report && run.fieldContext?.masteryChallenge) report.masteryChallenge = run.fieldContext.masteryChallenge;
+  if (power && report && run.fieldContext?.lockdownPlan) report.lockdownPlan = run.fieldContext.lockdownPlan;
   // The scheduler's historical ledger is presentation evidence and isn't read by any transition.
   return { battle, cycle: { ...cycle, ledger: [] }, statusSequence: getStatusSequence(), report, frames };
 }
