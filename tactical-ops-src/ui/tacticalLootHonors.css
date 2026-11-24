@@ -96,3 +96,30 @@
 @media(prefers-reduced-motion:reduce){
  #tacticalOpsRoot .t-loot-reveal *,#tacticalOpsRoot .t-honors-collection *{animation:none!important;transition:none!important}
 }
+
+/* P3.1 — reuse approved EXP/Bones art across receipt presentation paths.
+ * Amounts remain DOM text; the gradient is a fallback for missing art. */
+#tacticalOpsRoot .t-loot-currency-copy{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+#tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]){
+  flex-direction:row;justify-content:center;gap:6px;box-sizing:border-box;min-height:78px;
+  padding:12px 9px;border:1px solid #608f9c42;border-radius:3px;
+  background:var(--p31-reward-art) center/100% 100% no-repeat,linear-gradient(135deg,#24353c,#10191f);
+}
+#tacticalOpsRoot .t-loot-currency[data-reward=exp]{--p31-reward-art:url("/images/tactical_ops/presentation/reward_exp_plate.png")}
+#tacticalOpsRoot .t-loot-currency[data-reward=bones]{
+  --p31-reward-art:url("/images/tactical_ops/presentation/reward_bones_plate.png");
+  border-color:#9b86594a;background:var(--p31-reward-art) center/100% 100% no-repeat,linear-gradient(126deg,#352e24,#1b2428);
+}
+#tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]) .t-loot-currency-copy{align-items:flex-start;gap:2px}
+#tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]) svg{flex:none;width:19px;height:19px}
+#tacticalOpsRoot .t-loot-currency[data-reward=bones] :is(svg,small){color:#ead19b}
+#tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]) strong{font-size:clamp(19px,5.3vw,25px);overflow-wrap:anywhere;text-shadow:0 1px 3px #030a10}
+#tacticalOpsRoot .t-loot-currency small{overflow-wrap:anywhere}
+@media(max-width:350px){
+  #tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]){padding:10px 7px;gap:5px}
+  #tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]) svg{width:16px;height:16px}
+}
+@media(forced-colors:active){
+  #tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]){background:Canvas;border:1px solid CanvasText;color:CanvasText}
+  #tacticalOpsRoot .t-loot-currency:is([data-reward=exp],[data-reward=bones]) :is(svg,small,strong){color:CanvasText;text-shadow:none}
+}

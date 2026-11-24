@@ -9,6 +9,26 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** P3.1 scope gate: compare against merged P3; generated artifacts checked by canonical build parity. */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.103-premium-result-consistency-p31")) {
+ const baseline="baae5912740d74cc8746744f44379bbe7e8bbc3f";
+ const sources=["tactical-ops-src/ui/TacticalLootHonors.tsx","tactical-ops-src/ui/tacticalLootHonors.css","tactical-ops-src/ui/fieldOpResults.css","tactical-ops-src/version.ts","tools/verify_field_op_results_premium.mjs","tools/verify_tactical_loot_honors.mjs","tools/verify_tactical_premium_integration.mjs"];
+ const generated=["js/tactical_ops.js","js/boot_loaders.js"];
+ try { git("cat-file","-e",baseline+"^{commit}"); }
+ catch { execFileSync("git",["fetch","--no-tags","--depth=1","origin",baseline],{stdio:"pipe"}); }
+ const changed=git("diff","--name-only","--no-renames",baseline,"HEAD").trim().split("\n").filter(Boolean);
+ for(const p of changed)assert([...sources,...generated].includes(p),"Unexpected P3.1 path: "+p);
+ for(const p of sources)assert(changed.includes(p),"Missing P3.1 source: "+p);
+ const art={
+  "images/tactical_ops/presentation/operation-consequence-frame.webp":"512ff0a2a31a0cb6dc7276c37727bf8f47e79caf",
+  "images/tactical_ops/presentation/reward_exp_plate.png":"5755164c00b8eb2903e76aa276842b33045f837a",
+  "images/tactical_ops/presentation/reward_bones_plate.png":"8535b18b75d4a54aeb98450f2ddee8c3b48dd522"
+ };
+ for(const [p,sha] of Object.entries(art))assert.equal(git("rev-parse","HEAD:"+p).trim(),sha,"Unexpected asset change: "+p);
+ console.log("PASS P3.1 presentation-only scope and approved art provenance; bundle parity checked separately");
+ process.exit(0);
+}
+
 /**
  * P3: exact presentation-only release based on merged Battlefield Clarity P2.
  * Historical P1/P2 and earlier integrity checks remain unchanged.
