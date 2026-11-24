@@ -1040,10 +1040,10 @@ function Brief() {
             ))}
           </div>
 
-          {acceptedPower ? <section className="t-run-power" aria-label="Server-confirmed combat power" data-power-source="accepted-v3">
+          {acceptedPower ? <section className="t-run-power" aria-label="Server-confirmed combat power" data-power-source={acceptedPower.source === "meaningful-power" ? "accepted-meaningful-power" : "accepted-v3"}>
             <div className="t-run-power-head">
               <strong>ACCEPTED COMBAT POWER</strong>
-              <span>V3 · LOCKED FOR THIS RUN</span>
+              <span>{acceptedPower.source === "meaningful-power" ? "POWER V1 (TEST)" : "V3"} · LOCKED FOR THIS RUN</span>
             </div>
             <p>These are your server-frozen starting stats. Gear changes apply to a new battle, not this saved run.</p>
             <div className="t-run-power-unit">

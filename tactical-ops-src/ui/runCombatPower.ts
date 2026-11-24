@@ -2,9 +2,11 @@
 import { parseCombatProfileV3, type TacticalCombatProfileV3 } from "../combat/combatProfileV3";
 import type { TacticalCombatProfileV2 } from "../combat/combatProfile";
 import type { FoundationProgressionState } from "../host/foundationProgression";
+import type { AcceptedPower } from "../host/acceptedPower";
 
 type AcceptedRun = {
   runId: string;
+  acceptedPower?: AcceptedPower | null;
   squadIds: string[];
   rulesContract?: { combatProfileVersion: number } | null;
   combatProfileV2?: TacticalCombatProfileV2 | null;
@@ -15,6 +17,7 @@ export type ConfirmedCombatPower = {
   runId: string;
   profile: TacticalCombatProfileV3;
   petDeployed: boolean;
+  source?: "meaningful-power" | "v3";
 };
 
 function verifiedProfile(
@@ -55,6 +58,11 @@ export function confirmedRunCombatPower(
         !run.squadIds.includes("alpha")) continue;
     const profile = verifiedProfile(run.combatProfileV3, run.combatProfileV2);
     if (!profile) continue;
+    if (run.acceptedPower === null) return null;
+    if (run.acceptedPower) {
+      const {gearImpactV31: _legacyGear, ...legacy} = profile;
+      return {runId, profile:{...legacy,alpha:run.acceptedPower.alpha},petDeployed:false,source:"meaningful-power"};
+    }
     return {
       runId,
       profile,
