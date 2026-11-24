@@ -186,7 +186,28 @@ try{
    if(scenario!=='p3-recorded')assert.deepEqual(await delta.locator('strong').allTextContents(),expected.slice(2));
    assert(await card.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
    assert.equal(await card.evaluate(e=>getComputedStyle(e,'::before').pointerEvents),'none');
+   const ornate=width>=390&&['p3-breakthrough','p3-clear'].includes(scenario);
+   const artwork=await card.evaluate(e=>getComputedStyle(e,'::after').backgroundImage);
+   if(ornate){
+    assert.match(artwork,/operation-consequence-frame\.webp/,'approved frame must be connected');
+    const image=await page.evaluate(async path=>{
+     const img=new Image();img.src=path;await img.decode();
+     return [img.naturalWidth,img.naturalHeight];
+    },'/images/tactical_ops/presentation/operation-consequence-frame.webp');
+    assert.deepEqual(image,[1774,887],'approved asset decoded at native proportions');
+   }else assert.equal(artwork,'none','quiet/compact states use CSS fallback');
    await card.scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/${width}-${scenario}.png`});
+   if(width===390&&scenario==='p3-breakthrough'){
+    await page.route('**/operation-consequence-frame.webp',route=>route.abort());
+    try{
+     await page.reload();await card.waitFor();
+     assert.equal(await card.locator('.t-fr-impact-title').innerText(),expected[1]);
+     assert(await card.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'missing art must not break layout');
+     assert(await card.evaluate(e=>getComputedStyle(e).backgroundImage!=='none'),'CSS plate survives missing art');
+     await card.scrollIntoViewIfNeeded();
+     await page.screenshot({path:`${out}/390-p3-missing-asset.png`});
+    }finally{await page.unroute('**/operation-consequence-frame.webp');}
+   }
    await page.emulateMedia({forcedColors:'active',reducedMotion:'reduce'});
    assert(await card.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
    assert.equal(await card.evaluate(e=>getComputedStyle(e,'::after').content),'none');
