@@ -514,13 +514,17 @@
   color:var(--p3-title);font-size:19px;line-height:1.1;overflow-wrap:anywhere;
 }
 #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact .t-fr-pressure-change svg{color:var(--p3-accent)}
-/* P3.1: nine-slice frame preserves decorative corners on compact and tall cards.
- * No width gate or fading mask; recorded-only states remain deliberately quiet. */
+/* P3.2: fit the nine-slice perimeter to the card, not the old 145px accent.
+ * Reserve space for the artwork; recorded-only and forced-color states stay quiet. */
 @media(forced-colors:none){
+  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact:is([data-impact-beat=step],[data-impact-beat=breakthrough],[data-impact-beat=clear],[data-impact-kind=milestone],[data-impact-kind=secured]){
+    padding:25px 22px 23px;
+  }
   #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact:is([data-impact-beat=step],[data-impact-beat=breakthrough],[data-impact-beat=clear],[data-impact-kind=milestone],[data-impact-kind=secured])::after{
     content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-    box-sizing:border-box;border:18px solid transparent;
-    border-image: url("/images/tactical_ops/presentation/operation-consequence-frame.webp") 18% 9% / 18px stretch;
+    width:auto;height:auto;min-width:0;min-height:0;max-width:none;max-height:none;
+    box-sizing:border-box;border:solid transparent;border-width:24px 18px 20px;
+    border-image: url("/images/tactical_ops/presentation/operation-consequence-frame.webp") 18% 9% / 24px 18px 20px stretch;
     border-radius:0;box-shadow:none;background:none;opacity:.95;mask-image:none;
   }
 }

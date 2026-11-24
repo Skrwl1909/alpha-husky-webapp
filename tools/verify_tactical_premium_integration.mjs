@@ -9,6 +9,17 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** P3.2: exact descendant of the accepted release chain, with pinned generated artifacts. */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.104-consequence-frame-fit-p32")) {
+ const verifier="tools/verify_tactical_p32_provenance.mjs";
+ const expected="02e0bc1bbd5139eef0ed414984c9f6fad67a346a";
+ assert.equal(git("rev-parse","HEAD:"+verifier).trim(),expected,"P3.2 provenance module commit mismatch");
+ assert.equal(git("hash-object","--path="+verifier,verifier).trim(),expected,"P3.2 provenance module working copy mismatch");
+ const {verifyP32Provenance}=await import("./verify_tactical_p32_provenance.mjs");
+ verifyP32Provenance(expected);
+ process.exit(0);
+}
+
 /** P3.1 scope gate: compare against merged P3; generated artifacts checked by canonical build parity. */
 if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.103-premium-result-consistency-p31")) {
  const baseline="baae5912740d74cc8746744f44379bbe7e8bbc3f";
