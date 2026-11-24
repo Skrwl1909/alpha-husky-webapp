@@ -14,6 +14,8 @@ const MAX_ACTIVATIONS=240;
 // Opt-in offline experiment only; not a runnable V4 contract.
 const powerLab=process.env.TACTICAL_POWER_LAB_INPUT ? JSON.parse(readFileSync(process.env.TACTICAL_POWER_LAB_INPUT,"utf8")) : null;
 if(powerLab)assert(!process.env.TACTICAL_SURVIVE_ACCEPTED&&!process.env.TACTICAL_SURVIVE_REVISION&&!process.env.TACTICAL_G1_MATRIX,"power lab must be isolated");
+const powerP2=process.env.TACTICAL_POWER_LAB_PHASE==="2";
+if(powerP2)assert(powerLab,"P2 requires synthetic build input");
 const accepted = process.env.TACTICAL_SURVIVE_ACCEPTED
   ? JSON.parse(readFileSync(process.env.TACTICAL_SURVIVE_ACCEPTED,"utf8")) : null;
 const surviveRevision = accepted?.run.rulesContract?.missionRevision ?? Number(process.env.TACTICAL_SURVIVE_REVISION || 0);
@@ -60,9 +62,9 @@ try {
     if(!enemies.length)return null;
     return [...enemies].sort((a,b)=>{
       function priority(t){
-        if(policy==="tempo" || policy==="control"){
+        if(policy==="tempo" || policy==="control" || (powerP2&&policy==="pack")){
           if(o?.type==="INTERCEPT"&&t.id===o.targetId)return -900;
-          if(o?.type==="BOSS"&&t.id===o.targetId)return policy==="tempo"?-900:20;
+          if(o?.type==="BOSS"&&t.id===o.targetId)return policy==="control"?20:-900;
           if(o?.type==="HOLD"&&o.terminal)return manhattan(t,o.terminal)*20+t.hp/10;
           if(o?.type==="RECOVER"&&o.terminal)return manhattan(t,o.terminal)*15+t.hp/10;
         }
@@ -80,10 +82,58 @@ try {
           stats.skillCounts[skill.id]=(stats.skillCounts[skill.id]||0)+1;
           const dealt=state.units.filter(u=>u.team==="enemy"&&!u.defeated).reduce((n,u)=>n+Math.max(0,u.hp-(r.state.units.find(v=>v.id===u.id)?.hp??u.hp)),0);
           stats.directDamage[actor.id]=(stats.directDamage[actor.id]||0)+dealt;
+          if(powerP2){
+            for(const e of r.events){
+              if(e.type==="heal" && e.amount>0)stats.healHp[actor.id]=(stats.healHp[actor.id]||0)+e.amount;
+              if(e.type==="status" && e.buildEvidence)stats.statusApplications.push({caster:actor.id,skill:skill.id,target:e.unitId,evidence:e.buildEvidence});
+            }
+          }
         }
       }
       return r;
     };
+    // P2 only: exercise existing support and debuff skills through legal targets.
+    // No new skills, statuses, interrupt rules, or enemy behavior.
+    if(powerP2 && policy==="pack"){
+      const allies=state.units.filter(u=>u.team==="ally"&&!u.defeated);
+      const missing=u=>u.maxHp-u.hp;
+      if(actor.defId==="alpha"){
+        const howl=ready.find(s=>s.slot==="A3"&&s.effects.some(e=>e.status==="ATK_UP"));
+        if(howl){
+          const hits=target.resolveSkillTargets(state.units,actor,howl);
+          const useful=hits.filter(u=>u.id!==actor.id&&!u.statuses.some(v=>v.type==="ATK_UP"));
+          if(useful.length>=1 && state.units.some(u=>u.team==="enemy"&&!u.defeated)){
+            const r=cast(howl);if(r.ok){stats.supportActions++;return r.state}
+          }
+        }
+      }
+      if(actor.defId==="ally-02"){
+        const pressure=ready.find(s=>s.effects.some(e=>e.status==="ATK_DOWN"));
+        if(pressure){
+          const legal=target.validTargetIds(state.units,actor,pressure);
+          const choices=state.units.filter(u=>legal.includes(u.id)&&!u.statuses.some(v=>v.type==="ATK_DOWN"));
+          const locked=stats.pending?.find(t=>choices.some(u=>u.id===t.plan.enemyId));
+          const victim=locked?choices.find(u=>u.id===locked.plan.enemyId):choices.find(u=>u.id===preferred?.id);
+          if(victim){const r=cast(pressure,victim.id);if(r.ok){stats.controlActions++;return r.state}}
+        }
+      }
+      if(actor.role==="support"){
+        const options=[];
+        for(const heal of ready.filter(s=>s.effects.some(e=>e.kind==="heal"))){
+          const ids=heal.targetType==="ALLY_SINGLE"?target.validTargetIds(state.units,actor,heal):[undefined];
+          for(const id of ids){
+            const hits=target.resolveSkillTargets(state.units,actor,heal,id).filter(u=>u.team==="ally");
+            const wounded=hits.filter(u=>missing(u)>=12);
+            const score=wounded.reduce((n,u)=>n+Math.min(missing(u),heal.targetType==="ALLY_AOE"?20:35),0);
+            const threatened=hits.filter(u=>stats.pending?.some(t=>t.plan.targetUnitId===u.id)&&!u.statuses.some(v=>v.type==="DEF_UP")).length;
+            const protective=heal.effects.some(e=>e.status==="DEF_UP")&&hits.length>=2&&threatened>0;
+            if(score>=12||protective)options.push({heal,id,score:score+(protective?12:0)});
+          }
+        }
+        options.sort((a,b)=>b.score-a.score||a.heal.id.localeCompare(b.heal.id)||String(a.id).localeCompare(String(b.id)));
+        for(const o of options){const r=cast(o.heal,o.id);if(r.ok){stats.supportActions++;return r.state}}
+      }
+    }
     if(g1 && actor.defId==="ally-02" && actor.growth?.discipline==="disruptor") {
       const pressure=ready.find(s=>s.slot==="A3"), locked=stats.pending?.find(t=>pressure&&target.validTargetIds(state.units,actor,pressure).includes(t.plan.enemyId));
       if(locked){const r=cast(pressure,locked.plan.enemyId);if(r.ok){stats.controlActions++;return r.state}}
@@ -118,6 +168,10 @@ try {
   function playAlly(state,policy,stats){
     const actor=state.units.find(u=>u.id===state.activeId),o=state.objective;
     if(!actor||actor.defeated) return state;
+    if(powerP2&&policy==="passive"){
+      const skipped=battle.trySkip(state);assert(skipped.ok,"legal passive skip failed");
+      stats.skips++;return skipped.state;
+    }
     if(o?.type==="RECOVER" && battle.canRecover(state) && (policy==="tempo" || !state.units.some(u=>u.team==="enemy"&&!u.defeated) || state.round>=4)){
       const r=battle.tryRecover(state);if(r.ok){stats.objectiveActions++;return r.state}
     }
@@ -189,7 +243,7 @@ try {
     const spec=ops.missionBattleRules(mission,false,context);
     const growth = !accepted && g1 && !profile.build?.noGrowth ? {version:2,revision:1,heroes:["alpha","ally-02","ally-03"].map((id,i)=>({heroId:id,discipline:profile.build.paths[i],ranks:Object.fromEntries((i===0?["alpha-strike","alpha-rend","alpha-howl"]:i===1?["u02-shot","u02-burst","u02-suppress"]:["u03-tap","u03-mend","u03-pack"]).map(id=>[id,2]))}))}:undefined;
     let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive,accepted?.run.playerGrowth || growth);
-    const stats={directDamage:{},skillCounts:{},lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
+    const stats={directDamage:{},skillCounts:{},healHp:{},statusApplications:[],lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
     const rounds = new Map();
     let reinforcementRound = null;
     let cycle=scheduler.emptyThreatCycle(),stall=0,previous="",error=null,activations=0;
@@ -282,7 +336,7 @@ try {
     }
     const pacing = [...rounds.values()];
     return {...(powerLab?{model:profile.model,alphaProfile:profile.experimentalAlpha||profile.v3.alpha,
-      directDamage:stats.directDamage,skillCounts:stats.skillCounts,remainingSquad:state.units.filter(u=>u.team==="ally").map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp,defeated:u.defeated}))}:{}),
+      directDamage:stats.directDamage,skillCounts:stats.skillCounts,...(powerP2?{actualHealHp:stats.healHp,statusApplications:stats.statusApplications,threatLedger:cycle.ledger}:{}),remainingSquad:state.units.filter(u=>u.team==="ally").map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp,defeated:u.defeated}))}:{}),
       pressure:profile.pressure,approach:profile.approach,directiveSet:profile.directiveSet,
       damage:state.damageTaken,reinforcementRound,threatFreeRounds:pacing.filter(r=>!r.enemyPresent).length,
       emptySkips:pacing.reduce((n,r)=>n+r.emptySkips,0),enemyDamageActions:pacing.reduce((n,r)=>n+r.attacks,0),
@@ -308,13 +362,31 @@ try {
       // HP floor and attack floor preserve starting tactical affordances. Not approved balance.
       const scaled={hp:120+Math.round(Math.max(0,c.maxHp-50)*.075),
         atk:28+Math.round(Math.max(0,c.attack-1)*.28),def:12+Math.round(defenseEquivalent),spd:14};
-      for(const [model,experimentalAlpha] of [["v3-current",null],["canonical-raw-stress",raw],["canonical-fixed-scale-trial",scaled]]){
-        for(const policy of ["tempo","control"]){
+      // P2 hypothesis: small upgrades cross integer thresholds, veteran growth tapers,
+      // legacy base VIT 0..100 is compressed without subtracting gear/pet VIT.
+      // This is a tactical conversion, not the final shared-formula V4 worker.
+      const a=build.canonical.attributes;
+      const str=Math.max(0,a.effective.strength),def=Math.max(0,a.effective.defense);
+      const baseVit=Math.max(0,a.base.vitality),otherVit=Math.max(0,a.gear.vitality+a.pet.vitality);
+      const vitGrowth=Math.max(0,baseVit-100)+otherVit;
+      const tuned={hp:120+Math.round(Math.min(baseVit,100)*.1)+Math.round(95*vitGrowth/(vitGrowth+100)),
+        atk:28+Math.round(32*str/(str+30)),def:12+Math.round(24*def/(def+35)),spd:build.v3.alpha.spd};
+      for(const k of ["hp","atk","def","spd"])assert(Number.isSafeInteger(tuned[k])&&tuned[k]>0,"invalid P2 profile");
+      const models=powerP2?[["v3-current",null],["canonical-p2-trial",tuned]]:[["v3-current",null],["canonical-raw-stress",raw],["canonical-fixed-scale-trial",scaled]];
+      for(const [model,experimentalAlpha] of models){
+        for(const policy of powerP2?["tempo","control","pack","passive"]:["tempo","control"]){
           rows.push(fullRun(mission,squad,{name:build.name,model,v3:build.v3,experimentalAlpha,alpha:build.v3.alpha},policy));
         }
       }
     }
-    assert.equal(rows.length,powerLab.builds.length*6);
+    assert.equal(rows.length,powerLab.builds.length*(powerP2?8:6));
+    if(powerP2){
+      const trial=name=>rows.find(r=>r.model==="canonical-p2-trial"&&r.profile===name&&r.policy==="tempo").alphaProfile;
+      assert(trial("starter-fangs").atk>trial("fresh").atk,"starter STR must survive rounding");
+      assert(trial("first-forge-star2").atk>trial("starter-fangs").atk,"first Forge STR must survive rounding");
+      assert(trial("respec-baseline").hp-trial("fresh").hp<=10,"historical base VIT dominates");
+      assert(trial("mid-offense").atk>trial("mid-guard").atk&&trial("mid-guard").def>trial("mid-offense").def,"offense/guard profiles collapsed");
+    }
     const pairs=rows.map(row=>{
       const baseline=rows.find(r=>r.profile===row.profile&&r.policy===row.policy&&r.model==="v3-current");
       const total=Object.values(row.directDamage).reduce((n,x)=>n+x,0);
@@ -322,9 +394,9 @@ try {
         deltaActivations:row.activations-baseline.activations,deltaDamageTaken:row.damage-baseline.damage};
     });
     mkdirSync("artifacts/meaningful-power",{recursive:true});
-    const report={schema:"alpha-meaningful-power-lab.v1",backendCommit:powerLab.backendCommit,mission:"broken-signal-commander",
-      note:"Deterministic source-engine experiment; no live worker parity, no Shared Combat RNG/crit/dodge/penetration, no reward or persistence evidence. Raw and scaled are trial inputs, not V4.",builds:powerLab.builds.map(b=>({name:b.name,canonical:b.canonical.combat,v3:b.v3,upgrade:b.upgrade})),rows:pairs};
-    writeFileSync("artifacts/meaningful-power/commander.json",JSON.stringify(report,null,2));
+    const report={schema:powerP2?"alpha-meaningful-power-lab.v2":"alpha-meaningful-power-lab.v1",backendCommit:powerLab.backendCommit,mission:"broken-signal-commander",
+      note:powerP2?"P2 trial only. Same source engine, authored enemies, default sidegrades and fixed policies. VIT 0..100 compression is provisional pending allocation provenance. No live worker, RNG, reward or persistence parity. Pack policy is a legal scripted policy, not human behavior.":"Deterministic source-engine experiment; no live worker parity, no Shared Combat RNG/crit/dodge/penetration, no reward or persistence evidence. Raw and scaled are trial inputs, not V4.",builds:powerLab.builds.map(b=>({name:b.name,canonical:b.canonical.combat,v3:b.v3,upgrade:b.upgrade})),rows:pairs};
+    writeFileSync(powerP2?"artifacts/meaningful-power/commander-p2.json":"artifacts/meaningful-power/commander.json",JSON.stringify(report,null,2));
     console.table(pairs.map(r=>({build:r.profile,model:r.model,policy:r.policy,result:r.outcome,turns:r.activations,damage:r.damage,standing:r.squadStanding,alphaShare:r.alphaDirectDamageShare===null?"n/a":Math.round(100*r.alphaDirectDamageShare)+"%",error:r.error})));
     assert(pairs.every(r=>!r.error&&r.outcome!=="ongoing"),"Unresolved lab runs; inspect report, no balance pass claimed");
     console.log("LAB COMPLETE: report written; no production readiness claim");
