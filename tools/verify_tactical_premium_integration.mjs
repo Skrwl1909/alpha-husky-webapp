@@ -10,6 +10,37 @@ const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
 /**
+ * P3: exact presentation-only release based on merged Battlefield Clarity P2.
+ * Historical P1/P2 and earlier integrity checks remain unchanged.
+ */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.102-operation-consequence-p3")) {
+ const baseline="026eee33d51a296a2d2f876551ced092d7c01320";
+ const approved=Object.freeze({
+  "images/tactical_ops/presentation/operation-consequence-frame.webp": "512ff0a2a31a0cb6dc7276c37727bf8f47e79caf",
+  "js/boot_loaders.js": "80b87563feda9dd12d4a6cdd3fb1dc394c189450",
+  "js/tactical_ops.js": "cd0702789c93ffdbf3dd104233676910c99a58b2",
+  "tactical-ops-src/ui/FieldOpResults.tsx": "586de5ebd9302b1973d3ea5ff987c993f6141aa1",
+  "tactical-ops-src/ui/fieldOpResults.css": "acd0fb747918e56a2596c8ec362b75160eaa2323",
+  "tactical-ops-src/version.ts": "8d4b537d8ef57f9bd804c599b180174c3d641dad",
+  "tools/verify_field_op_results_premium.mjs": "6707ffc31b19ebc9685af693d2c230e8d6aaec88",
+  "tools/verify_tactical_after_action_impact.mjs": "cb085f3cc186c9e9953ce5397750dab79182e471",
+ });
+ const own="tools/verify_tactical_premium_integration.mjs";
+ try { git("cat-file","-e",baseline+"^{commit}"); }
+ catch { execFileSync("git",["fetch","--no-tags","--depth=1","origin",baseline],{stdio:"pipe"}); }
+ const paths=git("diff","--name-only","--no-renames",baseline,"HEAD").trim().split("\n").filter(Boolean);
+ assert.equal(paths.length,Object.keys(approved).length+1,"Unexpected P3 changed file count");
+ assert(paths.includes(own),"Missing P3 integrity check");
+ for(const p of paths)assert(p===own||Object.hasOwn(approved,p),"Unreviewed P3 path: "+p);
+ for(const [p,sha] of Object.entries(approved)){
+  assert(paths.includes(p),"Missing P3 release file: "+p);
+  assert.equal(git("rev-parse","HEAD:"+p).trim(),sha,"P3 release fingerprint mismatch: "+p);
+ }
+ console.log("PASS P3 exact artwork, source, test and bundle provenance from merged P2");
+ process.exit(0);
+}
+
+/**
  * Tactical Threat & Battlefield Clarity P2: exact presentation-only release,
  * anchored to the merged Premium Game Feel P1. Historical approvals unchanged.
  */
