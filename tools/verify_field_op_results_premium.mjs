@@ -171,7 +171,7 @@ try{
   cases.push({width,height,motion,scenario});
  }
  if(phase==='after'){
-  for(const width of [320,360,390,430,1280])for(const scenario of ['p3-step','p3-breakthrough','p3-clear','p3-recorded']){
+  for(const width of [320,360,390,430,768,1280])for(const scenario of ['p3-step','p3-breakthrough','p3-clear','p3-recorded']){
    await page.setViewportSize({width,height:width===1280?800:568});
    await page.emulateMedia({reducedMotion:'reduce'});
    await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=${scenario}`);
@@ -192,6 +192,19 @@ try{
     assert.match(artwork,/operation-consequence-frame\.webp/,'approved frame must be connected');
     assert.equal(await card.evaluate(e=>getComputedStyle(e,'::after').opacity),'0.95');
     assert.equal(await card.evaluate(e=>getComputedStyle(e,'::after').pointerEvents),'none');
+    const frame=await card.evaluate(e=>{
+     const s=getComputedStyle(e,'::after'), c=getComputedStyle(e);
+     return {w:parseFloat(s.width),h:parseFloat(s.height),cw:e.clientWidth,ch:e.clientHeight,
+      insets:[s.top,s.right,s.bottom,s.left],border:[s.borderTopWidth,s.borderRightWidth,s.borderBottomWidth,s.borderLeftWidth],
+      padding:[c.paddingTop,c.paddingRight,c.paddingBottom,c.paddingLeft],
+      z:s.zIndex,isolation:c.isolation,position:s.position};
+    });
+    assert(Math.abs(frame.w-frame.cw)<=1 && Math.abs(frame.h-frame.ch)<=1,
+      'nine-slice artwork must cover the entire card: '+JSON.stringify(frame));
+    assert.deepEqual(frame.insets,['0px','0px','0px','0px']);
+    assert.deepEqual([frame.z,frame.isolation,frame.position],['-1','isolate','absolute']);
+    assert(frame.padding.every((n,i)=>parseFloat(n)>parseFloat(frame.border[i])),
+      'content must sit inside the ornamental perimeter');
     const image=await page.evaluate(async path=>{
      const img=new Image();img.src=path;await img.decode();
      return [img.naturalWidth,img.naturalHeight];
