@@ -514,12 +514,14 @@
   color:var(--p3-title);font-size:19px;line-height:1.1;overflow-wrap:anywhere;
 }
 #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact .t-fr-pressure-change svg{color:var(--p3-accent)}
-@media(min-width:390px) and (forced-colors:none){
-  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact:is([data-impact-beat=breakthrough],[data-impact-beat=clear],[data-impact-kind=milestone])::after{
+/* P3.1: nine-slice frame preserves decorative corners on compact and tall cards.
+ * No width gate or fading mask; recorded-only states remain deliberately quiet. */
+@media(forced-colors:none){
+  #tacticalOpsRoot .t-field-results:not(.t-special-field-results) .t-fr-impact:is([data-impact-beat=step],[data-impact-beat=breakthrough],[data-impact-beat=clear],[data-impact-kind=milestone],[data-impact-kind=secured])::after{
     content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
-    width:auto;height:auto;border:0;border-radius:0;box-shadow:none;
-    background:url("/images/tactical_ops/presentation/operation-consequence-frame.webp") center top/100% auto no-repeat;
-    opacity:.34;mask-image:linear-gradient(to bottom,#000 0%,#0009 22%,transparent 85%);
+    box-sizing:border-box;border:18px solid transparent;
+    border-image: url("/images/tactical_ops/presentation/operation-consequence-frame.webp") 18% 9% / 18px stretch;
+    border-radius:0;box-shadow:none;background:none;opacity:.95;mask-image:none;
   }
 }
 @media(forced-colors:active){

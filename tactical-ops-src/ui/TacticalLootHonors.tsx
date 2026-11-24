@@ -103,7 +103,7 @@ export function TacticalLootReveal({result}:{result:LootParseResult}) {
       {celebrating ? <button type="button" className="t-loot-skip" onClick={() => setCelebrating(false)} aria-label="Skip reward animation">SKIP</button> : null}</div>
     {paid.length ? <div className="t-loot-currencies" aria-label="Confirmed currency rewards">{paid.map(reward=>{
       const Icon = currencyIcons[reward.kind];
-      return <div className="t-loot-currency" key={reward.kind}><Icon aria-hidden="true"/><strong>+{reward.amount.toLocaleString()}</strong><small>{currencyLabels[reward.kind]}</small></div>;
+      return <div className="t-loot-currency" data-reward={reward.kind} key={reward.kind}><Icon aria-hidden="true"/><span className="t-loot-currency-copy"><strong>+{reward.amount.toLocaleString()}</strong><small>{currencyLabels[reward.kind]}</small></span></div>;
     })}</div> : null}
     {equipment.length ? <div className="t-loot-items">{equipment.map(drop=><EquipmentCard key={drop.grantId} drop={drop}/>)}</div> : null}
     {unlocks.length ? <div className="t-loot-unlocks">{unlocks.map(grant=><PrestigeCard key={grant.grantId} grant={grant}/>)}</div> : null}

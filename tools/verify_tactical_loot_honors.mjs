@@ -90,7 +90,7 @@ try {
     args:['--no-sandbox','--disable-dev-shm-usage']});
   mkdirSync('artifacts/tactical-loot-honors',{recursive:true});
   const port=server.httpServer.address().port,snapshots=[];
-  for(const width of [320,390,430,1280]){
+  for(const width of [320,360,390,430,1280]){
     const page=await browser.newPage({viewport:{width,height:width===320?740:width===1280?900:844}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
@@ -104,6 +104,19 @@ try {
         const present=!['empty','duplicate','pending','defeat'].includes(name);
         assert.equal(await reveal.count(),present?1:0,'reveal state '+width+'/'+name);
         if(name==='duplicate')assert(await panel.getByText('RECEIPT PREVIOUSLY RECORDED').count()>0);
+        if(present){
+          for(const [kind,amount] of [['exp',8],['bones',16]]){
+            const tile=reveal.locator('.t-loot-currency[data-reward='+kind+']');
+            assert.equal(await tile.count(),1,'exactly one confirmed '+kind+' tile');
+            assert.equal(await tile.locator('strong').innerText(),'+'+amount);
+            assert.match(await tile.evaluate(e=>getComputedStyle(e).backgroundImage),new RegExp('reward_'+kind+'_plate\\.png'));
+            assert(await tile.evaluate(e=>e.scrollWidth<=e.clientWidth+1),'reward tile overflow');
+            const decoded=await page.evaluate(async kind=>{const img=new Image();img.src='/images/tactical_ops/presentation/reward_'+kind+'_plate.png';await img.decode();return img.naturalWidth>0&&img.naturalHeight>0;},kind);
+            assert(decoded,'approved reward plate decodes');
+          }
+          assert.equal(await reveal.locator('.t-loot-currency[data-reward=rune_dust]').count(),0,'zero reward remains hidden');
+          assert.equal(await reveal.locator('.t-loot-currency[data-reward=scrap]').count(),1,'Scrap stays visible');
+        }else assert.equal(await panel.locator('.t-loot-currency').count(),0,'no unconfirmed/replayed currency tiles');
         if(name==='empty')assert(await panel.getByText('NO NEW REWARDS RECORDED').count()>0);
         if(name==='comparison'){
           assert(await panel.locator('.t-loot-stats').getByText('+1').count()>0);
