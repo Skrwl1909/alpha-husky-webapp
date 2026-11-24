@@ -57,6 +57,7 @@ import { applyIdentityToAlpha } from "../host/identity";
 import { CommanderPortrait, PlayerIdentityCard, portraitFallback } from "./PlayerIdentity";
 import { operationArtwork, type ArtMission } from "./operationArtwork";
 import { confirmedRunCombatPower } from "./runCombatPower";
+import { authoritySupported } from "../host/operationAuthority";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -524,6 +525,30 @@ function WarTable() {
 
         </div> : null}
         {deckTab === "missions" ? <div className="t-command-pane" aria-label="Operations and field missions">
+        {operation ? <section className="t-panel t-wt-section" aria-label="Broken Signal story campaign">
+          <div className="t-wt-section-head">
+            <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 01</span><h2 className="t-title">BROKEN SIGNAL</h2></div>
+            <strong>{operation.status === "cleared" ? "SECURED" : "IN PROGRESS"}</strong>
+          </div>
+          <div className="t-brief-grid t-wt-canon-grid">
+            {BROKEN_SIGNAL.orderedMissionIds.map((id, index) => {
+              const mission = getMissionDef(id);
+              if (!mission) return null;
+              const status = operation.missions[id] || "locked";
+              const accepted = operation.activeMissionRun?.missionId === id;
+              const supported = authoritySupported(progression, id);
+              const playable = mission.executable && supported && (status === "available" || status === "cleared" || accepted);
+              return <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={id}>
+                <span className="t-kicker t-wt-story-type"><MissionEmblem mission={mission} /> MISSION {String(index + 1).padStart(2, "0")}</span>
+                <strong>{mission.name}</strong>
+                <small>{accepted ? "ACCEPTED" : status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
+                <button className="t-btn" type="button" disabled={loading || !playable || Boolean(operation.activeMissionRun && !accepted)} onClick={() => openOperationBrief(id)}>
+                  {accepted ? "RESUME" : status === "locked" ? "LOCKED" : !supported ? "SERVER SUPPORT REQUIRED" : status === "cleared" ? "REPLAY" : "VIEW BRIEF"}
+                </button>
+              </div>;
+            })}
+          </div>
+        </section> : null}
         {acceptedChapter && chapterView ? <section className="t-panel t-chapter-readout" aria-label="Server accepted doctrine chapter">
           <div className="t-kicker">CAMPAIGN CHAPTER · SERVER RECORDED</div>
           <h2 className="t-title">{chapterView.title}</h2>
