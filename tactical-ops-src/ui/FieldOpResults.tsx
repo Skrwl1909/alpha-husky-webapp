@@ -193,7 +193,7 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
     </section> : null}
     {majorUnlock && !award && !impact ? <div className="t-fr-major-unlock">{majorUnlock}</div> : null}
     {receipt && impact ? <section className="t-fr-consequence t-fr-impact" data-impact-kind={impact.kind} data-impact-beat={impact.beat} aria-label="Confirmed gameplay consequence">
-      <span className="t-fr-impact-overline">WHAT CHANGED</span>
+      <span className="t-fr-impact-overline">OPERATION CONSEQUENCE</span>
       <strong className="t-fr-impact-title">{progressOnly ? achievement : impact.title}</strong>
       {receipt.victory && impact.kind === "world" && receipt.regionalApplied &&
         Number.isInteger(receipt.pressureBefore) && Number.isInteger(receipt.pressureAfter) &&
@@ -201,9 +201,9 @@ export function FieldOpResults({ victory, missionName, plate, receipt, milestone
         receipt.pressureBefore !== receipt.pressureAfter ?
         <div className="t-fr-pressure-change" data-confirmed-pressure="true"
           aria-label={`Confirmed pressure ${receipt.pressureBefore} to ${receipt.pressureAfter}`}>
-          <span>PRESSURE <strong>{receipt.pressureBefore}</strong></span>
+          <span><small>PRESSURE · BEFORE</small><strong>{receipt.pressureBefore}</strong></span>
           <ArrowRight aria-hidden="true" />
-          <span>PRESSURE <strong>{receipt.pressureAfter}</strong></span>
+          <span><small>PRESSURE · AFTER</small><strong>{receipt.pressureAfter}</strong></span>
         </div> : null}
       <p>{progressOnly ? "Saved in your mission record." : impact.detail}</p>
     </section> : null}

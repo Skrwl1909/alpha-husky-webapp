@@ -25,6 +25,11 @@ if(['failure','pending','error','stale','missing','zero','rank4','veteran'].incl
 if(!['pending','error','stale'].includes(scenario))patch.fieldResult=r;
 if(scenario==='stale-mission')patch.fieldResult={...r,missionId:'field-relay-hold'};
 if(scenario==='unrecorded')patch.fieldResult=null;
+if(scenario.startsWith('p3-')){
+ const pair={'p3-step':[3,2],'p3-breakthrough':[2,1],'p3-clear':[1,0],'p3-recorded':[1,1]}[scenario];
+ if(pair)Object.assign(r,{victory:true,regionalApplied:scenario!=='p3-recorded',pressureBefore:pair[0],pressureAfter:pair[1],rankAfter:r.rankBefore,masteryChanges:[],veteranCareer:null,firstCycleSecure:false,progressEarned:0,progressAfter:r.progressBefore});
+ patch.fieldResult=r;
+}
 if(scenario.startsWith('payout-')){
  Object.assign(r,{xpGranted:8,bonesGranted:16,rewardAmountsAvailable:true});
  if(scenario==='payout-pending')Object.assign(patch,{fieldResult:null,progressionCommitPending:true});
@@ -166,6 +171,28 @@ try{
   cases.push({width,height,motion,scenario});
  }
  if(phase==='after'){
+  for(const width of [320,360,390,430,1280])for(const scenario of ['p3-step','p3-breakthrough','p3-clear','p3-recorded']){
+   await page.setViewportSize({width,height:width===1280?800:568});
+   await page.emulateMedia({reducedMotion:'reduce'});
+   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=${scenario}`);
+   const card=page.getByLabel('Confirmed gameplay consequence',{exact:true});await card.waitFor();
+   assert.equal(await card.count(),1);
+   assert.equal(await card.locator('.t-fr-impact-overline').innerText(),'OPERATION CONSEQUENCE');
+   const expected={'p3-step':['step','PRESSURE DOWN.','3','2'],'p3-breakthrough':['breakthrough','HOUND HELD BACK!','2','1'],'p3-clear':['clear','AREA CLEAR!','1','0'],'p3-recorded':[null,'WIN SAVED']}[scenario];
+   assert.equal(await card.getAttribute('data-impact-beat'),expected[0]);
+   assert.equal(await card.locator('.t-fr-impact-title').innerText(),expected[1]);
+   const delta=card.locator('.t-fr-pressure-change');
+   assert.equal(await delta.count(),scenario==='p3-recorded'?0:1);
+   if(scenario!=='p3-recorded')assert.deepEqual(await delta.locator('strong').allTextContents(),expected.slice(2));
+   assert(await card.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
+   assert.equal(await card.evaluate(e=>getComputedStyle(e,'::before').pointerEvents),'none');
+   await card.scrollIntoViewIfNeeded();await page.screenshot({path:`${out}/${width}-${scenario}.png`});
+   await page.emulateMedia({forcedColors:'active',reducedMotion:'reduce'});
+   assert(await card.evaluate(e=>e.scrollWidth<=e.clientWidth+1));
+   assert.equal(await card.evaluate(e=>getComputedStyle(e,'::after').content),'none');
+   await page.emulateMedia({forcedColors:'none',reducedMotion:'reduce'});
+   cases.push({width,scenario,p3:true});
+  }
   await page.setViewportSize({width:320,height:568});
   await page.goto(`http://127.0.0.1:${server.httpServer.address().port}/results-fixture?mode=results&profile=veteran&scenario=error`);
   await page.locator('.t-field-results').waitFor();

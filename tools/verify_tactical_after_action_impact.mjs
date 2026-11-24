@@ -63,6 +63,19 @@ try {
   assert(rewardStart > 0 && rewardStart < rewardBenefit && rewardBenefit < rewardAction && rewardAction < impactIndex,
     "confirmed Reach Rend must show its trade-off and action before the mission record");
   assert(ui.includes("{receipt && impact ?"), "unrecorded or stale runs cannot display confirmation");
+  const card = ui.slice(impactIndex, nextIndex);
+  assert(card.includes("OPERATION CONSEQUENCE"));
+  assert(card.includes('data-impact-kind={impact.kind}') && card.includes('data-impact-beat={impact.beat}'));
+  assert(card.includes('receipt.victory && impact.kind === "world" && receipt.regionalApplied'));
+  for (const key of ["pressureBefore", "pressureAfter"]) {
+    assert(card.includes("Number.isInteger(receipt."+key+")"));
+    assert(card.includes("receipt."+key+" >= 0"));
+  }
+  assert(card.includes("receipt.pressureBefore !== receipt.pressureAfter"));
+  assert(card.includes("PRESSURE · BEFORE") && card.includes("PRESSURE · AFTER"));
+  assert(card.includes("{progressOnly ? achievement : impact.title}"));
+  assert(card.includes('{progressOnly ? "Saved in your mission record." : impact.detail}'));
+  assert.equal((card.match(/OPERATION CONSEQUENCE/g)||[]).length,1);
   assert(ui.includes("change.veteran && (change.veteran.unlocked || change.veteran.after > change.veteran.before)"),
     "unchanged companion Veteran status must not repeat the same no-credit explanation");
   const css = readFileSync("tactical-ops-src/ui/fieldOpResults.css", "utf8");
