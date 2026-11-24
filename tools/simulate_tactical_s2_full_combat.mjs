@@ -11,6 +11,9 @@ globalThis.window={location:{search:"?tacticalBattlefieldVNext=1"},localStorage:
 const {createServer}=await import("vite");
 const vite=await createServer({configFile:false,server:{middlewareMode:true,hmr:false},appType:"custom"});
 const MAX_ACTIVATIONS=240;
+// Opt-in offline experiment only; not a runnable V4 contract.
+const powerLab=process.env.TACTICAL_POWER_LAB_INPUT ? JSON.parse(readFileSync(process.env.TACTICAL_POWER_LAB_INPUT,"utf8")) : null;
+if(powerLab)assert(!process.env.TACTICAL_SURVIVE_ACCEPTED&&!process.env.TACTICAL_SURVIVE_REVISION&&!process.env.TACTICAL_G1_MATRIX,"power lab must be isolated");
 const accepted = process.env.TACTICAL_SURVIVE_ACCEPTED
   ? JSON.parse(readFileSync(process.env.TACTICAL_SURVIVE_ACCEPTED,"utf8")) : null;
 const surviveRevision = accepted?.run.rulesContract?.missionRevision ?? Number(process.env.TACTICAL_SURVIVE_REVISION || 0);
@@ -72,7 +75,13 @@ try {
     const ready=skills.availableSkills(state,actor).filter(s=>s.ready);
     const cast=(skill,id)=>{
       const r=battle.trySkill(state,skill.id,id);
-      if(r.ok){stats.lastAction={before:state,after:r.state,actor:actor.id,skill:skill.id,target:id,events:r.events};stats.skillsUsed.add(skill.id);stats.evidence.push(...r.events.filter(e=>e.buildEvidence).map(e=>e.buildEvidence));}
+      if(r.ok){stats.lastAction={before:state,after:r.state,actor:actor.id,skill:skill.id,target:id,events:r.events};stats.skillsUsed.add(skill.id);stats.evidence.push(...r.events.filter(e=>e.buildEvidence).map(e=>e.buildEvidence));
+        if(powerLab){
+          stats.skillCounts[skill.id]=(stats.skillCounts[skill.id]||0)+1;
+          const dealt=state.units.filter(u=>u.team==="enemy"&&!u.defeated).reduce((n,u)=>n+Math.max(0,u.hp-(r.state.units.find(v=>v.id===u.id)?.hp??u.hp)),0);
+          stats.directDamage[actor.id]=(stats.directDamage[actor.id]||0)+dealt;
+        }
+      }
       return r;
     };
     if(g1 && actor.defId==="ally-02" && actor.growth?.discipline==="disruptor") {
@@ -174,11 +183,13 @@ try {
     const altered=sidegrades.withTeammateSidegrades(contracts.withFieldRend(spawns,context?.fieldRend),variants);
     const v3=accepted?.run.combatProfileV3 ?? {version:3,mode:"battle-v1",alpha:profile.alpha,
       pet:squad.some(x=>x.startsWith("pet:"))?{...pet,...profile.pet}:null};
-    const applied=profiles.applyRunCombatProfile(altered,v3,accepted?.run.combatProfileV2 ?? {pet:v3.pet});
+    const applied=powerLab&&profile.experimentalAlpha
+      ? altered.map(spawn=>spawn.defId==="alpha"?{...spawn,unitDef:{...(spawn.unitDef||defs.UNIT_DEFS.alpha),...profile.experimentalAlpha,gearImpactV31:undefined}}:spawn)
+      : profiles.applyRunCombatProfile(altered,powerLab?profile.v3:v3,accepted?.run.combatProfileV2 ?? {pet:v3.pet});
     const spec=ops.missionBattleRules(mission,false,context);
     const growth = !accepted && g1 && !profile.build?.noGrowth ? {version:2,revision:1,heroes:["alpha","ally-02","ally-03"].map((id,i)=>({heroId:id,discipline:profile.build.paths[i],ranks:Object.fromEntries((i===0?["alpha-strike","alpha-rend","alpha-howl"]:i===1?["u02-shot","u02-burst","u02-suppress"]:["u03-tap","u03-mend","u03-pack"]).map(id=>[id,2]))}))}:undefined;
     let state=battle.createBattle(null,applied,spec.objective,spec.reinforcement,null,spec.directive,accepted?.run.playerGrowth || growth);
-    const stats={lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
+    const stats={directDamage:{},skillCounts:{},lastAction:null,pending:[],controlActions:0,interrupts:0,evidence:[],moves:0,attacks:0,supportActions:0,objectiveActions:0,skips:0,enemyAttacks:0,positions:new Set(),skillsUsed:new Set(),telegraphs:0,counters:0,hostiles:0,roundProgress:[],blocked:0};
     const rounds = new Map();
     let reinforcementRound = null;
     let cycle=scheduler.emptyThreatCycle(),stall=0,previous="",error=null,activations=0;
@@ -270,14 +281,54 @@ try {
       }
     }
     const pacing = [...rounds.values()];
-    return {pressure:profile.pressure,approach:profile.approach,directiveSet:profile.directiveSet,
+    return {...(powerLab?{model:profile.model,alphaProfile:profile.experimentalAlpha||profile.v3.alpha,
+      directDamage:stats.directDamage,skillCounts:stats.skillCounts,remainingSquad:state.units.filter(u=>u.team==="ally").map(u=>({id:u.id,hp:u.hp,maxHp:u.maxHp,defeated:u.defeated}))}:{}),
+      pressure:profile.pressure,approach:profile.approach,directiveSet:profile.directiveSet,
       damage:state.damageTaken,reinforcementRound,threatFreeRounds:pacing.filter(r=>!r.enemyPresent).length,
       emptySkips:pacing.reduce((n,r)=>n+r.emptySkips,0),enemyDamageActions:pacing.reduce((n,r)=>n+r.attacks,0),
       quietRounds:pacing.filter(r=>!r.attacks&&!r.warnings&&!r.enemyMoves).length,
       ...(accepted ? {fieldReport:field.fieldReport(state)} : {}),
       pacing,build:profile.build?.name,tier:profile.tier,controlActions:stats.controlActions,interrupts:stats.interrupts,evidence:[...new Set(stats.evidence)].slice(0,8),missionId:mission.missionId,squad:squad.join("+"),profile:profile.name,policy,outcome:state.outcome,rounds:state.round,activations,error,hostiles:stats.hostiles,squadStanding:state.units.filter(u=>u.team==="ally"&&!u.defeated).length,moves:stats.moves,attacks:stats.attacks,skips:stats.skips,heals:stats.supportActions,objectiveActions:stats.objectiveActions,uniqueSkills:stats.skillsUsed.size,uniquePositions:stats.positions.size,objectiveProgress:state.objective?.type==="HOLD"||state.objective?.type==="SURVIVE"?state.objective.progress:null,telegraphs:stats.telegraphs,counters:stats.counters};
   }
-  if (accepted) {
+  if(powerLab){
+    assert.equal(powerLab.schema,"alpha-meaningful-power-input.v1");
+    assert.equal(powerLab.backendCommit,"ca9eec25a2bf6aa34bf550b76ed3c78578a2ab9f");
+    assert(Array.isArray(powerLab.builds)&&powerLab.builds.length>=6);
+    const mission=ops.getMissionDef("broken-signal-commander");
+    assert(mission,"Commander mission unavailable");
+    const squad=variants[0], rows=[];
+    for(const build of powerLab.builds){
+      const c=build.canonical.combat;
+      assert.equal(build.canonical.version,1);
+      assert(build.v3&&build.v3.version===3&&build.v3.pet===null);
+      const defenseEquivalent=50*c.baseDefenseReduction/(1-c.baseDefenseReduction);
+      // Controlled stress case, not Shared Combat parity: legacy tactical damage and initiative remain.
+      const raw={hp:c.maxHp,atk:c.attack,def:Math.round(defenseEquivalent),spd:14};
+      // Trial fixed-unit conversion: no level scaling or enemy stat matching.
+      // HP floor and attack floor preserve starting tactical affordances. Not approved balance.
+      const scaled={hp:120+Math.round(Math.max(0,c.maxHp-50)*.075),
+        atk:28+Math.round(Math.max(0,c.attack-1)*.28),def:12+Math.round(defenseEquivalent),spd:14};
+      for(const [model,experimentalAlpha] of [["v3-current",null],["canonical-raw-stress",raw],["canonical-fixed-scale-trial",scaled]]){
+        for(const policy of ["tempo","control"]){
+          rows.push(fullRun(mission,squad,{name:build.name,model,v3:build.v3,experimentalAlpha,alpha:build.v3.alpha},policy));
+        }
+      }
+    }
+    assert.equal(rows.length,powerLab.builds.length*6);
+    const pairs=rows.map(row=>{
+      const baseline=rows.find(r=>r.profile===row.profile&&r.policy===row.policy&&r.model==="v3-current");
+      const total=Object.values(row.directDamage).reduce((n,x)=>n+x,0);
+      return {...row,alphaDirectDamageShare:total?(row.directDamage.alpha||0)/total:null,
+        deltaActivations:row.activations-baseline.activations,deltaDamageTaken:row.damage-baseline.damage};
+    });
+    mkdirSync("artifacts/meaningful-power",{recursive:true});
+    const report={schema:"alpha-meaningful-power-lab.v1",backendCommit:powerLab.backendCommit,mission:"broken-signal-commander",
+      note:"Deterministic source-engine experiment; no live worker parity, no Shared Combat RNG/crit/dodge/penetration, no reward or persistence evidence. Raw and scaled are trial inputs, not V4.",builds:powerLab.builds.map(b=>({name:b.name,canonical:b.canonical.combat,v3:b.v3,upgrade:b.upgrade})),rows:pairs};
+    writeFileSync("artifacts/meaningful-power/commander.json",JSON.stringify(report,null,2));
+    console.table(pairs.map(r=>({build:r.profile,model:r.model,policy:r.policy,result:r.outcome,turns:r.activations,damage:r.damage,standing:r.squadStanding,alphaShare:r.alphaDirectDamageShare===null?"n/a":Math.round(100*r.alphaDirectDamageShare)+"%",error:r.error})));
+    assert(pairs.every(r=>!r.error&&r.outcome!=="ongoing"),"Unresolved lab runs; inspect report, no balance pass claimed");
+    console.log("LAB COMPLETE: report written; no production readiness claim");
+  } else if (accepted) {
     const {run} = accepted;
     const contract = wire.parseRunRulesContract(run.rulesContract);
     assert(contract && contract.missionId === run.missionId && wire.isSurviveMission(run.missionId));
