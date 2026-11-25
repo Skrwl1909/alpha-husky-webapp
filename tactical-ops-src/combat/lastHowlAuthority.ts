@@ -38,12 +38,14 @@ export type LastHowlView = Omit<RecoverView, "token"> & {
   eliteEntries: Cell[];
   reserveEntry: Cell | null;
   roster: Roster;
+  acceptedPower?: LastHowlSummary["acceptedPower"];
 };
 
 export type LastHowlSummary = {
   status: LastHowlView["status"] | null;
   runId: string | null;
   best: LastHowlScore | null;
+  acceptedPower?: {version: "tactical-power-projection-p2.v1"; projectionId: string; alpha: {hp:number;atk:number;def:number;spd:number}} | null;
 };
 
 type Roster = Pick<Parameters<typeof withTeammateSidegrades>[1], "kodaSidegrade" | "shadowSidegrade"> & {

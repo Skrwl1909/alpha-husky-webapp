@@ -33,6 +33,27 @@ function verifiedProfile(
   }
 }
 
+function directAcceptedPower(
+  progression: FoundationProgressionState,
+  runId: string,
+): ConfirmedCombatPower | null {
+  const sources: Array<{runId?: string | null; activeRunId?: string | null; acceptedPower?: AcceptedPower | null} | undefined> = [
+    progression.lastHowl, progression.counterstrike,
+  ];
+  for (const source of sources) {
+    if (!source || (source.runId !== runId && source.activeRunId !== runId)) continue;
+    const accepted = source.acceptedPower;
+    if (!accepted) continue;
+    return {
+      runId,
+      profile: {version: 3, mode: "battle-v1", alpha: accepted.alpha, pet: null},
+      petDeployed: false,
+      source: "meaningful-power",
+    };
+  }
+  return null;
+}
+
 /** No cross-run fallback, no derived RPG maths, no equipment-based recalculation. */
 export function confirmedRunCombatPower(
   progression: FoundationProgressionState | null | undefined,
@@ -47,6 +68,8 @@ export function confirmedRunCombatPower(
     if (profile) return { runId, profile, petDeployed: false };
   }
 
+  const direct = directAcceptedPower(progression, runId);
+  if (direct) return direct;
   const runs: Array<AcceptedRun | null | undefined> = [
     progression.fieldOps?.activeMissionRun,
     progression.chapterActiveMission,
@@ -61,7 +84,9 @@ export function confirmedRunCombatPower(
     if (run.acceptedPower === null) return null;
     if (run.acceptedPower) {
       const {gearImpactV31: _legacyGear, ...legacy} = profile;
-      return {runId, profile:{...legacy,alpha:run.acceptedPower.alpha},petDeployed:false,source:"meaningful-power"};
+      return {runId, profile:{...legacy,alpha:run.acceptedPower.alpha},
+        petDeployed: Boolean(profile.pet && run.squadIds.includes(`pet:${profile.pet.id}`)),
+        source:"meaningful-power"};
     }
     return {
       runId,

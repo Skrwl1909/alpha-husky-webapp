@@ -20,7 +20,7 @@ import { parseCombatProfileV2, type TacticalCombatProfileV2 } from "../combat/co
 import { parseCombatProfileV3, type TacticalCombatProfileV3 } from "../combat/combatProfileV3";
 import type { RecoverCommand, RecoverView } from "../combat/recoverAuthority";
 import {parseAuthority,ONLINE_OBJECTIVE,type RunAuthority} from './operationAuthority';
-import {parseAcceptedPower,type AcceptedPower} from "./acceptedPower";
+import {parseAcceptedPower,parseAcceptedPowerDisplay,type AcceptedPower} from "./acceptedPower";
 
 export type FoundationStage =
   | "solo-1"
@@ -463,7 +463,9 @@ function parseMissionCombatProfileV3(run: Record<string, unknown>, contract: Run
   const combatProfileV3 = parseCombatProfileV3(run.combatProfileV3);
   if (contract && !combatProfileV3) throw new FoundationProgressionError("invalid_combat_profile_v3");
   // Preserve a malformed declared binding as null, not as legacy V3 display.
-  const accepted = Object.prototype.hasOwnProperty.call(run, "commanderPower")
+  const accepted = Object.prototype.hasOwnProperty.call(run, "acceptedPower")
+    ? {acceptedPower: parseAcceptedPowerDisplay(run.acceptedPower)}
+    : Object.prototype.hasOwnProperty.call(run, "commanderPower")
     ? {acceptedPower:parseAcceptedPower(run.commanderPower,run.runId,run.missionId,run.squadIds)} : {};
   return { combatProfileV3, ...accepted };
 }

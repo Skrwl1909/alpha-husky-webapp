@@ -344,9 +344,9 @@ function WarTable() {
           {deadRelay.status !== "cleared" && deadRelayNextMissionId ? (
             <div className="t-wt-campaign-actions">
               <div><span className="t-kicker">NEXT STORY MISSION</span><strong>{getMissionDef(deadRelayNextMissionId)?.name || "THE DEAD RELAY"}</strong></div>
-              <button className="t-btn t-btn-primary t-wt-campaign-cta" type="button" disabled={loading}
+              <button className="t-btn t-btn-primary t-wt-campaign-cta" type="button" disabled={loading || !authoritySupported(progression, deadRelayNextMissionId)}
                 onClick={() => openOperationBrief(deadRelayNextMissionId)}>
-                {deadRelay.activeMissionRun?.missionId ? "RESUME CAMPAIGN" : "CONTINUE CAMPAIGN"}
+                {!authoritySupported(progression, deadRelayNextMissionId) ? "SERVER SUPPORT REQUIRED" : deadRelay.activeMissionRun?.missionId ? "RESUME CAMPAIGN" : "CONTINUE CAMPAIGN"}
               </button>
             </div>
           ) : null}
@@ -361,8 +361,8 @@ function WarTable() {
                 <span className="t-kicker t-wt-story-type"><MissionEmblem mission={mission} /> MISSION {String(index + 1).padStart(2, "0")} · {mission.objectiveType}</span>
                 <strong>{mission.name}</strong>
                 <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
-                <button type="button" className="t-btn" disabled={loading || status === "locked"}
-                  onClick={() => openOperationBrief(id)}>{active ? "RESUME FROM START" : status === "cleared" ? "REPLAY" : status === "available" ? "VIEW BRIEF" : "LOCKED"}</button>
+                <button type="button" className="t-btn" disabled={loading || status === "locked" || !authoritySupported(progression, id)}
+                  onClick={() => openOperationBrief(id)}>{status === "locked" ? "LOCKED" : !authoritySupported(progression, id) ? "SERVER SUPPORT REQUIRED" : active ? "RESUME FROM START" : status === "cleared" ? "REPLAY" : "VIEW BRIEF"}</button>
               </div>;
             })}
           </div>
@@ -682,14 +682,15 @@ function WarTable() {
               const mission = getMissionDef(missionId);
               if (!mission) return null;
               const status = operation?.missions[missionId] || "locked";
-              const isPlayable = mission.executable && (status === "available" || status === "cleared");
+              const supported = authoritySupported(progression, missionId);
+              const isPlayable = mission.executable && supported && (status === "available" || status === "cleared");
               return (
                 <div className={`t-panel t-brief-block t-story-mission is-${status}`} key={missionId}>
                   <span className="t-kicker t-wt-story-type"><MissionEmblem mission={mission} /> MISSION {String(index + 1).padStart(2, "0")}</span>
                   <strong>{mission.name}</strong>
                   <small>{status === "cleared" ? "CLEARED" : status === "available" ? "AVAILABLE" : "LOCKED"}</small>
                   <button type="button" className="t-btn" disabled={!isPlayable} onClick={() => openOperationBrief(missionId)}>
-                    {status === "cleared" ? "REPLAY" : status === "available" ? "VIEW BRIEF" : "LOCKED"}
+                    {!supported && status !== "locked" ? "SERVER SUPPORT REQUIRED" : status === "cleared" ? "REPLAY" : status === "available" ? "VIEW BRIEF" : "LOCKED"}
                   </button>
                 </div>
               );
