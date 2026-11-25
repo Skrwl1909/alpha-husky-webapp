@@ -5620,18 +5620,17 @@ body.missions-open{
     height: 25px;
     flex: 0 0 25px;
     color: #bbd3e1;
-    background: currentColor;
-    -webkit-mask: var(--ah-nav-icon) center / contain no-repeat;
-    mask: var(--ah-nav-icon) center / contain no-repeat;
+    background: var(--ah-nav-icon) center / contain no-repeat;
     opacity: .92;
+    transition: filter .12s ease, opacity .12s ease;
   }
 
-  /* Reuse Alpha Husky's original Hub V2 vector glyphs; no platform emoji. */
-  .ah-navbtn[data-go="map"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/war-map.svg'); }
-  .ah-navbtn[data-go="missions"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/tactical-ops.svg'); }
-  .ah-navbtn[data-go="tactical_ops"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/scan.svg'); }
-  .ah-navbtn[data-go="quests"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/story.svg'); }
-  .ah-navbtn[data-go="hub"] .ah-ico{ --ah-nav-icon: url('/assets/icons/hub_v2/home.svg'); }
+  /* Premium Navigation V1: dedicated full-color vector glyphs; no platform emoji. */
+  .ah-navbtn[data-go="map"] .ah-ico{ --ah-nav-icon: url('/assets/icons/navigation_v1/map.svg?v=1'); }
+  .ah-navbtn[data-go="missions"] .ah-ico{ --ah-nav-icon: url('/assets/icons/navigation_v1/missions.svg?v=1'); }
+  .ah-navbtn[data-go="tactical_ops"] .ah-ico{ --ah-nav-icon: url('/assets/icons/navigation_v1/tactical.svg?v=1'); }
+  .ah-navbtn[data-go="quests"] .ah-ico{ --ah-nav-icon: url('/assets/icons/navigation_v1/quests.svg?v=1'); }
+  .ah-navbtn[data-go="hub"] .ah-ico{ --ah-nav-icon: url('/assets/icons/navigation_v1/hub.svg?v=1'); }
 
   .ah-navbtn .ah-lbl{
     font-size: 10.5px;
@@ -5655,6 +5654,11 @@ body.missions-open{
   .ah-navbtn.ah-primary .ah-ico{
     color: #8ce7ff;
     opacity: 1;
+    filter: brightness(1.12) drop-shadow(0 0 3px rgba(105,219,245,.28));
+  }
+  .ah-navbtn:active .ah-ico{ filter: brightness(1.22); }
+  @media (prefers-reduced-motion: reduce){
+    .ah-navbtn .ah-ico{ transition: none; }
   }
 
   /* Primary destination: Tactical Ops (not an always-active selected state). */
