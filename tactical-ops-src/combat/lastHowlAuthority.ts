@@ -1,6 +1,7 @@
 import { advanceToNext, createBattle, deployHostiles } from "./battle";
 import { scaleCell } from "./battlefieldTopology";
 import { applyRunCombatProfile, type TacticalCombatProfileV3 } from "./combatProfileV3";
+import {workerProfile,type FrozenPower} from "./frozenPowerWorker";
 import type { TacticalCombatProfileV2 } from "./combatProfile";
 import { getStatusSequence, resetStatusSeq } from "./effects";
 import { selectAcceptedIntentRules, TACTICAL_VNEXT_RULESET } from "./intentContract";
@@ -121,7 +122,7 @@ function reserveSpawn(cell: Cell, wave: number, number: number): SpawnSpec {
   };
 }
 
-export function stepLastHowl(run: Encounter, saved?: Snapshot, command?: RecoverCommand) {
+export function stepLastHowl(run: Encounter, saved?: Snapshot, command?: RecoverCommand, power?:FrozenPower) {
   const rules = { rulesetVersion: TACTICAL_VNEXT_RULESET };
   selectAcceptedBattleRules(rules);
   selectAcceptedIntentRules(rules);
@@ -133,7 +134,7 @@ export function stepLastHowl(run: Encounter, saved?: Snapshot, command?: Recover
     battle = saved.battle;
   } else {
     if (!run.activeCombatProfileV3) throw Error("invalid_last_howl_profile");
-    const allies = applyRunCombatProfile(roster, run.activeCombatProfileV3, run.combatProfileV2);
+    const allies = applyRunCombatProfile(roster, workerProfile(run.activeCombatProfileV3,power), run.combatProfileV2);
     battle = createBattle(null, [...allies, ...waveRoster(run.seed, 1)], null, null, null, null, run.playerGrowth);
   }
   let cycle = saved?.cycle ?? emptyThreatCycle();
