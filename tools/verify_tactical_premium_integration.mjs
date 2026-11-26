@@ -10,8 +10,8 @@ const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
 /** Final owner-hold RC: exact reviewed tree extension; historical gates stay pinned. */
-if (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.106-war-table-v2-rc')) {
- const expected='97699b1d9628f06818bf50295114019f7be3182d';
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.107-final-release-closure')) {
+ const expected='813d3bdfd89c6db2353dcbde3dd29e0a808f9544';
  assert.equal(git('rev-parse','HEAD:tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper commit mismatch');
  assert.equal(git('hash-object','--path=tools/verify_tactical_final_provenance.mjs','tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper working mismatch');
  const {verifyFinalProvenance}=await import('./verify_tactical_final_provenance.mjs');

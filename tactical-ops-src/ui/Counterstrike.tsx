@@ -1,3 +1,4 @@
+import {parseAcceptedPowerDisplay} from "../host/acceptedPower";
 import {useBattleStore} from "../store/battleStore";
 import {COUNTERSTRIKE_MISSION} from "../data/counterstrike";
 import {getMissionDef} from "../data/operations";
@@ -27,6 +28,7 @@ export function CounterstrikeBrief(){
  const selected=useBattleStore(s=>s.selectedSquadIds);
  const pet=useBattleStore(s=>s.progression?.equippedPet);
  const toggle=useBattleStore(s=>s.toggleCommanderTeammate),deploy=useBattleStore(s=>s.deployCounterstrike),back=useBattleStore(s=>s.backToHub);
+ const acceptedPower=parseAcceptedPowerDisplay(summary?.acceptedPower);
  const reconApplied=summary?.intelStatus==="APPLIED";
  const reconLabel=reconApplied?(summary?.activeRunId?"RECON APPLIED":"RECON READY"):
   summary?.intelStatus==="PREVIOUSLY_CONSUMED"?"RECON SPENT":"NO RECON";
@@ -46,9 +48,9 @@ export function CounterstrikeBrief(){
    <div className="t-counterstrike-intel-status" role="status" aria-label="Counterstrike deployment intel">
     <span>{reconLabel}</span><span>HOUND · {houndRounds}</span>
    </div>
-   {summary?.activeRunId && summary.acceptedPower ? <dl className="t-run-power-inline" aria-label="Server-confirmed combat power" data-power-source="accepted-meaningful-power">
+   {summary?.activeRunId && acceptedPower ? <dl className="t-run-power-inline" aria-label="Server-confirmed combat power" data-power-source="accepted-meaningful-power">
     <div><dt>POWER V1 (TEST)</dt><dd>LOCKED</dd></div>
-    {(["hp","atk","def","spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{summary.acceptedPower!.alpha[stat]}</dd></div>)}
+    {(["hp","atk","def","spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{acceptedPower.alpha[stat]}</dd></div>)}
    </dl> : null}
    <div className="t-counterstrike-squad-heading"><strong>YOUR SQUAD</strong><span>{selected.length}/3 SELECTED</span></div>
    <div className="t-counterstrike-companions" role="group" aria-label="False Relay companions">{[["ally-02","CNC"],["ally-03","SHADOW"],...(pet?[["pet:"+pet.id,pet.name]]:[])].map(([id,name])=>

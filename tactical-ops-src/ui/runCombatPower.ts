@@ -2,7 +2,7 @@
 import { parseCombatProfileV3, type TacticalCombatProfileV3 } from "../combat/combatProfileV3";
 import type { TacticalCombatProfileV2 } from "../combat/combatProfile";
 import type { FoundationProgressionState } from "../host/foundationProgression";
-import type { AcceptedPower } from "../host/acceptedPower";
+import { parseAcceptedPowerDisplay, type AcceptedPower } from "../host/acceptedPower";
 
 type AcceptedRun = {
   runId: string;
@@ -42,7 +42,7 @@ function directAcceptedPower(
   ];
   for (const source of sources) {
     if (!source || (source.runId !== runId && source.activeRunId !== runId)) continue;
-    const accepted = source.acceptedPower;
+    const accepted = parseAcceptedPowerDisplay(source.acceptedPower);
     if (!accepted) continue;
     return {
       runId,

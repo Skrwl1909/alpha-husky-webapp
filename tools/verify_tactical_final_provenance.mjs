@@ -13,7 +13,13 @@ const own='tools/verify_tactical_premium_integration.mjs';
 const helper='tools/verify_tactical_final_provenance.mjs';
 const reviewed={
   "tools/verify_final_power_gameplay.mjs": "3e11f47fea11d68952ad432def37b5f60a80c441",
-  "tools/verify_final_release_contracts.mjs": "961f23321f81391b8330c17157e0e0954c47f42a"
+  "tools/verify_final_release_contracts.mjs": "764b21281c024f36e9c447be736ea24176aa32bf",
+  "tactical-ops-src/ui/runCombatPower.ts": "161af259be2dc490a5e91a2dd04a7eff2e6382df",
+  "tactical-ops-src/ui/LastHowl.tsx": "63d7c4b6261ff98d6dc64d22b8122375d15708e5",
+  "tactical-ops-src/ui/Counterstrike.tsx": "5ca3d8314eb5424aa583ae70eab71e74ca5284c5",
+  "tactical-ops-src/version.ts": "2a0d561f87dc88599360c3491eba0b7b0d69fe90",
+  "js/tactical_ops.js": "b5aa56c0fe3f66db1f26dd3e034b587eaec6c756",
+  "js/boot_loaders.js": "f9dd4c99b990696b8bd16603f675ed72cab45dc8"
 };
 const chain=[
   [
@@ -44,7 +50,7 @@ const chain=[
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:32*1024*1024}).trim();
 export function finalBlock(sha){
  assert.match(sha,/^[a-f0-9]{40}$/);
- return `\n/** Final owner-hold RC: exact reviewed tree extension; historical gates stay pinned. */\nif (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.106-war-table-v2-rc')) {\n const expected='${sha}';\n assert.equal(git('rev-parse','HEAD:${helper}').trim(),expected,'final helper commit mismatch');\n assert.equal(git('hash-object','--path=${helper}','${helper}').trim(),expected,'final helper working mismatch');\n const {verifyFinalProvenance}=await import('./verify_tactical_final_provenance.mjs');\n verifyFinalProvenance(expected);\n process.exit(0);\n}\n`;
+ return `\n/** Final owner-hold RC: exact reviewed tree extension; historical gates stay pinned. */\nif (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.107-final-release-closure')) {\n const expected='${sha}';\n assert.equal(git('rev-parse','HEAD:${helper}').trim(),expected,'final helper commit mismatch');\n assert.equal(git('hash-object','--path=${helper}','${helper}').trim(),expected,'final helper working mismatch');\n const {verifyFinalProvenance}=await import('./verify_tactical_final_provenance.mjs');\n verifyFinalProvenance(expected);\n process.exit(0);\n}\n`;
 }
 export function verifyFinalProvenance(expectedHelper){
  assert.equal(git('rev-parse',BASE+'^{tree}'),BASE_TREE,'protected candidate tree');
@@ -77,6 +83,6 @@ export function verifyFinalProvenance(expectedHelper){
   git('worktree','remove',checkout);
   rmdirSync(parent);
  }
- console.log('PASS final provenance: protected and intermediate trees, exact extension, unchanged runtime/art/cache, historical mandatory gate');
+ console.log('PASS final provenance: protected and intermediate trees, exact extension, exact reviewed display fix/bundle/cache and unchanged artworks, historical mandatory gate');
 }
 function requireSeparator(){return process.platform==='win32'?'\\':'/';}
