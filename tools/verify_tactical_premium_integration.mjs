@@ -9,6 +9,17 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** Final owner-hold RC: exact reviewed tree extension; historical gates stay pinned. */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.106-war-table-v2-rc')) {
+ const expected='0e0b94b63058a6f51ec9190030868cabc1efeb29';
+ assert.equal(git('rev-parse','HEAD:tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper commit mismatch');
+ assert.equal(git('hash-object','--path=tools/verify_tactical_final_provenance.mjs','tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper working mismatch');
+ const {verifyFinalProvenance}=await import('./verify_tactical_final_provenance.mjs');
+ verifyFinalProvenance(expected);
+ process.exit(0);
+}
+
+
 /** P3.2: exact descendant of the accepted release chain, with pinned generated artifacts. */
 if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.104-consequence-frame-fit-p32")) {
  const verifier="tools/verify_tactical_p32_provenance.mjs";
