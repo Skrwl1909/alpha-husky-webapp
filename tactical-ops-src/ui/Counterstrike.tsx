@@ -46,6 +46,10 @@ export function CounterstrikeBrief(){
    <div className="t-counterstrike-intel-status" role="status" aria-label="Counterstrike deployment intel">
     <span>{reconLabel}</span><span>HOUND · {houndRounds}</span>
    </div>
+   {summary?.activeRunId && summary.acceptedPower ? <dl className="t-run-power-inline" aria-label="Server-confirmed combat power" data-power-source="accepted-meaningful-power">
+    <div><dt>POWER V1 (TEST)</dt><dd>LOCKED</dd></div>
+    {(["hp","atk","def","spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{summary.acceptedPower!.alpha[stat]}</dd></div>)}
+   </dl> : null}
    <div className="t-counterstrike-squad-heading"><strong>YOUR SQUAD</strong><span>{selected.length}/3 SELECTED</span></div>
    <div className="t-counterstrike-companions" role="group" aria-label="False Relay companions">{[["ally-02","CNC"],["ally-03","SHADOW"],...(pet?[["pet:"+pet.id,pet.name]]:[])].map(([id,name])=>
     <button key={id} className="t-btn" disabled={busy||!!summary?.activeRunId} aria-pressed={selected.includes(id)} onClick={()=>toggle(id)}>{name}</button>)}</div>

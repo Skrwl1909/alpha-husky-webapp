@@ -16,7 +16,7 @@ export function LastHowlCard() {
   if (!summary) return null;
   const active = summary.status === "ACTIVE";
   return <section className="t-panel t-last-howl-card t-cdv2-operation" aria-label="Last Howl" data-run-status={active ? "active" : "ready"}>
-    <img className="t-cdv2-operation-scene" src="/images/tactical_ops/presentation/command_deck/operations/alpha_wartable_fracture_front_v1.webp" alt="" aria-hidden="true" loading="eager" decoding="async" />
+    <img className="t-cdv2-operation-scene" src="/images/tactical_ops/presentation/war_table_v2/war_table_last_howl_v1.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" onError={event => { const image = event.currentTarget; if (image.dataset.fallback) image.hidden = true; else { image.dataset.fallback = "1"; image.src = "/images/tactical_ops/presentation/command_deck/operations/alpha_wartable_fracture_front_v1.webp"; } }} />
     <div className="t-cdv2-operation-content">
       <div className="t-cdv2-operation-top"><span className="t-cdv2-overline">ENDLESS PROTOCOL <i aria-hidden="true" /> {active ? "RUN ACTIVE" : "SURVIVAL OPERATION"}</span>
         <img src="/images/tactical_ops/presentation/command_deck/mission_emblems/alpha_emblem_survive_v1_256.webp" alt="" aria-hidden="true" decoding="async" />
@@ -29,6 +29,10 @@ export function LastHowlCard() {
         <span className="t-cdv2-record-badge">{active ? "IN PROGRESS" : (summary as { rewardsVersion?: number }).rewardsVersion === 1 ? "WEEKLY SUPPLY" : "ENDLESS RUN"}</span>
       </div>
       <p className="t-cdv2-build-note">{active ? "Resume with the build saved at deployment." : "New deployment · uses your current saved skills."}</p>
+      {active && summary.acceptedPower ? <dl className="t-run-power-inline" aria-label="Server-confirmed combat power" data-power-source="accepted-meaningful-power">
+        <div><dt>POWER V1 (TEST)</dt><dd>LOCKED</dd></div>
+        {(["hp","atk","def","spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{summary.acceptedPower!.alpha[stat]}</dd></div>)}
+      </dl> : null}
     </div>
     <div className="t-last-howl-actions t-cdv2-operation-actions">
       <button type="button" className="t-btn t-btn-primary" disabled={busy}
@@ -60,6 +64,9 @@ export function LastHowlHud({ view }: { view: LastHowlView }) {
   const pet = squad.find(unit => unit.defId.startsWith("pet:") && (unit.recoverRange ?? 1) > 1);
   return <div className="t-hud-card t-last-howl-hud" data-wave={view.wave}>
     <div className="t-last-howl-stats"><b>WAVE {view.wave}</b><b>KILLS {view.kills}</b><span>SQUAD {standing}/{squad.length}</span></div>
+    {view.acceptedPower ? <dl className="t-run-power-inline" aria-label="Server-confirmed combat power" data-power-source="accepted-meaningful-power">
+      {(["hp","atk","def","spd"] as const).map(stat => <div key={stat}><dt>{stat.toUpperCase()}</dt><dd>{view.acceptedPower!.alpha[stat]}</dd></div>)}
+    </dl> : null}
     {pet && view.wave === 1 ? <small>PET · {buildIdentity(pet, undefined, false)}</small> : null}
     <div className="t-last-howl-controls">
       <small>{eliteSignal ? "ELITE SIGNAL DETECTED" : `NEXT ELITE ${view.nextElite}`}</small>

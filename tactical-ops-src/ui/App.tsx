@@ -58,6 +58,7 @@ import { CommanderPortrait, PlayerIdentityCard, portraitFallback } from "./Playe
 import { operationArtwork, type ArtMission } from "./operationArtwork";
 import { confirmedRunCombatPower } from "./runCombatPower";
 import { authoritySupported } from "../host/operationAuthority";
+import { WarTableArt, WarTableCategories, WarTableCategoryHeading, WarTablePlate, type WarTableCategory } from "./WarTableVisual";
 
 const PRESENTATION = {
   startHero: "/images/tactical_ops/presentation/tactical_ops_start_hero_backdrop.png",
@@ -264,6 +265,25 @@ function holdBrief(progression: FoundationProgressionState | null) {
 
 function WarTable() {
   const [deckTab, setDeckTab] = useState<"command" | "missions" | "squad" | "archive">("command");
+  // Category selection is presentation state only; it never starts or accepts a run.
+  const [operationCategory, setOperationCategory] = useState<WarTableCategory | null>(null);
+  const deckRef = useRef<HTMLDivElement>(null);
+  const categoryFocus = useRef(false);
+  const browseCategory = (category: WarTableCategory | null) => {
+    categoryFocus.current = true;
+    setOperationCategory(category);
+    setDeckTab("missions");
+  };
+  useEffect(() => {
+    if (deckTab !== "missions" || !categoryFocus.current) return;
+    categoryFocus.current = false;
+    const target = deckRef.current?.querySelector<HTMLElement>("[data-wtv2-destination]");
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: "start", behavior: "auto" });
+  }, [deckTab, operationCategory]);
+  const showCampaign = operationCategory === null || operationCategory === "campaign";
+  const showChallenges = operationCategory === null || operationCategory === "challenges";
+  const showFieldOps = operationCategory === null || operationCategory === "field-ops";
   const [squadView, setSquadView] = useState<"skillbook" | "mastery">("skillbook");
   const [atlasTarget, setAtlasTarget] = useState<ReturnType<typeof availableAtlasUpgrade>>(null);
   const atlasVisible = deckTab === "squad" && squadView === "skillbook";
@@ -334,6 +354,9 @@ function WarTable() {
       ? "RECOVER SIGNAL CLEARED · SIGNAL COMMANDER AVAILABLE"
       : "BREACH CLEARED · RECOVER SIGNAL UNLOCKED";
 
+  const carrierJamEntry = field?.carrierJamAvailable && progression?.vnextStartAvailable && !field.activeMissionRun ?
+    <button type="button" className="t-btn" onClick={() => useBattleStore.getState().openOperationBrief("field-relay-recovery", undefined, undefined, true)}>RELAY RECOVERY · CARRIER JAM</button> : null;
+
   const deadRelayCampaign = deadRelay ? <section className={`t-panel ${deadRelay.status === "cleared" ? "t-wt-story-archive" : "t-wt-campaign-feature"}`} aria-label="Operation 02 campaign">
           <div className="t-wt-section-head">
             <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 02</span><h2 className="t-title">THE DEAD RELAY</h2></div>
@@ -373,10 +396,12 @@ function WarTable() {
     <div className="t-fill">
       <Background dim={0.5} art={PRESENTATION.startHero} className="t-bg-hero" />
       <div className="t-vignette" />
-      <div className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux t-command-deck-v3 t-command-deck-v4" style={{ maxWidth: "64rem" }}>
-        <header className="t-panel t-wt-hero t-wt-hero-compact">
+      <div ref={deckRef} className="t-brief t-war-table-premium t-war-table-v29 t-command-art-shell t-premium-ux t-command-deck-v3 t-command-deck-v4 t-war-table-visual-v2" style={{ maxWidth: "64rem" }}>
+        <header className="t-panel t-wt-hero t-wt-hero-compact t-wtv2-hero">
+          <WarTableArt asset="command" eager />
           <div className="t-wt-branding">
-            <div className="t-kicker">Alpha Husky / Tactical Ops</div>
+            <div className="t-kicker t-wtv2-kicker">ALPHA HUSKY / ERA II</div>
+            <div className="t-wtv2-wordmark">THE WAR TABLE</div>
             <h1 className="t-title t-wt-title">TACTICAL OPS</h1>
             {progressionError && !atlasVisible ? <p className="t-wt-error" role="alert">{progressionError}</p> : null}
             {missionFirstClear ? <p className="t-wt-highlight">{firstClearMessage}</p> : null}
@@ -390,12 +415,12 @@ function WarTable() {
         <nav className="t-command-nav t-command-framed-nav" aria-label="Tactical command sections">
           {([
             ["command", "01", "COMMAND"],
-            ["missions", "02", "MISSIONS"],
+            ["missions", "02", "OPERATIONS"],
             ["squad", "03", "SQUAD"],
-            ["archive", "04", "ARCHIVE"],
+            ["archive", "04", "LEGACY"],
           ] as const).map(([id, index, label]) => (
             <button type="button" key={id} className={deckTab === id ? "is-current" : ""}
-              aria-pressed={deckTab === id} onClick={() => { setAtlasTarget(null); setDeckTab(id); }}>
+              aria-pressed={deckTab === id} onClick={() => { setAtlasTarget(null); setOperationCategory(null); setDeckTab(id); }}>
               <span>{index}</span><strong>{label}</strong>
             </button>
           ))}
@@ -449,6 +474,7 @@ function WarTable() {
             </div>
           </section>;
         })() : <p role="status">Refresh to see available operations.</p>}
+        <WarTableCategories onBrowse={browseCategory} />
         {progression?.lastHowl?.status !== "ACTIVE" ? <LastHowlCard /> : null}
         <TacticalHonorsCollection />
         <section className="t-command-progress t-cdv2-command-status" aria-label="Commander progress" data-veteran-career={veteranCareer ? "true" : undefined}>
@@ -470,7 +496,7 @@ function WarTable() {
         </section>
         <section className="t-cdv2-front-intel" aria-label="Current front intelligence">
           {field?.board && rotationProgress ? (
-            <button type="button" className="t-premium-front-link" onClick={() => setDeckTab("missions")}>
+            <button type="button" className="t-premium-front-link" onClick={() => { setOperationCategory(null); setDeckTab("missions"); }}>
               <span><strong>FRONT STATUS</strong><small>{rotationProgress.securedCount}/{rotationProgress.total} FIELD OPS SECURED · {rotationProgress.challengeMissionIds.length} CHALLENGES</small></span>
               <span>VIEW MISSIONS <ChevronRight className="t-ico" /></span>
             </button>
@@ -525,6 +551,11 @@ function WarTable() {
 
         </div> : null}
         {deckTab === "missions" ? <div className="t-command-pane" aria-label="Operations and field missions">
+        {operationCategory ? <WarTableCategoryHeading category={operationCategory} onBack={() => browseCategory(null)} />
+          : <WarTableCategories onBrowse={browseCategory} destination />}
+        {showCampaign ? <>
+        {operationCategory === "campaign" && progression?.counterstrike ? <CounterstrikeCard /> : null}
+        {operationCategory === "campaign" && !operation && !deadRelay && !acceptedChapter && !progression?.counterstrike ? <p className="t-wtv2-empty" role="status">Campaign information is not available. Refresh Tactical Ops to sync.</p> : null}
         {operation ? <section className="t-panel t-wt-section" aria-label="Broken Signal story campaign">
           <div className="t-wt-section-head">
             <div><span className="t-kicker">STORY CAMPAIGN · OPERATION 01</span><h2 className="t-title">BROKEN SIGNAL</h2></div>
@@ -562,7 +593,19 @@ function WarTable() {
           <small>{acceptedChapter.status === "AVAILABLE" ? "Doctrine selection becomes playable only after the server exposes a verified choice action. No client-only selection." : "Mission progress advances only on the next accepted server receipt. Existing Field Ops can still be played normally."}</small>
         </section> : null}
 
-        {deadRelay?.status !== "cleared" ? deadRelayCampaign : null}
+        {deadRelay?.status !== "cleared" || operationCategory === "campaign" ? deadRelayCampaign : null}
+        </> : null}
+        {showChallenges ? <>
+        {operationCategory === "challenges" ? <section className="t-panel t-wtv2-challenge-access" aria-label="Field challenges">
+          <span className="t-kicker">FIELD CHALLENGES</span>
+          <h2 className="t-title">SPECIAL OPERATIONS</h2>
+          {carrierJamEntry}
+          <p>Check the active Field Ops for objective challenges and eligible deployments. Review your contracts and advanced opportunities in Command.</p>
+          <div className="t-wtv2-link-row">
+            <button type="button" className="t-btn" onClick={() => browseCategory("field-ops")}>VIEW FIELD OPS</button>
+            <button type="button" className="t-btn" onClick={() => { setOperationCategory(null); setDeckTab("command"); deckRef.current?.scrollTo({ top: 0 }); }}>COMMAND RECORDS</button>
+          </div>
+        </section> : null}
         {trials?.enabled ? <section className="t-panel t-wt-section" aria-label="Relay Pressure levels">
           <div className="t-wt-section-head"><div><span className="t-kicker">SIX TACTICAL TESTS</span><h2 className="t-title">SIGNAL TRIALS</h2></div><strong>{trials.highestCleared}/6</strong></div>
           <div className="t-brief-grid t-wt-canon-grid">{Array.from({length:6},(_,i)=>i+1).map(level=>{
@@ -572,9 +615,8 @@ function WarTable() {
             return <div className="t-panel t-brief-block" key={level}><span className="t-kicker">TRIAL {String(level).padStart(2,"0")}</span><strong>{mission.name}</strong><small>{level<=trials.highestCleared?"CLEARED":accepted?"ACCEPTED":unlocked?"AVAILABLE":"LOCKED"}</small><p>{mission.squadHint}</p><button className="t-btn" type="button" disabled={!unlocked||loading||Boolean(trials.activeRun&&!accepted)} onClick={()=>openTrialBrief(level)}>{accepted?"RESUME":level<=trials.highestCleared?"REPLAY":"VIEW BRIEF"}</button></div>;
           })}</div>
         </section>:null}
-
-
-        <section className="t-panel t-wt-section t-wt-current-ops t-cd-current-ops" aria-label="Current Field Ops">
+        </> : null}
+        {showFieldOps ? <section className="t-panel t-wt-section t-wt-current-ops t-cd-current-ops" aria-label="Current Field Ops">
           <div className="t-wt-section-head">
             <div>
               <div className="t-kicker">This rotation</div>
@@ -582,8 +624,8 @@ function WarTable() {
             </div>
             <span className="t-cd-live-count">{activeMissionIds.length} ACTIVE</span>
           </div>
-          {field?.carrierJamAvailable && progression?.vnextStartAvailable && !field.activeMissionRun ?
-            <button type="button" className="t-btn" onClick={() => useBattleStore.getState().openOperationBrief("field-relay-recovery", undefined, undefined, true)}>RELAY RECOVERY · CARRIER JAM</button> : null}
+          {carrierJamEntry}
+          {operationCategory === "field-ops" && !activeMissionDefs.length ? <p className="t-wtv2-empty" role="status">No active Field Ops in the current board. Refresh to sync the rotation.</p> : null}
           <nav className="t-op-selector" aria-label="Select a Field Op">
             {activeMissionDefs.map((mission, index) => (
               <button key={mission.missionId} type="button" aria-pressed={(selectedFieldOp && activeMissionIds.includes(selectedFieldOp) ? selectedFieldOp : activeMissionIds[0]) === mission.missionId}
@@ -639,13 +681,13 @@ function WarTable() {
               );
             })}
           </div>
-        </section>
-
-
-
-
+        </section> : null}
+        {operationCategory === "last-howl" ? <div className="t-cdv2-overview">
+          {progression?.lastHowl ? <LastHowlCard /> : <p className="t-wtv2-empty" role="status">Last Howl is not available in the current server state.</p>}
+        </div> : null}
         </div> : null}
         {deckTab === "squad" ? <div className="t-command-pane" aria-label="Character progression and mastery">
+        <WarTablePlate plate="squad" />
         {contracts?.enabled && contracts.sidegrade ? <section className="t-panel t-field-contract" aria-label="Field loadout">
           <div className="t-kicker">ALPHA · FIELD LOADOUT</div>
           <strong>{contracts.selection === "reach-rend" ? "Reach Rend equipped" : "Rend equipped"}</strong>
@@ -655,13 +697,17 @@ function WarTable() {
           <button type="button" aria-pressed={squadView === "skillbook"} className={squadView === "skillbook" ? "is-selected" : ""} onClick={() => setSquadView("skillbook")}>SIGNAL ATLAS</button>
           <button type="button" aria-pressed={squadView === "mastery"} className={squadView === "mastery" ? "is-selected" : ""} onClick={() => setSquadView("mastery")}>PACK MASTERY</button>
         </div>
-        {squadView === "mastery" ? <PackMasteryPanel /> : atlasTarget
+        {squadView === "mastery" ? <><WarTablePlate plate="pack-mastery" /><PackMasteryPanel /></> : <>
+          <WarTablePlate plate="signal-atlas" />
+          {atlasTarget
           ? <SkillbookPanel onClose={() => { setAtlasTarget(null); setDeckTab("command"); }} onOpenMastery={() => { setAtlasTarget(null); setSquadView("mastery"); }} target={atlasTarget} />
           : <SkillbookPanel onClose={() => setDeckTab("command")} onOpenMastery={() => setSquadView("mastery")} />}
+        </>}
 
 
         </div> : null}
-        {deckTab === "archive" ? <div className="t-command-pane" aria-label="Campaign archive and test settings">
+        {deckTab === "archive" ? <div className="t-command-pane" aria-label="Legacy records and test settings">
+        <WarTablePlate plate="legacy" />
         <CounterstrikeCard archive />
         {deadRelay?.status === "cleared" ? deadRelayCampaign : null}
 
