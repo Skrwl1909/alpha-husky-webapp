@@ -11,7 +11,7 @@ const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
 /** Final owner-hold RC: exact reviewed tree extension; historical gates stay pinned. */
 if (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.106-war-table-v2-rc')) {
- const expected='0e0b94b63058a6f51ec9190030868cabc1efeb29';
+ const expected='a603639dce343b5bb2e833d91eb03681102d67f2';
  assert.equal(git('rev-parse','HEAD:tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper commit mismatch');
  assert.equal(git('hash-object','--path=tools/verify_tactical_final_provenance.mjs','tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper working mismatch');
  const {verifyFinalProvenance}=await import('./verify_tactical_final_provenance.mjs');

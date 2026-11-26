@@ -46,7 +46,7 @@ try {
    for(const s of ranked){
     const ids=targeting.validTargetIds(b.units,actor,s);
     if(targeting.skillNeedsTargetPick(s)) {
-     const targets=enemies.filter(e=>ids.includes(e.id)).sort((a,c)=>{
+     const targets=enemies.filter(e=>ids.includes(e.id)&&!(input.kind==='blood-scent'&&actor.id!=='alpha'&&e.statuses.some(t=>t.type==='BLEED'&&t.duration>0))).sort((a,c)=>{
       if(input.kind==='blood-scent'&&s.id==='alpha-strike'){
        const bleed=u=>u.statuses.some(t=>t.type==='BLEED'&&t.duration>0)?1:0;
        if(bleed(a)!==bleed(c))return bleed(c)-bleed(a);

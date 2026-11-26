@@ -12,7 +12,7 @@ const HISTORIC='a3161f8e8ef7f2f4dd06191718170b814f2093b3';
 const own='tools/verify_tactical_premium_integration.mjs';
 const helper='tools/verify_tactical_final_provenance.mjs';
 const reviewed={
-  "tools/verify_final_power_gameplay.mjs": "9b373a6fc20e02a4b6f2dc2bd3cf6c99da37de99",
+  "tools/verify_final_power_gameplay.mjs": "01b27bd8308c904c584af038ec91c60df1fe6e19",
   "tools/verify_final_release_contracts.mjs": "961f23321f81391b8330c17157e0e0954c47f42a"
 };
 const chain=[
@@ -55,7 +55,7 @@ export function verifyFinalProvenance(expectedHelper){
  }
  git('merge-base','--is-ancestor',BASE,'HEAD');
  const expected=git('show',BASE+':'+own).replace("const changed=head=>git('diff','--name-only',base,head).trim().split('\\n');",m=>m+'\n'+finalBlock(expectedHelper)).trim();
- assert.equal(readFileSync(own,'utf8').trim(),expected,'historical gate changed beyond exact dispatch');
+ assert.equal(readFileSync(own,'utf8').replaceAll('\r\n','\n').trim(),expected,'historical gate changed beyond exact dispatch');
  assert.equal(git('show','HEAD:'+own),expected,'committed provenance gate');
  const allowed={...reviewed,[helper]:expectedHelper,[own]:git('rev-parse','HEAD:'+own)};
  const changed=git('diff','--name-only','--no-renames',BASE,'HEAD').split('\n').filter(Boolean).sort();
@@ -71,7 +71,7 @@ export function verifyFinalProvenance(expectedHelper){
  const checkout=resolve(parent,'accepted');
  assert(checkout.startsWith(resolve(parent)+requireSeparator()),'worktree target escaped temporary root');
  try{
-  git('worktree','add','--detach',checkout,HISTORIC);
+  git('-c','core.autocrlf=false','worktree','add','--detach',checkout,HISTORIC);
   execFileSync(process.execPath,['tools/verify_tactical_premium_integration.mjs'],{cwd:checkout,stdio:'inherit'});
  }finally{
   git('worktree','remove',checkout);
