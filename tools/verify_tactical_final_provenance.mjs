@@ -12,7 +12,7 @@ const HISTORIC='a3161f8e8ef7f2f4dd06191718170b814f2093b3';
 const own='tools/verify_tactical_premium_integration.mjs';
 const helper='tools/verify_tactical_final_provenance.mjs';
 const reviewed={
-  "tools/verify_final_power_gameplay.mjs": "01b27bd8308c904c584af038ec91c60df1fe6e19",
+  "tools/verify_final_power_gameplay.mjs": "3e11f47fea11d68952ad432def37b5f60a80c441",
   "tools/verify_final_release_contracts.mjs": "961f23321f81391b8330c17157e0e0954c47f42a"
 };
 const chain=[

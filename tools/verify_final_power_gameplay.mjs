@@ -30,6 +30,13 @@ try {
   if(input.strategy==='defeat') choices.push({type:'skip'});
   else {
    if(battle.canRecover(b))choices.push({type:'recover'});
+   if(objective.type==='INTERCEPT'&&!actor.hasMoved){
+    const courier=enemies.find(u=>u.id===objective.targetId);
+    if(courier){
+     const cell=movement.reachableCells(actor,b.units).sort((a,c)=>distance(a,courier)-distance(c,courier))[0];
+     if(cell&&distance(cell,courier)<distance(actor,courier))choices.push({type:'move',c:cell.c,r:cell.r});
+    }
+   }
    if(input.kind==='pack-link'&&actor.id==='alpha'&&!actor.packLinkUsed&&!actor.hasMoved&&allies.length&&!allies.some(u=>movement.chebyshev(u,actor)<=1)){
     const nearest=c=>Math.min(...allies.map(u=>movement.chebyshev(u,c)));
     const cell=movement.reachableCells(actor,b.units).sort((a,c)=>nearest(a)-nearest(c))[0];
@@ -47,6 +54,7 @@ try {
     const ids=targeting.validTargetIds(b.units,actor,s);
     if(targeting.skillNeedsTargetPick(s)) {
      const targets=enemies.filter(e=>ids.includes(e.id)&&!(input.kind==='blood-scent'&&actor.id!=='alpha'&&e.statuses.some(t=>t.type==='BLEED'&&t.duration>0))).sort((a,c)=>{
+      if(objective.type==='INTERCEPT'&&(a.id===objective.targetId||c.id===objective.targetId))return a.id===objective.targetId?-1:1;
       if(input.kind==='blood-scent'&&s.id==='alpha-strike'){
        const bleed=u=>u.statuses.some(t=>t.type==='BLEED'&&t.duration>0)?1:0;
        if(bleed(a)!==bleed(c))return bleed(c)-bleed(a);
