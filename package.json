@@ -24,7 +24,9 @@
     "verify:tactical-ops:g1": "node tools/verify_tactical_g1_fieldcraft.mjs && node tools/verify_tactical_g1_transactions.mjs && TACTICAL_G1_MATRIX=1 node tools/simulate_tactical_s2_full_combat.mjs",
     "verify:tactical-ops:g1:browser": "node tools/verify_tactical_signal_atlas_p3_browser.mjs && node tools/verify_tactical_g1_browser.mjs",
     "verify:tactical-ops:p5": "node tools/verify_tactical_battlefield_p5.mjs",
-    "verify:tactical-ops:p5:browser": "node tools/verify_tactical_battlefield_p5_browser.mjs"
+    "verify:tactical-ops:p5:browser": "node tools/verify_tactical_battlefield_p5_browser.mjs",
+    "build:tactical-ops:unit-motion": "node tools/build_tactical_unit_motion.mjs",
+    "verify:tactical-ops:unit-motion": "node tools/verify_tactical_unit_motion_browser.mjs"
   },
   "dependencies": {
     "lucide-react": "0.510.0",
@@ -33,6 +35,8 @@
     "zustand": "5.0.0"
   },
   "devDependencies": {
+    "playwright": "1.62.1",
+    "sharp": "0.34.5",
     "vite": "8.2.0"
   },
   "overrides": {

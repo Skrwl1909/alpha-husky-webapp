@@ -1,0 +1,59 @@
+/* Shared foot/depth contract. Temporary attack actors have exactly the resting
+   token's body width; articulated sheets overflow without affecting input. */
+#tacticalOpsRoot .t-battle .t-grounded-actor {
+  position:absolute;
+  min-width:0;
+  max-width:none;
+  height:auto;
+  transform:translate(-50%,-100%) scale(var(--motion-depth,1));
+  transform-origin:50% 100%;
+  pointer-events:none;
+  isolation:isolate;
+}
+#tacticalOpsRoot .t-battle .t-grounded-actor::before {
+  content:"";position:absolute;left:12%;right:12%;bottom:-2px;height:6px;
+  background:radial-gradient(ellipse,rgba(1,6,10,.7),transparent 72%);
+}
+#tacticalOpsRoot .t-battle .t-grounded-actor .t-motion-fallback {
+  display:block;position:relative;inset:auto;width:100%;height:auto;
+  min-width:0;max-width:none;margin:0;transform:none;scale:1;rotate:0deg;
+  animation:none;filter:none;
+}
+#tacticalOpsRoot .t-battle .t-grounded-actor .t-motion-fallback.is-mirrored {scale:-1 1;}
+#tacticalOpsRoot .t-battle .t-grounded-actor.has-frames .t-motion-fallback {visibility:hidden;}
+#tacticalOpsRoot .t-battle .t-grounded-actor .t-attack-frames {
+  display:block;visibility:hidden;position:absolute;left:50%;bottom:0;
+  width:var(--sheet-width);aspect-ratio:1;
+  transform:translate(-50%,6.25%) scaleX(var(--sheet-mirror,1));
+  background-size:400% 200%;background-repeat:no-repeat;
+  animation:t-attack-37 var(--travel-ms,var(--enemy-duration,540ms)) steps(1,end) both;
+}
+#tacticalOpsRoot .t-battle .t-grounded-actor.has-frames .t-attack-frames {visibility:visible;}
+#tacticalOpsRoot .t-battle .t-grounded-actor .t-contact-42 {animation-name:t-attack-42;}
+#tacticalOpsRoot .t-battle .t-grounded-actor .t-contact-49 {animation-name:t-attack-49;}
+#tacticalOpsRoot .t-hostile-scene .t-grounded-actor {
+  left:var(--enemy-x);top:var(--enemy-y);
+  animation:t-hostile-dash var(--enemy-duration) linear both;
+}
+#tacticalOpsRoot .t-hostile-heavy .t-grounded-actor {animation-name:t-hostile-heavy;}
+/* Body articulation supplies the wind-up: no rubber stretching or rotation of
+   the entire sheet. Keep arrival phases owned by the existing choreography. */
+#tacticalOpsRoot .t-battle .t-grounded-actor.has-frames {scale:1!important;rotate:0deg!important;}
+@keyframes t-attack-37 {
+  0%{background-position:0 0;}12%{background-position:33.333333% 0;}24%{background-position:66.666667% 0;}
+  37%{background-position:100% 0;}50%{background-position:0 100%;}68%{background-position:33.333333% 100%;}
+  84%{background-position:66.666667% 100%;}96%,100%{background-position:100% 100%;}
+}
+@keyframes t-attack-42 {
+  0%{background-position:0 0;}14%{background-position:33.333333% 0;}28%{background-position:66.666667% 0;}
+  42%{background-position:100% 0;}55%{background-position:0 100%;}70%{background-position:33.333333% 100%;}
+  85%{background-position:66.666667% 100%;}96%,100%{background-position:100% 100%;}
+}
+@keyframes t-attack-49 {
+  0%{background-position:0 0;}18%{background-position:33.333333% 0;}33%{background-position:66.666667% 0;}
+  49%{background-position:100% 0;}61%{background-position:0 100%;}73%{background-position:33.333333% 100%;}
+  87%{background-position:66.666667% 100%;}96%,100%{background-position:100% 100%;}
+}
+@media(prefers-reduced-motion:reduce) {
+  #tacticalOpsRoot .t-battle .t-grounded-actor {display:none!important;}
+}

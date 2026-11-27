@@ -1,0 +1,114 @@
+{
+  "results": [
+    {
+      "grid": "8x5",
+      "viewport": [
+        320,
+        568
+      ],
+      "width": 32.625,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "8x5",
+      "viewport": [
+        390,
+        844
+      ],
+      "width": 39.7656,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "8x5",
+      "viewport": [
+        430,
+        932
+      ],
+      "width": 43.8594,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "8x5",
+      "viewport": [
+        844,
+        390
+      ],
+      "width": 25.5312,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "8x5",
+      "viewport": [
+        1280,
+        800
+      ],
+      "width": 52,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "10x7",
+      "viewport": [
+        320,
+        568
+      ],
+      "width": 25.5938,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "10x7",
+      "viewport": [
+        390,
+        844
+      ],
+      "width": 31.1875,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "10x7",
+      "viewport": [
+        430,
+        932
+      ],
+      "width": 34.3906,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "10x7",
+      "viewport": [
+        844,
+        390
+      ],
+      "width": 17.8125,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    },
+    {
+      "grid": "10x7",
+      "viewport": [
+        1280,
+        800
+      ],
+      "width": 41,
+      "contact": "100% 0%",
+      "hitboxUnchanged": true
+    }
+  ],
+  "checks": [
+    "8 distinct frames",
+    "Skirmisher mirrored contact",
+    "cleanup",
+    "cosmetic fallback",
+    "vertical fallback",
+    "reduced motion",
+    "missing atlas fallback"
+  ],
+  "errors": []
+}

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "columns": 4,
+  "rows": 2,
+  "tile": 512,
+  "baseline": 480,
+  "bodyHeight": 400,
+  "assets": [
+    {
+      "name": "alpha",
+      "source": "assets/tactical_motion_sources/alpha-strike-source.png",
+      "sourceSha256": "45af732465a9695bc016ed49c9f2469d1d34e93f6f72fcbfad486218889bce23",
+      "output": "images/tactical_ops/unit_motion/v1/alpha-strike.webp",
+      "outputSha256": "7fc6f415ff505b2ded1fb62452055e35cbf6f155da226073e1851286f4caf3e9",
+      "frames": 8,
+      "sourceNeutralHeight": 448
+    },
+    {
+      "name": "skirmisher",
+      "source": "assets/tactical_motion_sources/skirmisher-strike-source.png",
+      "sourceSha256": "f03ca22898674c6fa207027260c099570b9b4d3a5647450c31f4528d764f4c05",
+      "output": "images/tactical_ops/unit_motion/v1/skirmisher-strike.webp",
+      "outputSha256": "33aee944fdb614520ce8a859879b9ede32b3d8061d50e038f6376a80f1bc966c",
+      "frames": 8,
+      "sourceNeutralHeight": 310
+    }
+  ]
+}
