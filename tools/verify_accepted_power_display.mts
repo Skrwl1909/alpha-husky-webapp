@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import {parseAcceptedPower} from "../tactical-ops-src/host/acceptedPower.ts";
+const id="mission_verified_v1_"+"a".repeat(32);
+const squad=["alpha","ally-02","ally-03"];
+const binding={version:"commander-power-staging.v1",runId:id,projection:{version:"tactical-power-projection-p2.v1",activation:"LAB_ONLY",projectionId:"b".repeat(64),alpha:{hp:164,atk:55,def:30,spd:15}}};
+const parse=(b=binding,r=id,m="broken-signal-commander",s=squad)=>parseAcceptedPower(b,r,m,s);
+assert.deepEqual(parse()?.alpha,binding.projection.alpha);
+assert.equal(parse(binding,id+"x"),null);
+assert.equal(parse(binding,id,"field-relay-hold"),null);
+assert.equal(parse(binding,id,"broken-signal-commander",["alpha","ally-02","pet:test"]),null);
+assert.equal(parse({...binding,projection:{...binding.projection,alpha:{...binding.projection.alpha,atk:999}}}),null);
+assert.equal(parseAcceptedPower(undefined,id,"broken-signal-commander",squad),null);
+console.log("PASS: accepted power display parser (6 assertions)");

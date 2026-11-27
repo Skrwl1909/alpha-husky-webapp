@@ -9,6 +9,28 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** Production RC P0: exact main + protected FINAL, with unchanged historical verification. */
+if (git('ls-tree','HEAD','tools/verify_tactical_production_reconciliation.mjs').trim()) {
+ const expected='dd00e150fa9533f6984595458a17d7b9c31ead60';
+ assert.equal(git('rev-parse','HEAD:tools/verify_tactical_production_reconciliation.mjs').trim(),expected,'reconciliation helper commit mismatch');
+ assert.equal(git('hash-object','--path=tools/verify_tactical_production_reconciliation.mjs','tools/verify_tactical_production_reconciliation.mjs').trim(),expected,'reconciliation helper working mismatch');
+ const {verifyProductionReconciliation}=await import('./verify_tactical_production_reconciliation.mjs');
+ verifyProductionReconciliation(expected);
+ process.exit(0);
+}
+
+
+/** Final owner-hold RC: exact reviewed tree extension; historical gates stay pinned. */
+if (readLocalFile("tactical-ops-src/version.ts","utf8").includes('v3.6.107-final-release-closure')) {
+ const expected='813d3bdfd89c6db2353dcbde3dd29e0a808f9544';
+ assert.equal(git('rev-parse','HEAD:tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper commit mismatch');
+ assert.equal(git('hash-object','--path=tools/verify_tactical_final_provenance.mjs','tools/verify_tactical_final_provenance.mjs').trim(),expected,'final helper working mismatch');
+ const {verifyFinalProvenance}=await import('./verify_tactical_final_provenance.mjs');
+ verifyFinalProvenance(expected);
+ process.exit(0);
+}
+
+
 /** P3.2: exact descendant of the accepted release chain, with pinned generated artifacts. */
 if (readLocalFile("tactical-ops-src/version.ts","utf8").includes("v3.6.104-consequence-frame-fit-p32")) {
  const verifier="tools/verify_tactical_p32_provenance.mjs";
