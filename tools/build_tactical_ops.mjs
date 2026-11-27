@@ -4,6 +4,7 @@
  * The only runtime entry is tactical-ops-src/host/production-entry.ts.
  */
 import { build } from "vite";
+import { finalRcCssPlugin, verifyFinalRcRuntime } from "./final_rc_css_profile.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +21,7 @@ if (!version || !cacheKey) {
 const outFile = join(root, "js", "tactical_ops.js");
 await build({
   configFile: false,
+  plugins: [finalRcCssPlugin(root)],
   root,
   build: {
     emptyOutDir: false,
@@ -59,3 +61,5 @@ const updatedLoader = loader.replace(
 );
 if (updatedLoader !== loader) writeFileSync(loaderFile, updatedLoader);
 console.log("build_tactical_ops: wrote js/tactical_ops.js (" + version + ")");
+
+verifyFinalRcRuntime(root);

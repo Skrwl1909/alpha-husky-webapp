@@ -51,7 +51,14 @@ try {
   assert.match(app, /ACCEPTED COMBAT POWER/);
   assert.match(app, /Gear changes apply to a new battle/);
   assert.match(battle, /confirmedRunCombatPower\(progression, currentRunKey\)/);
-  assert.match(battle, /SERVER-LOCKED V3/);
+  assert.match(battle, /const powerLabel = power\?\.source === "meaningful-power" \? "POWER V1 \(TEST\)" : "V3"/);
+  assert(battle.includes('`SERVER-LOCKED ${powerLabel} · MAX HP ${acceptedStats.hp}'), "HUD must render the selected frozen power label and stats");
+  const acceptedAlpha = { hp: 124, atk: 52, def: 21, spd: 15 };
+  const acceptedRun = { ...run, acceptedPower: { version: "tactical-power-projection-p2.v1", projectionId: "a".repeat(64), alpha: acceptedAlpha } };
+  const acceptedResult = confirmedRunCombatPower({ fieldOps: { activeMissionRun: acceptedRun } }, run.runId);
+  assert.equal(acceptedResult?.source, "meaningful-power");
+  assert.deepEqual(acceptedResult?.profile.alpha, acceptedAlpha, "HUD displays accepted values, not fallback V3 stats");
+  assert.equal(confirmedRunCombatPower({ fieldOps: { activeMissionRun: acceptedRun } }, "wrong-run"), null);
   assert.match(css, /\.t-battle-hud-rail \.t-run-power-chip/);
   console.log("PASS Tactical Power V1: frozen V3 and pet, run binding, resume, legacy fail-closed, static UI contracts");
 } finally {

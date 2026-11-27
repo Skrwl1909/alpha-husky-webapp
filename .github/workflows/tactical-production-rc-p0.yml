@@ -1,0 +1,26 @@
+name: Tactical Production RC P0
+on:
+  pull_request:
+    branches: [main]
+    paths: ['tactical-ops-src/**', 'tools/**', 'js/tactical_ops.js', 'js/boot_loaders.js', 'images/tactical_ops/**', '.github/workflows/tactical-production-rc-p0.yml']
+permissions:
+  contents: read
+jobs:
+  release-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --package-lock=false --no-audit --no-fund
+      - run: npm run build:tactical-ops
+      - run: git diff --exit-code -- js/tactical_ops.js js/boot_loaders.js
+      - run: node tools/verify_tactical_premium_integration.mjs
+      - run: node tools/verify_reconciliation_negative.mjs
+      - run: node tools/verify_final_release_contracts.mjs
+      - run: node tools/verify_war_table_v2_preview.mjs --assets-only
