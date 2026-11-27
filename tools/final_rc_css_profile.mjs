@@ -76,7 +76,7 @@ const PROFILE={
     "eol": "CRLF"
   },
   "tactical-ops-src/ui/warTableVisual.css": {
-    "sha256": "62c7854211d33ac2c7c3211cc51bae72da1b74f4c7b678936a30414f37024deb",
+    "sha256": "3e3c48099da943af180cb80d459cf4cf368fccd310d8e90ecc101c43d2ee3a98",
     "eol": "LF"
   }
 };
@@ -94,7 +94,7 @@ export function finalRcCssPlugin(root){
 }
 export function verifyFinalRcRuntime(root){
  for(const [path,hash] of Object.entries({
-  'js/tactical_ops.js':'7b22a997dd2d23f9665d93c6340e9e3771158012df5da90b3f46085d6847fdde',
-  'js/boot_loaders.js':'fbe843f5fb333fa72f524b9c81ffeb07e5267b966b1f151321f123b2ee7e2dd9'
- }))if(sha(readFileSync(resolve(root,path)))!==hash)throw Error('STOP: runtime differs from protected FINAL '+path);
+  'js/tactical_ops.js':'908e3bccdc8ff83bbc73e78ef585f0e9f8a82d61b407ecba92ccb8d76974d27a',
+  'js/boot_loaders.js':'c6c04690986c332d4ad81bc1417718de2346cd90ced6d7bf8a5154795254d04b'
+ }))if(sha(readFileSync(resolve(root,path)))!==hash)throw Error('STOP: runtime differs from reviewed production acceptance '+path);
 }

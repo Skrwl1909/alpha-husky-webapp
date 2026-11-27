@@ -9,6 +9,17 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** PR335 exact mobile presentation/test closure; original provenance executes unchanged. */
+if (git('ls-tree','HEAD','tools/verify_tactical_ci_closure_335.mjs').trim()) {
+ const expected='939e5e2d1e736fee40ef659008a888f92aac4901';
+ assert.equal(git('rev-parse','HEAD:tools/verify_tactical_ci_closure_335.mjs').trim(),expected,'closure helper commit mismatch');
+ assert.equal(git('hash-object','--path=tools/verify_tactical_ci_closure_335.mjs','tools/verify_tactical_ci_closure_335.mjs').trim(),expected,'closure helper working mismatch');
+ const {verifyCiClosure335}=await import('./verify_tactical_ci_closure_335.mjs');
+ verifyCiClosure335(expected);
+ process.exit(0);
+}
+
+
 /** Production RC P0: exact main + protected FINAL, with unchanged historical verification. */
 if (git('ls-tree','HEAD','tools/verify_tactical_production_reconciliation.mjs').trim()) {
  const expected='82d8f40824d5a1b98a64738aed77a8a466bbfb6d';
