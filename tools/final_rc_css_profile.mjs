@@ -77,7 +77,7 @@ const PROFILE={
   },
   "tactical-ops-src/ui/warTableVisual.css": {
     "sha256": "62c7854211d33ac2c7c3211cc51bae72da1b74f4c7b678936a30414f37024deb",
-    "eol": "PRESERVE"
+    "eol": "LF"
   }
 };
 export function finalRcCssPlugin(root){
@@ -86,9 +86,9 @@ export function finalRcCssPlugin(root){
   const absolute=id.slice(0,-4),path=relative(root,absolute).replaceAll('\\','/');
   const row=PROFILE[path];if(!row)throw Error('STOP: unreviewed raw CSS input '+path);
   const raw=readFileSync(resolve(root,path));
-  const canonical=row.eol==='CRLF'?Buffer.from(raw.toString('utf8').replaceAll('\r\n','\n')):raw;
+  const canonical=row.eol!=='PRESERVE'?Buffer.from(raw.toString('utf8').replaceAll('\r\n','\n')):raw;
   if(sha(canonical)!==row.sha256)throw Error('STOP: changed raw CSS input '+path);
-  const exported=row.eol==='CRLF'?canonical.toString('utf8').replaceAll('\n','\r\n'):raw.toString('utf8');
+  const exported=row.eol==='CRLF'?canonical.toString('utf8').replaceAll('\n','\r\n'):canonical.toString('utf8');
   return {code:'export default '+JSON.stringify(exported)+';',map:null};
  }};
 }

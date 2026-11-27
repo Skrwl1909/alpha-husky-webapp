@@ -18,7 +18,7 @@ const allowed={
   "assets/icons/navigation_v1/tactical.svg": "86fcd35ed124c08bed084afad44ab1239f47793d",
   "index.html": "6ad52770362317ce7fbcb97a494ee6d60eec9ce6",
   "tools/build_tactical_ops.mjs": "f5bee32cc88bae5bdaef845b82ffb0e70169f5dd",
-  "tools/final_rc_css_profile.mjs": "28cf8159aa8bca104b2d7e816f80565e11e46e30",
+  "tools/final_rc_css_profile.mjs": "b31f5ea551d3ceeb41d47a74203d9f61975de118",
   "tools/verify_reconciliation_negative.mjs": "b75a02c9716bd61f7b5c1d498c365fc2aa0ea658",
   ".github/workflows/tactical-production-rc-p0.yml": "9b46b7784fafd42c848aa202a2e4b6dde075a23a"
 };

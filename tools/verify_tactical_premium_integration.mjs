@@ -11,7 +11,7 @@ const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
 /** Production RC P0: exact main + protected FINAL, with unchanged historical verification. */
 if (git('ls-tree','HEAD','tools/verify_tactical_production_reconciliation.mjs').trim()) {
- const expected='dd00e150fa9533f6984595458a17d7b9c31ead60';
+ const expected='82d8f40824d5a1b98a64738aed77a8a466bbfb6d';
  assert.equal(git('rev-parse','HEAD:tools/verify_tactical_production_reconciliation.mjs').trim(),expected,'reconciliation helper commit mismatch');
  assert.equal(git('hash-object','--path=tools/verify_tactical_production_reconciliation.mjs','tools/verify_tactical_production_reconciliation.mjs').trim(),expected,'reconciliation helper working mismatch');
  const {verifyProductionReconciliation}=await import('./verify_tactical_production_reconciliation.mjs');
