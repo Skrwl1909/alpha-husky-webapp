@@ -1,0 +1,85 @@
+/* V3 asset integration only. Existing layout, buttons, action icons and progression remain live. */
+/* Backgrounds are layered over the current art so a missing resource never removes contrast. */
+#tacticalOpsRoot .tsa-root.tsa-immersive.tsa-v3[data-atlas-view="atlas"] {
+  background:linear-gradient(180deg,#03101acc,#051521d9 55%,#020a13f7),var(--tsa-v3-overview) center top / cover no-repeat,#06131e;
+}
+#tacticalOpsRoot .tsa-v3 > .tsa-focus {
+  background:linear-gradient(180deg,#04121bba,#04121be8 550px,#04121bf5),var(--tsa-v3-sector) center top / 100% auto no-repeat,var(--tsa-sectorBackground) center top / cover,#06131e;
+}
+#tacticalOpsRoot .tsa-v3.tsa-alpha > .tsa-focus {
+  background:linear-gradient(180deg,#07162599,#071521cc 350px,#04121bf5 900px),var(--tsa-v3-sector) center top / 100% auto no-repeat,var(--tsa-alpha-environment) center top / 100% auto no-repeat,#06131e;
+}
+/* Preserve the original sector emblems and texts; new plates are decoration only. */
+#tacticalOpsRoot .tsa-v3 .tsa-alpha-branch:not(.tsa-future-signal),
+#tacticalOpsRoot .tsa-v3 .tsa-sector {
+  background-image:var(--tsa-v3-plate),linear-gradient(120deg,#102d3d,#071825);
+  background-size:100% 100%;
+  background-repeat:no-repeat;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-focus-heading {
+  background:var(--tsa-v3-plate) center / 100% 100% no-repeat;
+  padding-inline:8px;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-node::before {
+  background:var(--tsa-v3-active) center / contain no-repeat;
+  inset:-5px;
+  pointer-events:none;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-node::after {
+  content:"";
+  position:absolute;
+  inset:-4px;
+  background:var(--tsa-v3-node-state) center / contain no-repeat;
+  pointer-events:none;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-node .tsa-rank-stamp {z-index:3}
+#tacticalOpsRoot .tsa-v3 .tsa-connector::after {
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  width:14px;height:14px;
+  background:var(--tsa-v3-contact) center / contain no-repeat;
+  opacity:.55;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-connector.is-lit::after {opacity:1}
+#tacticalOpsRoot .tsa-v3 .tsa-reserve {
+  background:var(--tsa-v3-reserve) center / contain no-repeat,#0a1c29;
+  pointer-events:none;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-reserve[data-terminal="1"] {background-image:var(--tsa-v3-terminal)}
+#tacticalOpsRoot .tsa-v3 .tsa-inspector {
+  border-image:var(--tsa-v3-inspector) 24 fill / 14px;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-inspector.has-selection::after {background-image:var(--tsa-v3-endpoint)}
+#tacticalOpsRoot .tsa-v3 .tsa-disciplines button {
+  background-image:linear-gradient(120deg,#0b2533ed,#061823f5),var(--tsa-v3-doctrine);
+  background-size:100% 100%,auto 100%;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-doctrine-jump:has(.tsa-v3-variant-icon) {
+  display:grid;
+  grid-template-columns:36px minmax(0,1fr) auto;
+  align-items:center;gap:7px;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-v3-variant-icon {
+  display:block;width:36px;height:36px;padding:4px;object-fit:contain;
+  background:var(--tsa-v3-mutation) center / contain no-repeat;
+}
+#tacticalOpsRoot .tsa-v3 .tsa-v3-variant-icon.tsa-v3-synergy {background-image:var(--tsa-v3-synergy)}
+#tacticalOpsRoot .tsa-v3 .tsa-v3-variant-heading {display:flex;gap:10px;align-items:center}
+#tacticalOpsRoot .tsa-v3 .tsa-v3-variant-heading img {width:38px;height:38px;object-fit:contain;flex:none}
+#tacticalOpsRoot .tsa-v3 .tsa-doctrine-art {background:var(--tsa-v3-mutation) center / contain no-repeat}
+@media(prefers-reduced-transparency:reduce) {
+  #tacticalOpsRoot .tsa-root.tsa-immersive.tsa-v3[data-atlas-view="atlas"],
+  #tacticalOpsRoot .tsa-v3.tsa-alpha > .tsa-focus,
+  #tacticalOpsRoot .tsa-v3 > .tsa-focus {background:#071726}
+}
+@media(forced-colors:active) {
+  #tacticalOpsRoot .tsa-root.tsa-immersive.tsa-v3[data-atlas-view="atlas"],
+  #tacticalOpsRoot .tsa-v3.tsa-alpha > .tsa-focus,
+  #tacticalOpsRoot .tsa-v3 > .tsa-focus {background:Canvas}
+  #tacticalOpsRoot .tsa-v3 .tsa-node::before,#tacticalOpsRoot .tsa-v3 .tsa-node::after,#tacticalOpsRoot .tsa-v3 .tsa-connector::after {display:none}
+  #tacticalOpsRoot .tsa-v3 .tsa-inspector {border:2px solid CanvasText;border-image:none}
+}

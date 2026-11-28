@@ -7,6 +7,7 @@ import {relative,resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const PROFILE={
+  "tactical-ops-src/ui/signalAtlas/signalAtlasV3.css": {"sha256": "f3ef8739378438ff288e58d40b27757eefa617b39169517ffc1a62a9738d6641", "eol":"LF"},
   "tactical-ops-src/ui/unitMotion.css": {"sha256": "a24510bdb9156d3ef907143c3cb4b87e722528bc7b2884ccaf27c22fe03be3d5", "eol": "LF"},
   "tactical-ops-src/tactical.css": {
     "sha256": "661ab4d0c5261686bf2e2c143ced37e9107ee2fb55c8771db016dcf497a939b6",
@@ -95,7 +96,7 @@ export function finalRcCssPlugin(root){
 }
 export function verifyFinalRcRuntime(root){
  for(const [path,hash] of Object.entries({
-  'js/tactical_ops.js':'d360e8a96db7071839fa52c9ffde9f2090baf548ad452e55e10cc8e18afaed16',
-  'js/boot_loaders.js':'fbbc85c050bea1e454c0caae5f4c720c0155a2f2ffd3554d360fb4b104b2649c'
+  'js/tactical_ops.js':'8650912fc32369ca9bc44be34e2055bb87119152b676e01ecfcaf33dd0eaa424',
+  'js/boot_loaders.js':'467cc61b5f309ecd2f1839bd2a40ddd5f18b009776d021b5df93f98933f77244'
  }))if(sha(readFileSync(resolve(root,path)))!==hash)throw Error('STOP: runtime differs from reviewed production acceptance '+path);
 }

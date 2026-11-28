@@ -1,0 +1,208 @@
+{
+  "version": "3",
+  "status": "integration_candidate",
+  "files": [
+    {
+      "path": "runtime/backgrounds/atlas_relay_chamber_v3.webp",
+      "bytes": 354986,
+      "sha256": "689588044781f4055805ac721e027d01a16f51a8f6a5e23d2bda62ac70dadfa2",
+      "width": 941,
+      "height": 1672,
+      "alpha": false
+    },
+    {
+      "path": "runtime/backgrounds/atlas_sector_signal_bay_v3.webp",
+      "bytes": 260056,
+      "sha256": "1cdcf4bffab21f588037a9f1198ecc8b39caa9b9e5c5123337aeed7a1eb2d1ed",
+      "width": 1080,
+      "height": 1440,
+      "alpha": false
+    },
+    {
+      "path": "runtime/capstones/atlas_capstone_disruptor_v1.webp",
+      "bytes": 19996,
+      "sha256": "a5df6feba7f32e8b8789f65813aa9750be1d468ab3b2d09686658f4a5f8b2474",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/capstones/atlas_capstone_howlkeeper_v1.webp",
+      "bytes": 22204,
+      "sha256": "0b12acf9528e37aab3bfd68dd9fc8ac4105224bfb0351111bf6e6bb7e22a0bc3",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/capstones/atlas_capstone_medic_v1.webp",
+      "bytes": 20104,
+      "sha256": "d7860f4c1aec9e93fb54394cf8e87ca8e971a9ee062b6ab932011cbfce321bdb",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/capstones/atlas_capstone_pursuer_v1.webp",
+      "bytes": 14804,
+      "sha256": "646088ee922fde9e756127b08313517858671bb545de850f8e5502519c86659c",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/capstones/atlas_capstone_sentinel_v1.webp",
+      "bytes": 19190,
+      "sha256": "aec14b1a2166fe9abc5a42d31f216be271b5d903af1d2d183d97b671b67f8c8c",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/capstones/atlas_capstone_vanguard_v1.webp",
+      "bytes": 18182,
+      "sha256": "fa642071d5c228e2ec9a7597ff9b6abb48610854e50b5ab53376b8912728c392",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_combat_core_bezel_v2.webp",
+      "bytes": 17920,
+      "sha256": "1d5fe7bb73585f61582b0bafe47e6c59b28ac7951adfd82457525fee39f762d7",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_node_active_skill_v1.webp",
+      "bytes": 19150,
+      "sha256": "21b8b0cc53964373860e9fa5a3ea5cf2ebdc652f879920bc738f12e922112eb4",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_node_capstone_v1.webp",
+      "bytes": 19196,
+      "sha256": "1bdece1c6de5048122a692ba1acda947b1a5598a6343d04e39698100d36506cd",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_node_doctrine_v1.webp",
+      "bytes": 18782,
+      "sha256": "f682cbcd161080449e192548c4e0e64c4a7bf262d1feb66e59b134735ab8a9be",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_node_passive_talent_v1.webp",
+      "bytes": 19508,
+      "sha256": "738005a1a6fed5361c2a567309aec594e44f8828b7113cf987fd0a79b8bdb793",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_node_skill_mutation_v1.webp",
+      "bytes": 18692,
+      "sha256": "be4c4573ead424512be417e45e4c95356857607f145810649a0a7400e0eb0f61",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/frames/atlas_node_synergy_v1.webp",
+      "bytes": 18832,
+      "sha256": "28e66755e0154744829fce46e3bd664546b6cd703a69eb43bdd8d9a920c2ec2c",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/ui/README.md",
+      "bytes": 547,
+      "sha256": "8f6091491e21404fe5736df22325cb6b282c09d7a98c82a0b63bf54a0f399661"
+    },
+    {
+      "path": "runtime/ui/atlas_inspector_frame_v2.svg",
+      "bytes": 639,
+      "sha256": "0f5f16185fc7c2da9f16520d9ca65f31c684df40a6cd1eaf4d3f12a5cdfeb654"
+    },
+    {
+      "path": "runtime/ui/atlas_junction_contact_v1.svg",
+      "bytes": 617,
+      "sha256": "0c9ed1e3070ab1dd9d707a7a51730b4371f49508e8a81fd1984fa2952e12a950"
+    },
+    {
+      "path": "runtime/ui/atlas_junction_cross_v1.svg",
+      "bytes": 641,
+      "sha256": "52770b95c5b8e766c468b4295046341ee977817a21e4969771396ef496710de4"
+    },
+    {
+      "path": "runtime/ui/atlas_junction_elbow_v1.svg",
+      "bytes": 498,
+      "sha256": "0267d18917fda38ed998dd0a8bcdaa38cd2570368e0fc76d7ebce3e3c1d9fc6b"
+    },
+    {
+      "path": "runtime/ui/atlas_junction_endpoint_v1.svg",
+      "bytes": 617,
+      "sha256": "b803bdb544f1133f9ca4e79da2660dc39450f49be922cb804e9bd27521f03c24"
+    },
+    {
+      "path": "runtime/ui/atlas_junction_splitter_v1.svg",
+      "bytes": 689,
+      "sha256": "110d557e10c7bfe3e8f2c2f2a72f40d573f9e90eea07eca7a6e17f0108bda79c"
+    },
+    {
+      "path": "runtime/ui/atlas_junction_straight_v1.svg",
+      "bytes": 471,
+      "sha256": "df25b37478adc7c97172852b98f794ebf3b6944103bb2897556847fda3fe41a6"
+    },
+    {
+      "path": "runtime/ui/atlas_ui.css",
+      "bytes": 659,
+      "sha256": "29340549f01aa91737615892ea29a84bc6f2b03e5abdf71f63ea643fb533194d"
+    },
+    {
+      "path": "runtime/variants/atlas_variant_blood_scent_v1.webp",
+      "bytes": 19632,
+      "sha256": "5ef1b12ad4794f335236c90c5fed578e1eb4ab75b8f914e756535602a14764c1",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/variants/atlas_variant_heavy_lunge_v1.webp",
+      "bytes": 15238,
+      "sha256": "0c25f63b5dcf31166e907e11e32de1b64fab4fee1b8840d8bf6163e219502d79",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/variants/atlas_variant_pack_link_v1.webp",
+      "bytes": 25282,
+      "sha256": "be924325a5674aeed3404f8a2369688edea3f5758b1a474658221ad80ad5c83e",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    },
+    {
+      "path": "runtime/variants/atlas_variant_wide_lunge_v1.webp",
+      "bytes": 20582,
+      "sha256": "03588fc65188625461ca34accae317952dbf4f91ef1a3ce01dd0cecdfa24fd80",
+      "width": 256,
+      "height": 256,
+      "alpha": true
+    }
+  ],
+  "notes": [
+    "Capstone names are proposed visual mappings to existing disciplines, not confirmed gameplay endpoint IDs.",
+    "E02 selected from available alternate portrait backgrounds; exact approval not established.",
+    "No live frontend or device validation."
+  ]
+}

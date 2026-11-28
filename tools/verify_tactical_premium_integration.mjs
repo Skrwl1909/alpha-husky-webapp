@@ -9,6 +9,17 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** Signal Atlas V3: exact presentation delta; Unit Motion V1 and historical provenance execute unchanged. */
+if (git('ls-tree','HEAD','tools/verify_tactical_signal_atlas_v3_release.mjs').trim()) {
+ const expected='c1412eddc27c1a1a202535f9ea82d215d7432ece';
+ assert.equal(git('rev-parse','HEAD:tools/verify_tactical_signal_atlas_v3_release.mjs').trim(),expected,'Atlas V3 helper commit mismatch');
+ assert.equal(git('hash-object','--path=tools/verify_tactical_signal_atlas_v3_release.mjs','tools/verify_tactical_signal_atlas_v3_release.mjs').trim(),expected,'Atlas V3 helper working mismatch');
+ const {verifyAtlasV3Release}=await import('./verify_tactical_signal_atlas_v3_release.mjs');
+ verifyAtlasV3Release(expected);
+ process.exit(0);
+}
+
+
 /** Unit Motion V1: exact reconciled presentation delta; PR335 provenance executes unchanged. */
 if (git('ls-tree','HEAD','tools/verify_tactical_unit_motion_release.mjs').trim()) {
  const expected='9e3c4532db0a6afe9900de2cc0524800d7b7ac9d';

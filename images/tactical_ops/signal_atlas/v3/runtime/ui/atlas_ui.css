@@ -1,0 +1,7 @@
+.atlas-inspector { position:relative; border:24px solid transparent; border-image:url('./atlas_inspector_frame_v2.svg') 24 fill stretch; min-width:0; box-sizing:border-box; color:#dce8ed; }
+.atlas-inspector__separator { height:1px; background:linear-gradient(90deg,transparent,#516b78,transparent); }
+.atlas-signal { fill:none; stroke:currentColor; stroke-width:2; vector-effect:non-scaling-stroke; color:#52616c; }
+.atlas-signal[data-state="available"] { color:#76cadc; }
+.atlas-signal[data-state="recorded"] { color:#76cadc; stroke-width:3; }
+.atlas-signal[data-state="focus"] { color:#c8ab76; }
+.atlas-signal[data-state="locked"] { stroke-dasharray:4 5; }

@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "SA-E12",
+      "file": "runtime/ui/identity/atlas_sector_plate_fang_v1.svg",
+      "bytes": 758,
+      "sha256": "bab24a533742836dc8986dc74b20785f314a6b5dc96b75f31d17b34a6d8ddb39"
+    },
+    {
+      "id": "SA-E12",
+      "file": "runtime/ui/identity/atlas_sector_plate_howl_v1.svg",
+      "bytes": 758,
+      "sha256": "55767b7e2e8d4ff318a49da9422513ca48e6036613c6ba74284da1a65fff8f2d"
+    },
+    {
+      "id": "SA-E12",
+      "file": "runtime/ui/identity/atlas_sector_plate_pursuit_v1.svg",
+      "bytes": 828,
+      "sha256": "8a5e0daf4ffe2992596aeb42eeed4f944155c52fd5e18790b3ae4da3038ca0cc"
+    },
+    {
+      "id": "SA-E12",
+      "file": "runtime/ui/identity/atlas_sector_plate_control_v1.svg",
+      "bytes": 828,
+      "sha256": "8b49c5057cce5792a82dff91c664512570881c50d19fb77bf80e06ef0032abcb"
+    },
+    {
+      "id": "SA-E12",
+      "file": "runtime/ui/identity/atlas_sector_plate_front_line_v1.svg",
+      "bytes": 898,
+      "sha256": "0b2cf26ba1576e4c9b1424d4a370af8fcb016baf1637248ed0c4b6305ce48ed5"
+    },
+    {
+      "id": "SA-E12",
+      "file": "runtime/ui/identity/atlas_sector_plate_support_v1.svg",
+      "bytes": 898,
+      "sha256": "20587c912eb5ae88df08be512f561bb21a2462c2a980d291fc40de71468c47c0"
+    },
+    {
+      "id": "SA-E13",
+      "file": "runtime/ui/identity/atlas_reserved_standard_v1.svg",
+      "bytes": 354,
+      "sha256": "c678a08e12aa0455f747955ea9bf67bb0e90ab8c5affde329be2fbb72509fc99"
+    },
+    {
+      "id": "SA-E13",
+      "file": "runtime/ui/identity/atlas_reserved_terminal_v1.svg",
+      "bytes": 348,
+      "sha256": "cc2c6292651de27300016dd1b5a746b487d2c33215351e482be42b5e581ad589"
+    },
+    {
+      "id": "SA-E14",
+      "file": "runtime/ui/identity/atlas_state_available_v1.svg",
+      "bytes": 422,
+      "sha256": "bb1ce9d14479f97a38e14d71aba8309f124c4ac700a2bdc486198e030d28e503"
+    },
+    {
+      "id": "SA-E14",
+      "file": "runtime/ui/identity/atlas_state_locked_v1.svg",
+      "bytes": 465,
+      "sha256": "002a710895939c2602dc845ef41e8614f1ce8799f5b339a3889096d4c6e3d838"
+    },
+    {
+      "id": "SA-E14",
+      "file": "runtime/ui/identity/atlas_state_preview_v1.svg",
+      "bytes": 453,
+      "sha256": "04225a69f77e68b1bac18c781eff6e1ad3a855019d80470084dea7fb431b4c8f"
+    },
+    {
+      "id": "SA-E14",
+      "file": "runtime/ui/identity/atlas_state_owned_v1.svg",
+      "bytes": 421,
+      "sha256": "b2d236bc02960bd0e2bf0719d4fd4976ff238b144892cf1c9a7d00b1ff9195c2"
+    },
+    {
+      "id": "SA-E14",
+      "file": "runtime/ui/identity/atlas_state_acquired_v1.svg",
+      "bytes": 426,
+      "sha256": "de8e46932b479401d5a583b09971ab472a1ac87c3226cd854f6db31444c9189d"
+    },
+    {
+      "id": "SA-E12\u201314",
+      "file": "runtime/ui/identity/atlas_identity_v1.css",
+      "bytes": 876,
+      "sha256": "1432dbcaf02e9063c5be3699619df91400f2ad43f00b5c9738ae7dc369488daf"
+    }
+  ],
+  "status": "asset QA only; integration pending"
+}

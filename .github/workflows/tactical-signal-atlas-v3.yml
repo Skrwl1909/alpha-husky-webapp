@@ -1,0 +1,57 @@
+name: Tactical Signal Atlas V3
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tactical-ops-src/**'
+      - 'images/tactical_ops/signal_atlas/v3/**'
+      - 'tools/verify_tactical_signal_atlas*'
+      - 'tools/verify_tactical_premium_integration.mjs'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - 'package*.json'
+      - '.github/workflows/tactical-signal-atlas-v3.yml'
+permissions:
+  contents: read
+jobs:
+  signal-atlas-v3:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Original asset manifests, state mapping and historical provenance
+        run: |
+          node tools/verify_tactical_signal_atlas_v3_assets.mjs
+          node tools/verify_tactical_signal_atlas_p3.mjs
+          node tools/verify_tactical_signal_atlas_premium.mjs
+          node tools/verify_tactical_premium_integration.mjs
+          node tools/verify_reconciliation_negative.mjs
+      - name: Build and immutable lockfile
+        run: |
+          npm run build:tactical-ops
+          node --check js/tactical_ops.js
+          git diff --exit-code -- package-lock.json js/tactical_ops.js js/boot_loaders.js
+      - name: Official mobile route, source and bundle, verified art and doctrine
+        run: node tools/verify_tactical_signal_atlas_default_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+          ATLAS_DEFAULT_OUT: artifacts/signal-atlas-v3/default
+      - name: Blood Scent and Pack Link icon and receipt states
+        run: |
+          ATLAS_BLOOD_SCENT_ONLY=1 ATLAS_DEFAULT_OUT=artifacts/signal-atlas-v3/blood-scent node tools/verify_tactical_signal_atlas_default_browser.mjs
+          ATLAS_PACK_LINK_ONLY=1 ATLAS_DEFAULT_OUT=artifacts/signal-atlas-v3/pack-link node tools/verify_tactical_signal_atlas_default_browser.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tactical-signal-atlas-v3-review
+          path: artifacts/signal-atlas-v3
+          if-no-files-found: warn
