@@ -1,0 +1,2 @@
+# Signal Atlas V3 — SA-E10 / SA-E11
+Six junction SVGs and one 96px inspector SVG (24-unit nine-slice). Junctions use a 64-unit grid. For arbitrary distances draw live SVG paths using atlas-signal; use junction artwork at anchors. External SVG images have default cyan accents; for dynamic recoloring inline SVG and remove explicit color attributes or override them with CSS. Inspector content remains live HTML. State attributes are visual only and must come from existing game state. No gameplay changes. Browser/device integration not tested.

@@ -189,6 +189,13 @@ async function verifyArtKit(){
   await load('bundle',width,2,{artKit:true});
   const portrait=page.locator('.tsa-alpha-portrait-art img');
   await assertArtImage(portrait,'atlas_alpha_portrait_closeup_v1.webp',768);
+  if(expectedVersion.includes('signal-atlas-v3')){
+   assert.match(await page.locator('.tsa-root').evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_relay_chamber_v3/);
+   const bezel=page.locator('.tsa-identity-bezel');
+   assert(await bezel.evaluate(async el=>{await el.decode();return el.naturalWidth>0&&el.currentSrc.includes('atlas_combat_core_bezel_v2');}));
+   assert.match(await page.locator('.tsa-alpha-branch').first().evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_sector_plate_fang_v1/);
+   assert.equal(await page.locator('img[src*="/capstones/"]').count(),0);
+  }
   const pathImages=page.locator('.tsa-alpha-branches img');
   assert.equal(await pathImages.count(),3);
   for(const [index,name] of ['fang','howl','instinct'].entries())
@@ -204,6 +211,13 @@ async function verifyArtKit(){
   const tree=page.locator('.tsa-focus');
   assert.match(await tree.evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_environment_v1\.webp/);
   await page.waitForFunction(()=>performance.getEntriesByType('resource').some(item=>item.name.endsWith('/atlas_environment_v1.webp')));
+  if(expectedVersion.includes('signal-atlas-v3')){
+   assert.match(await tree.evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_sector_signal_bay_v3/);
+   const available=page.locator('.tsa-node.tsa-state-available').first();
+   assert.match(await available.evaluate(el=>getComputedStyle(el,'::after').backgroundImage),/atlas_state_available_v1/);
+   const reserve=page.locator('.tsa-reserve').first();
+   if(await reserve.count())assert.match(await reserve.evaluate(el=>getComputedStyle(el).backgroundImage),/atlas_reserved_/);
+  }
   const nodeImage=page.locator('.tsa-node img').first();
   assert(!((await nodeImage.getAttribute('src'))||'').includes(premiumPath),'skill nodes retain their action icons');
   assert(await page.getByText('2 cells reach',{exact:true}).isVisible());
@@ -258,6 +272,10 @@ try{
    const panel=page.getByRole('region',{name:'Skill node inspection'});
    const state = label=>panel.getByText(label,{exact:true}).waitFor();
    const refresh = ()=>page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+   if(expectedVersion.includes('signal-atlas-v3')){
+    const img=panel.locator('.tsa-v3-variant-heading img');
+    assert(await img.evaluate(async el=>{await el.decode();return el.naturalWidth>0&&el.currentSrc.includes('/variants/');}));
+   }
    await state('FUTURE');
    await page.evaluate(()=>fixture.link(0));await refresh();await state('LOCKED');
    await page.evaluate(()=>fixture.link(1));await refresh();await state('AVAILABLE');
@@ -281,6 +299,10 @@ try{
    const panel=page.getByRole('region',{name:'Skill node inspection'});
    const state = label=>panel.getByText(label,{exact:true}).waitFor();
    const refresh = ()=>page.getByRole('button',{name:'Refresh Tactical Ops'}).click();
+   if(expectedVersion.includes('signal-atlas-v3')){
+    const img=panel.locator('.tsa-v3-variant-heading img');
+    assert(await img.evaluate(async el=>{await el.decode();return el.naturalWidth>0&&el.currentSrc.includes('/variants/');}));
+   }
    await state('FUTURE');
    await page.evaluate(()=>fixture.scent(0));await refresh();await state('LOCKED');
    await page.evaluate(()=>fixture.scent(1));await refresh();await state('AVAILABLE');
@@ -310,6 +332,10 @@ try{
   await panel.waitFor({state:'visible'});
   const wide=panel.getByRole('button',{name:'Wide Lunge',exact:true});
   await wide.waitFor();
+  if(expectedVersion.includes('signal-atlas-v3')){
+   assert(await wide.locator('img').evaluate(async el=>{await el.decode();return el.currentSrc.includes('atlas_variant_wide_lunge_v1')&&el.naturalWidth>0;}));
+   assert(await panel.getByRole('button',{name:/^Heavy Lunge/}).locator('img').evaluate(async el=>{await el.decode();return el.currentSrc.includes('atlas_variant_heavy_lunge_v1')&&el.naturalWidth>0;}));
+  }
   assert(await wide.isDisabled(),'R0 cannot select');
   await page.evaluate(()=>fixture.doctrine(1,true));await refresh();
   await panel.getByText('Finish the active run to switch.').waitFor();

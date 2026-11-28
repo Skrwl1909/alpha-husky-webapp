@@ -1,0 +1,8 @@
+/* Presentation only. State must be supplied by canonical application logic. */
+.atlas-identity-header{position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:8px;min-height:64px;padding:8px 32px 8px 8px;box-sizing:border-box;background-image:var(--atlas-sector-plate);background-size:100% 100%;background-repeat:no-repeat;color:#e2edf2}
+.atlas-identity-header > *{min-width:0;overflow-wrap:anywhere}
+.atlas-identity-reserved{pointer-events:none;user-select:none;opacity:.8}
+.atlas-identity-state{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;object-fit:contain}
+.atlas-identity-state[data-state="acquired"]{animation:atlas-identity-acquired 650ms ease-out 1}
+@keyframes atlas-identity-acquired{from{opacity:.35}to{opacity:1}}
+@media(prefers-reduced-motion:reduce){.atlas-identity-state{animation:none!important}}

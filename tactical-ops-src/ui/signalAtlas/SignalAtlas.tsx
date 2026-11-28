@@ -5,6 +5,7 @@ import { skillEffectView } from "../skillEffectView";
 import { useEffect, useRef, useState, type CSSProperties, type SyntheticEvent } from "react";
 import { createPortal } from "react-dom";
 import { SIGNAL_ATLAS_ASSETS, SIGNAL_ATLAS_PREMIUM_ART } from "./signalAtlasAssets";
+import { atlasV3, atlasV3Variables, nodeStateArt, sectorArt } from "./signalAtlasV3Art";
 import { useBattleStore } from "../../store/battleStore";
 import { HERO_PATHS, HERO_SKILLS, UPGRADES, type Discipline, type HeroId } from "../../data/playerGrowth";
 import { getSkill } from "../../data/skills";
@@ -36,6 +37,11 @@ function AlphaEffect({ skill, id, label }: { skill: SkillDef; id: string; label:
 }
 // Hide decorative failures; retain text, native borders and the existing portrait fallback.
 function hideArt(event: SyntheticEvent<HTMLImageElement>) { event.currentTarget.hidden = true; }
+function v3Fallback(event: SyntheticEvent<HTMLImageElement>, fallback: string) {
+  const image = event.currentTarget;
+  if (image.dataset.v3Fallback || !fallback) { hideArt(event); return; }
+  image.dataset.v3Fallback = "1"; image.src = fallback;
+}
 function atlasPortraitFallback(event: SyntheticEvent<HTMLImageElement>) {
   if (event.currentTarget.dataset.fallback) { hideArt(event); return; }
   event.currentTarget.dataset.fallback = "1"; portraitFallback(event);
@@ -50,7 +56,7 @@ function alphaPortraitFallback(event: SyntheticEvent<HTMLImageElement>) {
   }
   atlasPortraitFallback(event);
 }
-const atlasArt = Object.fromEntries(Object.entries(SIGNAL_ATLAS_ASSETS).map(([key,src])=>[`--tsa-${key}`,`url("${src}")`])) as CSSProperties;
+const atlasArt = {...Object.fromEntries(Object.entries(SIGNAL_ATLAS_ASSETS).map(([key,src])=>[`--tsa-${key}`,`url("${src}")`])), ...atlasV3Variables} as CSSProperties;
 const alphaAtlasArt = {
   ...atlasArt,
   "--tsa-alpha-environment": `url("${SIGNAL_ATLAS_PREMIUM_ART.environment}")`,
@@ -327,7 +333,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
   const forge = <div className="tsa-forge-stage" aria-label={`${HERO_TITLES[heroId]} combat blueprint`}>
         <div className="tsa-identity" aria-label={`${HERO_TITLES[heroId]} combat identity`}>
           <div className="tsa-identity-portrait">
-            <img className="tsa-identity-bezel" src={SIGNAL_ATLAS_ASSETS.coreBezel} onError={hideArt} alt=""/>
+            <img className="tsa-identity-bezel" src={atlasV3.core} onError={e=>v3Fallback(e,SIGNAL_ATLAS_ASSETS.coreBezel)} alt=""/>
             {alpha ? <picture className="tsa-alpha-portrait-art">
               <source media="(max-width: 560px)" srcSet={SIGNAL_ATLAS_PREMIUM_ART.alphaCloseup}/>
               <img className="tsa-identity-face" src={SIGNAL_ATLAS_PREMIUM_ART.alphaFull}
@@ -361,7 +367,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
     </div>
   </section>;
 
-  const content = <section ref={atlasRef} className={`tsa-root tsa-immersive ${alpha ? "tsa-alpha" : ""}`} data-atlas-view={view} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
+  const content = <section ref={atlasRef} className={`tsa-root tsa-immersive tsa-v3 ${alpha ? "tsa-alpha" : ""}`} data-atlas-view={view} style={alpha ? alphaAtlasArt : atlasArt} inert={Boolean(confirm)} aria-busy={unavailable} aria-label="Signal Atlas character Skillbook">
     <header className="tsa-header">
       <div><span className="tsa-eyebrow">{alpha ? "ALPHA / PACK LEADER" : "SQUAD / CHARACTER DEVELOPMENT"}</span>
         <h2>SIGNAL ATLAS</h2></div>
@@ -389,7 +395,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
       <div className="tsa-alpha-branches" aria-label="Alpha skill paths">
         {sectors.map(s=>{
           const count=s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0);
-          return <button key={s.id} type="button" className={`tsa-alpha-branch tsa-tone-${s.tone}`}
+          return <button key={s.id} type="button" className={`tsa-alpha-branch tsa-tone-${s.tone}`} style={sectorArt(s.id)}
             onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
             <img className="tsa-path-emblem" src={alphaPathEmblems[s.id] ?? s.emblemSrc}
               width={48} height={48} loading="lazy" decoding="async" onError={hideArt} alt=""/>
@@ -420,12 +426,12 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
           {visibleSectors.map((s,i)=>{const p=atlasSectorPosition(i,visibleSectors.length);return <path key={s.id} d={`M180 185 L${p.x*3.6} ${p.y*3.7}`} fill="none" stroke="#6AC4DF" strokeWidth="2.8"/>;})}
           <path d="M180 185 L47 126 M180 185 L313 126 M180 185 L47 289 M180 185 L313 289" fill="none" stroke="#466071" strokeWidth="1.5" strokeDasharray="5 7"/>
         </svg>
-        <div className="tsa-core-housing" aria-hidden="true"><img className="tsa-core-bezel" src={SIGNAL_ATLAS_ASSETS.coreBezel} onError={hideArt} alt=""/></div>
+        <div className="tsa-core-housing" aria-hidden="true"><img className="tsa-core-bezel" src={atlasV3.core} onError={e=>v3Fallback(e,SIGNAL_ATLAS_ASSETS.coreBezel)} alt=""/></div>
         <div className="tsa-core"><img className="tsa-core-portrait" src={UNIT_DEFS[heroId].portrait} onError={atlasPortraitFallback} alt=""/><img className="tsa-core-emblem" onError={hideArt} src={tacticalEmblemFor(heroId,null)||""} alt=""/><b>{HERO_TITLES[heroId]}</b><small>COMBAT CORE</small></div>
-        {visibleSectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-tone-${s.tone}`} style={{left:`${atlasSectorPosition(i,visibleSectors.length).x}%`,top:`${atlasSectorPosition(i,visibleSectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
+        {visibleSectors.map((s,i)=><button key={s.id} className={`tsa-sector tsa-tone-${s.tone}`} style={{...sectorArt(s.id),left:`${atlasSectorPosition(i,visibleSectors.length).x}%`,top:`${atlasSectorPosition(i,visibleSectors.length).y}%`}} type="button" onClick={()=>openSector(s)} disabled={unavailable} aria-label={`Open ${s.title} sector, ${s.skillIds.length} skills`}>
           <span className="tsa-sector-glyph"><img src={s.emblemSrc} alt="" decoding="async" onError={e=>{ e.currentTarget.style.display="none"; e.currentTarget.parentElement?.setAttribute("data-art-failed","1"); }}/><span className="tsa-sector-glyph-fallback" aria-hidden="true">{s.tone==="amber"?"✦":"◎"}</span></span><b>{s.title}</b><small>{s.description}</small><em>RECORDED · {s.skillIds.reduce((sum,id)=>sum+(purchased[id]||0),0)}/{s.skillIds.length*2}</em>
         </button>)}
-        {sectors.length<=2 && RESERVES.map(s=><div className="tsa-reserve" key={s.id} style={{left:`${s.x}%`,top:`${s.y}%`}} aria-label="Unreleased expansion placeholder">⊕</div>)}
+        {sectors.length<=2 && RESERVES.map(s=><div className="tsa-reserve" data-terminal={s.id==="future-c"||s.id==="future-d" ? "1" : undefined} key={s.id} style={{left:`${s.x}%`,top:`${s.y}%`}} aria-label="Unreleased expansion placeholder">⊕</div>)}
       </div>
       {sectorPageCount>1?<div className="tsa-page-controls" aria-label="Sector pages"><button type="button" disabled={unavailable||sectorPage===0} onClick={()=>setSectorPage(p=>Math.max(0,p-1))}>← PREVIOUS</button><span>SECTORS {sectorPage+1} / {sectorPageCount}</span><button type="button" disabled={unavailable||sectorPage===sectorPageCount-1} onClick={()=>setSectorPage(p=>Math.min(sectorPageCount-1,p+1))}>NEXT →</button></div>:null}
       <div className="tsa-atlas-footer">
@@ -434,7 +440,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
       <button type="button" className="tsa-future-toggle" disabled={unavailable} aria-expanded={showFuture} onClick={()=>setShowFuture(v=>!v)}>FUTURE EXPANSION {showFuture?"−":"+"}</button>
       {showFuture?<p className="tsa-explain">This atlas can accept additional sectors without changing existing skill IDs. Grey markers are design space only—not earnable abilities, locked missions or promised rewards.</p>:null}
     </div>:<div className={`tsa-focus ${doctrineStage ? "is-doctrine-stage" : ""}`} aria-label="Live skill tree">
-      <div ref={treeHeadingRef} className="tsa-focus-heading">
+      <div ref={treeHeadingRef} className="tsa-focus-heading" style={sectorArt(sector.id)}>
         <div className="tsa-focus-title">
           {alpha && <img className="tsa-path-emblem" src={alphaPathEmblems[sector.id] ?? sector.emblemSrc}
             width={48} height={48} decoding="async" onError={hideArt} alt=""/>}
@@ -470,6 +476,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
                   {index>0?<span className={`tsa-connector ${(purchased[skillId]||0)>=rank?"is-lit":""} ${confirmed?"is-confirmed":""}`} aria-hidden="true"/>:null}
                   <button type="button" disabled={unavailable} aria-pressed={focused} onClick={()=>inspect(skillId,rank)}
                     className={`tsa-node tsa-state-${pending ? "pending" : current.state} ${focused?"is-focused":""}`}
+                    style={nodeStateArt(current.state,pending,Boolean(confirmed && activation?.skillId===skillId && activation.rank===rank))}
                     aria-busy={pending} aria-label={`${skill.name} rank ${rank}, ${pending ? "pending server confirmation" : `${current.state}: ${current.reason}`}`}>
                     <img onError={hideArt} src={tacticalActionImageForSkill(skillId)||""} alt=""/>{rank>0?<span className="tsa-rank-stamp" aria-hidden="true">{current.state==="maxed"||current.state==="recorded"?"✓":current.state==="needs-rank-one"?"⌁":rank===2?"II":"I"}</span>:null}
                   </button><small>{alpha ? current.title : rank===0?"BASE":`RANK ${rank===1?"I":"II"}`}</small><span className="tsa-node-status">{pending ? "PENDING" : ({base:alpha?"BASE":"OWNED",recorded:alpha?"RECORDED":"SAVED",maxed:alpha?"RECORDED":"MAXED",available:"AVAILABLE","needs-rank-one":"NEEDS I","no-points":"NO POINTS","different-discipline":"OTHER PATH","no-effect":"NO CHANGE",unavailable:"OFFLINE","active-run":"ACTIVE RUN"})[current.state]}</span>
@@ -478,15 +485,15 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
             </div>
             {alpha && skillId === "alpha-rend" && <button type="button" className="tsa-doctrine-jump"
               disabled={unavailable} aria-pressed={inspectingScent} onClick={()=>inspect("blood-scent-v1",1)}>
-              <b>BLOOD SCENT</b><small>{scentState}</small></button>}
+              <img className="tsa-v3-variant-icon" src={atlasV3.variant.scent} onError={hideArt} alt=""/><b>BLOOD SCENT</b><small>{scentState}</small></button>}
             {alpha && skillId === "alpha-howl" && <button type="button" className="tsa-doctrine-jump"
               disabled={unavailable} aria-pressed={inspectingLink} onClick={()=>inspect("pack-link-v1",1)}>
-              <b>PACK LINK</b><small>{linkState}</small></button>}
+              <img className="tsa-v3-variant-icon tsa-v3-synergy" src={atlasV3.variant.link} onError={hideArt} alt=""/><b>PACK LINK</b><small>{linkState}</small></button>}
           </div>;
         })}
       </div>
       <section ref={inspectorRef} className={`tsa-inspector ${node || inspectingScent || inspectingLink ? "has-selection" : "is-prompt"}`} aria-label="Skill node inspection" aria-live="polite">
-        {inspectingLink ? <><span className="tsa-eyebrow">HOWL / FORMATION</span><h3>PACK LINK</h3>
+        {inspectingLink ? <><span className="tsa-eyebrow">HOWL / FORMATION</span><h3 className="tsa-v3-variant-heading"><img src={atlasV3.variant.link} onError={hideArt} alt=""/>PACK LINK</h3>
           <strong aria-live="polite">{linkState}</strong>
           <p>Once per battle, HOWL grants adjacent teammates 25% GUARD until their next turn. Diagonal neighbours count. Alpha receives the existing HOWL buffs.</p>
           <p>Requires Pack Echo I. Applies on your next accepted Relay Recovery or Last Howl run.</p>
@@ -494,7 +501,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
             {growthLocked && " · Complete your active run first."}</p>
           <div className="tsa-inspector-bottom">{linkState === "AVAILABLE" && <button type="button" disabled={unavailable} onClick={buyLink}>CONFIRM PACK LINK · 1 POINT</button>}
           {linkState === "ERROR" && <button type="button" disabled={unavailable} onClick={async()=>{await refresh();setLinkError(false);}}>REFRESH SAVED BUILD</button>}</div>
-        </> : inspectingScent ? <><span className="tsa-eyebrow">FANG / REND</span><h3>BLOOD SCENT</h3>
+        </> : inspectingScent ? <><span className="tsa-eyebrow">FANG / REND</span><h3 className="tsa-v3-variant-heading"><img src={atlasV3.variant.scent} onError={hideArt} alt=""/>BLOOD SCENT</h3>
           <strong aria-live="polite">{scentState}</strong>
           <p>Once per battle, STRIKE an enemy already bleeding while REND is cooling down. REND recovers one turn sooner.</p>
           <p>Requires Deep Cut I. Applies on your next accepted Relay Recovery or Last Howl run.</p>
@@ -542,7 +549,7 @@ export function SignalAtlas({ onClose, onOpenMastery, target }: { onClose: () =>
           return <div className={`tsa-doctrine-option ${wide ? "is-wide" : "is-heavy"} ${selected ? "is-selected" : ""}`} key={choice}>
             <button type="button" className="tsa-doctrine-card" aria-label={`${title}${selected ? " · Selected" : ""}`} aria-pressed={selected}
               disabled={selected || locked} onClick={() => void commitDoctrine(choice)}>
-              <span className="tsa-doctrine-card-top"><span className="tsa-doctrine-art"><img src={tacticalActionImageForSkill("u02-burst") || ""} onError={hideArt} alt=""/></span><span className="tsa-doctrine-card-title"><strong>{title.toUpperCase()}</strong><small>{wide ? centered ? "CLOSE-RANGE SWEEP" : "MULTI-TARGET STRIKE" : "PRECISION FINISHER"}</small></span><span className="tsa-doctrine-badge">{selected ? "✓ SELECTED" : locked ? "◇ LOCKED" : "＋ CHOOSE"}</span></span>
+              <span className="tsa-doctrine-card-top"><span className="tsa-doctrine-art"><img src={wide ? atlasV3.variant.wide : atlasV3.variant.heavy} onError={e=>v3Fallback(e,tacticalActionImageForSkill("u02-burst") || "")} alt=""/></span><span className="tsa-doctrine-card-title"><strong>{title.toUpperCase()}</strong><small>{wide ? centered ? "CLOSE-RANGE SWEEP" : "MULTI-TARGET STRIKE" : "PRECISION FINISHER"}</small></span><span className="tsa-doctrine-badge">{selected ? "✓ SELECTED" : locked ? "◇ LOCKED" : "＋ CHOOSE"}</span></span>
               <span className="tsa-doctrine-specs"><span>{wide ? centered ? "AROUND CNC" : "ADJACENT AIM" : `RANGE ${skill.maxRange}`}</span><span>{typeof damage === "number" ? `${Math.round(damage*100)}%` : "—"} · {wide ? "AREA" : "SINGLE"}</span></span>
               <DoctrineFootprint wide={wide} centered={centered} range={skill.maxRange}/>
               <span className="tsa-doctrine-card-desc">{wide ? skill.desc : "Hit one priority enemy harder. Trade away the area coverage of Wide Lunge."}</span>
