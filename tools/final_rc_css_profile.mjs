@@ -7,6 +7,7 @@ import {relative,resolve} from 'node:path';
 import {createHash} from 'node:crypto';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const PROFILE={
+  "tactical-ops-src/ui/unitMotion.css": {"sha256": "a24510bdb9156d3ef907143c3cb4b87e722528bc7b2884ccaf27c22fe03be3d5", "eol": "LF"},
   "tactical-ops-src/tactical.css": {
     "sha256": "661ab4d0c5261686bf2e2c143ced37e9107ee2fb55c8771db016dcf497a939b6",
     "eol": "PRESERVE"
@@ -94,7 +95,7 @@ export function finalRcCssPlugin(root){
 }
 export function verifyFinalRcRuntime(root){
  for(const [path,hash] of Object.entries({
-  'js/tactical_ops.js':'908e3bccdc8ff83bbc73e78ef585f0e9f8a82d61b407ecba92ccb8d76974d27a',
-  'js/boot_loaders.js':'c6c04690986c332d4ad81bc1417718de2346cd90ced6d7bf8a5154795254d04b'
+  'js/tactical_ops.js':'d360e8a96db7071839fa52c9ffde9f2090baf548ad452e55e10cc8e18afaed16',
+  'js/boot_loaders.js':'fbbc85c050bea1e454c0caae5f4c720c0155a2f2ffd3554d360fb4b104b2649c'
  }))if(sha(readFileSync(resolve(root,path)))!==hash)throw Error('STOP: runtime differs from reviewed production acceptance '+path);
 }

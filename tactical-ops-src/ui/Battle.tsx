@@ -23,6 +23,8 @@ import { canRecover } from "../combat/battle";
 import { effectiveAtk, effectiveDef, effectiveSpd, STATUS_SHORT } from "../combat/effects";
 import { FALLBACK_SPRITE, OPERATION } from "../data/units";
 import { houndAttackPose, houndView } from "./houndDirectional";
+import { unitVisualStyle, meleeContactPosition, UNIT_VISUAL } from "./unitVisual";
+import { MotionActor, preloadAttackSheets } from "./MotionActor";
 import type { PlayerIdentity } from "../host/identity";
 import { isMuted, setMuted as persistMute, unlockAudio, sfx } from "../audio";
 import type { CombatUnit, StatusType } from "../combat/types";
@@ -272,7 +274,7 @@ function Token({
     <>
     <div
       className={className}
-      style={{ left: `${pos.x}%`, top: `${pos.y}%`, zIndex: 4 + unit.r * 4 + (selected ? 2 : 0),
+      style={{ left: `${pos.x}%`, top: `${pos.y}%`, ...unitVisualStyle(unit), zIndex: 4 + unit.r * 4 + (selected ? 2 : 0),
         "--motion-recoil-x": `${recoilX}px`, "--motion-recoil-y": `${recoilY}px` } as CSSProperties}
     >
       <Ring selected={selected} guarding={unit.statuses.some((s) => s.type === "GUARD") && !unit.defeated} />
@@ -637,6 +639,7 @@ export function BattleScreen() {
   const combatFx = useBattleStore((s) => s.combatFx);
   const enemyScene = useBattleStore((s) => s.enemyScene);
   const displayHp = useBattleStore((s) => s.displayHp);
+  useEffect(() => { preloadAttackSheets(); }, []);
   const travelActors = new Set(combatFx.filter(fx=>combatFxTravelKind(fx.name)==="dash" && fx.actorId).map(fx=>fx.actorId));
   // The hostile attack scene renders the moving actor. Hide its stationary
   // sprite for that scene only; ranged attackers keep their board presence.
@@ -876,9 +879,19 @@ export function BattleScreen() {
             const actor=units.find(u=>u.id===enemyScene.actorId);
             const facing=facingToward(enemyScene.from,enemyScene.to,"front");
             const pose=actor ? houndAttackPose(actor,enemyScene.style,facing) : null;
-            const style={"--enemy-x":from.x+"%","--enemy-y":from.y+"%","--enemy-target-x":to.x+"%","--enemy-target-y":to.y+"%","--enemy-duration":enemyScene.durationMs+"ms"} as CSSProperties;
+            const contact=actor && ["melee","heavy"].includes(enemyScene.style) ? meleeContactPosition(actor,enemyScene.from,enemyScene.to) : {x:to.x+"%",y:to.y+"%"};
+            const style={"--enemy-x":from.x+"%","--enemy-y":from.y+"%","--enemy-target-x":contact.x,"--enemy-target-y":contact.y,"--enemy-duration":enemyScene.durationMs+"ms"} as CSSProperties;
             return <div className={`t-hostile-scene t-hostile-${enemyScene.style}`} key={enemyScene.id} style={style} aria-hidden="true">
-              {["melee","heavy"].includes(enemyScene.style)&&actor?<img className={`t-motion-actor t-motion-${roleClass(actor) || "hound"}${pose ? ` t-enemy-attack-pose t-enemy-attack-${actor.archetype?.toLowerCase()}` : ""}${pose && facing === "left" ? " is-mirrored" : ""}`} src={pose || houndView(actor,facing) || actor.attackSprite || actor.sprite} alt="" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.classList.remove("t-enemy-attack-pose","t-enemy-attack-skirmisher","t-enemy-attack-bulwark","is-mirrored");e.currentTarget.src=houndView(actor,facing)||actor.attackSprite||actor.sprite;}} />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
+              {["melee","heavy"].includes(enemyScene.style)&&actor?<MotionActor
+                key={enemyScene.id} unit={actor}
+                className={`t-motion-actor t-motion-${roleClass(actor) || "hound"}${pose ? ` t-enemy-attack-pose t-enemy-attack-${actor.archetype?.toLowerCase()}` : ""}`}
+                sheet={actor.archetype === "SKIRMISHER" && (facing === "left" || facing === "right") ? "skirmisher" : undefined}
+                phase={enemyScene.style === "heavy" ? 49 : 42}
+                src={actor.archetype === "SKIRMISHER" ? houndView(actor,facing) || actor.sprite : pose || houndView(actor,facing) || actor.attackSprite || actor.sprite}
+                fallback={houndView(actor,facing) || actor.attackSprite || actor.sprite}
+                mirrored={!!(pose || actor.archetype === "SKIRMISHER") && facing === "left"}
+                poseScale={pose ? actor.archetype === "BULWARK" ? UNIT_VISUAL.poseWidth.bulwark : UNIT_VISUAL.poseWidth.skirmisher : 1}
+              />:<svg viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>}
             </div>;
           })()}
           {castFx.map(effect => {
@@ -897,10 +910,15 @@ export function BattleScreen() {
             const travelKind=combatFxTravelKind(effect.name);
             if(travelKind==="none")return null;
             const ranged=travelKind==="beam";
+            const contact=ranged ? {x:to.x+"%",y:to.y+"%"} : meleeContactPosition(performer,effect.from,receiver);
             return <div key={"travel-"+effect.id} className={`t-choreo-travel ${ranged?"ranged":"melee"}`}
-              style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":to.x+"%","--to-y":to.y+"%", "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
+              style={{"--from-x":from.x+"%","--from-y":from.y+"%","--to-x":contact.x,"--to-y":contact.y, "--travel-ms":effect.durationMs+"ms"} as CSSProperties} aria-hidden="true">
               {ranged?<svg className="t-choreo-line" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1={from.x} y1={from.y} x2={to.x} y2={to.y}/></svg>:
-                <img className={`t-choreo-actor t-motion-actor t-motion-${roleClass(performer) || "ally"}`} src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : houndView(performer,facingToward(effect.from,receiver,"front")) || performer.attackSprite||performer.sprite} alt="" onError={e => {if(allowDirectional(performer,identity)||houndView(performer,"front")){e.currentTarget.onerror=null;e.currentTarget.src=performer.attackSprite||performer.sprite;}}} />}
+                <MotionActor unit={performer} className={`t-choreo-actor t-motion-actor t-motion-${roleClass(performer) || "ally"}`}
+                  sheet={effect.name === "alpha_strike" && allowDirectional(performer,identity) && ["left","right"].includes(facingToward(effect.from,receiver,"front")) ? "alpha" : undefined}
+                  mirrored={effect.name === "alpha_strike" && allowDirectional(performer,identity) && facingToward(effect.from,receiver,"front") === "left"}
+                  src={allowDirectional(performer,identity) ? alphaView(facingToward(effect.from,receiver,"front")) : houndView(performer,facingToward(effect.from,receiver,"front")) || performer.attackSprite || performer.sprite}
+                  fallback={performer.attackSprite || performer.sprite} />}
             </div>;
           })}
           {presentation.primaryFx.map(effect=>{

@@ -1,3 +1,3 @@
 /** Tactical Ops V1 player experience. */
-export const VERSION = "tactical_ops.js v3.6.108-production-acceptance-p0";
-export const CACHE_KEY = "tops-3.6.108-production-acceptance-p0";
+export const VERSION = "tactical_ops.js v3.6.109-unit-motion-v1";
+export const CACHE_KEY = "tops-3.6.109-unit-motion-v1";

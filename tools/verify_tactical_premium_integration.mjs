@@ -9,6 +9,17 @@ const heads=['02908d0c2e9d65c16efc406cff3fae3f6316cade','de5a506d1142b2c61eb8fd8
 const git=(...args)=>execFileSync('git',args,{encoding:'utf8',maxBuffer:8*1024*1024});
 const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
+/** Unit Motion V1: exact reconciled presentation delta; PR335 provenance executes unchanged. */
+if (git('ls-tree','HEAD','tools/verify_tactical_unit_motion_release.mjs').trim()) {
+ const expected='9e3c4532db0a6afe9900de2cc0524800d7b7ac9d';
+ assert.equal(git('rev-parse','HEAD:tools/verify_tactical_unit_motion_release.mjs').trim(),expected,'unit motion helper commit mismatch');
+ assert.equal(git('hash-object','--path=tools/verify_tactical_unit_motion_release.mjs','tools/verify_tactical_unit_motion_release.mjs').trim(),expected,'unit motion helper working mismatch');
+ const {verifyUnitMotionRelease}=await import('./verify_tactical_unit_motion_release.mjs');
+ verifyUnitMotionRelease(expected);
+ process.exit(0);
+}
+
+
 /** PR335 exact mobile presentation/test closure; original provenance executes unchanged. */
 if (git('ls-tree','HEAD','tools/verify_tactical_ci_closure_335.mjs').trim()) {
  const expected='939e5e2d1e736fee40ef659008a888f92aac4901';

@@ -8,7 +8,7 @@ const body=page.locator('.t-token.alpha img.body');const direction=async expecte
 await direction('right');
 for(const [c,r,name] of [[3,3,'right'],[2,3,'left'],[2,2,'back'],[2,3,'front']]){await page.evaluate(([c,r])=>{const s=fixture.store,b=s.getState().battle;s.setState({battle:{...b,units:b.units.map(u=>u.id==='alpha'?{...u,c,r}:u)}})},[c,r]);await direction(name)}
 await page.waitForTimeout(300);
-await page.evaluate(()=>fixture.confirmedCast('alpha','alpha-strike','enemy'));await direction('right');await page.waitForTimeout(50);assert(await page.locator('.t-choreo-actor').getAttribute('src').then(x=>x.endsWith('/right.png')));await page.evaluate(()=>{const s=fixture.store;window.__alphaIdentity=s.getState().identity;s.setState({identity:{...s.getState().identity,skinKey:'custom-skin',skinUrl:'/assets/skins/custom.webp',source:'skin'}})});
+await page.evaluate(()=>fixture.confirmedCast('alpha','alpha-strike','enemy'));await direction('right');await page.waitForTimeout(50);assert(await page.locator('.t-choreo-actor .t-motion-fallback').getAttribute('src').then(x=>x.endsWith('/right.png')));await page.evaluate(()=>{const s=fixture.store;window.__alphaIdentity=s.getState().identity;s.setState({identity:{...s.getState().identity,skinKey:'custom-skin',skinUrl:'/assets/skins/custom.webp',source:'skin'}})});
 await page.waitForFunction(()=>document.querySelector('.t-token.alpha img.body')?.getAttribute('src')?.endsWith('/alpha.png'));
 assert.equal(await page.locator('.t-token.alpha.directional-alpha').count(),0,'Equipped skin disables base direction override');
 assert.equal(await page.locator('.t-alpha-ground-shadow').count(),0,'No directional shadow for equipped skin');
