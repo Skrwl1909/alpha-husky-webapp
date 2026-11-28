@@ -229,7 +229,7 @@ try {
 
     await page.getByRole("button",{name:"BACK",exact:true}).tap();
     await page.evaluate(() => fixture.apply());
-    await page.getByRole("button",{name:/MISSIONS/}).tap();
+    await page.getByRole("button",{name:/OPERATIONS/}).tap();
     await page.getByRole("region",{name:"Current Field Ops"}).getByRole("button",{name:"VIEW BRIEF"}).tap();
     await loadoutTab.tap();
     assert.equal(await reach.getAttribute("aria-pressed"),"true","canonical selection survives reopening");

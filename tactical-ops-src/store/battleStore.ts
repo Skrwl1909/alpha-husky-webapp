@@ -426,7 +426,7 @@ export const useBattleStore = create<Store>((set, get) => {
       activeRulesetVersion: TACTICAL_VNEXT_RULESET, busy: false, progressionError: null,
       ticker: null, banner: null, attackingId: null, combatMoment: null, combatFx: [], enemyScene: null, displayHp: {},
       ...(progression?.lastHowl ? { progression: { ...progression,
-        lastHowl: { runId: view.runId, status: view.status, best: view.best } } } : {}),
+        lastHowl: { runId: view.runId, status: view.status, best: view.best, ...(view.acceptedPower ? {acceptedPower: view.acceptedPower} : {}) } } } : {}),
     });
   };
 

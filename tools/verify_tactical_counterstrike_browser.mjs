@@ -145,7 +145,7 @@ try{
   await page.screenshot({path:out+"/"+width+"-aftermath.png"});
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.getByRole("button",{name:"WAR TABLE / ARCHIVE",exact:true}).click();
-  await page.getByRole("button",{name:"04 ARCHIVE",exact:true}).click();
+  await page.getByRole("button",{name:"04 LEGACY",exact:true}).click();
   assert.match(await page.getByRole("region",{name:"Counterstrike archive"}).innerText(),/First clear recorded/);
   assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   await page.screenshot({path:out+"/"+width+"-archive.png"});

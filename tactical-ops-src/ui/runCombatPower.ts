@@ -2,9 +2,11 @@
 import { parseCombatProfileV3, type TacticalCombatProfileV3 } from "../combat/combatProfileV3";
 import type { TacticalCombatProfileV2 } from "../combat/combatProfile";
 import type { FoundationProgressionState } from "../host/foundationProgression";
+import { parseAcceptedPowerDisplay, type AcceptedPower } from "../host/acceptedPower";
 
 type AcceptedRun = {
   runId: string;
+  acceptedPower?: AcceptedPower | null;
   squadIds: string[];
   rulesContract?: { combatProfileVersion: number } | null;
   combatProfileV2?: TacticalCombatProfileV2 | null;
@@ -15,6 +17,7 @@ export type ConfirmedCombatPower = {
   runId: string;
   profile: TacticalCombatProfileV3;
   petDeployed: boolean;
+  source?: "meaningful-power" | "v3";
 };
 
 function verifiedProfile(
@@ -28,6 +31,27 @@ function verifiedProfile(
   } catch {
     return null;
   }
+}
+
+function directAcceptedPower(
+  progression: FoundationProgressionState,
+  runId: string,
+): ConfirmedCombatPower | null {
+  const sources: Array<{runId?: string | null; activeRunId?: string | null; acceptedPower?: AcceptedPower | null} | undefined> = [
+    progression.lastHowl, progression.counterstrike,
+  ];
+  for (const source of sources) {
+    if (!source || (source.runId !== runId && source.activeRunId !== runId)) continue;
+    const accepted = parseAcceptedPowerDisplay(source.acceptedPower);
+    if (!accepted) continue;
+    return {
+      runId,
+      profile: {version: 3, mode: "battle-v1", alpha: accepted.alpha, pet: null},
+      petDeployed: false,
+      source: "meaningful-power",
+    };
+  }
+  return null;
 }
 
 /** No cross-run fallback, no derived RPG maths, no equipment-based recalculation. */
@@ -44,6 +68,8 @@ export function confirmedRunCombatPower(
     if (profile) return { runId, profile, petDeployed: false };
   }
 
+  const direct = directAcceptedPower(progression, runId);
+  if (direct) return direct;
   const runs: Array<AcceptedRun | null | undefined> = [
     progression.fieldOps?.activeMissionRun,
     progression.chapterActiveMission,
@@ -55,6 +81,13 @@ export function confirmedRunCombatPower(
         !run.squadIds.includes("alpha")) continue;
     const profile = verifiedProfile(run.combatProfileV3, run.combatProfileV2);
     if (!profile) continue;
+    if (run.acceptedPower === null) return null;
+    if (run.acceptedPower) {
+      const {gearImpactV31: _legacyGear, ...legacy} = profile;
+      return {runId, profile:{...legacy,alpha:run.acceptedPower.alpha},
+        petDeployed: Boolean(profile.pet && run.squadIds.includes(`pet:${profile.pet.id}`)),
+        source:"meaningful-power"};
+    }
     return {
       runId,
       profile,

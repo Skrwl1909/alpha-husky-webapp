@@ -68,7 +68,8 @@ try {
   assert(bannerBox && bannerBox.height>100 && bannerBox.y<844 && bannerBox.y+bannerBox.height>0,"Command card must occupy visible viewport");
   const commandShot=await page.screenshot({path:out+"/"+width+"-command.png",fullPage:true});
   assert(commandShot.length>12000,"Command screenshot unexpectedly blank");
-  await page.getByRole("button",{name:/02 MISSIONS/}).click();
+  await page.getByRole("button",{name:/02 OPERATIONS/}).click();
+  await page.getByRole("button",{name:"Browse Field Ops",exact:true}).click();
   const selectors=page.locator(".t-op-selector button");
   assert.equal(await selectors.count(),3);
   for(const [index,kind] of [[0,"recover"],[1,"hold"],[2,"survive"]]){
@@ -98,7 +99,7 @@ try {
  }
  const page=await browser.newPage({viewport:{width:390,height:844},hasTouch:true,reducedMotion:"reduce"});
  await page.goto("http://127.0.0.1:"+server.httpServer.address().port+"/wartable-visual-fixture?mode=command&profile=fresh");
- await page.getByRole("button",{name:/02 MISSIONS/}).click();
+ await page.getByRole("button",{name:/02 OPERATIONS/}).click();
  assert.match(await page.locator(".t-wt-mission-state").innerText(),/AVAILABLE/,"fresh rotation state not faked");
  assert.equal(await page.locator(".t-wt-mission-state").getAttribute("data-availability"),"available");
  await page.close();

@@ -38,7 +38,9 @@ export function authoritySupported(state: any, missionId: string) {
 }
 export function settlementGuidance(code: string) {
   if (["mission_run_active","trial_run_active","tactical_ruleset_mismatch"].includes(code)) return "An accepted operation is unresolved. Resume it and record its server result before deploying another mission.";
-  if (["tactical_authority_unavailable","victory_authority_required","tactical_client_upgrade_required"].includes(code)) return "This run needs supported online combat. Refresh and resume its accepted server encounter; local victories cannot be rewarded.";
+  if (code === "tactical_authority_unavailable") return "Online combat is unavailable for this mission (tactical_authority_unavailable). Refresh the War Table and resume any accepted encounter.";
+  if (code === "victory_authority_required") return "The server has not confirmed this result (victory_authority_required). Resume the accepted encounter; local victories cannot be rewarded.";
+  if (code === "tactical_client_upgrade_required") return "A newer combat client is required (tactical_client_upgrade_required). Reopen the updated game and resume the accepted encounter.";
   if (["run_not_active","run_already_committed"].includes(code)) return "Reload canonical operation state and its recorded receipt. Start a fresh deployment after the prior result is confirmed.";
   const safeCode=/^[a-z][a-z0-9_]{0,63}$/.test(code)?code:"request_failed";
   return `Result not confirmed (${safeCode}). Refresh state or retry the same accepted run before deploying again.`;

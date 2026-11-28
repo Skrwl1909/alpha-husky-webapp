@@ -74,3 +74,14 @@ revert of this change including the compiled bundle and loader cache key.
 [frame preview](qa/unit-motion-v1/alpha-strike-preview.gif),
 [measured results](qa/unit-motion-v1/results.json).
 The GIF combines paused browser frames; it is not a live-device recording.
+
+## Reconciliation after public power rollout (2026-11-28)
+
+The pilot is reconciled with PR #335's merged tree `8b6e12ab37c9bed0d95205cd6b05253da7222e51`.
+Only the pilot presentation, version/cache, build pins, and provenance dispatch
+are extended; combat/data/host/store sources from the public release remain
+unchanged. War Table's nine approved artworks remain byte-identical. Local
+checks: canonical build and deterministic sheet regeneration; both grid sizes
+at five viewports; 8-frame contact, unchanged hitboxes, direction, reduced
+motion, missing-sheet and cosmetic fallbacks; confirmed-power, final release
+contracts and War Table asset gates. Real device acceptance remains pending.

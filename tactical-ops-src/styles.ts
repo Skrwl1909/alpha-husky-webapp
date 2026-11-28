@@ -16,5 +16,6 @@ import COUNTERSTRIKE_STORY_CSS from "./ui/counterstrikeStory.css?raw";
 import STORY_RESULT_CSS from "./ui/storyResult.css?raw";
 import TACTICAL_LOOT_HONORS_CSS from "./ui/tacticalLootHonors.css?raw";
 import BATTLEFIELD_CLARITY_P2_CSS from "./ui/battlefieldClarityP2.css?raw";
+import WAR_TABLE_VISUAL_CSS from "./ui/warTableVisual.css?raw";
 import UNIT_MOTION_CSS from "./ui/unitMotion.css?raw";
-export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + SIGNAL_ATLAS_PREMIUM_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS + "\n" + COMMAND_DECK_CSS + "\n" + OVERHEAD_PROJECTION_CSS + "\n" + HOUND_DIRECTIONAL_CSS + "\n" + LAST_HOWL_CSS + "\n" + COUNTERSTRIKE_STORY_CSS + "\n" + STORY_RESULT_CSS + "\n" + TACTICAL_LOOT_HONORS_CSS + "\n" + BATTLEFIELD_CLARITY_P2_CSS + "\n" + UNIT_MOTION_CSS;
+export const TACTICAL_CSS = BASE_CSS + "\n" + SIGNAL_ATLAS_CSS + "\n" + SIGNAL_ATLAS_PREMIUM_CSS + "\n" + COMBAT_COHESION_CSS + "\n" + CAMPAIGN_ORDERS_CSS + "\n" + CHAPTER_CSS + "\n" + MISSION_CLARITY_CSS + "\n" + REAL_DEVICE_PREMIUM_CSS + "\n" + FIELD_OP_RESULTS_CSS + "\n" + COMMAND_DECK_CSS + "\n" + OVERHEAD_PROJECTION_CSS + "\n" + HOUND_DIRECTIONAL_CSS + "\n" + LAST_HOWL_CSS + "\n" + COUNTERSTRIKE_STORY_CSS + "\n" + STORY_RESULT_CSS + "\n" + TACTICAL_LOOT_HONORS_CSS + "\n" + BATTLEFIELD_CLARITY_P2_CSS + "\n" + WAR_TABLE_VISUAL_CSS + "\n" + UNIT_MOTION_CSS;

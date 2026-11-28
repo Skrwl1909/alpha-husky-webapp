@@ -21,6 +21,7 @@ export interface CounterstrikeSummary {
  squadIds:string[]; activeRunId: string | null; intelStatus: CounterstrikeResult["intelStatus"];
  intelConsumedByRunId: string | null; firstClear: CounterstrikeResult | null; lastResult: CounterstrikeResult | null;
  nextMissionId: string | null;
+ acceptedPower?: {version: "tactical-power-projection-p2.v1"; projectionId: string; alpha: {hp:number;atk:number;def:number;spd:number}} | null;
 }
 export type CounterstrikeRun = OperationMissionRun & {
  counterstrikeContract: {version:1;rulesetVersion:typeof COUNTERSTRIKE_RULESET;missionRevision:1;reinforcementDelay:0|1;
