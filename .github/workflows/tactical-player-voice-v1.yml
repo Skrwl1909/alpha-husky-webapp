@@ -22,7 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --no-audit --no-fund
+      # Use the reviewed lockfile without rewriting it before the provenance gate.
+      - run: npm ci --no-audit --no-fund
       - name: Receipt-truthful language, frozen combat and existing gates
         run: |
           node tools/verify_tactical_player_voice_v1.mjs

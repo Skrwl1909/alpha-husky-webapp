@@ -11,7 +11,7 @@ const changed=head=>git('diff','--name-only',base,head).trim().split('\n');
 
 /** Unit Motion V1: exact reconciled presentation delta; PR335 provenance executes unchanged. */
 if (git('ls-tree','HEAD','tools/verify_tactical_unit_motion_release.mjs').trim()) {
- const expected='85e5a7c26e6ce97c37ed6191790e64c972c0de96';
+ const expected='9e3c4532db0a6afe9900de2cc0524800d7b7ac9d';
  assert.equal(git('rev-parse','HEAD:tools/verify_tactical_unit_motion_release.mjs').trim(),expected,'unit motion helper commit mismatch');
  assert.equal(git('hash-object','--path=tools/verify_tactical_unit_motion_release.mjs','tools/verify_tactical_unit_motion_release.mjs').trim(),expected,'unit motion helper working mismatch');
  const {verifyUnitMotionRelease}=await import('./verify_tactical_unit_motion_release.mjs');

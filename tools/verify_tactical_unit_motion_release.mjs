@@ -9,6 +9,7 @@ const TREE='bad9c9d2cf6ab58e428a1788f2d0208a907baabe';
 const PILOT='165651f7a75b373e318e21529421f83ec5b57790';
 const own='tools/verify_tactical_premium_integration.mjs',helper='tools/verify_tactical_unit_motion_release.mjs';
 const approved={
+  ".github/workflows/tactical-player-voice-v1.yml": "e3d20b54d32a2eebe7f40340116fe5612827e532",
   ".github/workflows/tactical-unit-motion-v1.yml": "38829aa62dd69a454518f1d6e4eb8ae83e79146a",
   "assets/tactical_motion_sources/README.md": "d3cc01258daa5545ddb4cf711dec95cfda8f1316",
   "assets/tactical_motion_sources/alpha-strike-source.png": "e3579e26534c6cbd200fc0e4936076edfac06f56",
