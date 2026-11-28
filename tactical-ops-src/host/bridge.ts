@@ -14,6 +14,8 @@ export interface HostBridge {
   openInventory?: () => void;
   openBadges?: (key?: string) => void;
   openProfile?: () => void;
+  openFrames?: () => void;
+  readHonorFrames?: () => Promise<unknown>;
   readHonorBadges?: () => Promise<unknown>;
   openForge?: () => void;
   forge?: {

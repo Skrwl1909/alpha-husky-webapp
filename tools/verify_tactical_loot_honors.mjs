@@ -30,8 +30,20 @@ const server=await createServer({configFile:false,cacheDir:'node_modules/.vite-t
 let browser;
 try {
   const {parseLootHonors,legacyCurrencyRewards}=await server.ssrLoadModule('/tactical-ops-src/data/lootHonors.ts');
-  const {TacticalLootReveal,TacticalHonorsCollection}=await server.ssrLoadModule('/tactical-ops-src/ui/TacticalLootHonors.tsx');
+  const {TacticalLootReveal,TacticalHonorsCollection,parseHonorFrames}=await server.ssrLoadModule('/tactical-ops-src/ui/TacticalLootHonors.tsx');
   const {StoryResultView}=await server.ssrLoadModule('/tactical-ops-src/ui/StoryResultView.tsx');
+  const broken='tops_broken_signal_frame',vanguard='tops_fracture_vanguard_frame';
+  const row=(key,owned,equipped)=>({key,owned,effective:owned,equipped});
+  const validFrames={ok:true,owned:[broken],active:broken,frames:[row(broken,true,true),row(vanguard,false,false)]};
+  assert.deepEqual(parseHonorFrames(validFrames),[{key:broken,owned:true,equipped:true},{key:vanguard,owned:false,equipped:false}]);
+  for(const invalid of [null,{...validFrames,ok:false},{...validFrames,owned:[]},
+    {...validFrames,active:vanguard},{...validFrames,frames:[row(broken,true,true),row(broken,true,true)]},
+    {...validFrames,frames:[{...row(broken,true,true),effective:false}]},
+    {...validFrames,frames:[{...row(broken,false,true)}]}]){
+    assert(!parseHonorFrames(invalid).some(r=>r.owned),'false entitlements from invalid frame payload');
+  }
+  assert.deepEqual(parseHonorFrames({ok:true,owned:[],active:'',frames:[]}),[]);
+  console.log('PASS authenticated frame projection, contradictory/duplicate and legacy response denial');
   assert.equal(parseLootHonors(base,runId,missionId,true).state,'confirmed');
   assert.equal(parseLootHonors({...base,status:'REPLAYED'},runId,missionId,true).state,'replayed');
   assert.equal(parseLootHonors(null,runId,missionId,true).state,'absent');
@@ -73,12 +85,12 @@ try {
     "import {setHost} from '/tactical-ops-src/host/bridge.ts';",
     'const fixtures=__FIXTURES__;',
     "const css=document.createElement('style');css.textContent=TACTICAL_CSS;document.head.append(css);",
-    'window.__actions={inventory:0,badges:0,profile:0};',
-    'setHost({openInventory:()=>window.__actions.inventory++,openBadges:()=>window.__actions.badges++,openProfile:()=>window.__actions.profile++,readHonorBadges:async()=>({badges:[]})});',
+    'window.__actions={inventory:0,badges:0,profile:0,frames:0};',
+    'setHost({openInventory:()=>window.__actions.inventory++,openBadges:()=>window.__actions.badges++,openProfile:()=>window.__actions.profile++,readHonorBadges:async()=>({badges:[]}),openFrames:()=>window.__actions.frames++,readHonorFrames:async()=>new URLSearchParams(location.search).get("scenario")==="frame"?__FRAME_STATE__:{ok:true,frames:[],owned:[],active:""}});',
     "const root=createRoot(document.getElementById('mount'));",
     'window.show=name=>{const raw=fixtures[name],parsed=parseLootHonors(raw,"field_fixture_a1","field-relay-recovery",name!=="pending"&&name!=="defeat");root.render(React.createElement("div",{className:"t-modal t-panel t-results t-field-results",id:"test-results"},React.createElement("h1",{},name==="defeat"?"DEFEAT":"VICTORY"),React.createElement(TacticalLootReveal,{result:parsed}),React.createElement(TacticalHonorsCollection)));};',
     "window.show(new URLSearchParams(location.search).get('scenario')||'currency');"
-  ].join('\n').replace('__FIXTURES__',JSON.stringify(fixtures));
+  ].join('\n').replace('__FIXTURES__',JSON.stringify(fixtures)).replace('__FRAME_STATE__',JSON.stringify(validFrames));
   server.middlewares.use('/loot-fixture',async (_req,res)=>{
     res.setHeader('Content-Type','text/html;charset=utf-8');
     const html='<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#020b14;color:#e7f4f5}#qa-label{position:fixed;top:0;left:0;padding:4px;background:#081019;color:white;font:10px monospace;z-index:10000;pointer-events:none}#tacticalOpsRoot{position:relative;display:block;width:100%;min-height:100vh;padding:22px 5px;box-sizing:border-box}#test-results{margin:0 auto;max-width:880px;max-height:calc(100vh - 40px);overflow-y:auto}</style></head><body><div id="qa-label">SYNTHETIC QA · NO LIVE PLAYER</div><div id="tacticalOpsRoot"><div id="mount"></div></div><script type="module">'+entry+'</script></body></html>';
@@ -147,6 +159,17 @@ try {
         if(name==='rare')assert.equal(await reveal.getAttribute('data-reveal'),'rare');
         for(const kind of ['badge','frame','aura','title','skin']){
           if(name===kind)assert.equal(await panel.getByText(kind.toUpperCase()+' UNLOCKED').count(),1);
+        }
+        if(name==='frame'){
+          await reveal.getByRole('button',{name:'OPEN PROFILE FRAMES'}).click();
+          assert.equal(await page.evaluate(()=>window.__actions.frames),1);
+          const collection=panel.locator('.t-honors-collection');
+          await collection.locator('summary').click();
+          await collection.getByText('EQUIPPED · RARE').waitFor();
+          assert.equal(await collection.locator('.t-honors-tile[data-owned=yes]').count(),1);
+          assert.equal(await collection.getByText('LOCKED · EPIC',{exact:true}).count()>0,true);
+          await collection.getByRole('button',{name:'OPEN PROFILE FRAMES'}).click();
+          assert.equal(await page.evaluate(()=>window.__actions.frames),2);
         }
         if(name==='noart')await panel.locator('.t-loot-equipment-art .t-loot-fallback').waitFor();
         assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'document overflow '+width+'/'+name);

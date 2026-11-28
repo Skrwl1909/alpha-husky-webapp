@@ -1,5 +1,5 @@
 /**
- * Display-only proposed Tactical honors. These are NOT player entitlements.
+ * Display-only Tactical honors catalog. These are NOT player entitlements.
  * Badge Wall and the cosmetics system remain the sole ownership/equip authority.
  */
 export type HonorDefinition = {
@@ -16,8 +16,8 @@ export const TACTICAL_HONORS: readonly HonorDefinition[] = [
   { id:"tops_warborn_alpha",name:"Warborn Alpha",description:"The field remembers its Alpha.",requirement:"Win 100 Tactical Ops battles.",tier:"legendary",target:100,image:"assets/tactical-honors/v2/512px/tops_warborn_alpha.webp",category:"badge" },
   { id:"tops_commander_slayer",name:"Commander Slayer",description:"The hostile command signal goes dark.",requirement:"Defeat Signal Commander.",tier:"rare",target:1,image:"assets/tactical-honors/v2/512px/tops_commander_slayer.webp",category:"badge" },
   { id:"tops_no_one_left_behind",name:"No One Left Behind",description:"The pack comes home together.",requirement:"Win with all squad members standing.",tier:"legendary",target:1,image:"assets/tactical-honors/v2/512px/tops_no_one_left_behind.webp",category:"badge" },
-  { id:"tops_broken_signal_frame",name:"Broken Signal Frame",description:"A relay brought back from silence.",requirement:"Complete Operation 01.",tier:"rare",target:1,image:"assets/tactical-honors/v2/512px/tops_broken_signal_frame.webp",category:"frame" },
-  { id:"tops_fracture_vanguard_frame",name:"Fracture Vanguard Frame",description:"A mark earned at the dangerous front.",requirement:"Complete an Advanced Tactical Ops challenge.",tier:"epic",target:1,image:"assets/tactical-honors/v2/512px/tops_fracture_vanguard_frame.webp",category:"frame" },
+  { id:"tops_broken_signal_frame",name:"Broken Signal Frame",description:"A relay brought back from silence.",requirement:"Defeat the Signal Commander in a verified Operation 01 victory.",tier:"rare",target:1,image:"assets/tactical-honors/v2/512px/tops_broken_signal_frame.webp",category:"frame" },
+  { id:"tops_fracture_vanguard_frame",name:"Fracture Vanguard Frame",description:"A mark earned at the dangerous front.",requirement:"Win a verified Advanced Field Op and complete its bonus challenge.",tier:"epic",target:1,image:"assets/tactical-honors/v2/512px/tops_fracture_vanguard_frame.webp",category:"frame" },
 ] as const;
 export const TACTICAL_BADGES = TACTICAL_HONORS.filter(h => h.category === "badge");
 export const TACTICAL_FRAMES = TACTICAL_HONORS.filter(h => h.category === "frame");
