@@ -96,7 +96,7 @@ export function finalRcCssPlugin(root){
 }
 export function verifyFinalRcRuntime(root){
  for(const [path,hash] of Object.entries({
-  'js/tactical_ops.js':'8650912fc32369ca9bc44be34e2055bb87119152b676e01ecfcaf33dd0eaa424',
-  'js/boot_loaders.js':'467cc61b5f309ecd2f1839bd2a40ddd5f18b009776d021b5df93f98933f77244'
+  'js/tactical_ops.js':'3faff127b6f74451590d1270767b95c70b24797e8b39ee186ea076b54f6c7137',
+  'js/boot_loaders.js':'46e38a8bab6594f466f47260c0c9a448545b87492b9b09b09311ff128ebdfa26'
  }))if(sha(readFileSync(resolve(root,path)))!==hash)throw Error('STOP: runtime differs from reviewed production acceptance '+path);
 }

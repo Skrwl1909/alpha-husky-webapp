@@ -1,0 +1,31 @@
+name: Tactical Honors Frames V1
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tactical-ops-src/**'
+      - 'tools/verify_tactical_loot_honors.mjs'
+      - 'tools/verify_tactical_honor_frames_release.mjs'
+      - 'js/tactical_ops.js'
+      - 'js/boot_loaders.js'
+      - '.github/workflows/tactical-honors-frames-v1.yml'
+permissions:
+  contents: read
+jobs:
+  honors-frames:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build:tactical-ops && git diff --exit-code -- package-lock.json js/tactical_ops.js js/boot_loaders.js
+      - run: node tools/verify_tactical_premium_integration.mjs
+      - run: node tools/verify_tactical_loot_honors.mjs
+        env:
+          CHROMIUM_EXECUTABLE: /usr/bin/google-chrome

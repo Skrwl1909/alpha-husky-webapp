@@ -420,11 +420,12 @@ export async function open(missionId?: string): Promise<void> {
     useBattleStore.getState().openOperationBrief(missionId);
   }
   const el = ensureRoot();
-  const { FieldRecord: fieldRecord, Forge: forge, HomeNav: homeNav, Inventory: inventory, Badges: badges } = window as Window & {
+  const { FieldRecord: fieldRecord, Forge: forge, HomeNav: homeNav, Inventory: inventory, Badges: badges, openFramesModal } = window as Window & {
     FieldRecord?: { openSelf?: (options: { focusService: boolean }) => Promise<boolean> };
     Inventory?: { open?: () => Promise<unknown> };
     HomeNav?: { openInventory?: () => unknown; openForge?: () => unknown };
     Forge?: HostBridge["forge"];
+    openFramesModal?: () => unknown;
     Badges?: { open?: (badgeKey?: string) => Promise<unknown> };
   };
   setHost({
@@ -446,6 +447,11 @@ export async function open(missionId?: string): Promise<void> {
       closeView();
       void fieldRecord.openSelf?.({ focusService: false });
     } : undefined,
+    openFrames: typeof openFramesModal === "function" ? () => {
+      closeView();
+      void openFramesModal();
+    } : undefined,
+    readHonorFrames: M.apiPost ? () => Promise.resolve(M.apiPost!("/webapp/frames", {})) : undefined,
     readHonorBadges: M.apiPost ? () => Promise.resolve(M.apiPost!("/webapp/badges/state", {})) : undefined,
     openFieldRecord: fieldRecord?.openSelf ? () => {
       closeView();

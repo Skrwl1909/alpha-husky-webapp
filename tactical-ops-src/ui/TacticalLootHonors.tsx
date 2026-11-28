@@ -56,14 +56,15 @@ function PrestigeCard({grant}:{grant:PrestigeGrant}) {
   const definition = tacticalHonor(grant.id);
   const openBadges = getHost().openBadges;
   const openProfile = getHost().openProfile;
+  const openFrames = getHost().openFrames;
   const inBadgeWall = grant.type === "badge" || grant.type === "title" || grant.type === "aura";
-  const canOpen = inBadgeWall ? Boolean(openBadges) : Boolean(openProfile);
-  const openCollection = () => { if (inBadgeWall) openBadges?.(grant.type === "badge" ? grant.id : undefined); else openProfile?.(); };
+  const canOpen = inBadgeWall ? Boolean(openBadges) : Boolean(grant.type === "frame" ? openFrames || openProfile : openProfile);
+  const openCollection = () => { if (inBadgeWall) openBadges?.(grant.type === "badge" ? grant.id : undefined); else if (grant.type === "frame" && openFrames) openFrames(); else openProfile?.(); };
   return <article className="t-loot-prestige" data-rarity={grant.rarity} aria-label={labels[grant.type]+": "+grant.name}>
     <div className="t-loot-prestige-art"><Artwork src={definition?.image || grant.imageUrl} fallback={definition} /></div>
     <div className="t-loot-prestige-copy"><span className="t-loot-rarity">{labels[grant.type]}</span>
       <h3>{grant.name}</h3><small>{grant.rarity.toUpperCase()} · Permanently recorded by the server</small>
-      {canOpen ? <button type="button" className="t-btn" onClick={openCollection}>VIEW COLLECTION <ArrowRight aria-hidden="true"/></button> : null}
+      {canOpen ? <button type="button" className="t-btn" onClick={openCollection}>{grant.type === "frame" && openFrames ? "OPEN PROFILE FRAMES" : "VIEW COLLECTION"} <ArrowRight aria-hidden="true"/></button> : null}
     </div>
   </article>;
 }
@@ -112,15 +113,37 @@ export function TacticalLootReveal({result}:{result:LootParseResult}) {
 }
 
 type BadgeState = {key:string; owned:boolean; progress?:{current?:number;target?:number;label?:string}};
-function HonorTile({honor,state}:{honor:HonorDefinition;state?:BadgeState}) {
+type FrameState = {key:string; owned:boolean; equipped:boolean};
+/** Confirm ownership only from the authenticated profile frames response.
+ * Omitted, contradictory, duplicate, or invalid rows never unlock a frame. */
+export function parseHonorFrames(raw: unknown): FrameState[] {
+  if (!raw || typeof raw !== "object") return [];
+  const value = raw as {ok?:unknown; frames?:unknown; owned?:unknown; active?:unknown};
+  if (value.ok !== true || !Array.isArray(value.frames) || !Array.isArray(value.owned)) return [];
+  const rows = value.frames as unknown[];
+  const owned = new Set(value.owned.filter((key):key is string => typeof key === "string"));
+  return TACTICAL_FRAMES.flatMap(honor => {
+    const matches = rows.filter((row):row is Record<string,unknown> =>
+      !!row && typeof row === "object" && (row as Record<string,unknown>).key === honor.id);
+    if (matches.length !== 1) return [];
+    const row = matches[0];
+    if (typeof row.owned !== "boolean" || row.effective !== row.owned ||
+        owned.has(honor.id) !== row.owned || typeof row.equipped !== "boolean" ||
+        row.equipped !== (value.active === honor.id) || (row.equipped && !row.owned)) return [];
+    return [{key:honor.id, owned:row.owned, equipped:row.equipped}];
+  });
+}
+function HonorTile({honor,state}:{honor:HonorDefinition;state?:BadgeState & {equipped?:boolean}}) {
   const owned = state?.owned === true;
+  const unavailable = honor.category === "frame" && !state;
+  const status = state?.equipped ? "EQUIPPED" : owned ? "UNLOCKED" : unavailable ? "NOT VERIFIED" : "LOCKED";
   const progress = state?.progress && Number.isSafeInteger(state.progress.current) &&
     Number.isSafeInteger(state.progress.target) && (state.progress.target ?? 0)>0
     ? Math.max(0,Math.min(state.progress.current!,state.progress.target!)) : null;
   return <article className="t-honors-tile" data-rarity={honor.tier} data-owned={owned?"yes":"no"}
-    aria-label={honor.name + (owned ? ", unlocked" : ", locked") + ". " + honor.requirement}>
+    aria-label={honor.name + (", " + status.toLowerCase()) + ". " + honor.requirement}>
     <div className="t-honors-image"><Artwork src={honor.image}/>{!owned ? <LockKeyhole aria-hidden="true" className="t-honors-lock"/> : null}</div>
-    <div className="t-honors-copy"><span>{owned ? "UNLOCKED" : "LOCKED"} · {honor.tier.toUpperCase()}</span>
+    <div className="t-honors-copy"><span>{status} · {honor.tier.toUpperCase()}</span>
       <h3>{honor.name}</h3><p>{honor.description}</p><small>{honor.requirement}</small>
       {progress !== null ? <progress value={progress} max={state!.progress!.target} aria-label={honor.name+" confirmed progress"}/> : null}
       {progress !== null ? <small>Progress {progress}/{state!.progress!.target}</small> : null}
@@ -128,11 +151,26 @@ function HonorTile({honor,state}:{honor:HonorDefinition;state?:BadgeState}) {
   </article>;
 }
 
-/** Locked catalog is design metadata; only /webapp/badges/state can mark a badge owned. */
+/** Collection metadata is display-only. The badge and frame APIs remain ownership authorities. */
 export function TacticalHonorsCollection() {
   const [expanded,setExpanded] = useState(false);
   const [badges,setBadges] = useState<BadgeState[]>([]);
   const [loading,setLoading] = useState(false);
+  const [frames,setFrames] = useState<FrameState[]>([]);
+  const [loadingFrames,setLoadingFrames] = useState(false);
+  useEffect(()=>{
+    if (!expanded) return;
+    let live = true;
+    setFrames([]);
+    const read = getHost().readHonorFrames;
+    if (!read) return;
+    setLoadingFrames(true);
+    Promise.resolve().then(()=>read())
+      .then(raw=>{if(live)setFrames(parseHonorFrames(raw))})
+      .catch(()=>{if(live)setFrames([])})
+      .finally(()=>{if(live)setLoadingFrames(false)});
+    return ()=>{live=false;setLoadingFrames(false)};
+  },[expanded]);
   useEffect(()=>{
     if (!expanded || !getHost().readHonorBadges) return;
     let live=true;setLoading(true);
@@ -148,15 +186,19 @@ export function TacticalHonorsCollection() {
     return ()=>{live=false};
   },[expanded]);
   const lookup = new Map(badges.map(b=>[b.key.toLowerCase(),b]));
+  const frameLookup = new Map(frames.map(f=>[f.key,f]));
+  const openFrames = getHost().openFrames;
   const openBadges = getHost().openBadges;
   return <details className="t-honors-collection" onToggle={event=>setExpanded(event.currentTarget.open)} aria-label="Tactical Honors collection">
     <summary><Award aria-hidden="true"/> TACTICAL HONORS <span>8 BADGES · 2 FRAMES</span></summary>
-    <p className="t-honors-intro">The Fracture · Forged through battle. Future collection concepts; unlocks only count once confirmed by the game server.</p>
+    <p className="t-honors-intro">The Fracture · Forged through battle. Permanent cosmetics and honors; ownership is confirmed by the game server.</p>
     {loading ? <p role="status">Checking confirmed badge ownership…</p> : null}
     <div className="t-honors-grid">{TACTICAL_BADGES.map(h=><HonorTile key={h.id} honor={h} state={lookup.get(h.id.toLowerCase())}/>)}</div>
-    <h3 className="t-honors-frames-heading"><Frame aria-hidden="true"/> PROFILE FRAMES · FUTURE UNLOCKS</h3>
-    <div className="t-honors-grid">{TACTICAL_FRAMES.map(h=><HonorTile key={h.id} honor={h}/>)}</div>
-    <p className="t-honors-intro">Frames are visual concepts until server entitlements and profile selection support them.</p>
+    <h3 className="t-honors-frames-heading"><Frame aria-hidden="true"/> PROFILE FRAMES</h3>
+    <div className="t-honors-grid">{TACTICAL_FRAMES.map(h=><HonorTile key={h.id} honor={h} state={frameLookup.get(h.id)}/>)}</div>
+    {loadingFrames ? <p role="status">Checking confirmed frame ownership…</p> : frames.length < TACTICAL_FRAMES.length ? <p role="status">Some frame ownership is unavailable. Reopen the collection to check again.</p> : null}
+    <p className="t-honors-intro">Cosmetic only. Equip unlocked frames in your profile; no combat power is added.</p>
+    {openFrames ? <button className="t-btn" type="button" onClick={openFrames}>OPEN PROFILE FRAMES <ArrowRight aria-hidden="true"/></button> : null}
     {openBadges ? <button className="t-btn" type="button" onClick={()=>openBadges()}>OPEN BADGE WALL <ArrowRight aria-hidden="true"/></button> : null}
   </details>;
 }
