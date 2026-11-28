@@ -4,11 +4,12 @@ import {execFileSync} from 'node:child_process';
 import {readFileSync,mkdtempSync,rmdirSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
-const BASE='be9a635b6629be94256fbe384a5bc4257c17676c';
-const TREE='e7d45bfdc338e48fabb00490944eb1b984c73378';
+const BASE='f6519321ff0b37c53dc0656ab44f405cc8f4953c';
+const TREE='54a62b30ddbc7c2e1691346e7eaa63558c17c1fb';
 const own='tools/verify_tactical_premium_integration.mjs',helper='tools/verify_tactical_signal_atlas_v3_release.mjs';
 const approved={
-  "docs/TACTICAL_SIGNAL_ATLAS_V3_PREVIEW.md": "fa1984cf66b5cc2faad34f439490c73277109c62",
+  ".github/workflows/tactical-signal-atlas-v3.yml": "efddf3226d18bfe57da0b809ca4afd4b1763fabd",
+  "docs/TACTICAL_SIGNAL_ATLAS_V3_PREVIEW.md": "4aceec302d1a7963ae2f297ae3cd95411aeaf726",
   "images/tactical_ops/signal_atlas/v3/IDENTITY_README.md": "f873c1a6d00708b0fad2bc7d93db38224b4e9c4e",
   "images/tactical_ops/signal_atlas/v3/README.md": "96c4ce2e910f439fc740f19b665471d98ceb2b88",
   "images/tactical_ops/signal_atlas/v3/identity_manifest.json": "a5d215944d669728491f644d4bbcb0fc63781132",
@@ -93,7 +94,7 @@ export function verifyAtlasV3Release(expectedHelper){
   assert.equal(git('rev-parse','HEAD:'+path),hash,'unreviewed committed blob '+path);
   assert.equal(git('hash-object','--path='+path,path),hash,'unreviewed working blob '+path);
  }
- for(const path of ['tactical-ops-src/combat','tactical-ops-src/data','tactical-ops-src/host','tactical-ops-src/store','images/tactical_ops/presentation/war_table_v2','tools/verify_tactical_ci_closure_335.mjs','tools/verify_tactical_unit_motion_release.mjs','tactical-ops-src/ui/Battle.tsx','images/tactical_ops/unit_motion/v1','tools/verify_tactical_production_reconciliation.mjs','tools/verify_tactical_final_provenance.mjs','tools/verify_tactical_p32_provenance.mjs','tools/verify_reconciliation_negative.mjs']){
+ for(const path of ['tactical-ops-src/combat','tactical-ops-src/data','tactical-ops-src/host','tactical-ops-src/store','images/tactical_ops/presentation/war_table_v2','tools/verify_tactical_ci_closure_335.mjs','tools/verify_tactical_unit_motion_release.mjs','.github/workflows/tactical-player-voice-v1.yml','package-lock.json','package.json','tactical-ops-src/ui/Battle.tsx','images/tactical_ops/unit_motion/v1','tools/verify_tactical_production_reconciliation.mjs','tools/verify_tactical_final_provenance.mjs','tools/verify_tactical_p32_provenance.mjs','tools/verify_reconciliation_negative.mjs']){
   git('diff','--exit-code',BASE,'HEAD','--',path);
  }
  git('diff','--exit-code','HEAD','--');
